@@ -31,10 +31,16 @@ streamlit = [
   "streamlit"
 ]
 
+tests = [
+  "pytest",
+  "pytest-asyncio",
+]
+
 [tool.poetry.packages]
 include = [
     { include = "burr", from = "." },
 ]
+
 
 [project.urls]
 Homepage = "https://github.com/dagworks-inc/burr"
