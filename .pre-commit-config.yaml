@@ -1,0 +1,32 @@
+# pre-commit hooks require a user to have installed `pre-commit`:
+#   $ brew install pre-commit
+# Then install the hooks within the repo:
+#   $ cd /PATH/TO/REPO
+#   $ pre-commit install
+
+repos:
+-   repo: https://github.com/ambv/black
+    rev: 23.11.0
+    hooks:
+    - id: black
+      args: [--line-length=100]
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+    -   id: trailing-whitespace
+    # ensures files are either empty or end with a blank line
+    -   id: end-of-file-fixer
+    # sorts requirements
+    -   id: requirements-txt-fixer
+    # valid python file
+    -   id: check-ast
+# isort python package import sorting
+-   repo: https://github.com/pycqa/isort
+    rev: '5.12.0'
+    hooks:
+    -   id: isort
+        args: ["--profile", "black", "--line-length=100", "--known-local-folder", "tests", "-p", "hamilton"]
+-   repo: https://github.com/pycqa/flake8
+    rev: 6.1.0
+    hooks:
+    - id: flake8
