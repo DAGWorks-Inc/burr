@@ -1,58 +1,35 @@
-import abc
 import functools
-from typing import List
+from typing import List, Tuple
 
 import dag
 import openai
 
-from burr.core import Action, Application, ApplicationBuilder, State, default, expr, when
+from burr.core import Application, ApplicationBuilder, State, default, expr, when
+from burr.core.action import action
 from burr.integrations.hamilton import Hamilton, append_state, from_state, update_state
 from burr.lifecycle import LifecycleAdapter
 from hamilton import driver
 
-
-class PromptInput(Action):
-    @property
-    def reads(self) -> list[str]:
-        return ["prompt"]
-
-    def run(self, state: State) -> dict:
-        return {"processed_prompt": {"role": "user", "content": state["prompt"], "type": "text"}}
-
-    @property
-    def writes(self) -> list[str]:
-        return ["chat_history"]
-
-    def update(self, result: dict, state: State) -> State:
-        return state.wipe(keep=["prompt", "chat_history"]).append(
-            chat_history=result["processed_prompt"]
-        )
+MODES = {
+    "answer_question": "text",
+    "generate_image": "image",
+    "generate_code": "code",
+    "unknown": "text",
+}
 
 
-class SafetyCheck(Action):
-    @property
-    def reads(self) -> list[str]:
-        return ["prompt"]
-
-    def run(self, state: State) -> dict:
-        if "unsafe" in state["prompt"]:
-            # quick for testing
-            return {"safe": False}
-        return {"safe": True}
-
-    @property
-    def writes(self) -> list[str]:
-        return ["safe"]
-
-    def update(self, result: dict, state: State) -> State:
-        return state.update(safe=result["safe"])
+@action(reads=["prompt"], writes=["chat_history"])
+def process_prompt(state: State) -> Tuple[dict, State]:
+    result = {"processed_prompt": {"role": "user", "content": state["prompt"], "type": "text"}}
+    return result, state.wipe(keep=["prompt", "chat_history"]).append(
+        chat_history=result["processed_prompt"]
+    )
 
 
-MODES = [
-    "answer_question",
-    "draw_image",
-    "generate_code",
-]
+@action(reads=["prompt"], writes=["safe"])
+def check_safety(state: State) -> Tuple[dict, State]:
+    result = {"safe": "unsafe" not in state["prompt"]}  # quick hack to demonstrate
+    return result, state.update(safe=result["safe"])
 
 
 @functools.lru_cache(maxsize=None)
@@ -60,84 +37,51 @@ def _get_openai_client():
     return openai.Client()
 
 
-class ChooseMode(Action):
-    def __init__(
-        self, client: openai.Client = _get_openai_client(), model: str = "gpt-4", modes=tuple(MODES)
-    ):
-        super(ChooseMode, self).__init__()
-        self.client = client
-        self.model = model
-        self.modes = modes
+@action(reads=["prompt"], writes=["mode"])
+def choose_mode(state: State) -> Tuple[dict, State]:
+    prompt = (
+        f"You are a chatbot. You've been prompted this: {state['prompt']}. "
+        f"You have the capability of responding in the following modes: {', '.join(MODES)}. "
+        "Please respond with *only* a single word representing the mode that most accurately"
+        " corresponds to the prompt. Fr instance, if the prompt is 'draw a picture of a cat', "
+        "the mode would be 'generate_image'. If the prompt is 'what is the capital of France', the mode would be 'answer_question'."
+        "If none of these modes apply, please respond with 'unknown'."
+    )
 
-    @property
-    def reads(self) -> list[str]:
-        return ["prompt"]
-
-    def run(self, state: State) -> dict:
-        prompt = (
-            f"You are a chatbot. You've been prompted this: {state['prompt']}. "
-            f"You have the capability of responding in the following modes: {', '.join(self.modes)}. "
-            "Please respond with *only* a single word representing the mode that most accurately"
-            " corresponds to the prompt. Fr instance, if the prompt is 'draw a picture of a cat', "
-            "the mode would be 'image'. If the prompt is 'what is the capital of France', the mode would be 'text'."
-            "If none of these modes apply, please respond with 'unknown'."
-        )
-        result = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant"},
-                {"role": "user", "content": prompt},
-            ],
-        )
-        content = result.choices[0].message.content
-        mode = content.lower()
-        if mode not in self.modes:
-            mode = "unknown"
-        return {"mode": mode}
-
-    @property
-    def writes(self) -> list[str]:
-        return ["mode"]
-
-    def update(self, result: dict, state: State) -> State:
-        return state.update(mode=result["mode"])
+    result = _get_openai_client().chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant"},
+            {"role": "user", "content": prompt},
+        ],
+    )
+    content = result.choices[0].message.content
+    mode = content.lower()
+    if mode not in MODES:
+        mode = "unknown"
+    result = {"mode": mode}
+    return result, state.update(**result)
 
 
-class BaseChatCompletion(Action, abc.ABC):
-    @property
-    def reads(self) -> list[str]:
-        return ["prompt", "chat_history"]
-
-    @abc.abstractmethod
-    def chat_response(self, state: State) -> dict:
-        pass
-
-    def run(self, state: State) -> dict:
-        return {"response": self.chat_response(state)}
-
-    @property
-    def writes(self) -> list[str]:
-        return ["response"]
-
-    def update(self, result: dict, state: State) -> State:
-        return state.update(**result)
-
-
-class DontKnowResponse(BaseChatCompletion):
-    def __init__(self, modes=tuple(MODES)):
-        super(DontKnowResponse, self).__init__()
-        self.modes = modes
-
-    def chat_response(self, state: State) -> dict:
-        return {
-            "content": f"None of the response modes I support: ({','.join(self.modes)}) "
+@action(reads=["prompt", "chat_history"], writes=["response"])
+def prompt_for_more(state: State) -> Tuple[dict, State]:
+    result = {
+        "response": {
+            "content": f"None of the response modes I support: ({','.join(MODES)}) "
             f"apply to your question. Please clarify?",
             "type": "text",
             "role": "assistant",
         }
+    }
+    return result, state.update(**result)
 
 
-def _get_text_response(chat_history: list[dict], model: str, client: openai.Client) -> str:
+@action(reads=["prompt", "chat_history", "mode"], writes=["response"])
+def chat_response(
+    state: State, prepend_prompt: str, display_type: str = "text", model: str = "gpt-3.5-turbo"
+) -> Tuple[dict, State]:
+    chat_history = state["chat_history"].copy()
+    chat_history[-1]["content"] = f"{prepend_prompt}: {chat_history[-1]['content']}"
     chat_history_api_format = [
         {
             "role": chat["role"],
@@ -145,115 +89,67 @@ def _get_text_response(chat_history: list[dict], model: str, client: openai.Clie
         }
         for chat in chat_history
     ]
+    client = _get_openai_client()
     result = client.chat.completions.create(
         model=model,
         messages=chat_history_api_format,
     )
-    return result.choices[0].message.content
+    response = result.choices[0].message.content
+    result = {"response": {"content": response, "type": MODES[state["mode"]], "role": "assistant"}}
+    return result, state.update(**result)
 
 
-class AnswerQuestionResponse(BaseChatCompletion):
-    def __init__(self, client: openai.Client = _get_openai_client(), model: str = "gpt-4"):
-        super(AnswerQuestionResponse, self).__init__()
-        self.client = client
-        self.model = model
-
-    def chat_response(self, state: State) -> dict:
-        chat_history = state["chat_history"].copy()
-        chat_history[-1][
-            "content"
-        ] = f"Please answer the following question: {chat_history[-1]['content']}"
-        response = _get_text_response(chat_history, self.model, self.client)
-        return {"content": response, "type": "text", "role": "assistant"}
+@action(reads=["prompt", "chat_history", "mode"], writes=["response"])
+def image_response(state: State, model: str = "dall-e-2") -> Tuple[dict, State]:
+    client = _get_openai_client()
+    result = client.images.generate(
+        model=model, prompt=state["prompt"], size="1024x1024", quality="standard", n=1
+    )
+    response = result.data[0].url
+    result = {"response": {"content": response, "type": MODES[state["mode"]], "role": "assistant"}}
+    return result, state.update(**result)
 
 
-class GenerateImageResponse(BaseChatCompletion):
-    def __init__(self, client: openai.Client = _get_openai_client(), model: str = "dall-e-2"):
-        super(GenerateImageResponse, self).__init__()
-        self.client = client
-        self.model = model
-
-    def chat_response(self, state: State) -> dict:
-        result = self.client.images.generate(
-            model=self.model, prompt=state["prompt"], size="1024x1024", quality="standard", n=1
-        )
-        return {"content": result.data[0].url, "type": "image", "role": "assistant"}
-
-
-class GenerateCodeResponse(BaseChatCompletion):
-    def __init__(self, client: openai.Client = _get_openai_client(), model: str = "gpt-4"):
-        super(GenerateCodeResponse, self).__init__()
-        self.client = client
-        self.model = model
-
-    def chat_response(self, state: State) -> dict:
-        chat_history = state["chat_history"].copy()
-        chat_history[-1]["content"] = (
-            f"Please answer the following question, "
-            f"responding *only* with code, and nothing else: {chat_history[-1]['content']}"
-        )
-        return {
-            "content": _get_text_response(state["chat_history"], self.model, self.client),
-            "type": "code",
-            "role": "assistant",
-        }
-
-
-class Response(Action):
-    @property
-    def reads(self) -> list[str]:
-        return ["response", "safe", "mode"]
-
-    def run(self, state: State) -> dict:
-        if not state["safe"]:
-            return {
-                "processed_response": {
-                    "role": "assistant",
-                    "content": "I'm sorry, I can't respond to that.",
-                    "type": "text",
-                }
+@action(reads=["response", "safe", "mode"], writes=["chat_history"])
+def response(state: State) -> Tuple[dict, State]:
+    if not state["safe"]:
+        result = {
+            "processed_response": {
+                "role": "assistant",
+                "content": "I'm sorry, I can't respond to that.",
+                "type": "text",
             }
-        return {"processed_response": state["response"]}
-
-    @property
-    def writes(self) -> list[str]:
-        return ["chat_history"]
-
-    def update(self, result: dict, state: State) -> State:
-        return state.append(chat_history=result["processed_response"])
-
-
-class Error(Action):
-    @property
-    def reads(self) -> list[str]:
-        return ["error"]
-
-    def run(self, state: State) -> dict:
-        return {
-            "chat_record": {"role": "assistant", "content": str(state["error"]), "type": "error"}
         }
-
-    @property
-    def writes(self) -> list[str]:
-        return ["chat_history"]
-
-    def update(self, result: dict, state: State) -> State:
-        return state.append(chat_history=result["chat_record"])
+    else:
+        result = {"processed_response": state["response"]}
+    return result, state.append(chat_history=result["processed_response"])
 
 
-def base_application(hooks: List[LifecycleAdapter] = []):
+@action(reads=["error"], writes=["chat_history"])
+def error(state: State) -> Tuple[dict, State]:
+    result = {"chat_record": {"role": "assistant", "content": str(state["error"]), "type": "error"}}
+    return result, state.append(chat_history=result["chat_record"])
+
+
+def base_application(hooks: List[LifecycleAdapter] = None):
+    if hooks is None:
+        hooks = []
     return (
         ApplicationBuilder()
         .with_actions(
-            prompt=PromptInput(),
-            check_safety=SafetyCheck(),
-            decide_mode=ChooseMode(),
-            generate_image=GenerateImageResponse(),
-            generate_code=GenerateCodeResponse(),
-            answer_question=AnswerQuestionResponse(),
-            prompt_for_more=DontKnowResponse(),
-            response=Response(),
-            error=Error(),
+            prompt=process_prompt,
+            check_safety=check_safety,
+            decide_mode=choose_mode,
+            generate_image=image_response,
+            generate_code=chat_response.bind(
+                prepend_prompt="Please respond with *only* code and no other text (at all) to the following:",
+            ),
+            answer_question=chat_response.bind(
+                prepend_prompt="Please answer the following question:",
+            ),
+            prompt_for_more=prompt_for_more,
+            response=response,
+            error=error,
         )
         .with_entrypoint("prompt")
         .with_state(chat_history=[])
@@ -283,7 +179,9 @@ def base_application(hooks: List[LifecycleAdapter] = []):
     )
 
 
-def hamilton_application(hooks: List[LifecycleAdapter] = []):
+def hamilton_application(hooks: List[LifecycleAdapter] = None):
+    if hooks is None:
+        hooks = []
     dr = driver.Driver({"provider": "openai"}, dag)  # TODO -- add modules
     Hamilton.set_driver(dr)
     application = (
@@ -328,7 +226,7 @@ def hamilton_application(hooks: List[LifecycleAdapter] = []):
                 },
                 outputs={"processed_response": append_state("chat_history")},
             ),
-            error=Error(),
+            error=error,
         )
         .with_transitions(
             ("prompt", "check_safety", default),
@@ -364,7 +262,7 @@ def application(use_hamilton: bool, hooks: List[LifecycleAdapter] = []) -> Appli
 
 
 if __name__ == "__main__":
-    app = application(use_hamilton=True)
+    app = application(use_hamilton=False)
     # state, result = app.run(until=["result"])
     app.visualize(output_file_path="gpt", include_conditions=False, view=True, format="png")
     # assert state["counter"] == 10

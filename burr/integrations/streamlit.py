@@ -4,6 +4,7 @@ import json
 from typing import List, Optional
 
 from burr.core import Application
+from burr.core.action import FunctionBasedAction
 from burr.integrations.base import require_plugin
 from burr.integrations.hamilton import Hamilton, StateSource
 
@@ -176,6 +177,7 @@ def render_action(state: AppState):
     st.header(f"`{current_node}`")
     action_object = actions[current_node]
     is_hamilton = isinstance(action_object, Hamilton)
+    is_function_api = isinstance(action_object, FunctionBasedAction)
 
     def format_read(var):
         out = f"- `{var}`"
@@ -210,6 +212,9 @@ def render_action(state: AppState):
     if is_hamilton:
         digraph = action_object.visualize_step(show_legend=False)
         st.graphviz_chart(digraph, use_container_width=False)
+    elif is_function_api:
+        code = inspect.getsource(action_object.fn)
+        st.code(code, language="python")
     else:
         code = inspect.getsource(action_object.__class__)
         st.code(code, language="python")

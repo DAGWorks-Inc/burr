@@ -1,52 +1,12 @@
 import random
 import time
-from typing import List, Optional
+from typing import Tuple
 
 import cowsay
 
 from burr.core import Action, Application, ApplicationBuilder, State, default, expr
+from burr.core.action import action
 from burr.lifecycle import PostRunStepHook
-
-
-class CowSay(Action):
-    def __init__(self, say_what: List[Optional[str]]):
-        super(CowSay, self).__init__()
-        self.say_what = say_what
-
-    @property
-    def reads(self) -> list[str]:
-        return []
-
-    def run(self, state: State) -> dict:
-        say_what = random.choice(self.say_what)
-        return {
-            "cow_said": cowsay.get_output_string("cow", say_what) if say_what is not None else None
-        }
-
-    @property
-    def writes(self) -> list[str]:
-        return ["cow_said"]
-
-    def update(self, result: dict, state: State) -> State:
-        return state.update(**result)
-
-
-class CowShouldSay(Action):
-    @property
-    def reads(self) -> list[str]:
-        return []
-
-    def run(self, state: State) -> dict:
-        if not random.randint(0, 3):
-            return {"cow_should_speak": True}
-        return {"cow_should_speak": False}
-
-    @property
-    def writes(self) -> list[str]:
-        return ["cow_should_speak"]
-
-    def update(self, result: dict, state: State) -> State:
-        return state.update(**result)
 
 
 class PrintWhatTheCowSaid(PostRunStepHook):
@@ -65,6 +25,19 @@ class CowCantSpeakFast(PostRunStepHook):
             time.sleep(self.sleep_time)
 
 
+@action(reads=[], writes=["cow_said"])
+def cow_said(state: State, say_what: list[str]) -> Tuple[dict, State]:
+    said = random.choice(say_what)
+    result = {"cow_said": cowsay.get_output_string("cow", said) if say_what is not None else None}
+    return result, state.update(**result)
+
+
+@action(reads=[], writes=["cow_should_speak"])
+def cow_should_speak(state: State) -> Tuple[dict, State]:
+    result = {"cow_should_speak": random.randint(0, 3) == 0}
+    return result, state.update(**result)
+
+
 def application(in_terminal: bool = False) -> Application:
     hooks = (
         [
@@ -76,21 +49,21 @@ def application(in_terminal: bool = False) -> Application:
     )
     return (
         ApplicationBuilder()
-        .with_state(
-            cow_said=None,
-        )
+        .with_state(cow_said=None)
         .with_actions(
-            say_nothing=CowSay([None]),
-            say_hello=CowSay(["Hello world!", "What's up?", "Are you Aaron Burr, sir?"]),
-            cow_should_say=CowShouldSay(),
+            say_nothing=cow_said.bind(say_what=None),
+            say_hello=cow_said.bind(
+                say_what=["Hello world!", "What's up?", "Are you Aaron Burr, sir?"]
+            ),
+            cow_should_speak=cow_should_speak,
         )
         .with_transitions(
-            ("cow_should_say", "say_hello", expr("cow_should_speak")),
-            ("say_hello", "cow_should_say", default),
-            ("cow_should_say", "say_nothing", expr("not cow_should_speak")),
-            ("say_nothing", "cow_should_say", default),
+            ("cow_should_speak", "say_hello", expr("cow_should_speak")),
+            ("say_hello", "cow_should_speak", default),
+            ("cow_should_speak", "say_nothing", expr("not cow_should_speak")),
+            ("say_nothing", "cow_should_speak", default),
         )
-        .with_entrypoint("cow_should_say")
+        .with_entrypoint("cow_should_speak")
         .with_hooks(*hooks)
         .build()
     )
@@ -100,4 +73,4 @@ if __name__ == "__main__":
     app = application(in_terminal=True)
     app.visualize(output_file_path="cowsay.png", include_conditions=True, view=True)
     while True:
-        state, result, action = app.step()
+        s, r, action = app.step()

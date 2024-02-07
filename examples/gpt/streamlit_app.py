@@ -11,7 +11,6 @@ from burr.integrations.streamlit import (
     set_slider_to_current,
     update_state,
 )
-from burr.lifecycle.default import SlowDownHook
 
 
 def render_chat_message(record: Record):
@@ -34,7 +33,7 @@ def render_chat_message(record: Record):
 def retrieve_state():
     if "burr_state" not in st.session_state:
         state = AppState.from_empty(
-            app=chatbot_application.application(use_hamilton=True, hooks=[SlowDownHook(0.0, 0)]),
+            app=chatbot_application.application(use_hamilton=False),
         )
     else:
         state = get_state()

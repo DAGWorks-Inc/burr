@@ -2,7 +2,8 @@ import abc
 import ast
 import copy
 import inspect
-from typing import Callable, List
+import types
+from typing import Any, Callable, List, Protocol, Tuple, TypeVar, Union
 
 from burr.core.state import State
 
@@ -163,3 +164,148 @@ class Result(Action):
     @property
     def writes(self) -> list[str]:
         return []
+
+
+class FunctionBasedAction(Action):
+    ACTION_FUNCTION = "action_function"
+
+    def __init__(
+        self,
+        fn: Callable[..., Tuple[dict, State]],
+        reads: List[str],
+        writes: List[str],
+        bound_params: dict = None,
+    ):
+        """Instantiates a function-based action with the given function, reads, and writes.
+        The function must take in a state and return a tuple of (result, new_state).
+
+        :param fn:
+        :param reads:
+        :param writes:
+        """
+        super(FunctionBasedAction, self).__init__()
+        self._fn = fn
+        self._reads = reads
+        self._writes = writes
+        self._state_created = None
+        self._bound_params = bound_params if bound_params is not None else {}
+
+    @property
+    def fn(self) -> Callable:
+        return self._fn
+
+    @property
+    def reads(self) -> list[str]:
+        return self._reads
+
+    def run(self, state: State) -> dict:
+        result, new_state = self._fn(state, **self._bound_params)
+        self._state_created = new_state
+        return result
+
+    @property
+    def writes(self) -> list[str]:
+        return self._writes
+
+    def update(self, result: dict, state: State) -> State:
+        if self._state_created is None:
+            raise ValueError(
+                "FunctionBasedAction.run must be called before FunctionBasedAction.update"
+            )
+        # TODO -- validate that all the keys are contained -- fix up subset to handle this
+        # TODO -- validate that we've (a) written only to the write ones (by diffing the read ones),
+        #  and (b) written to no more than the write ones
+        return self._state_created.subset(*self._writes)
+
+    def with_params(self, **kwargs: Any) -> "FunctionBasedAction":
+        """Binds parameters to the function.
+        Note that there is no reason to call this by the user. This *could*
+        be done at the class level, but given that API allows for constructor parameters
+        (which do the same thing in a cleaner way), it is best to keep it here for now.
+
+        :param kwargs:
+        :return:
+        """
+        new_action = copy.copy(self)
+        new_action._bound_params = {**self._bound_params, **kwargs}
+        return new_action
+
+
+def _validate_action_function(fn: Callable):
+    """Validates that an action has the signature: (state: State) -> Tuple[dict, State]
+
+    :param fn: Function to validate
+    """
+    sig = inspect.signature(fn)
+    params = sig.parameters
+    if list(params.keys())[0] != "state" or not list(params.values())[0].annotation == State:
+        raise ValueError(f"Function {fn} must take in a single argument: state with type: State")
+    other_params = list(params.keys())[1:]
+    for param in other_params:
+        param = params[param]
+        if param.kind not in {
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            inspect.Parameter.KEYWORD_ONLY,
+        }:
+            raise ValueError(
+                f"Function {fn} has an invalid parameter: {param}. "
+                f"All parameters must be position or keyword only,"
+                f"so that bind(**kwargs) can be applied."
+            )
+
+    if sig.return_annotation != Tuple[dict, State]:
+        raise ValueError(
+            f"Function {fn} must return a tuple of (result, new_state), "
+            f"not {sig.return_annotation}"
+        )
+
+
+C = TypeVar("C", bound=Callable)  # placeholder for any Callable
+
+
+class FunctionRepresentingAction(Protocol[C]):
+    action_function: FunctionBasedAction
+    __call__: C
+
+    def bind(self, **kwargs: Any):
+        ...
+
+
+def bind(self: FunctionRepresentingAction, **kwargs: Any) -> FunctionRepresentingAction:
+    self.action_function = self.action_function.with_params(**kwargs)
+    return self
+
+
+def action(reads: List[str], writes: List[str]) -> Callable[[Callable], FunctionRepresentingAction]:
+    """Decorator to create a function-based action. This is user-facing.
+    Note that, in the future, with typed state, we may not need this for
+    all cases.
+
+    :param reads: Items to read from the state
+    :param writes: Items to write to the state
+    :return: The decorator to assign the function as an action
+    """
+
+    def decorator(fn) -> FunctionRepresentingAction:
+        setattr(fn, FunctionBasedAction.ACTION_FUNCTION, FunctionBasedAction(fn, reads, writes))
+        setattr(fn, "bind", types.MethodType(bind, fn))
+        return fn
+
+    return decorator
+
+
+def create_action(action_: Union[Callable, Action], name: str) -> Action:
+    """Factory function to create an action. This is meant to be called by
+    the ApplicationBuilder, and not by the user. The internal API may change.
+
+    :param action_: Object to create an action from
+    :param name: The name to assign the action
+    :return: An action with the given name
+    """
+    if hasattr(action_, FunctionBasedAction.ACTION_FUNCTION):
+        action_ = getattr(action_, FunctionBasedAction.ACTION_FUNCTION)
+    elif not isinstance(action_, Action):
+        raise ValueError(
+            f"Object {action_} is not a valid action. Have you decorated it with @action?"
+        )
+    return action_.with_name(name)

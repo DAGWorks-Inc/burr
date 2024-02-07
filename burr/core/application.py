@@ -1,9 +1,20 @@
 import collections
 import dataclasses
 import logging
-from typing import Any, AsyncGenerator, Generator, List, Literal, Optional, Set, Tuple, Union
+from typing import (
+    Any,
+    AsyncGenerator,
+    Callable,
+    Generator,
+    List,
+    Literal,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 
-from burr.core.action import Action, Condition, Function, Reducer, default
+from burr.core.action import Action, Condition, Function, Reducer, create_action, default
 from burr.core.state import State
 from burr.lifecycle.base import LifecycleAdapter
 from burr.lifecycle.internal import LifecycleAdapterSet
@@ -66,7 +77,7 @@ def _run_reducer(reducer: Reducer, state: State, result: dict, name: str) -> Sta
     :return:
     """
     state_to_use = state.subset(*reducer.writes)
-    new_state = reducer.update(result, state_to_use)
+    new_state = reducer.update(result, state_to_use).subset(*reducer.writes)
     keys_in_new_state = set(new_state.keys())
     extra_keys = keys_in_new_state - set(reducer.writes)
     if extra_keys:
@@ -440,7 +451,7 @@ class ApplicationBuilder:
         self.start = action
         return self
 
-    def with_actions(self, **actions: Action) -> "ApplicationBuilder":
+    def with_actions(self, **actions: Union[Action, Callable]) -> "ApplicationBuilder":
         """Adds an action to the application. The actions are granted names (using the with_name)
         method post-adding, using the kw argument. Thus, this is the only supported way to add actions.
 
@@ -450,7 +461,7 @@ class ApplicationBuilder:
         if self.actions is None:
             self.actions = []
         for key, value in actions.items():
-            self.actions.append(value.with_name(key))
+            self.actions.append(create_action(value, key))
         return self
 
     def with_transitions(

@@ -3,13 +3,14 @@ from burr.core.application import Application, ApplicationBuilder
 from burr.core.state import State
 
 __all__ = [
+    "action",
     "Action",
+    "Application",
     "ApplicationBuilder",
     "Condition",
-    "Result",
     "default",
-    "when",
     "expr",
-    "Application",
+    "Result",
     "State",
+    "when",
 ]
