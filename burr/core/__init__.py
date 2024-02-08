@@ -1,4 +1,4 @@
-from burr.core.action import Action, Condition, Result, default, expr, when
+from burr.core.action import Action, Condition, Result, action, default, expr, when
 from burr.core.application import Application, ApplicationBuilder
 from burr.core.state import State
 

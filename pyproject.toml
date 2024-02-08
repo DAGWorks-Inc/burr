@@ -31,6 +31,10 @@ streamlit = [
   "streamlit"
 ]
 
+graphviz = [
+  "graphviz"
+]
+
 tests = [
   "pytest",
   "pytest-asyncio",

@@ -284,12 +284,26 @@ class Application:
 
     def visualize(
         self,
-        output_file_path: str,
+        output_file_path: Optional[str],
         include_conditions: bool = False,
         include_state: bool = False,
         view: bool = False,
-        **graphviz_kwargs: Any,
+        engine: Literal["graphviz"] = "graphviz",
+        **engine_kwargs: Any,
     ):
+        """Visualizes the application graph using graphviz. This will render the graph.
+
+        :param output_file_path: The path to save this to, None if you don't want to save. Do not pass an extension
+            for graphviz, instead pass `format` in `engine_kwargs` (e.g. `format="png"`)
+        :param include_conditions: Whether to include condition strings on the edges (this can get noisy)
+        :param include_state: Whether to indicate the action "signature" (reads/writes) on the nodes
+        :param view: Whether to bring up a view
+        :param engine: The engine to use -- only graphviz is supported for now
+        :param engine_kwargs: Additional kwargs to pass to the engine
+        :return: The graphviz object
+        """
+        if engine != "graphviz":
+            raise ValueError(f"Only graphviz is supported for now, not {engine}")
         try:
             import graphviz  # noqa: F401
         except ModuleNotFoundError:
@@ -306,7 +320,7 @@ class Application:
                 concentrate="false",
             ),
         )
-        for g_key, g_value in graphviz_kwargs.items():
+        for g_key, g_value in engine_kwargs.items():
             if isinstance(g_value, dict):
                 digraph_attr[g_key].update(**g_value)
             else:
