@@ -9,23 +9,45 @@ from burr.core.state import State
 
 
 class Function(abc.ABC):
+    """Interface to represent the 'computing' part of an action"""
+
     @property
     @abc.abstractmethod
     def reads(self) -> list[str]:
+        """Returns the keys from the state that this function reads
+
+        :return: A list of keys
+        """
         pass
 
     @abc.abstractmethod
     def run(self, state: State) -> dict:
-        pass
+        """Runs the function on the given state and returns the result.
+        The result is jsut a key/value dictionary.
 
-    def is_async(self):
+        :param state: State to run the function on
+        :return: Result of the function
+        """
+
+    def is_async(self) -> bool:
+        """Convenience method to check if the function is async or not.
+        This can be used by the application to run it.
+
+        :return: True if the function is async, False otherwise
+        """
         return inspect.iscoroutinefunction(self.run)
 
 
 class Reducer(abc.ABC):
+    """Interface to represent the 'updating' part of an action"""
+
     @property
     @abc.abstractmethod
     def writes(self) -> list[str]:
+        """Returns the keys from the state that this reducer writes
+
+        :return: A list of keys
+        """
         pass
 
     @abc.abstractmethod
@@ -35,15 +57,8 @@ class Reducer(abc.ABC):
 
 class Action(Function, Reducer, abc.ABC):
     def __init__(self):
-        """Represents an action in a state machine. This is the base class from which:
-
-        1. Custom actions
-        2. Conditions
-        3. Results
-
-        All extend this class. Note that name is optional so that APIs can set the
-        name on these actions as part of instantiation.
-        When they're used, they must have a name set.
+        """Represents an action in a state machine. This is the base class from which
+        actions extend. Note that this class needs to have a name set after the fact.
         """
         self._name = None
 
@@ -72,7 +87,7 @@ class Action(Function, Reducer, abc.ABC):
     @property
     def name(self) -> str:
         """Gives the name of this action. This should be unique
-        across your agent."""
+        across your application."""
         return self._name
 
     def __repr__(self):
@@ -85,13 +100,28 @@ class Condition(Function):
     KEY = "PROCEED"
 
     def __init__(self, keys: List[str], resolver: Callable[[State], bool], name: str = None):
+        """Base condition class. Chooses keys to read from the state and a resolver function.
+
+        :param keys: Keys to read from the state
+        :param resolver:  Function to resolve the condition to True or False
+        :param name: Name of the condition
+        """
         self._resolver = resolver
         self._keys = keys
         self._name = name
 
     @staticmethod
     def expr(expr: str) -> "Condition":
-        """Returns a condition that evaluates the given expression"""
+        """Returns a condition that evaluates the given expression. Expression must use
+        only state variables and Python operators. Do not trust that anything else will work.
+
+        Do not accept expressions generated from user-inputted text, this has the potential to be unsafe.
+
+        You can also refer to this as ``from burr.core import expr`` in the API.
+
+        :param expr: Expression to evaluate
+        :return: A condition that evaluates the given expression
+        """
         tree = ast.parse(expr, mode="eval")
 
         # Visitor class to collect variable names
@@ -124,7 +154,13 @@ class Condition(Function):
     @classmethod
     def when(cls, **kwargs):
         """Returns a condition that checks if the given keys are in the
-        state and equal to the given values."""
+        state and equal to the given values.
+
+        You can also refer to this as ``from burr.core import when`` in the API.
+
+        :param kwargs: Keyword arguments of keys and values to check -- will be an AND condition
+        :return: A condition that checks if the given keys are in the state and equal to the given values
+        """
         keys = list(kwargs.keys())
 
         def condition_func(state: State) -> bool:
@@ -136,18 +172,34 @@ class Condition(Function):
         name = f"{', '.join(f'{key}={value}' for key, value in sorted(kwargs.items()))}"
         return Condition(keys, condition_func, name=name)
 
+    @classmethod
+    @property
+    def default(self) -> "Condition":
+        """Returns a default condition that always resolves to True.
+        You can also refer to this as ``from burr.core import default`` in the API.
+
+        :return: A default condition that always resolves to True
+        """
+        return Condition([], lambda _: True, name="default")
+
     @property
     def name(self) -> str:
         return self._name
 
 
-default = Condition([], lambda _: True, name="default")
+default = Condition.default
 when = Condition.when
 expr = Condition.expr
 
 
 class Result(Action):
     def __init__(self, fields: list[str]):
+        """Represents a result action. This is purely a convenience class to
+        pull data from state and give it out to the result. It does nothing to
+        the state itself.
+
+        :param fields: Fields to pull from the state
+        """
         super(Result, self).__init__()
         self._fields = fields
 
@@ -272,6 +324,22 @@ class FunctionRepresentingAction(Protocol[C]):
 
 
 def bind(self: FunctionRepresentingAction, **kwargs: Any) -> FunctionRepresentingAction:
+    """Binds an action to the given parameters. This is functionally equivalent to
+    functools.partial, but is more explicit and is meant to be used in the API. This only works with
+    the functional API for ``@action`` and not with the class-based API.
+
+    .. code-block:: python
+
+        @action(["x"], ["y"])
+        def my_action(state: State, z: int) -> Tuple[dict, State]:
+            return {"y": state.get("x") + z}, state
+
+        my_action.bind(z=2)
+
+    :param self: The decorated function
+    :param kwargs: The keyword arguments to bind
+    :return: The decorated function with the given parameters bound
+    """
     self.action_function = self.action_function.with_params(**kwargs)
     return self
 

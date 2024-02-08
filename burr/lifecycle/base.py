@@ -10,20 +10,38 @@ from burr.lifecycle.internal import lifecycle
 
 @lifecycle.base_hook("pre_run_step")
 class PreRunStepHook(abc.ABC):
+    """Hook that runs before a step is executed"""
+
     @abc.abstractmethod
     def pre_run_step(self, *, state: "State", action: "Action", **future_kwargs: Any):
+        """Run before a step is executed.
+
+        :param state: State prior to step execution
+        :param action: Action to be executed
+        :param future_kwargs: Future keyword arguments
+        """
         pass
 
 
 @lifecycle.base_hook("pre_run_step")
 class PreRunStepHookAsync(abc.ABC):
+    """Async hook that runs before a step is executed"""
+
     @abc.abstractmethod
     async def pre_run_step(self, *, state: "State", action: "Action", **future_kwargs: Any):
+        """Async run before a step is executed.
+
+        :param state: State prior to step execution
+        :param action: Action to be executed
+        :param future_kwargs: Future keyword arguments
+        """
         pass
 
 
 @lifecycle.base_hook("post_run_step")
 class PostRunStepHook(abc.ABC):
+    """Hook that runs after a step is executed"""
+
     @abc.abstractmethod
     def post_run_step(
         self,
@@ -34,11 +52,21 @@ class PostRunStepHook(abc.ABC):
         exception: Exception,
         **future_kwargs: Any,
     ):
+        """Run after a step is executed.
+
+        :param state: State after step execution
+        :param action: Action that was executed
+        :param result: Result of the action
+        :param exception: Exception that was raised
+        :param future_kwargs: Future keyword arguments
+        """
         pass
 
 
 @lifecycle.base_hook("post_run_step")
 class PostRunStepHookAsync(abc.ABC):
+    """Async hook that runs after a step is executed"""
+
     @abc.abstractmethod
     async def post_run_step(
         self,
@@ -49,6 +77,14 @@ class PostRunStepHookAsync(abc.ABC):
         exception: Exception,
         **future_kwargs: Any,
     ):
+        """Async run after a step is executed
+
+        :param state: State after step execution
+        :param action: Action that was executed
+        :param result: Result of the action
+        :param exception: Exception that was raised
+        :param future_kwargs: Future keyword arguments
+        """
         pass
 
 

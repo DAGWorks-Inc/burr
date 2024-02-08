@@ -208,6 +208,7 @@ class Hamilton(Action):
         return [source.key for source in self._outputs.values()]
 
     def visualize_step(self, **kwargs):
+        """Visualizes execution for a Hamilton step"""
         dr = self._driver
         inputs = {key: ... for key in self._inputs}
         overrides = inputs

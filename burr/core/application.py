@@ -112,7 +112,7 @@ class Application:
 
         Use this if you just want to do something with the state and not rely on generators.
         E.G. press forward/backwards, hnuman in the loop, etc... Odds are this is not
-         the method you want -- you'll want iterate() (if you want to see the state/
+        the method you want -- you'll want iterate() (if you want to see the state/
         results along the way), or run() (if you just want the final state/results).
 
         :return: Tuple[Function, dict, State] -- the function that was just ran, the result of running it, and the new state
@@ -439,13 +439,13 @@ def _validate_actions(actions: Optional[List[Action]]):
         raise ValueError("Must have at least one action in the application!")
 
 
-@dataclasses.dataclass
 class ApplicationBuilder:
-    state: State = dataclasses.field(default_factory=State)
-    transitions: List[Tuple[str, str, Condition]] = None
-    actions: List[Action] = None
-    start: str = None
-    lifecycle_adapters: List[LifecycleAdapter] = dataclasses.field(default_factory=list)
+    def __init__(self):
+        self.state: State = State()
+        self.transitions: Optional[List[Tuple[str, str, Condition]]] = None
+        self.actions: Optional[List[Action]] = None
+        self.start: Optional[str] = None
+        self.lifecycle_adapters: List[LifecycleAdapter] = list()
 
     def with_state(self, **kwargs) -> "ApplicationBuilder":
         if self.state is not None:

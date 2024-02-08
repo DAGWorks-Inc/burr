@@ -40,6 +40,15 @@ tests = [
   "pytest-asyncio",
 ]
 
+documentation = [
+  "sphinx",
+  "sphinx-autobuild",
+  "myst-parser",
+  "furo",
+  "sphinx-sitemap",
+  "sphinx-toolbox"
+]
+
 [tool.poetry.packages]
 include = [
     { include = "burr", from = "." },

@@ -19,14 +19,6 @@ Let us take a look at of how one might design a gpt-like chatbot. It:
 6. If this succeeds, we present the response to the user
 7. Await a new prompt, GOTO (1)
 
-Simple, right? Until you start tracking how state flows through:
-- The prompt is referenced by multiple future steps
-- The chat history is referred to at multiple points, and appended to (at (1) and (5))
-- The decision on mode is opaque, and referred to both by (4), to know what model to query and by (6) to know how to render the response
-- You will likely want to add more capabilities, more retries, etc...
-
-Chatbots, while simple at first glance, turn into something of a beast when you want to bring them to production and understand exactly *why*
-they make the decisions they do.
 
 We can model this as a _State Machine_, using the following two concepts:
 1. `Actions` -- a function that has two jobs. These form Nodes.
@@ -35,6 +27,17 @@ We can model this as a _State Machine_, using the following two concepts:
 2. `Transitions` -- A pair of actions with a transition between them
 
 The set of these together form what we will call a `Application` (effectively) a graph.
+
+Why do we need all this abstraction?
+
+This is all simple until you start tracking how state flows through:
+- The prompt is referenced by multiple future steps
+- The chat history is referred to at multiple points, and appended to (at (1) and (5))
+- The decision on mode is opaque, and referred to both by (4), to know what model to query and by (6) to know how to render the response
+- You will likely want to add more capabilities, more retries, etc...
+
+Chatbots, while simple at first glance, turn into something of a beast when you want to bring them to production and understand exactly *why*
+they make the decisions they do.
 
 For those into the CS details, this is reverse to how a state machine is usually represented
 (edges are normally actions and nodes are normally state). We've found this the easiest way to

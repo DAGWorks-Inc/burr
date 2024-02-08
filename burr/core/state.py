@@ -127,7 +127,7 @@ class State(Mapping):
     2. Pulling/pushing to external places
     3. Simultaneous writes/reads in the case of parallelism
     4. Schema enforcement -- how to specify/manage? Should this be a
-        dataclass when implemented?
+    dataclass when implemented?
     """
 
     def __init__(self, initial_values: Dict[str, Any] = None):
