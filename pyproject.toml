@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "burr"
+version = "0.1.0"
+dependencies = [
+    "sf-hamilton>=1.47.0"
+]
+requires-python = ">=3.9"
+authors = [
+  {name = "Elijah ben Izzy", email = "elijah@dagworks.io"},
+  {name = "Stefan Krawczyk", email = "stefan@dagworks.io"},
+]
+maintainers = [
+  {name = "Elijah ben Izzy", email = "elijah@dagworks.io"},
+  {name = "Stefan Krawczyk", email = "stefan@dagworks.io"},
+]
+description = "A state machine for data projects"
+readme = "README.md"
+#license = {file = "LICENSE.txt"}
+keywords = ["mlops", "data", "state-machine", "llmops"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python"
+]
+
+[project.optional-dependencies]
+streamlit = [
+  "streamlit",
+  "graphviz",
+  "matplotlib"
+]
+
+graphviz = [
+  "graphviz"
+]
+
+tests = [
+  "pytest",
+  "pytest-asyncio",
+]
+
+documentation = [
+  "sphinx",
+  "sphinx-autobuild",
+  "myst-parser",
+  "furo",
+  "sphinx-sitemap",
+  "sphinx-toolbox"
+]
+
+[tool.poetry.packages]
+py_modules = ["burr"]
+
+[project.urls]
+Homepage = "https://github.com/dagworks-inc/burr"
+Documentation = "https://github.com/dagworks-inc/burr"
+Repository = "https://github.com/dagworks-inc/burr"
+"Bug Tracker" = "https://github.com/dagworks-inc/burr"
