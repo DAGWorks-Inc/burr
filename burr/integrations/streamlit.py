@@ -55,9 +55,11 @@ class AppState:
         return out
 
     @property
-    def next_action(self) -> str:
+    def next_action(self) -> Optional[str]:
         if self.display_index < len(self.history) - 1:
             return self.history[self.display_index + 1].action
+        if self.app.get_next_action() is None:
+            return None
         return self.app.get_next_action().name  # return the future one
 
     @property
@@ -122,9 +124,11 @@ def _modify_state_machine_digraph(
         lightened_color = colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
         return mc.to_hex(lightened_color)
 
+    seen = {current_node}
     digraph.node(current_node, fillcolor="darkgreen", style="rounded,filled", fontcolor="white")
-    digraph.node(next_node, fillcolor="blue", style="rounded,filled", fontcolor="white")
-    seen = {current_node, next_node}
+    if next_node is not None:
+        digraph.node(next_node, fillcolor="blue", style="rounded,filled", fontcolor="white")
+        seen.add(next_node)
     base_color = "lightblue"
     for i, node in enumerate(prior_nodes):
         if node not in seen:
@@ -272,7 +276,7 @@ def render_explorer(app_state: AppState):
         # TODO -- consider a callback here instead
         app_state.display_index = current_node_index
 
-    with placeholder.container(height=800):
+    with placeholder.container(height=900):
         state_machine_view, step_view, data_view = st.tabs(
             ["Application", "Action", "State/Results"]
         )

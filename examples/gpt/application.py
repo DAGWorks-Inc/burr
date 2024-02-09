@@ -263,7 +263,4 @@ def application(use_hamilton: bool, hooks: List[LifecycleAdapter] = []) -> Appli
 
 if __name__ == "__main__":
     app = application(use_hamilton=False)
-    # state, result = app.run(until=["result"])
-    app.visualize(output_file_path="gpt", include_conditions=False, view=True, format="png")
-    # assert state["counter"] == 10
-    # print(state["counter"])
+    app.visualize(output_file_path="digraph", include_conditions=False, view=True, format="png")

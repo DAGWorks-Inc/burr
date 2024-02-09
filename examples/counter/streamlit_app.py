@@ -1,4 +1,4 @@
-import counter
+import application as counter
 import streamlit as st
 
 from burr.integrations.streamlit import (
@@ -36,16 +36,28 @@ def retrieve_state():
 
 def main():
     st.set_page_config(layout="wide")
-    st.title("Counting numbers with Burr")
-    app_state = retrieve_state()  # retrieve first so we can use for the ret of the step
-    columns = st.columns(2)
-    with columns[0]:
+    sidebar = st.sidebar
+    with sidebar:
+        st.markdown(
+            """
+            <style>
+                section[data-testid="stSidebar"] {
+                    width: 400px !important; # Set the width to your desired value
+                }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.title("Counting numbers with Burr")
         st.write(
             "This is a simple counter app. It counts to 10, then loops back to 0. You can reset it at any time. "
             "While we know that this is easy to do with a simple loop + streamlit, it highlights the state that Burr manages."
             "Use the slider to rewind/see what happened in the past, and the visualizations to understand how we navigate "
             "through the state machine!"
         )
+    app_state = retrieve_state()  # retrieve first so we can use for the ret of the step
+    columns = st.columns(2)
+    with columns[0]:
         counter_view(app_state)
         with st.container(height=800):
             md_lines = []

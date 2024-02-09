@@ -31,6 +31,6 @@ def application(count_up_to: int = 10, log_file: str = None):
 if __name__ == "__main__":
     app = application(log_file="counter.jsonl")
     state, result = app.run(until=["result"])
-    app.visualize(output_file_path="counter.png", include_conditions=True, view=True)
+    app.visualize(output_file_path="digraph", include_conditions=True, view=True, format="png")
     assert state["counter"] == 10
     print(state["counter"])
