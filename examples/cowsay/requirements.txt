@@ -1,2 +1,2 @@
+burr[streamlit,graphviz]
 cowsay
-dw-burr[streamlit]

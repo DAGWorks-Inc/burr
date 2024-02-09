@@ -1,3 +1,4 @@
+import colorsys
 import dataclasses
 import inspect
 import json
@@ -9,15 +10,13 @@ from burr.integrations.base import require_plugin
 from burr.integrations.hamilton import Hamilton, StateSource
 
 try:
-    import colorsys
-
     import graphviz
     import matplotlib.colors as mc
     import streamlit as st
 except ImportError as e:
     require_plugin(
         e,
-        ["streamlit", "graphviz", "colorsys", "matplotlib"],
+        ["streamlit", "graphviz", "matplotlib"],
         "streamlit",
     )
 

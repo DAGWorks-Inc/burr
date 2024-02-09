@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "burr"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
     "sf-hamilton>=1.47.0"
 ]
@@ -28,7 +28,9 @@ classifiers = [
 
 [project.optional-dependencies]
 streamlit = [
-  "streamlit"
+  "streamlit",
+  "graphviz",
+  "matplotlib"
 ]
 
 graphviz = [
@@ -50,10 +52,7 @@ documentation = [
 ]
 
 [tool.poetry.packages]
-include = [
-    { include = "burr", from = "." },
-]
-
+py_modules = ["burr"]
 
 [project.urls]
 Homepage = "https://github.com/dagworks-inc/burr"

@@ -59,7 +59,7 @@ Next, let's put together our application. To do this, we'll use an ``Application
     )
 
 
-We can visualize the application (note you need ``burr[visualization]`` installed):
+We can visualize the application (note you need ``burr[graphviz]`` installed):
 
 .. code-block:: python
 
