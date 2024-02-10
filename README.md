@@ -6,6 +6,7 @@ Burr is a state machine for data/AI projects. You can (and should!) use it for a
 is always hard!
 
 You can find the documentation [here](https://studious-spork-n8kznlw.pages.github.io/).
+
 ## What can you do with Burr?
 
 Burr can be used for a variety of applications. Burr can build a state machine to orchestrate, express, and track:
@@ -20,8 +21,10 @@ Using hooks and other integrations you can (a) integrate with any of your favori
 (b) build custom actions that delegate to your favorite libraries.
 
 Bur will *not* tell you how to build your models, how to query APIs, or how to manage your data. It will help you tie all these together
-in a way that scales with your needs and makes following the logic of your system easy.
+in a way that scales with your needs and makes following the logic of your system easy. Burr comes out of the box with a host of integrations
+including tooling to build a UI in streamlit and watch your state machine execute.
 
+![Burr at work](./chatbot.gif)
 
 ## Why the name Burr?
 
@@ -29,6 +32,7 @@ Burr is named after Aaron Burr, founding father, third VP of the United States, 
 We imagine a world in which Burr and Hamilton lived in harmony and saw through their differences. We originally
 built Burr as a _harness_ to handle state between executions of Hamilton DAGs,
 but realized that it has a wide array of applications and decided to release it.
+
 
 # Getting Started
 
