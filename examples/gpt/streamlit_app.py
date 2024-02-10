@@ -79,7 +79,7 @@ def main():
             "...", disabled=st.session_state.get("running", False), key="chat_input"
         )
         should_rerun = chatbot_step(app_state, prompt)
-        with st.container(height=800):
+        with st.container(height=850):
             for item in app_state.history:
                 render_chat_message(item)
     with columns[1]:
