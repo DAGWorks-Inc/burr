@@ -47,6 +47,7 @@ State Management/Immutability
 -----------------------------
 
 We plan the ability to manage state in a few ways:
+
 1. ``commit`` -- an internal tool to commit/compile a series of changes so that we have the latest state evaluated
 2. ``persist`` -- a user-facing API to persist state to a database. This will be pluggable by the user, and we will have a few built-in options (e.g. a simple in-memory store, a file store, a database store, etc...)
 3. ``hydrate`` -- a static method to hydrate state from a database. This will be pluggable by the user, and we will have a few built-in options that mirror those in ``persist`` options.
