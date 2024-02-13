@@ -4,7 +4,8 @@ Transitions
 
 .. _transitions:
 
-Transitions move between actions. You can think of them as edges in a graph.
+Transitions define explicitly how actions are connected and which action is available next for any given state.
+You can think of them as edges in a graph.
 
 They have three main components:
 - The ``from`` state
@@ -32,4 +33,4 @@ when determining which action to run next.
 
 Note that if no condition evaluates to ``True``, the application execution will stop early.
 
-See the :ref: `transitions docs <transitionref>` for more information on the transition API.
+See the :ref:`transition docs <transitionref>` for more information on the transition API.

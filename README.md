@@ -5,7 +5,7 @@
 Burr is a state machine for data/AI projects. You can (and should!) use it for anything where managing state can be hard. Hint: managing state
 is always hard!
 
-You can find the documentation [here](https://studious-spork-n8kznlw.pages.github.io/).
+Link to [documentation](https://studious-spork-n8kznlw.pages.github.io/).
 
 ## What can you do with Burr?
 

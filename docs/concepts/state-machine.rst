@@ -41,6 +41,7 @@ There are three APIs for executing an application.
 ------------------
 
 Returns the tuple of the action, the result of that action, and the new state. Call this if you want to run the application step-by-step.
+
 .. code-block:: python
 
     action, result, state = application.step()
