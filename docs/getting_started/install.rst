@@ -2,8 +2,7 @@
 Installing
 ==========
 
-Burr requires almost no dependencies. Every "extra"/"plugin" is an additional install target. Note, if you're using ``zsh``,
-you'll need to add quotes around the install target, like `pip install "burr[graphviz]"`.
+Burr requires almost no dependencies. Every "extra"/"plugin" is an additional install target.
 
 .. code-block:: bash
 
@@ -22,3 +21,5 @@ And to visualize your state machines on streamlit, you can install the `burr[str
     pip install burr[streamlit]
 
 Don't worry, you can always install these extras later if you need them.
+
+Note, if you're using ``zsh``, you'll need to add quotes around the install target, like `pip install "burr[graphviz]"`.

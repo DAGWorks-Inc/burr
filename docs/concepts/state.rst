@@ -20,7 +20,7 @@ interface, but there are a few extra:
 .. code-block:: python
 
     state.subset(["foo", "bar"])  # return a new state with only the keys "foo" and "bar"
-    state.get_all()  # return a dictionary of all the state
+    state.get_all()  # return a dictionary with every key/value of the state
 
 When an update action is run, the state is first subsetted to get just the keys that are being read from,
 then the action is run, and a new state is written to. This state is merged back into the original state

@@ -11,21 +11,23 @@ asynchronous context (and thus require one of the async application functions).
 
 Actions have two primary responsibilities:
 
-1. Compute a result from the state
-2. Update the state with the result
+1. ``run`` -- compute a result
+2. ``update`` -- modify the state
 
-We call (1) a ``Function`` and (2) a ``Reducer`` (similar to Redux). The ``run`` method is the function and the ``update``
-method is the reducer. The `run` method should return a dictionary of the result and the ``update`` method should return
+The ``run`` method should return a dictionary of the result and the ``update`` method should return
 the updated state. They declare their dependencies so the framework knows *which* state variables they read and write. This allows the
-framework to optimize the execution of the workflow.
+framework to optimize the execution of the workflow. We call (1) a ``Function`` and (2) a ``Reducer`` (similar to `Redux <https://redux.js.org/>`_, if you're familiar with frontend UI technology).
 
-In the case of a function-based action, the function returns both at the same time.
+There are two APIs for defining actions: class-based and function-based. They are largely equivalent, but differ in use.
+
+- use the function-based API when you want to write something quick and terse that reads from a fixed set of state variables
+- use the class-based API when you want to leverage inheritance or parameterize the action in more powerful ways
 
 -------------------
 Class-based actions
 -------------------
 
-You can define an action by implementing the `Action` class:
+You can define an action by implementing the ``Action`` class:
 
 .. code-block:: python
 
@@ -89,6 +91,8 @@ Function-based actions can take in parameters which are akin to passing in const
     )...
 
 This is the same as ``functools.partial``, but it is more explicit and easier to read.
+
+Note that these combine the `reduce` and `run` methods into a single function, and they're both returned at the same time.
 
 ----------------------
 Results

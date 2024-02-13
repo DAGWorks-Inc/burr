@@ -11,15 +11,15 @@ Why do you need a state machine for your applications? Won't the normal programm
 Yes, until a point. Let's look at a chatbot as an example. Here's a simple design of something gpt-like:
 
 #. Accept a prompt from the user
-#. Does some simple checks/validations on that prompt (is it safe/within the terms of service)
-#. If (2) it then decides the mode to which to respond to that prompt from a set of capabilities. Else respond accordingly:
+#. Perform some simple checks/validations on that prompt (is it safe/within the terms of service)
+#. If (2) then decide the mode to which to respond to that prompt from a set of capabilities. Else responds accordingly:
      *  Generate an image
      *  Answer a question
      *  Write some code
      *  ...
-#. It then queries the appropriate model with the prompt, formatted as expected
-#. If this fails, we present an error message
-#. If this succeeds, we present the response to the user
+#. Query the appropriate model with the prompt, formatted as expected
+    * On failure, present an error message
+    * On success, present the response to the user
 #. Await a new prompt, GOTO (1)
 
 Visually, we might have an implementation/spec that looks like this:
@@ -29,7 +29,9 @@ Visually, we might have an implementation/spec that looks like this:
 
 
 While this involves multiple API calls, error-handling, etc... it is definitely possible to get a prototype
-that looks slick out without too much abstraction. Let's get this to production, however. We need to:
+that looks slick out without too much abstraction.
+
+Now, let's get this to production. We need to:
 
 #. Add monitoring to figure out if/why any of our API calls return strange results
 #. Understand the decisions made by the application -- E.G. why it chose certain modes, why it formatted a response correctly. This involves:

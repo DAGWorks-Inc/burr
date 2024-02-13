@@ -4,14 +4,16 @@ Hooks
 
 .. _hooks:
 
-Burr has a system of lifecycle adapters (adapted from [Hamilton's](https://github.com/dagworks-inc/hamilton) similar concept, which allow you to run tooling before and after
-various places in a node's execution. For instance, you could (many of these are yet to be implemented):
+Burr has a system of lifecycle adapters (adapted from the similar `Hamilton <https://github.com/dagworks-inc/hamilton>`_ concept), which allow you to run tooling before and after
+various places in a node's execution. For instance, you could:
 
 1. Log every step as a trace in datadog
 2. Add a time-delay to your steps to allow for rendering
 3. Add a print statement to every step to see what happened (E.G. implement the printline in cowsay above)
 4. Synchronize state/updates to an external database
 5. Put results on a queue to feed to some monitoring system
+
+Note some of the above are yet to be implemented.
 
 To implement hooks, you subclass any number of the :ref:`available lifecycle hooks <hooksref>`.
 These have synchronous and asynchronous versions, and your hook can subclass as many as you want
