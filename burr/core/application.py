@@ -129,7 +129,7 @@ def _format_error_message(action: Action, input_state: State) -> str:
     input_string = _create_dict_string(input_state.get_all())
     message += "\n> State (at time of action):\n" + input_string
     border = "*" * 80
-    logger.exception("\n" + border + "\n" + message + "\n" + border)
+    return "\n" + border + "\n" + message + "\n" + border
 
 
 def _run_single_step_action(action: SingleStepAction, state: State) -> Tuple[dict, State]:
