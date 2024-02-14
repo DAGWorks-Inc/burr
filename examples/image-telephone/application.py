@@ -5,6 +5,7 @@ from burr.core.action import action
 from burr.integrations import hamilton
 from burr.lifecycle import PostRunStepHook
 
+
 from hamilton import dataflows, driver
 
 caption_images = dataflows.import_module("caption_images", "elijahbenizzy")
@@ -25,29 +26,39 @@ generate_image_driver = (
     .build()
 )
 
-# procedural way to do this
-@action(reads=["image_location"], writes=["image_caption"])
-def image_caption(state: State) -> Tuple[dict, State]:
-    result = caption_image_driver.execute([
-        "generated_caption"
-    ], inputs={"image_url": state["image_location"]})
-    updates = {
-        "image_caption": result["generated_caption"],
-    }
-    return result, state.update(**updates)
+
+class PrintStepHook(PostRunStepHook):
+    def post_run_step(self, *, state: "State", action: "Action", **future_kwargs):
+        print("action=====\n", action)
+        print("state======\n", state)
+
+
 
 # procedural way to do this
-@action(reads=["image_caption", "iteration"],
-        writes=["image_location", "iteration"])
+@action(reads=["current_image_location", "image_location_history"],
+        writes=["current_image_caption", "image_location_history"])
+def image_caption(state: State) -> Tuple[dict, State]:
+    current_image = state["current_image_location"]
+    result = caption_image_driver.execute([
+        "generated_caption"
+    ], inputs={"image_url": current_image})
+    updates = {
+        "current_image_caption": result["generated_caption"],
+    }
+    return result, state.update(**updates).append(image_location_history=current_image)
+
+# procedural way to do this
+@action(reads=["current_image_caption", "image_caption_history"],
+        writes=["current_image_location", "image_caption_history"])
 def image_generation(state: State) -> Tuple[dict, State]:
+    current_caption = state["current_image_caption"]
     result = generate_image_driver.execute([
         "generated_image"
-    ], inputs={"image_generation_prompt": state["image_caption"]})
+    ], inputs={"image_generation_prompt": current_caption})
     updates = {
-        "iteration": state["iteration"] + 1,
-        "image_location": result["generated_image"],
+        "current_image_location": result["generated_image"],
     }
-    return result, state.update(**updates)
+    return result, state.update(**updates).append(image_caption_history=current_caption)
 
 @action(reads=[], writes=[])
 def terminal_step(state: State) -> Tuple[dict, State]:
@@ -55,24 +66,59 @@ def terminal_step(state: State) -> Tuple[dict, State]:
     return {}, state
 
 
+def regular_action_main():
+    """This shows how one might define functions to be nodes."""
+    app = (
+        ApplicationBuilder()
+        .with_state(
+            current_image_location="telephone_graph.png",
+            current_image_caption="",
+            image_location_history=[],
+            image_caption_history=[],
+        )
+        .with_actions(
+            caption=image_caption,
+            image=image_generation,
+            terminal=terminal_step,
+        )
+        .with_transitions(
+            ("caption", "image", default),
+            ("image", "terminal", expr("len(image_caption_history) == 2")),
+            ("image", "caption", default),
+        )
+        .with_entrypoint("caption")
+        .with_hooks(PrintStepHook())
+        .build()
+    )
+    return app
 
-def main():
+
+def hamilton_action_main():
+    """This shows how to use the Hamilton syntactic wrapper for the nodes."""
+
     _caption = hamilton.Hamilton(
-        inputs={"image_url": hamilton.from_state("image_location")},
-        outputs={"generated_caption": hamilton.update_state("image_caption")},
+        inputs={"image_url": hamilton.from_state("current_image_location")},
+        outputs={
+            "generated_caption": hamilton.update_state("current_image_caption"),
+            "image_url": hamilton.append_state("image_location_history"),
+        },
         driver=caption_image_driver,
     )
     _image = hamilton.Hamilton(
-        inputs={"image_generation_prompt": hamilton.from_state("image_caption")},
-        outputs={"generated_image": hamilton.update_state("image_location")},
+        inputs={"image_generation_prompt": hamilton.from_state("current_image_caption")},
+        outputs={
+            "generated_image": hamilton.update_state("current_image_location"),
+            "image_generation_prompt": hamilton.append_state("image_caption_history"),
+        },
         driver=generate_image_driver,
     )
     app = (
         ApplicationBuilder()
         .with_state(
-            iteration=0,
-            image_location="telephone_graph.png",
-            image_caption=""
+            current_image_location="telephone_graph.png",
+            current_image_caption="",
+            image_location_history=[],
+            image_caption_history=[],
         )
         # .with_actions(
         #     caption=image_caption,
@@ -86,23 +132,26 @@ def main():
         )
         .with_transitions(
             ("caption", "image", default),
-            ("image", "terminal", expr("iteration == 2")),
+            ("image", "terminal", expr("len(image_caption_history) == 2")),
             ("image", "caption", default),
         )
         .with_entrypoint("caption")
+        .with_hooks(PrintStepHook())
         .build()
     )
     return app
 
 
 if __name__ == "__main__":
-    app = main()
+    app = hamilton_action_main()
+    # app = regular_action_main()
     app.visualize(output_file_path="telephone_graph",
                   include_conditions=True, view=True, format="png")
-    while True:
-        action, result, state  = app.step()
-        print("action=====\n", action)
-        print("result=====\n", result)
-        print("state======\n", state)
-        if action.name == "terminal":
-            break
+    app.run(until=["terminal"])
+    # while True:
+    #     action, result, state  = app.step()
+    #     print("action=====\n", action)
+    #     print("result=====\n", result)
+    #     print("state======\n", state)
+    #     if action.name == "terminal":
+    #         break
