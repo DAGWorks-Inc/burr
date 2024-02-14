@@ -73,4 +73,4 @@ if __name__ == "__main__":
     app = application(in_terminal=True)
     app.visualize(output_file_path="digraph", include_conditions=True, view=True, format="png")
     while True:
-        action, result, state  = app.step()
+        action, result, state = app.step()
