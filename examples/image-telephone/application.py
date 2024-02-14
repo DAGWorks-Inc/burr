@@ -1,11 +1,9 @@
 from typing import Tuple
 
-from burr.core import Action, Application, ApplicationBuilder, State, default, expr
+from burr.core import Action, ApplicationBuilder, State, default, expr
 from burr.core.action import action
 from burr.integrations import hamilton
 from burr.lifecycle import PostRunStepHook
-
-
 from hamilton import dataflows, driver
 
 caption_images = dataflows.import_module("caption_images", "elijahbenizzy")
@@ -33,32 +31,37 @@ class PrintStepHook(PostRunStepHook):
         print("state======\n", state)
 
 
-
 # procedural way to do this
-@action(reads=["current_image_location", "image_location_history"],
-        writes=["current_image_caption", "image_location_history"])
+@action(
+    reads=["current_image_location", "image_location_history"],
+    writes=["current_image_caption", "image_location_history"],
+)
 def image_caption(state: State) -> Tuple[dict, State]:
     current_image = state["current_image_location"]
-    result = caption_image_driver.execute([
-        "generated_caption"
-    ], inputs={"image_url": current_image})
+    result = caption_image_driver.execute(
+        ["generated_caption"], inputs={"image_url": current_image}
+    )
     updates = {
         "current_image_caption": result["generated_caption"],
     }
     return result, state.update(**updates).append(image_location_history=current_image)
 
+
 # procedural way to do this
-@action(reads=["current_image_caption", "image_caption_history"],
-        writes=["current_image_location", "image_caption_history"])
+@action(
+    reads=["current_image_caption", "image_caption_history"],
+    writes=["current_image_location", "image_caption_history"],
+)
 def image_generation(state: State) -> Tuple[dict, State]:
     current_caption = state["current_image_caption"]
-    result = generate_image_driver.execute([
-        "generated_image"
-    ], inputs={"image_generation_prompt": current_caption})
+    result = generate_image_driver.execute(
+        ["generated_image"], inputs={"image_generation_prompt": current_caption}
+    )
     updates = {
         "current_image_location": result["generated_image"],
     }
     return result, state.update(**updates).append(image_caption_history=current_caption)
+
 
 @action(reads=[], writes=[])
 def terminal_step(state: State) -> Tuple[dict, State]:
@@ -145,8 +148,9 @@ def hamilton_action_main():
 if __name__ == "__main__":
     app = hamilton_action_main()
     # app = regular_action_main()
-    app.visualize(output_file_path="telephone_graph",
-                  include_conditions=True, view=True, format="png")
+    app.visualize(
+        output_file_path="telephone_graph", include_conditions=True, view=True, format="png"
+    )
     app.run(until=["terminal"])
     # while True:
     #     action, result, state  = app.step()
