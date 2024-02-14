@@ -1,18 +1,20 @@
 import asyncio
 import logging
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Tuple
 
 import pytest
 
 from burr.core import State
-from burr.core.action import Action, Condition, Result, default
+from burr.core.action import Action, Condition, Result, SingleStepAction, default
 from burr.core.application import (
     Application,
     ApplicationBuilder,
     Transition,
     _arun_function,
+    _arun_single_step_action,
     _assert_set,
     _run_function,
+    _run_single_step_action,
     _validate_actions,
     _validate_start,
     _validate_transitions,
@@ -110,7 +112,7 @@ base_broken_action_async = PassedInActionAsync(
 )
 
 
-def test_run_function():
+def test__run_function():
     """Tests that we can run a function"""
     action = base_counter_action
     state = State({})
@@ -118,7 +120,7 @@ def test_run_function():
     assert result == {"counter": 1}
 
 
-def test_run_function_cant_run_async():
+def test__run_function_cant_run_async():
     """Tests that we can't run an async function"""
     action = base_counter_action_async
     state = State({})
@@ -126,12 +128,66 @@ def test_run_function_cant_run_async():
         _run_function(action, state)
 
 
-async def test_a_run_function():
+async def test__a_run_function():
     """Tests that we can run an async function"""
     action = base_counter_action_async
     state = State({})
     result = await _arun_function(action, state)
     assert result == {"counter": 1}
+
+
+class SingleStepCounter(SingleStepAction):
+    def run_and_update(self, state: State) -> Tuple[dict, State]:
+        result = {"count": state["count"] + 1}
+        return result, state.update(**result).append(tracker=result["count"])
+
+    @property
+    def reads(self) -> list[str]:
+        return ["count"]
+
+    @property
+    def writes(self) -> list[str]:
+        return ["count", "tracker"]
+
+
+class SingleStepCounterAsync(SingleStepCounter):
+    async def run_and_update(self, state: State) -> Tuple[dict, State]:
+        await asyncio.sleep(0.0001)  # just so we can make this *truly* async
+        return super(SingleStepCounterAsync, self).run_and_update(state)
+
+    @property
+    def reads(self) -> list[str]:
+        return ["count"]
+
+    @property
+    def writes(self) -> list[str]:
+        return ["count", "tracker"]
+
+
+base_single_step_counter = SingleStepCounter()
+base_single_step_counter_async = SingleStepCounterAsync()
+
+
+def test__run_single_step_action():
+    action = base_single_step_counter.with_name("counter")
+    state = State({"count": 0, "tracker": []})
+    result, state = _run_single_step_action(action, state)
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+    result, state = _run_single_step_action(action, state)
+    assert result == {"count": 2}
+    assert state.subset("count", "tracker").get_all() == {"count": 2, "tracker": [1, 2]}
+
+
+async def test__arun_single_step_action():
+    action = base_single_step_counter_async.with_name("counter")
+    state = State({"count": 0, "tracker": []})
+    result, state = await _arun_single_step_action(action, state)
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+    result, state = await _arun_single_step_action(action, state)
+    assert result == {"count": 2}
+    assert state.subset("count", "tracker").get_all() == {"count": 2, "tracker": [1, 2]}
 
 
 def test_app_step():

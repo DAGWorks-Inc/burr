@@ -139,13 +139,13 @@ def test_function_based_action():
         )
 
     fn_based_action = create_action(my_action, name="my_action")
+    assert fn_based_action.single_step
     assert fn_based_action.name == "my_action"
     assert fn_based_action.reads == ["input_variable"]
     assert fn_based_action.writes == ["output_variable"]
-    assert (result := fn_based_action.run(State({"input_variable": "foo"}))) == {
-        "output_variable": "foo"
-    }
+    result, state = fn_based_action.run_and_update(State({"input_variable": "foo"}))
     assert result == {"output_variable": "foo"}
+    assert state.get_all() == {"input_variable": "foo", "output_variable": "foo"}
 
 
 def test_create_action_class_api():
@@ -166,7 +166,10 @@ def test_create_action_fn_api():
     assert created_action.name == "my_action"
     assert created_action.reads == ["input_variable"]
     assert created_action.writes == ["output_variable"]
-    assert created_action.run(State({"input_variable": "foo"})) == {"output_variable": "foo"}
+    assert created_action.single_step
+    result, state = created_action.run_and_update(State({"input_variable": "foo"}))
+    assert result == {"output_variable": "foo"}
+    assert state.get_all() == {"input_variable": "foo", "output_variable": "foo"}
 
 
 def test_create_action_fn_api_with_bind():
@@ -182,7 +185,13 @@ def test_create_action_fn_api_with_bind():
     created_action = create_action(bound, name="my_action")
 
     assert created_action.name == "my_action"
-    assert created_action.run(State({"input_variable_1": "foo"})) == {
+    result, state = created_action.run_and_update(State({"input_variable_1": "foo"}))
+    assert result == {
+        "output_variable_1": "foo",
+        "output_variable_2": 2,
+    }
+    assert state.get_all() == {
+        "input_variable_1": "foo",
         "output_variable_1": "foo",
         "output_variable_2": 2,
     }

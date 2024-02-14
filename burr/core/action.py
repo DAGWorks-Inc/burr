@@ -90,6 +90,10 @@ class Action(Function, Reducer, abc.ABC):
         across your application."""
         return self._name
 
+    @property
+    def single_step(self) -> bool:
+        return False
+
     def __repr__(self):
         read_repr = ", ".join(self.reads) if self.reads else "{}"
         write_repr = ", ".join(self.writes) if self.writes else "{}"
@@ -218,7 +222,54 @@ class Result(Action):
         return []
 
 
-class FunctionBasedAction(Action):
+class SingleStepAction(Action, abc.ABC):
+    """Internal representation of a "single-step" action. While most actions will have
+    a run and an update, this is a convenience class for actions that return them both at the same time.
+    Note this is not user-facing, as the internal API is meant to change. This is largely special-cased
+    for the function-based action, which users will not be extending.
+
+    Currently this keeps a cache of the state created, which is not ideal. This is a temporary
+    measure to make the API work, and will be removed in the future.
+    """
+
+    def __init__(self):
+        super(SingleStepAction, self).__init__()
+        self._state_created = None
+
+    @property
+    def single_step(self) -> bool:
+        return True
+
+    @abc.abstractmethod
+    def run_and_update(self, state: State) -> Tuple[dict, State]:
+        """Performs a run/update at the same time.
+
+        :param state:
+        :return:
+        """
+        pass
+
+    def run(self, state: State) -> dict:
+        """This should never really get called.
+        That said, this is an action so we have this in for now.
+        TODO -- rethink the hierarchy. This is not user-facing, so its OK to change,
+        and there's a bug we want to fix that requires this.
+
+        :param state:
+        :return:
+        """
+        raise ValueError(
+            "SingleStepAction.run should never be called independently -- use run_and_update instead."
+        )
+
+    def update(self, result: dict, state: State) -> State:
+        """Same with the above"""
+        raise ValueError(
+            "SingleStepAction.update should never be called independently -- use run_and_update instead."
+        )
+
+
+class FunctionBasedAction(SingleStepAction):
     ACTION_FUNCTION = "action_function"
 
     def __init__(
@@ -239,7 +290,6 @@ class FunctionBasedAction(Action):
         self._fn = fn
         self._reads = reads
         self._writes = writes
-        self._state_created = None
         self._bound_params = bound_params if bound_params is not None else {}
 
     @property
@@ -250,24 +300,9 @@ class FunctionBasedAction(Action):
     def reads(self) -> list[str]:
         return self._reads
 
-    def run(self, state: State) -> dict:
-        result, new_state = self._fn(state, **self._bound_params)
-        self._state_created = new_state
-        return result
-
     @property
     def writes(self) -> list[str]:
         return self._writes
-
-    def update(self, result: dict, state: State) -> State:
-        if self._state_created is None:
-            raise ValueError(
-                "FunctionBasedAction.run must be called before FunctionBasedAction.update"
-            )
-        # TODO -- validate that all the keys are contained -- fix up subset to handle this
-        # TODO -- validate that we've (a) written only to the write ones (by diffing the read ones),
-        #  and (b) written to no more than the write ones
-        return self._state_created.subset(*self._writes)
 
     def with_params(self, **kwargs: Any) -> "FunctionBasedAction":
         """Binds parameters to the function.
@@ -281,6 +316,9 @@ class FunctionBasedAction(Action):
         new_action = copy.copy(self)
         new_action._bound_params = {**self._bound_params, **kwargs}
         return new_action
+
+    def run_and_update(self, state: State) -> Tuple[dict, State]:
+        return self._fn(state, **self._bound_params)
 
 
 def _validate_action_function(fn: Callable):
