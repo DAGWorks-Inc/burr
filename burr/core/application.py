@@ -15,7 +15,15 @@ from typing import (
     Union,
 )
 
-from burr.core.action import Action, Condition, Function, Reducer, create_action, default
+from burr.core.action import (
+    Action,
+    Condition,
+    Function,
+    Reducer,
+    SingleStepAction,
+    create_action,
+    default,
+)
 from burr.core.state import State
 from burr.lifecycle.base import LifecycleAdapter
 from burr.lifecycle.internal import LifecycleAdapterSet
@@ -77,6 +85,7 @@ def _run_reducer(reducer: Reducer, state: State, result: dict, name: str) -> Sta
     :param result:
     :return:
     """
+
     state_to_use = state.subset(*reducer.writes)
     new_state = reducer.update(result, state_to_use).subset(*reducer.writes)
     keys_in_new_state = set(new_state.keys())
@@ -123,6 +132,30 @@ def _format_error_message(action: Action, input_state: State) -> str:
     logger.exception("\n" + border + "\n" + message + "\n" + border)
 
 
+def _run_single_step_action(action: SingleStepAction, state: State) -> Tuple[dict, State]:
+    """Runs a single step action. This API is internal-facing and a bit in flux, but
+    it corresponds to the SingleStepAction class.
+
+    :param action: Action to run
+    :param state: State to run with
+    :return: The result of running the action, and the new state
+    """
+    state_to_use = state.subset(
+        *action.reads, *action.writes
+    )  # TODO -- specify some as required and some as not
+    result, new_state = action.run_and_update(state_to_use)
+    return result, state.merge(new_state.subset(*action.writes))  # we just want the writes action
+
+
+async def _arun_single_step_action(action: SingleStepAction, state: State) -> Tuple[dict, State]:
+    """Runs a single step action in async. See the synchronous version for more details."""
+    state_to_use = state.subset(
+        *action.reads, *action.writes
+    )  # TODO -- specify some as required and some as not
+    result, new_state = await action.run_and_update(state_to_use)
+    return result, state.merge(new_state.subset(*action.writes))  # we just want the writes action
+
+
 class Application:
     def __init__(
         self,
@@ -162,8 +195,11 @@ class Application:
         result = None
         new_state = self._state
         try:
-            result = _run_function(next_action, self._state)
-            new_state = _run_reducer(next_action, self._state, result, next_action.name)
+            if next_action.single_step:
+                result, new_state = _run_single_step_action(next_action, self._state)
+            else:
+                result = _run_function(next_action, self._state)
+                new_state = _run_reducer(next_action, self._state, result, next_action.name)
             self._set_state(new_state)
         except Exception as e:
             exc = e
@@ -197,8 +233,11 @@ class Application:
                 # which this is supposed to be its OK).
                 # this delegatees hooks to the synchronous version, so we'll call all of them as well
                 return self.step()
-            result = await _arun_function(next_action, self._state)
-            new_state = _run_reducer(next_action, self._state, result, next_action.name)
+            if next_action.single_step:
+                result, new_state = await _arun_single_step_action(next_action, self._state)
+            else:
+                result = await _arun_function(next_action, self._state)
+                new_state = _run_reducer(next_action, self._state, result, next_action.name)
         except Exception as e:
             exc = e
             logger.exception(_format_error_message(next_action, self._state))
