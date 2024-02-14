@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Awaitable, Callable
 
 import pytest
@@ -90,6 +91,25 @@ base_counter_action_async = PassedInActionAsync(
 )
 
 
+class BrokenStepException(Exception):
+    pass
+
+
+base_broken_action = PassedInAction(
+    reads=[],
+    writes=[],
+    fn=lambda x: exec("raise(BrokenStepException(x))"),
+    update_fn=lambda result, state: state,
+)
+
+base_broken_action_async = PassedInActionAsync(
+    reads=[],
+    writes=[],
+    fn=lambda x: exec("raise(BrokenStepException(x))"),
+    update_fn=lambda result, state: state,
+)
+
+
 def test_run_function():
     """Tests that we can run a function"""
     action = base_counter_action
@@ -128,6 +148,21 @@ def test_app_step():
     assert result == {"counter": 1}
 
 
+def test_app_step_broken(caplog):
+    """Tests that we can run a step in an app"""
+    broken_action = base_broken_action.with_name("broken_action_unique_name")
+    app = Application(
+        actions=[broken_action],
+        transitions=[Transition(broken_action, broken_action, default)],
+        state=State({}),
+        initial_step="broken_action_unique_name",
+    )
+    with caplog.at_level(logging.ERROR):  # it should say the name, that's the only contract for now
+        with pytest.raises(BrokenStepException):
+            app.step()
+    assert "broken_action_unique_name" in caplog.text
+
+
 def test_app_step_done():
     """Tests that when we cannot run a step, we return None"""
     counter_action = base_counter_action.with_name("counter")
@@ -150,6 +185,21 @@ async def test_app_astep():
     action, result, state = await app.astep()
     assert action.name == "counter_async"
     assert result == {"counter": 1}
+
+
+async def test_app_astep_broken(caplog):
+    """Tests that we can run a step in an app"""
+    broken_action = base_broken_action_async.with_name("broken_action_unique_name")
+    app = Application(
+        actions=[broken_action],
+        transitions=[Transition(broken_action, broken_action, default)],
+        state=State({}),
+        initial_step="broken_action_unique_name",
+    )
+    with caplog.at_level(logging.ERROR):  # it should say the name, that's the only contract for now
+        with pytest.raises(BrokenStepException):
+            await app.astep()
+    assert "broken_action_unique_name" in caplog.text
 
 
 async def test_app_astep_done():

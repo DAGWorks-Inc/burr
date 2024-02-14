@@ -1,6 +1,7 @@
 import collections
 import dataclasses
 import logging
+import pprint
 from typing import (
     Any,
     AsyncGenerator,
@@ -88,6 +89,40 @@ def _run_reducer(reducer: Reducer, state: State, result: dict, name: str) -> Sta
     return state.merge(new_state.update(**{PRIOR_STEP: name}))
 
 
+def _create_dict_string(kwargs: dict) -> str:
+    """This is a utility function to create a string representation of a dict.
+    This is the state that was passed into the function usually. This is useful for debugging,
+    as it can be printed out to see what the state was.
+
+    :param kwargs: The inputs to the function that errored.
+    :return: The string representation of the inputs, truncated appropriately.
+    """
+    pp = pprint.PrettyPrinter(width=80)
+    inputs = {}
+    for k, v in kwargs.items():
+        item_repr = repr(v)
+        if len(item_repr) > 50:
+            item_repr = item_repr[:50] + "..."
+        else:
+            item_repr = v
+        inputs[k] = item_repr
+    input_string = pp.pformat(inputs)
+    if len(input_string) > 1000:
+        input_string = input_string[:1000] + "..."
+    return input_string
+
+
+def _format_error_message(action: Action, input_state: State) -> str:
+    """Formats the error string, given that we're inside an action"""
+    message = f"> Action: {action.name} encountered an error!"
+    padding = " " * (80 - len(message) - 1)
+    message += padding + "<"
+    input_string = _create_dict_string(input_state.get_all())
+    message += "\n> State (at time of action):\n" + input_string
+    border = "*" * 80
+    logger.exception("\n" + border + "\n" + message + "\n" + border)
+
+
 class Application:
     def __init__(
         self,
@@ -132,6 +167,7 @@ class Application:
             self._set_state(new_state)
         except Exception as e:
             exc = e
+            logger.exception(_format_error_message(next_action, self._state))
             raise e
         finally:
             self._adapter_set.call_all_lifecycle_hooks_sync(
@@ -165,6 +201,7 @@ class Application:
             new_state = _run_reducer(next_action, self._state, result, next_action.name)
         except Exception as e:
             exc = e
+            logger.exception(_format_error_message(next_action, self._state))
             raise e
         finally:
             await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
