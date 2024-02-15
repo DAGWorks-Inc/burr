@@ -51,6 +51,10 @@ documentation = [
   "sphinx-toolbox"
 ]
 
+tracking-client = [
+  "pydantic"
+]
+
 [tool.poetry.packages]
 py_modules = ["burr"]
 
