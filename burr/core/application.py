@@ -6,6 +6,7 @@ from typing import (
     Any,
     AsyncGenerator,
     Callable,
+    Dict,
     Generator,
     List,
     Literal,
@@ -95,7 +96,7 @@ def _run_reducer(reducer: Reducer, state: State, result: dict, name: str) -> Sta
             f"Action {name} attempted to write to keys {extra_keys} "
             f"that it did not declare. It declared: ({reducer.writes})!"
         )
-    return state.merge(new_state.update(**{PRIOR_STEP: name}))
+    return state.merge(new_state)
 
 
 def _create_dict_string(kwargs: dict) -> str:
@@ -156,6 +157,20 @@ async def _arun_single_step_action(action: SingleStepAction, state: State) -> Tu
     return result, state.merge(new_state.subset(*action.writes))  # we just want the writes action
 
 
+@dataclasses.dataclass
+class ApplicationGraph:
+    """User-facing representation of the state machine. This has
+
+    #. All the action objects
+    #. All the transition objects
+    #. The entrypoint action
+    """
+
+    actions: List[Action]
+    transitions: List[Transition]
+    entrypoint: Action
+
+
 class Application:
     def __init__(
         self,
@@ -172,6 +187,7 @@ class Application:
         self._initial_step = initial_step
         self._state = state
         self._adapter_set = adapter_set if adapter_set is not None else LifecycleAdapterSet()
+        self._graph = self._create_graph()
 
     def step(self) -> Optional[Tuple[Action, dict, State]]:
         """Performs a single step, advancing the state machine along.
@@ -200,6 +216,7 @@ class Application:
             else:
                 result = _run_function(next_action, self._state)
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
+            new_state = new_state.update(**{PRIOR_STEP: next_action.name})
             self._set_state(new_state)
         except Exception as e:
             exc = e
@@ -238,6 +255,7 @@ class Application:
             else:
                 result = await _arun_function(next_action, self._state)
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
+            new_state = new_state.update(**{PRIOR_STEP: next_action.name})
         except Exception as e:
             exc = e
             logger.exception(_format_error_message(next_action, self._state))
@@ -280,10 +298,10 @@ class Application:
         )
 
         while not condition():
-            result = self.step()
-            if result is None:
+            state_output = self.step()
+            if state_output is None:
                 break
-            action, result, state = result
+            action, result, state = state_output
             if action.name in until:
                 seen_results.add(action.name)
                 results[index_by_name[action.name]] = result
@@ -462,9 +480,23 @@ class Application:
         """
         return self._state
 
+    def _create_graph(self) -> ApplicationGraph:
+        """Internal-facing utility function for creating an ApplicationGraph"""
+        all_actions = {action.name: action for action in self._actions}
+        return ApplicationGraph(
+            actions=self._actions,
+            transitions=self._transitions,
+            entrypoint=all_actions[self._initial_step],
+        )
+
     @property
-    def actions(self) -> List[Action]:
-        return self._actions
+    def graph(self) -> ApplicationGraph:
+        """Application graph object -- if you want to inspect, visualize, etc..
+        this is what you want.
+
+        :return: The application graph object
+        """
+        return self._graph
 
 
 def _assert_set(value: Optional[Any], field: str, method: str):
@@ -524,6 +556,14 @@ class ApplicationBuilder:
         self.lifecycle_adapters: List[LifecycleAdapter] = list()
 
     def with_state(self, **kwargs) -> "ApplicationBuilder":
+        """Sets initial values in the state. If you want to load from a prior state,
+        you can do so here and pass the values in.
+
+        TODO -- enable passing in a `state` object instead of `**kwargs`
+
+        :param kwargs: Key-value pairs to set in the state
+        :return: The application builder for future chaining.
+        """
         if self.state is not None:
             self.state = self.state.update(**kwargs)
         else:
@@ -534,8 +574,8 @@ class ApplicationBuilder:
         """Adds an entrypoint to the application. This is the action that will be run first.
         This can only be called once.
 
-        :param action:
-        :return:
+        :param action: The name of the action to set as the entrypoint
+        :return: The application builder for future chaining.
         """
         # TODO -- validate only called once
         self.start = action
@@ -599,7 +639,24 @@ class ApplicationBuilder:
         self.lifecycle_adapters.extend(adapters)
         return self
 
+    def with_tracker(
+        self, project: str, tracker: Literal["local"] = "local", params: Dict[str, Any] = None
+    ):
+        if params is None:
+            params = {}
+        if tracker == "local":
+            from burr.tracking.client import LocalTrackingClient
+
+            self.lifecycle_adapters.append(LocalTrackingClient(project=project, **params))
+        else:
+            raise ValueError(f"Tracker {tracker} not supported")
+        return self
+
     def build(self) -> Application:
+        """Builds the application.
+
+        :return: The application object
+        """
         _validate_actions(self.actions)
         actions_by_name = {action.name: action for action in self.actions}
         all_actions = set(actions_by_name.keys())

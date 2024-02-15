@@ -7,6 +7,7 @@ import pytest
 from burr.core import State
 from burr.core.action import Action, Condition, Result, SingleStepAction, default
 from burr.core.application import (
+    PRIOR_STEP,
     Application,
     ApplicationBuilder,
     Transition,
@@ -202,6 +203,7 @@ def test_app_step():
     action, result, state = app.step()
     assert action.name == "counter"
     assert result == {"counter": 1}
+    assert state[PRIOR_STEP] == "counter"  # internal contract, not part of the public API
 
 
 def test_app_step_broken(caplog):
@@ -241,6 +243,7 @@ async def test_app_astep():
     action, result, state = await app.astep()
     assert action.name == "counter_async"
     assert result == {"counter": 1}
+    assert state[PRIOR_STEP] == "counter_async"  # internal contract, not part of the public API
 
 
 async def test_app_astep_broken(caplog):
@@ -606,3 +609,21 @@ async def test_application_runs_hooks_async():
     assert set(tracker.post_called) == {"counter", "result"}
     assert len(tracker.pre_called) == 11
     assert len(tracker.post_called) == 11
+
+
+async def test_application_gives_graph():
+    counter_action = base_counter_action.with_name("counter")
+    result_action = Result(fields=["counter"]).with_name("result")
+    app = Application(
+        actions=[counter_action, result_action],
+        transitions=[
+            Transition(counter_action, result_action, Condition.expr("counter >= 10")),
+            Transition(counter_action, counter_action, default),
+        ],
+        state=State({}),
+        initial_step="counter",
+    )
+    graph = app.graph
+    assert len(graph.actions) == 2
+    assert len(graph.transitions) == 2
+    assert graph.entrypoint.name == "counter"

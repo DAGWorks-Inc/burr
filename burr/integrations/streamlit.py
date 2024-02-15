@@ -173,7 +173,7 @@ def render_action(state: AppState):
     """
     app: Application = state.app
     current_node = state.current_action
-    actions = {action.name: action for action in app.actions}
+    actions = {action.name: action for action in app.graph.actions}
     if current_node is None:
         st.markdown("No current action.")
         return

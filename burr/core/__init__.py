@@ -1,5 +1,5 @@
 from burr.core.action import Action, Condition, Result, action, default, expr, when
-from burr.core.application import Application, ApplicationBuilder
+from burr.core.application import Application, ApplicationBuilder, ApplicationGraph
 from burr.core.state import State
 
 __all__ = [
@@ -7,6 +7,7 @@ __all__ = [
     "Action",
     "Application",
     "ApplicationBuilder",
+    "ApplicationGraph",
     "Condition",
     "default",
     "expr",
