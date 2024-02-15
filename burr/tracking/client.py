@@ -33,8 +33,9 @@ def _format_exception(exception: Exception) -> Optional[str]:
 class LocalTrackingClient(PostApplicationCreateHook, PreRunStepHook, PostRunStepHook):
     """Tracker to track locally -- goes along with the Burr UI. Writes
     down the following:
-    1. The whole application + debugging information (e.g. source code) to a file
-    2. A line for the start/end of each step"""
+    #. The whole application + debugging information (e.g. source code) to a file
+    #. A line for the start/end of each step
+    """
 
     GRAPH_FILENAME = "graph.json"
     LOG_FILENAME = "log.jsonl"
@@ -46,9 +47,9 @@ class LocalTrackingClient(PostApplicationCreateHook, PreRunStepHook, PostRunStep
         app_id: Optional[str] = None,
     ):
         """Instantiates a local tracking client. This will create the following directories, if they don't exist:
-        1. The base directory (defaults to ~/.burr)
-        2. The project directory (defaults to ~/.burr/<project>)
-        3. The application directory (defaults to ~/.burr/<project>/<app_id>) on each
+        #. The base directory (defaults to ~/.burr)
+        #. The project directory (defaults to ~/.burr/<project>)
+        #. The application directory (defaults to ~/.burr/<project>/<app_id>) on each
 
         On application create, it will write the state machine to the application directory.
         On pre/post run step, it will write the start/end of each step to the application directory.
@@ -56,7 +57,7 @@ class LocalTrackingClient(PostApplicationCreateHook, PreRunStepHook, PostRunStep
         :param project: Project name -- if this already exists it will be used, otherwise it will be created.
         :param storage_dir: Storage directory
         :param app_id: Unique application ID. If not provided, a random one will be generated. If this already exists,
-        it will use that one/append to the files in that one.
+            it will use that one/append to the files in that one.
         """
         if app_id is None:
             app_id = f"app_{str(uuid.uuid4())}"
