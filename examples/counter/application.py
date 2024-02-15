@@ -23,6 +23,7 @@ def application(count_up_to: int = 10, log_file: str = None):
             ("result", "counter", expr("counter == 0")),  # when we've reset, manually
         )
         .with_entrypoint("counter")
+        .with_tracker("counter")
         .with_hooks(*[StateAndResultsFullLogger(log_file)] if log_file else [])
         .build()
     )
@@ -31,6 +32,6 @@ def application(count_up_to: int = 10, log_file: str = None):
 if __name__ == "__main__":
     app = application(log_file="counter.jsonl")
     state, result = app.run(until=["result"])
-    app.visualize(output_file_path="digraph", include_conditions=True, view=True, format="png")
+    app.visualize(output_file_path="digraph", include_conditions=True, view=False, format="png")
     assert state["counter"] == 10
     print(state["counter"])

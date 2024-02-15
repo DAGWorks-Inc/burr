@@ -33,7 +33,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install -e ".[tests]"
+        python -m pip install -e ".[tests,tracking-client]"
     - name: Run tests
       run: |
         python -m pytest tests
