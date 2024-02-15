@@ -19,6 +19,9 @@ and add instances to the application builder to customize your state machines's 
 .. autoclass:: burr.lifecycle.base.PostRunStepHookAsync
     :members:
 
+.. autoclass:: burr.lifecycle.base.PostApplicationCreateHook
+    :members:
+
 These hooks are available for you to use:
 
 .. autoclass:: burr.lifecycle.default.StateAndResultsFullLogger

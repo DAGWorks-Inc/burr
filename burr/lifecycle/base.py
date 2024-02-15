@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 
 if TYPE_CHECKING:
     # type-checking-only for a circular import
-    from burr.core import State, Action
+    from burr.core import State, Action, ApplicationGraph
 
 from burr.lifecycle.internal import lifecycle
 
@@ -88,6 +88,25 @@ class PostRunStepHookAsync(abc.ABC):
         pass
 
 
+@lifecycle.base_hook("post_application_create")
+class PostApplicationCreateHook(abc.ABC):
+    """Synchronous hook that runs post instantiation of an ``Application``
+    object (after ``.build()`` is called on the ``ApplicationBuilder`` object.)"""
+
+    @abc.abstractmethod
+    def post_application_create(
+        self, *, state: "State", application_graph: "ApplicationGraph", **future_kwargs: Any
+    ):
+        """Runs after an "application" object is instantiated. This is run by the Application, in its constructor,
+        as the last step.
+
+        :param state: Current state of the application
+        :param application_graph: Application graph of the application, representing the state machine
+        :param future_kwargs: Future keyword arguments for backwards compatibility
+        """
+        pass
+
+
 # THESE ARE NOT IN USE
 # TODO -- implement/decide how to use them
 @lifecycle.base_hook("pre_run_application")
@@ -133,4 +152,5 @@ LifecycleAdapter = Union[
     PreRunApplicationHookAsync,
     PostRunApplicationHook,
     PostRunApplicationHookAsync,
+    PostApplicationCreateHook,
 ]
