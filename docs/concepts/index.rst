@@ -14,4 +14,5 @@ Overview of the concepts -- read these to get a mental model for how Burr works.
     actions
     transitions
     hooks
+    tracking
     planned-capabilities

@@ -645,6 +645,16 @@ class ApplicationBuilder:
     def with_tracker(
         self, project: str, tracker: Literal["local"] = "local", params: Dict[str, Any] = None
     ):
+        """Adds a "tracker" to the application. The tracker specifies
+        a project name (used for disambiguating groups of tracers), and plugs into the
+        Burr UI. Currently the only supported tracker is local, which takes in the params
+        `storage_dir` and `app_id`, which have automatic defaults.
+
+        :param project: Project name
+        :param tracker: Tracker to use, currently only ``local`` is available
+        :param params: Parameters to pass to the tracker
+        :return: The application builder for future chaining.
+        """
         if params is None:
             params = {}
         if tracker == "local":
