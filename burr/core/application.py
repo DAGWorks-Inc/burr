@@ -188,6 +188,9 @@ class Application:
         self._state = state
         self._adapter_set = adapter_set if adapter_set is not None else LifecycleAdapterSet()
         self._graph = self._create_graph()
+        self._adapter_set.call_all_lifecycle_hooks_sync(
+            "post_application_create", state=self._state, application_graph=self._graph
+        )
 
     def step(self) -> Optional[Tuple[Action, dict, State]]:
         """Performs a single step, advancing the state machine along.

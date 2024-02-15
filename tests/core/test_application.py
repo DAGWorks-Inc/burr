@@ -27,6 +27,7 @@ from burr.lifecycle import (
     PreRunStepHookAsync,
     internal,
 )
+from burr.lifecycle.base import PostApplicationCreateHook
 
 
 class PassedInAction(Action):
@@ -545,7 +546,7 @@ def test_application_builder_unset():
         ApplicationBuilder().build()
 
 
-def test_application_runs_hooks_sync():
+def test_application_run_step_hooks_sync():
     class ActionTracker(PreRunStepHook, PostRunStepHook):
         def __init__(self):
             self.pre_called = []
@@ -577,7 +578,7 @@ def test_application_runs_hooks_sync():
     assert len(tracker.post_called) == 11
 
 
-async def test_application_runs_hooks_async():
+async def test_application_run_step_hooks_async():
     class ActionTrackerAsync(PreRunStepHookAsync, PostRunStepHookAsync):
         def __init__(self):
             self.pre_called = []
@@ -609,6 +610,34 @@ async def test_application_runs_hooks_async():
     assert set(tracker.post_called) == {"counter", "result"}
     assert len(tracker.pre_called) == 11
     assert len(tracker.post_called) == 11
+
+
+def test_application_post_application_create_hook():
+    class PostApplicationCreateTracker(PostApplicationCreateHook):
+        def __init__(self):
+            self.called_args = None
+            self.call_count = 0
+
+        def post_application_create(self, **kwargs):
+            self.called_args = kwargs
+            self.call_count += 1
+
+    tracker = PostApplicationCreateTracker()
+    counter_action = base_counter_action.with_name("counter")
+    result_action = Result(fields=["counter"]).with_name("result")
+    Application(
+        actions=[counter_action, result_action],
+        transitions=[
+            Transition(counter_action, result_action, Condition.expr("counter >= 10")),
+            Transition(counter_action, counter_action, default),
+        ],
+        state=State({}),
+        initial_step="counter",
+        adapter_set=internal.LifecycleAdapterSet(tracker),
+    )
+    assert "state" in tracker.called_args
+    assert "application_graph" in tracker.called_args
+    assert tracker.call_count == 1
 
 
 async def test_application_gives_graph():
