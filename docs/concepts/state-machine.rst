@@ -91,3 +91,14 @@ Run just calls out to ``iterate`` and returns the final state.
 
 Currently the ``until`` variable is a ``or`` gate (E.G. ``any_complete``), although we will be adding an ``and`` gate (E.G. ``all_complete``),
 and the ability to run until the state machine naturally executes (``until=None``).
+
+----------
+Inspection
+----------
+
+You can ask various questions of the state machine using publicly-supported APIs:
+
+- ``application.graph`` will give you a static reprsentation of the state machine with enough information to visualize
+- ``application.state`` will give you the current state of the state machine. Note that if you modify it the results will not show up -- state is immutable!
+
+See the :ref:`application docs <applicationref>`

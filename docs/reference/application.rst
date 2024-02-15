@@ -9,7 +9,12 @@ and not the ``Application`` class directly.
 .. autoclass:: burr.core.application.ApplicationBuilder
    :members:
 
+.. _applicationref:
+
 .. autoclass:: burr.core.application.Application
    :members:
 
    .. automethod:: __init__
+
+.. autoclass:: burr.core.application.ApplicationGraph
+   :members:
