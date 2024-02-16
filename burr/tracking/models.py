@@ -18,7 +18,7 @@ except ImportError as e:
 
 
 class IdentifyingModel(pydantic.BaseModel):
-    model_type: str
+    type: str
 
 
 class ActionModel(IdentifyingModel):
@@ -28,7 +28,7 @@ class ActionModel(IdentifyingModel):
     reads: list[str]
     writes: list[str]
     code: str
-    model_type: str = "action"
+    type: str = "action"
 
     @staticmethod
     def from_action(action: Action) -> "ActionModel":
@@ -55,7 +55,7 @@ class TransitionModel(IdentifyingModel):
     from_: str
     to: str
     condition: str
-    model_type: str = "transition"
+    type: str = "transition"
 
     @staticmethod
     def from_transition(transition: Transition) -> "TransitionModel":
@@ -70,7 +70,7 @@ class ApplicationModel(IdentifyingModel):
     entrypoint: str
     actions: list[ActionModel]
     transitions: list[TransitionModel]
-    model_type: str = "application"
+    type: str = "application"
 
     @staticmethod
     def from_application_graph(application_graph: ApplicationGraph) -> "ApplicationModel":
@@ -90,7 +90,7 @@ class BeginEntryModel(IdentifyingModel):
     start_time: datetime.datetime
     action: str
     inputs: Dict[str, Any]
-    model_type: str = "begin_entry"
+    type: str = "begin_entry"
 
 
 class EndEntryModel(IdentifyingModel):
@@ -101,4 +101,4 @@ class EndEntryModel(IdentifyingModel):
     result: Optional[dict]
     exception: Optional[str]
     state: Dict[str, Any]  # TODO -- consider logging updates to the state so we can recreate
-    model_type: str = "end_entry"
+    type: str = "end_entry"
