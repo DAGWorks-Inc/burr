@@ -52,18 +52,16 @@ def test_application_tracks_end_to_end(tmpdir: str):
         log_contents = [json.loads(item) for item in f.readlines()]
     with open(graph_output) as f:
         graph_contents = json.load(f)
-    assert graph_contents["model_type"] == "application"
+    assert graph_contents["type"] == "application"
     app_model = ApplicationModel.parse_obj(graph_contents)
     assert app_model.entrypoint == "counter"
     assert app_model.actions[0].name == "counter"
     assert app_model.actions[1].name == "result"
     pre_run = [
-        BeginEntryModel.parse_obj(line)
-        for line in log_contents
-        if line["model_type"] == "begin_entry"
+        BeginEntryModel.parse_obj(line) for line in log_contents if line["type"] == "begin_entry"
     ]
     post_run = [
-        EndEntryModel.parse_obj(line) for line in log_contents if line["model_type"] == "end_entry"
+        EndEntryModel.parse_obj(line) for line in log_contents if line["type"] == "end_entry"
     ]
     assert len(pre_run) == 3
     assert len(post_run) == 3
@@ -87,18 +85,16 @@ def test_application_tracks_end_to_end_broken(tmpdir: str):
         log_contents = [json.loads(item) for item in f.readlines()]
     with open(graph_output) as f:
         graph_contents = json.load(f)
-    assert graph_contents["model_type"] == "application"
+    assert graph_contents["type"] == "application"
     app_model = ApplicationModel.parse_obj(graph_contents)
     assert app_model.entrypoint == "counter"
     assert app_model.actions[0].name == "counter"
     assert app_model.actions[1].name == "result"
     pre_run = [
-        BeginEntryModel.parse_obj(line)
-        for line in log_contents
-        if line["model_type"] == "begin_entry"
+        BeginEntryModel.parse_obj(line) for line in log_contents if line["type"] == "begin_entry"
     ]
     post_run = [
-        EndEntryModel.parse_obj(line) for line in log_contents if line["model_type"] == "end_entry"
+        EndEntryModel.parse_obj(line) for line in log_contents if line["type"] == "end_entry"
     ]
     assert len(pre_run) == 2
     assert len(post_run) == 2
