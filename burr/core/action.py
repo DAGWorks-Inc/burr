@@ -380,11 +380,13 @@ class FunctionBasedAction(SingleStepAction):
 
     @property
     def inputs(self) -> list[str]:
-        return [
-            param
-            for param in inspect.signature(self._fn).parameters
-            if param != "state" and param not in self._bound_params
-        ]
+        sig = inspect.signature(self._fn)
+        out = []
+        for param_name, param in sig.parameters.items():
+            if param_name != "state" and param_name not in self._bound_params:
+                if param.default is inspect.Parameter.empty:
+                    out.append(param_name)
+        return out
 
     def with_params(self, **kwargs: Any) -> "FunctionBasedAction":
         """Binds parameters to the function.
@@ -468,6 +470,11 @@ def action(reads: List[str], writes: List[str]) -> Callable[[Callable], Function
     """Decorator to create a function-based action. This is user-facing.
     Note that, in the future, with typed state, we may not need this for
     all cases.
+
+    If parameters are not bound, they will be interpreted as inputs and must
+    be passed in at runtime. If they have default values, they will *not* be
+    interpreted as inputs (all inputs are required to be present). They can
+    still be bound, however.
 
     :param reads: Items to read from the state
     :param writes: Items to write to the state
