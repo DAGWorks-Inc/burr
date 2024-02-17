@@ -19,7 +19,7 @@ To implement hooks, you subclass any number of the :ref:`available lifecycle hoo
 These have synchronous and asynchronous versions, and your hook can subclass as many as you want
 (as long as it doesn't do both the synchronous and asynchronous versions of the same hook).
 
-To use them, you pass them into the `ApplicationBuilder` as a list of hooks. For instance,
+To use them, you pass them into the :py:class:`ApplicationBuilder <burr.core.application.ApplicationBuilder>` as a ``*args`` list of hooks. For instance,
 a hook that prints out the nodes name during execution looks like this.
 We implement the pre/post run step hooks.
 
@@ -40,7 +40,7 @@ We implement the pre/post run step hooks.
         ):
             print(f"Finishing action: {action.node.name}")
 
-To include this in the application, you would pass it in as a list of hooks:
+To include this in the application, you pass it into the :py:meth:`with_hooks <burr.core.application.ApplicationBuilder.with_hooks>` method.
 
 .. code-block:: python
 

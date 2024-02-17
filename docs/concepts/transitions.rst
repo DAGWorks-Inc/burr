@@ -29,8 +29,12 @@ Conditions have a few APIs, but the most common are the three convenience functi
 
 
 Conditions are evaluated in the order they are specified, and the first one that evaluates to True will be the transition that is selected
-when determining which action to run next.
+when determining which action to run next. If no condition evaluates to ``True``, the application execution will stop early.
 
-Note that if no condition evaluates to ``True``, the application execution will stop early.
+.. note::
+
+    The ``default`` condition is a special case, and will always evaluate to ``True``. It is useful for defining a "catch-all" transition
+    that will be selected if no other condition is met. If you pass a tuple of length 2 to :py:meth:`with_transitions <burr.core.application.ApplicationBuilder.with_transitions>`, the
+    default condition will be used.
 
 See the :ref:`transition docs <transitionref>` for more information on the transition API.

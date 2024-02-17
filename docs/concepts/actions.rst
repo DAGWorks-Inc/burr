@@ -6,7 +6,7 @@ Actions
 
 
 Actions do the heavy-lifting in a workflow. They should contain all complex compute. You can define actions
-either through a class-based or function-based API. If actions implement `async def run` then will be run in an
+either through a class-based or function-based API. If actions implement ``async def run`` then will be run in an
 asynchronous context (and thus require one of the async application functions).
 
 Actions have two primary responsibilities:
@@ -21,7 +21,7 @@ framework to optimize the execution of the workflow. We call (1) a ``Function`` 
 .. _inputref:
 
 --------------
-Runtime inputs
+Runtime Inputs
 --------------
 
 Actions can declare inputs that are not part of the state. This is for the case that you want to pause workflow execution for human input.
@@ -35,10 +35,10 @@ There are two APIs for defining actions: class-based and function-based. They ar
 - use the class-based API when you want to leverage inheritance or parameterize the action in more powerful ways
 
 -------------------
-Class-based actions
+Class-Based Actions
 -------------------
 
-You can define an action by implementing the ``Action`` class:
+You can define an action by implementing the :py:class:`Action <burr.core.action.Action>` class:
 
 .. code-block:: python
 
@@ -59,7 +59,7 @@ You can define an action by implementing the ``Action`` class:
         def update(self, result: dict, state: State) -> State:
             return state.update(**result)
 
-You then pass the action to the ``ApplicationBuilder``:
+You then pass the action to the :py:class:`ApplicationBuilder <burr.core.application.ApplicationBuilder>`:
 
 .. code-block:: python
 
@@ -70,7 +70,7 @@ You then pass the action to the ``ApplicationBuilder``:
     )...
 
 
-Note that if the action has inputs, you have to define the optional `inputs` property:
+Note that if the action has inputs, you have to define the optional ``inputs`` property:
 
 .. code-block:: python
 
@@ -100,7 +100,7 @@ Note that if the action has inputs, you have to define the optional `inputs` pro
 Function-based actions
 ----------------------
 
-You can also define actions by decorating a function with the `@action` decorator:
+You can also define actions by decorating a function with the :py:func:`@action <burr.core.action.action>` decorator:
 
 .. code-block:: python
 
@@ -115,7 +115,7 @@ You can also define actions by decorating a function with the `@action` decorato
         custom_action=custom_action
     )...
 
-Function-based actions can take in parameters which are akin to passing in constructor parameters. This is done through the `bind` method:
+Function-based actions can take in parameters which are akin to passing in constructor parameters. This is done through the :py:meth:`bind <burr.core.action.bind>` method:
 
 .. code-block:: python
 
@@ -145,7 +145,7 @@ bound, they will be referred to as inputs. For example:
 
 Will require the inputs to be passed in at runtime.
 
-Note that these combine the ``reduce`` and ``run`` methods into a single function, and they're both returned at the same time.
+Note that these combine the ``update`` and ``run`` methods into a single function, and they're both executed at the same time.
 
 -----------
 ``Inputs``
