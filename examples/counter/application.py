@@ -12,7 +12,7 @@ def counter(state: State) -> Tuple[dict, State]:
     return result, state.update(**result)
 
 
-def application(count_up_to: int = 10, log_file: str = None):
+def application(count_up_to: int = 100, log_file: str = None):
     return (
         burr.core.ApplicationBuilder()
         .with_state(counter=0)
@@ -33,5 +33,5 @@ if __name__ == "__main__":
     app = application(log_file="counter.jsonl")
     action, state, result = app.run(halt_after=["result"])
     app.visualize(output_file_path="digraph", include_conditions=True, view=False, format="png")
-    assert state["counter"] == 10
+    assert state["counter"] == 100
     print(state["counter"])

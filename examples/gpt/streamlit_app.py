@@ -42,7 +42,9 @@ def retrieve_state():
         # TODO --enable usage of hamilton. Currently its not wiring in inputs
         # But it should be easy enough
         state = AppState.from_empty(
-            app=chatbot_application.application(use_hamilton=False),
+            app=chatbot_application.application(
+                use_hamilton=False,
+            ),
         )
     else:
         state = get_state()
