@@ -446,7 +446,7 @@ class FunctionRepresentingAction(Protocol[C]):
 def bind(self: FunctionRepresentingAction, **kwargs: Any) -> FunctionRepresentingAction:
     """Binds an action to the given parameters. This is functionally equivalent to
     functools.partial, but is more explicit and is meant to be used in the API. This only works with
-    the functional API for ``@action`` and not with the class-based API.
+    the :py:meth:`@action <burr.core.action.action>`  functional API and not with the class-based API.
 
     .. code-block:: python
 

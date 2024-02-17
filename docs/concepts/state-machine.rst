@@ -5,12 +5,11 @@ Applications
 .. _applications:
 
 Applications form the core representation of the state machine. You build them with the ``ApplicationBuilder``.
-
-The ``ApplicationBuilder`` is a class that helps you build an application. Here is the minimum that is required:
+Here is the minimum that is required:
 
 1. A ``**kwargs`` of actions passed to ``with_actions(...)``
 2. Any relevant transitions (with conditions)
-3. An entry point
+3. An entry point -- this is the first action to execute
 
 This is shown in the example from :ref:`getting started <simpleexample>`
 
@@ -122,7 +121,7 @@ Inspection
 
 You can ask various questions of the state machine using publicly-supported APIs:
 
-- ``application.graph`` will give you a static reprsentation of the state machine with enough information to visualize
-- ``application.state`` will give you the current state of the state machine. Note that if you modify it the results will not show up -- state is immutable!
+- ``application.graph`` will give you a static representation of the state machine with enough information to visualize
+- ``application.state`` will give you the current state of the state machine. Note that if you modify it the results will not show up -- state is immutable! Modify the state through actions.
 
 See the :ref:`application docs <applicationref>`
