@@ -1,6 +1,8 @@
 import datetime
 import inspect
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
+
+from pydantic import field_serializer
 
 from burr.core import Action
 from burr.core.action import FunctionBasedAction
@@ -93,6 +95,19 @@ class BeginEntryModel(IdentifyingModel):
     type: str = "begin_entry"
 
 
+def _serialize_object(d: object) -> Union[dict, list, object]:
+    if isinstance(d, list):
+        return [_serialize_object(x) for x in d]
+    elif isinstance(d, dict):
+        return {k: _serialize_object(v) for k, v in d.items()}
+    elif hasattr(d, "model_dump"):
+        return d.model_dump()
+    elif hasattr(d, "to_json"):
+        return d.to_json()
+    else:
+        return d
+
+
 class EndEntryModel(IdentifyingModel):
     """Pydantic model that represents an entry for the end of a step"""
 
@@ -102,3 +117,11 @@ class EndEntryModel(IdentifyingModel):
     exception: Optional[str]
     state: Dict[str, Any]  # TODO -- consider logging updates to the state so we can recreate
     type: str = "end_entry"
+
+    @field_serializer("result")
+    def serialize_result(self, result):
+        return _serialize_object(result)
+
+    @field_serializer("state")
+    def serialize_state(self, state):
+        return _serialize_object(state)

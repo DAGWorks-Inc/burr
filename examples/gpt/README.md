@@ -19,7 +19,6 @@ The state machine this encapsulates takes the following form:
 
 ![State Machine](digraph.png)
 
-
 Note that it is currently wired up to handle errors in the state machine, but the actions do not respect that yet. Coming soon.
 
 We have three files:
@@ -27,7 +26,6 @@ We have three files:
 - [application.py](application.py) -- This contains a mainline to generate the graph portrayal.
 - [requirements.txt](requirements.txt) -- Just the requirements. All this needs is Burr/Streamlit/openai
 - [streamlit_app.py](streamlit_app.py) -- This contains a simple Streamlit app to interact with the cow
-
 
 You must have your `OPENAI_API_KEY` set in your environment. You can do this by running.
 
