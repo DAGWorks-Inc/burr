@@ -52,6 +52,15 @@ If you're in an async context, you can run `astep` instead:
 
     action, result, state = await application.astep()
 
+
+Step can also take in ``inputs`` as a dictionary, which will be passed to the action's run function as keyword arguments.
+This is specifically meant for a "human in the loop" scenario, where the action needs to ask for input from a user. In this case,
+the control flow is meant to be interrupted to allow for the user to provide input. See :ref:`inputs <inputref>` for more information.
+
+.. code-block:: python
+
+    action, result, state = application.step(inputs={"prompt": input()})
+
 ``iterate``/``aiterate``
 ------------------------
 
@@ -80,17 +89,32 @@ See the function implementation of ``run`` to show how this is done.
 In the async context, this does not return anything
 (asynchronous generators are not allowed a return value).
 
+.. note::
+    You can add inputs to ``iterate``/``aiterate`` by passing in a dictionary of inputs through the ``inputs`` parameter.
+    This will only apply to the first action. Actions that are not the first but require inputs are considered undefined behavior.
+
+
 ``run``/``arun``
 ----------------
 
 Run just calls out to ``iterate`` and returns the final state.
 
+The ``until`` variable is a ``or`` gate (E.G. ``any_complete``), although we will be adding an ``and`` gate (E.G. ``all_complete``),
+and the ability to run until the state machine naturally executes (``until=None``).
+
 .. code-block:: python
 
     final_state, results = application.run(until=["final_action_1", "final_action_2"])
 
-Currently the ``until`` variable is a ``or`` gate (E.G. ``any_complete``), although we will be adding an ``and`` gate (E.G. ``all_complete``),
-and the ability to run until the state machine naturally executes (``until=None``).
+
+In the async context, you can run ``arun``:
+
+.. code-block:: python
+
+    final_state = await application.arun(until=["final_action_1", "final_action_2"])
+
+.. note::
+    You can add inputs to ``run``/``arun`` in the same way as you can with ``iterate`` -- it will only apply to the first action.
 
 ----------
 Inspection
