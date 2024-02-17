@@ -10,19 +10,9 @@ caption_images = dataflows.import_module("caption_images", "elijahbenizzy")
 generate_images = dataflows.import_module("generate_images", "elijahbenizzy")
 
 
-caption_image_driver = (
-    driver.Builder()
-    .with_config({})  # replace with configuration as appropriate
-    .with_modules(caption_images)
-    .build()
-)
+caption_image_driver = driver.Builder().with_config({}).with_modules(caption_images).build()
 
-generate_image_driver = (
-    driver.Builder()
-    .with_config({})  # replace with configuration as appropriate
-    .with_modules(generate_images)
-    .build()
-)
+generate_image_driver = driver.Builder().with_config({}).with_modules(generate_images).build()
 
 
 class PrintStepHook(PostRunStepHook):
@@ -33,7 +23,7 @@ class PrintStepHook(PostRunStepHook):
 
 # procedural way to do this
 @action(
-    reads=["current_image_location", "image_location_history"],
+    reads=["current_image_location"],
     writes=["current_image_caption", "image_location_history"],
 )
 def image_caption(state: State) -> Tuple[dict, State]:
@@ -49,7 +39,7 @@ def image_caption(state: State) -> Tuple[dict, State]:
 
 # procedural way to do this
 @action(
-    reads=["current_image_caption", "image_caption_history"],
+    reads=["current_image_caption"],
     writes=["current_image_location", "image_caption_history"],
 )
 def image_generation(state: State) -> Tuple[dict, State]:
@@ -65,7 +55,6 @@ def image_generation(state: State) -> Tuple[dict, State]:
 
 @action(reads=[], writes=[])
 def terminal_step(state: State) -> Tuple[dict, State]:
-    print("This is a terminal step hook.")
     return {}, state
 
 
@@ -123,11 +112,6 @@ def hamilton_action_main():
             image_location_history=[],
             image_caption_history=[],
         )
-        # .with_actions(
-        #     caption=image_caption,
-        #     image=image_generation,
-        #     terminal=terminal_step,
-        # )
         .with_actions(
             caption=_caption,
             image=_image,
@@ -146,16 +130,24 @@ def hamilton_action_main():
 
 
 if __name__ == "__main__":
-    app = hamilton_action_main()
-    # app = regular_action_main()
+    import random
+
+    coin_flip = random.choice([True, False])
+    if coin_flip:
+        app = hamilton_action_main()
+    else:
+        app = regular_action_main()
     app.visualize(
         output_file_path="telephone_graph", include_conditions=True, view=True, format="png"
     )
-    app.run(until=["terminal"])
-    # while True:
-    #     action, result, state  = app.step()
-    #     print("action=====\n", action)
-    #     print("result=====\n", result)
-    #     print("state======\n", state)
-    #     if action.name == "terminal":
-    #         break
+    if coin_flip:
+        app.run(until=["terminal"])
+    else:
+        # alternate way to run:
+        while True:
+            action, result, state = app.step()
+            print("action=====\n", action)
+            print("result=====\n", result)
+            print("state======\n", state)
+            if action.name == "terminal":
+                break
