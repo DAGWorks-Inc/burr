@@ -46,13 +46,14 @@ TerminationCondition = Literal["any_complete", "all_complete"]
 PRIOR_STEP = "__PRIOR_STEP"
 
 
-def _run_function(function: Function, state: State) -> dict:
+def _run_function(function: Function, state: State, inputs: Dict[str, Any]) -> dict:
     """Runs a function, returning the result of running the function.
     Note this restricts the keys in the state to only those that the
     function reads.
 
-    :param function:
-    :param state:
+    :param function: Function to run
+    :param state: State at time of execution
+    :param inputs: Inputs to the function
     :return:
     """
     if function.is_async():
@@ -62,19 +63,16 @@ def _run_function(function: Function, state: State) -> dict:
             "instead...)"
         )
     state_to_use = state.subset(*function.reads)
-    return function.run(state_to_use)
+    function.validate_inputs(inputs)
+    return function.run(state_to_use, **inputs)
 
 
-async def _arun_function(function: Function, state: State) -> dict:
+async def _arun_function(function: Function, state: State, inputs: Dict[str, Any]) -> dict:
     """Runs a function, returning the result of running the function.
-    Async version of the above.
-
-    :param function:
-    :param state:
-    :return:
-    """
+    Async version of the above."""
     state_to_use = state.subset(*function.reads)
-    return await function.run(state_to_use)
+    function.validate_inputs(inputs)
+    return await function.run(state_to_use, **inputs)
 
 
 def _run_reducer(reducer: Reducer, state: State, result: dict, name: str) -> State:
@@ -122,38 +120,45 @@ def _create_dict_string(kwargs: dict) -> str:
     return input_string
 
 
-def _format_error_message(action: Action, input_state: State) -> str:
+def _format_error_message(action: Action, input_state: State, inputs: dict) -> str:
     """Formats the error string, given that we're inside an action"""
     message = f"> Action: {action.name} encountered an error!"
     padding = " " * (80 - len(message) - 1)
     message += padding + "<"
-    input_string = _create_dict_string(input_state.get_all())
-    message += "\n> State (at time of action):\n" + input_string
+    message += "\n> State (at time of action):\n" + _create_dict_string(input_state.get_all())
+    message += "\n> Inputs (at time of action):\n" + _create_dict_string(inputs)
     border = "*" * 80
     return "\n" + border + "\n" + message + "\n" + border
 
 
-def _run_single_step_action(action: SingleStepAction, state: State) -> Tuple[dict, State]:
+def _run_single_step_action(
+    action: SingleStepAction, state: State, inputs: Optional[Dict[str, Any]]
+) -> Tuple[Dict[str, Any], State]:
     """Runs a single step action. This API is internal-facing and a bit in flux, but
     it corresponds to the SingleStepAction class.
 
     :param action: Action to run
     :param state: State to run with
+    :param inputs: Inputs to pass directly to the action
     :return: The result of running the action, and the new state
     """
     state_to_use = state.subset(
         *action.reads, *action.writes
     )  # TODO -- specify some as required and some as not
-    result, new_state = action.run_and_update(state_to_use)
+    action.validate_inputs(inputs)
+    result, new_state = action.run_and_update(state_to_use, **inputs)
     return result, state.merge(new_state.subset(*action.writes))  # we just want the writes action
 
 
-async def _arun_single_step_action(action: SingleStepAction, state: State) -> Tuple[dict, State]:
+async def _arun_single_step_action(
+    action: SingleStepAction, state: State, inputs: Optional[Dict[str, Any]]
+) -> Tuple[dict, State]:
     """Runs a single step action in async. See the synchronous version for more details."""
     state_to_use = state.subset(
         *action.reads, *action.writes
     )  # TODO -- specify some as required and some as not
-    result, new_state = await action.run_and_update(state_to_use)
+    action.validate_inputs(inputs)
+    result, new_state = await action.run_and_update(state_to_use, **inputs)
     return result, state.merge(new_state.subset(*action.writes))  # we just want the writes action
 
 
@@ -192,7 +197,7 @@ class Application:
             "post_application_create", state=self._state, application_graph=self._graph
         )
 
-    def step(self) -> Optional[Tuple[Action, dict, State]]:
+    def step(self, inputs: Optional[Dict[str, Any]] = None) -> Optional[Tuple[Action, dict, State]]:
         """Performs a single step, advancing the state machine along.
         This returns a tuple of the action that was run, the result of running
         the action, and the new state.
@@ -202,9 +207,12 @@ class Application:
         the method you want -- you'll want iterate() (if you want to see the state/
         results along the way), or run() (if you just want the final state/results).
 
+        :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world
         :return: Tuple[Function, dict, State] -- the function that was just ran, the result of running it, and the new state
         """
         next_action = self.get_next_action()
+        if inputs is None:
+            inputs = {}
         self._adapter_set.call_all_lifecycle_hooks_sync(
             "pre_run_step", action=next_action, state=self._state
         )
@@ -215,15 +223,15 @@ class Application:
         new_state = self._state
         try:
             if next_action.single_step:
-                result, new_state = _run_single_step_action(next_action, self._state)
+                result, new_state = _run_single_step_action(next_action, self._state, inputs)
             else:
-                result = _run_function(next_action, self._state)
+                result = _run_function(next_action, self._state, inputs)
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
             new_state = new_state.update(**{PRIOR_STEP: next_action.name})
             self._set_state(new_state)
         except Exception as e:
             exc = e
-            logger.exception(_format_error_message(next_action, self._state))
+            logger.exception(_format_error_message(next_action, self._state, inputs))
             raise e
         finally:
             self._adapter_set.call_all_lifecycle_hooks_sync(
@@ -231,12 +239,17 @@ class Application:
             )
         return next_action, result, new_state
 
-    async def astep(self) -> Optional[Tuple[Action, dict, State]]:
+    async def astep(self, inputs: Dict[str, Any] = None) -> Optional[Tuple[Action, dict, State]]:
         """Asynchronous version of step.
 
-        :return:
+        :param inputs: Inputs to the action -- this is if this action
+            requires an input that is passed in from the outside world
+
+        :return: Tuple[Function, dict, State] -- the action that was just ran, the result of running it, and the new state
         """
         next_action = self.get_next_action()
+        if inputs is None:
+            inputs = {}
         if next_action is None:
             return None
         await self._adapter_set.call_all_lifecycle_hooks_async(
@@ -251,17 +264,19 @@ class Application:
                 # but that's safer than assuming its OK to launch a thread
                 # TODO -- add an option/configuration to launch a thread (yikes, not super safe, but for a pure function
                 # which this is supposed to be its OK).
-                # this delegatees hooks to the synchronous version, so we'll call all of them as well
-                return self.step()
+                # this delegates hooks to the synchronous version, so we'll call all of them as well
+                return self.step(inputs=inputs)
             if next_action.single_step:
-                result, new_state = await _arun_single_step_action(next_action, self._state)
+                result, new_state = await _arun_single_step_action(
+                    next_action, self._state, inputs=inputs
+                )
             else:
-                result = await _arun_function(next_action, self._state)
+                result = await _arun_function(next_action, self._state, inputs=inputs)
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
             new_state = new_state.update(**{PRIOR_STEP: next_action.name})
         except Exception as e:
             exc = e
-            logger.exception(_format_error_message(next_action, self._state))
+            logger.exception(_format_error_message(next_action, self._state, inputs))
             raise e
         finally:
             await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
@@ -271,7 +286,11 @@ class Application:
         return next_action, result, new_state
 
     def iterate(
-        self, *, until: list[str], gate: TerminationCondition = "any_complete"
+        self,
+        *,
+        until: list[str],
+        gate: TerminationCondition = "any_complete",
+        inputs: Optional[Dict[str, Any]] = None,
     ) -> Generator[Tuple[Action, dict, State], None, Tuple[State, List[dict]]]:
         """Returns a generator that calls step() in a row, enabling you to see the state
         of the system as it updates. Note this returns a generator, and also the final result
@@ -280,9 +299,13 @@ class Application:
         :param until: The list of actions to run until -- these must be strings
             that match the names of the actions.
         :param gate: The gate to run until. This can be "any_complete" or "all_complete"
+        :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world.
+            Note that this is only used for the first iteration -- subsequent iterations will not use this.
         :return: Each iteration returns the result of running `step`
             The final result is the current state + results in the order that they were specified.
         """
+        if inputs is None:
+            inputs = {}
 
         if gate != "any_complete":
             raise NotImplementedError(
@@ -301,7 +324,8 @@ class Application:
         )
 
         while not condition():
-            state_output = self.step()
+            state_output = self.step(inputs=inputs)
+            inputs = {}  # only pass inputs in the first time
             if state_output is None:
                 break
             action, result, state = state_output
@@ -312,7 +336,11 @@ class Application:
         return self._state, results
 
     async def aiterate(
-        self, *, until: list[str], gate: TerminationCondition = "any_complete"
+        self,
+        *,
+        until: list[str],
+        gate: TerminationCondition = "any_complete",
+        inputs: Optional[Dict[str, Any]] = None,
     ) -> AsyncGenerator[Tuple[Action, dict, State], Tuple[State, List[dict]]]:
         """Returns a generator that calls step() in a row, enabling you to see the state
         of the system as it updates. This is the asynchronous version so it has no capability of t
@@ -320,6 +348,8 @@ class Application:
         :param until: The list of actions to run until -- these must be strings
             that match the names of the action.
         :param gate: The gate to run until. This can be "any_complete" or "all_complete"
+        :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world.
+            Note that this is only used for the first iteration -- subsequent iterations will not use this.
         :return: Each iteration returns the result of running `step`
             The final result is the current state + results in the order that they were specified.
         """
@@ -330,9 +360,12 @@ class Application:
             if gate == "any_complete"
             else lambda: len(seen_results) == len(until)
         )
+        if inputs is None:
+            inputs = {}
 
         while not condition():
-            result = await self.astep()
+            result = await self.astep(inputs=inputs)
+            inputs = {}  # only pass inputs in the first time
             if result is None:
                 break
             action, result, state = result
@@ -345,14 +378,17 @@ class Application:
         *,
         until: list[str],
         gate: TerminationCondition = "any_complete",
+        inputs: Optional[Dict[str, Any]] = None,
     ) -> Tuple[State, List[dict]]:
-        """
+        """Runs your application through until completion. Does
+        not give access to the state along the way -- if you want that, use iterate().
 
-        :param gate:
-        :param until:
-        :return:
+        :param until: The list of actions to run until -- these must be strings
+        :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world
+        :param gate: Gate to run until -- only accepts "any_complete" for now
+        :return: The final state, and the results of running the actions in the order that they were specified.
         """
-        gen = self.iterate(until=until, gate=gate)
+        gen = self.iterate(until=until, gate=gate, inputs=inputs)
         while True:
             try:
                 next(gen)
@@ -364,17 +400,20 @@ class Application:
         *,
         until: list[str],
         gate: TerminationCondition = "any_complete",
+        inputs: Optional[Dict[str, Any]] = None,
     ):
-        """Asynchronous version of run.
+        """Runs your application through until completion, using async. Does
+        not give access to the state along the way -- if you want that, use iterate().
 
-        :param gate:
-        :param until:
-        :return:
+        :param until: The list of actions to run until -- these must be strings
+        :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world
+        :param gate: Gate to run until -- only accepts "any_complete" for now
+        :return: The final state, and the results of running the actions in the order that they were specified.
         """
         state = self._state
         results: List[Optional[dict]] = [None for _ in until]
         index_by_name = {name: index for index, name in enumerate(until)}
-        async for action, result, state in self.aiterate(until=until, gate=gate):
+        async for action, result, state in self.aiterate(until=until, gate=gate, inputs=inputs):
             if action.name in until:
                 results[index_by_name[action.name]] = result
         return state, results
@@ -430,6 +469,10 @@ class Application:
                 else f"{action.name}({', '.join(action.reads)}): {', '.join(action.writes)}"
             )
             digraph.node(action.name, label=label, shape="box", style="rounded")
+            for input_ in action.inputs:
+                input_name = f"input__{input_}"
+                digraph.node(input_name, shape="oval", style="dashed", label=f"input: {input_}")
+                digraph.edge(input_name, action.name)
         for transition in self._transitions:
             condition = transition.condition
             digraph.edge(

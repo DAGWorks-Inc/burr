@@ -23,7 +23,7 @@ def sample_application(project_name: str, log_dir: str, app_id: str, broken: boo
     return (
         burr.core.ApplicationBuilder()
         .with_state(counter=0, break_at=2 if broken else -1)
-        .with_actions(counter=counter, result=Result(["counter"]))
+        .with_actions(counter=counter, result=Result("counter"))
         .with_transitions(
             ("counter", "counter", expr("counter < 2")),  # just count to two for testing
             ("counter", "result", default),

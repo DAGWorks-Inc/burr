@@ -3,7 +3,7 @@ import ast
 import copy
 import inspect
 import types
-from typing import Any, Callable, List, Protocol, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple, TypeVar, Union
 
 from burr.core.state import State
 
@@ -21,13 +21,47 @@ class Function(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def run(self, state: State) -> dict:
+    def run(self, state: State, **run_kwargs) -> dict:
         """Runs the function on the given state and returns the result.
         The result is jsut a key/value dictionary.
 
         :param state: State to run the function on
+        :param run_kwargs: Additional arguments to the function passed at runtime.
         :return: Result of the function
         """
+        pass
+
+    @property
+    def inputs(self) -> list[str]:
+        """Represents inputs that are required for this to run.
+        These correspond to the `**function_kwargs` in `run` above.
+
+        :return:
+        """
+        return []
+
+    def validate_inputs(self, inputs: Optional[Dict[str, Any]]) -> None:
+        """Validates the inputs to the function. This is a convenience method
+        to allow for validation of inputs before running the function.
+
+        :param inputs: Inputs to validate
+        :raises ValueError: If the inputs are invalid
+        """
+        if inputs is None:
+            inputs = {}
+        required_inputs = set(self.inputs)
+        given_inputs = set(inputs.keys())
+        missing_inputs = required_inputs - given_inputs
+        additional_inputs = given_inputs - required_inputs
+        if missing_inputs or additional_inputs:
+            raise ValueError(
+                f"Inputs to function {self} are invalid. "
+                f"Missing the following inputs: {', '.join(missing_inputs)}."
+                if missing_inputs
+                else "" f"Additional inputs: {','.join(additional_inputs)}."
+                if additional_inputs
+                else ""
+            )
 
     def is_async(self) -> bool:
         """Convenience method to check if the function is async or not.
@@ -148,7 +182,7 @@ class Condition(Function):
 
         return Condition(keys, condition_func, name=expr)
 
-    def run(self, state: State) -> dict:
+    def run(self, state: State, **kwargs) -> dict:
         return {Condition.KEY: self._resolver(state)}
 
     @property
@@ -197,12 +231,12 @@ expr = Condition.expr
 
 
 class Result(Action):
-    def __init__(self, fields: list[str]):
+    def __init__(self, *fields: str):
         """Represents a result action. This is purely a convenience class to
         pull data from state and give it out to the result. It does nothing to
         the state itself.
 
-        :param fields: Fields to pull from the state
+        :param fields: Fields to pull from the state and put into results
         """
         super(Result, self).__init__()
         self._fields = fields
@@ -215,11 +249,41 @@ class Result(Action):
 
     @property
     def reads(self) -> list[str]:
-        return self._fields
+        return list(self._fields)
 
     @property
     def writes(self) -> list[str]:
         return []
+
+
+class Input(Action):
+    def __init__(self, *fields: str):
+        """Represents an input action -- this reads something from an input
+        then writes that directly to state. This is a convenience class for when you don't
+        need to process the input and just want to put it in state for later use.
+
+        :param fields: Fields to pull from the inputs and put into state
+        """
+        super(Input, self).__init__()
+        self._fields = fields
+
+    @property
+    def reads(self) -> list[str]:
+        return []  # nothing from state
+
+    def run(self, state: State, **run_kwargs) -> dict:
+        return {key: run_kwargs[key] for key in self._fields}
+
+    @property
+    def writes(self) -> list[str]:
+        return list(self._fields)
+
+    @property
+    def inputs(self) -> list[str]:
+        return list(self._fields)
+
+    def update(self, result: dict, state: State) -> State:
+        return state.update(**result)
 
 
 class SingleStepAction(Action, abc.ABC):
@@ -241,11 +305,12 @@ class SingleStepAction(Action, abc.ABC):
         return True
 
     @abc.abstractmethod
-    def run_and_update(self, state: State) -> Tuple[dict, State]:
+    def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
         """Performs a run/update at the same time.
 
-        :param state:
-        :return:
+        :param state: State to run the action on
+        :param run_kwargs: Additional arguments to the function passed at runtime.
+        :return: Result of the action and the new state
         """
         pass
 
@@ -267,6 +332,15 @@ class SingleStepAction(Action, abc.ABC):
         raise ValueError(
             "SingleStepAction.update should never be called independently -- use run_and_update instead."
         )
+
+    def is_async(self) -> bool:
+        """Convenience method to check if the function is async or not.
+        We'll want to clean up the class hierarchy, but this is all internal.
+        See note on ``run`` and ``update`` above
+
+        :return: True if the function is async, False otherwise
+        """
+        return inspect.iscoroutinefunction(self.run_and_update)
 
 
 class FunctionBasedAction(SingleStepAction):
@@ -304,6 +378,14 @@ class FunctionBasedAction(SingleStepAction):
     def writes(self) -> list[str]:
         return self._writes
 
+    @property
+    def inputs(self) -> list[str]:
+        return [
+            param
+            for param in inspect.signature(self._fn).parameters
+            if param != "state" and param not in self._bound_params
+        ]
+
     def with_params(self, **kwargs: Any) -> "FunctionBasedAction":
         """Binds parameters to the function.
         Note that there is no reason to call this by the user. This *could*
@@ -317,8 +399,8 @@ class FunctionBasedAction(SingleStepAction):
         new_action._bound_params = {**self._bound_params, **kwargs}
         return new_action
 
-    def run_and_update(self, state: State) -> Tuple[dict, State]:
-        return self._fn(state, **self._bound_params)
+    def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
+        return self._fn(state, **self._bound_params, **run_kwargs)
 
 
 def _validate_action_function(fn: Callable):
