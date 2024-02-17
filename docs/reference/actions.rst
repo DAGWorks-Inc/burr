@@ -16,6 +16,12 @@ Actions
 
    .. automethod:: __init__
 
+
+.. autoclass:: burr.core.action.Input
+   :members:
+
+   .. automethod:: __init__
+
 .. autodecorator:: burr.core.action.action
 .. autofunction:: burr.core.action.bind
 
