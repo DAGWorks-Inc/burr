@@ -7,7 +7,9 @@ from burr.core.action import (
     Action,
     Condition,
     Function,
+    Input,
     Result,
+    SingleStepAction,
     _validate_action_function,
     action,
     create_action,
@@ -17,10 +19,15 @@ from burr.core.action import (
 
 def test_is_async_true():
     class AsyncFunction(Function):
+        @property
+        def inputs(self) -> list[str]:
+            return []
+
+        @property
         def reads(self) -> list[str]:
             return []
 
-        async def run(self, state: State) -> dict:
+        async def run(self, state: State, **run_kwargs) -> dict:
             return {}
 
     func = AsyncFunction()
@@ -32,14 +39,14 @@ def test_is_async_false():
         def reads(self) -> list[str]:
             return []
 
-        def run(self, state: State) -> dict:
+        def run(self, state: State, **run_kwargs) -> dict:
             return {}
 
     func = SyncFunction()
     assert not func.is_async()
 
 
-class _BasicAction(Action):
+class BasicAction(Action):
     @property
     def reads(self) -> list[str]:
         return ["input_variable"]
@@ -56,7 +63,7 @@ class _BasicAction(Action):
 
 
 def test_with_name():
-    action = _BasicAction()
+    action = BasicAction()
     assert action.name is None  # Nothing set initially
     with_name = action.with_name("my_action")
     assert with_name.name == "my_action"  # Name set on copy
@@ -116,7 +123,7 @@ def test_condition_expr_complex():
 
 
 def test_result():
-    result = Result(fields=["foo", "bar"])
+    result = Result("foo", "bar")
     assert result.run(State({"foo": "baz", "bar": "qux", "baz": "quux"})) == {
         "foo": "baz",
         "bar": "qux",
@@ -129,6 +136,18 @@ def test_result():
     ) == State(
         {"foo": "baz", "bar": "qux", "baz": "quux"}
     )  # no impact
+
+
+def test_input():
+    input_action = Input("foo", "bar")
+    assert input_action.reads == []
+    assert input_action.writes == ["foo", "bar"]
+    assert input_action.inputs == ["foo", "bar"]
+    assert (result := input_action.run(State({}), foo="baz", bar="qux")) == {
+        "foo": "baz",
+        "bar": "qux",
+    }
+    assert input_action.update(result, State({})).get_all() == {"foo": "baz", "bar": "qux"}
 
 
 def test_function_based_action():
@@ -148,8 +167,23 @@ def test_function_based_action():
     assert state.get_all() == {"input_variable": "foo", "output_variable": "foo"}
 
 
+def test_function_based_action_with_inputs():
+    @action(reads=["input_variable"], writes=["output_variable"])
+    def my_action(state: State, bound_input: int, unbound_input: int) -> Tuple[dict, State]:
+        res = state["input_variable"] + bound_input + unbound_input
+        return {"output_variable": res}, state.update(output_variable=res)
+
+    fn_based_action: SingleStepAction = create_action(
+        my_action.bind(bound_input=10), name="my_action"
+    )
+    assert fn_based_action.inputs == ["unbound_input"]
+    result, state = fn_based_action.run_and_update(State({"input_variable": 1}), unbound_input=100)
+    assert state.get_all() == {"input_variable": 1, "output_variable": 111}
+    assert result == {"output_variable": 111}
+
+
 def test_create_action_class_api():
-    raw_action = _BasicAction()
+    raw_action = BasicAction()
     created_action = create_action(raw_action, name="my_action")
     assert created_action.name == "my_action"
     assert created_action.reads == raw_action.reads

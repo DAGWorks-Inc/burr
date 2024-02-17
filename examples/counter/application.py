@@ -16,7 +16,7 @@ def application(count_up_to: int = 10, log_file: str = None):
     return (
         burr.core.ApplicationBuilder()
         .with_state(counter=0)
-        .with_actions(counter=counter, result=Result(["counter"]))
+        .with_actions(counter=counter, result=Result("counter"))
         .with_transitions(
             ("counter", "counter", expr(f"counter < {count_up_to}")),
             ("counter", "result", default),
