@@ -182,6 +182,23 @@ def test_function_based_action_with_inputs():
     assert result == {"output_variable": 111}
 
 
+def test_function_based_action_with_defaults():
+    @action(reads=["input_variable"], writes=["output_variable"])
+    def my_action(
+        state: State, bound_input: int, unbound_input: int, unbound_default_input: int = 1000
+    ) -> Tuple[dict, State]:
+        res = state["input_variable"] + bound_input + unbound_input + unbound_default_input
+        return {"output_variable": res}, state.update(output_variable=res)
+
+    fn_based_action: SingleStepAction = create_action(
+        my_action.bind(bound_input=10), name="my_action"
+    )
+    assert fn_based_action.inputs == ["unbound_input"]
+    result, state = fn_based_action.run_and_update(State({"input_variable": 1}), unbound_input=100)
+    assert state.get_all() == {"input_variable": 1, "output_variable": 1111}
+    assert result == {"output_variable": 1111}
+
+
 def test_create_action_class_api():
     raw_action = BasicAction()
     created_action = create_action(raw_action, name="my_action")
