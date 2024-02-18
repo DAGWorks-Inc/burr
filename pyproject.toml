@@ -55,8 +55,8 @@ tracking-client = [
   "pydantic"
 ]
 
-[tool.poetry.packages]
-py_modules = ["burr"]
+[tool.setuptools.packages.find]
+include = ["burr"]
 
 [project.urls]
 Homepage = "https://github.com/dagworks-inc/burr"
