@@ -1,0 +1,4 @@
+build/*
+tailwind.config.js
+.eslintrc.js
+src/api # generated code
