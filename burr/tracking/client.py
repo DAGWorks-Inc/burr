@@ -10,7 +10,7 @@ from burr.core import Action, ApplicationGraph, State
 from burr.integrations.base import require_plugin
 from burr.lifecycle import PostRunStepHook, PreRunStepHook
 from burr.lifecycle.base import PostApplicationCreateHook
-from burr.tracking.models import ApplicationModel, BeginEntryModel, EndEntryModel
+from burr.tracking.common.models import ApplicationModel, BeginEntryModel, EndEntryModel
 
 logger = logging.getLogger(__name__)
 
