@@ -61,7 +61,11 @@ tracking-server = [
   "pydantic",
   "fastapi-pagination",
   "aiofiles"
+]
 
+tracking = [
+  "burr[tracking-client]",
+  "burr[tracking-server]"
 ]
 
 [tool.setuptools.packages.find]
