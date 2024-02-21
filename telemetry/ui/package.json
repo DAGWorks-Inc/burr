@@ -35,9 +35,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix --max-warnings=0 --config ./.eslintrc.js",
-    "format": "prettier --write ./**/*.{ts,tsx,css,md,json} --config ./.prettierrc.json",
-    "prepare": "husky install",
+    "lint:fix": "eslint . --fix --max-warnings=0 --config ./.eslintrc.js --ignore-path ./.eslintignore",
+    "format:fix": "prettier --write ./**/*.{ts,tsx,css,md,json} --config ./.prettierrc.json --ignore-path ./.prettierignore",
     "precommit": "npm run lint:fix && npm run format",
     "prepush": "npm run lint"
   },

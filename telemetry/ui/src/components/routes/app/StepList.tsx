@@ -133,8 +133,7 @@ export const StepList = (props: {
                 } else {
                   props.setCurrentSelectedIndex(i);
                 }
-              }}
-            >
+              }}>
               <TableCell className="w-5 text-gray-500">{step.step_sequence_id}</TableCell>
               <TableCell className="font-semibold text-gray-600">
                 {step.step_start_log.action}

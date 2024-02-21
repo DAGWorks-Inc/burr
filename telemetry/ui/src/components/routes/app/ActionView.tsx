@@ -17,8 +17,7 @@ export const CodeView = (props: { code: string }) => {
         className="bg-dwdarkblue/100"
         wrapLines={true}
         wrapLongLines={true}
-        style={base16AteliersulphurpoolLight}
-      >
+        style={base16AteliersulphurpoolLight}>
         {props.code}
       </SyntaxHighlighter>
     </div>

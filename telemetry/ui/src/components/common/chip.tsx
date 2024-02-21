@@ -23,8 +23,7 @@ export const Chip = (props: { label: string; chipType: ChipType; className?: str
       className={`relative grid select-none items-center whitespace-nowrap rounded-lg
         p-1 px-3 font-sans text-xs font-semibold text-white ${bgColor} ${
           props.className ? props.className : ''
-        }`}
-    >
+        }`}>
       <span className="">{props.label}</span>
     </div>
   );

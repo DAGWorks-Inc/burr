@@ -24,8 +24,7 @@ export const Tabs = (props: {
           id="tabs"
           name="tabs"
           className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-          defaultValue={currentTab}
-        >
+          defaultValue={currentTab}>
           {props.tabs.map((tab) => (
             <option key={tab.id}>{tab.displayName}</option>
           ))}
@@ -43,8 +42,7 @@ export const Tabs = (props: {
                   : 'text-gray-500 hover:text-gray-700',
                 'rounded-md px-3 py-2 text-sm font-medium hover:cursor-pointer'
               )}
-              aria-current={tab.id === currentTab ? 'page' : undefined}
-            >
+              aria-current={tab.id === currentTab ? 'page' : undefined}>
               {tab.displayName}
             </span>
           ))}
