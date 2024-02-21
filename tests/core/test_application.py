@@ -792,6 +792,8 @@ def test_application_run_step_hooks_sync():
     assert set(tracker.post_called) == {"counter", "result"}
     assert len(tracker.pre_called) == 11
     assert len(tracker.post_called) == 11
+    # quick inclusion to ensure that the action is not called when we're done running
+    assert app.step() is None  # should be None
 
 
 async def test_application_run_step_hooks_async():
