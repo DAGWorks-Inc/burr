@@ -55,6 +55,15 @@ tracking-client = [
   "pydantic"
 ]
 
+tracking-server = [
+  "fastapi",
+  "uvicorn",
+  "pydantic",
+  "fastapi-pagination",
+  "aiofiles"
+
+]
+
 [tool.setuptools.packages.find]
 include = ["burr"]
 
