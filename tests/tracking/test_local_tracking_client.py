@@ -8,7 +8,7 @@ import pytest
 import burr
 from burr.core import Result, State, action, default, expr
 from burr.tracking import LocalTrackingClient
-from burr.tracking.models import ApplicationModel, BeginEntryModel, EndEntryModel
+from burr.tracking.common.models import ApplicationModel, BeginEntryModel, EndEntryModel
 
 
 @action(reads=["counter", "break_at"], writes=["counter"])
