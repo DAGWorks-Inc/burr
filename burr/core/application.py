@@ -211,13 +211,13 @@ class Application:
         :return: Tuple[Function, dict, State] -- the function that was just ran, the result of running it, and the new state
         """
         next_action = self.get_next_action()
+        if next_action is None:
+            return None
         if inputs is None:
             inputs = {}
         self._adapter_set.call_all_lifecycle_hooks_sync(
             "pre_run_step", action=next_action, state=self._state
         )
-        if next_action is None:
-            return None
         exc = None
         result = None
         new_state = self._state
