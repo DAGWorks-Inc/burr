@@ -20,7 +20,7 @@ And a lot more!
 Using hooks and other integrations you can (a) integrate with any of your favorite vendors (LLM observability, storage, etc...), and
 (b) build custom actions that delegate to your favorite libraries.
 
-Bur will *not* tell you how to build your models, how to query APIs, or how to manage your data. It will help you tie all these together
+Bur will _not_ tell you how to build your models, how to query APIs, or how to manage your data. It will help you tie all these together
 in a way that scales with your needs and makes following the logic of your system easy. Burr comes out of the box with a host of integrations
 including tooling to build a UI in streamlit and watch your state machine execute.
 
@@ -32,7 +32,6 @@ Burr is named after Aaron Burr, founding father, third VP of the United States, 
 We imagine a world in which Burr and Hamilton lived in harmony and saw through their differences. We originally
 built Burr as a _harness_ to handle state between executions of Hamilton DAGs,
 but realized that it has a wide array of applications and decided to release it.
-
 
 # Getting Started
 
