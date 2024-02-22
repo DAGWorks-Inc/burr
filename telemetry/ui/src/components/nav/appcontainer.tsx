@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
+import { Dialog, Disclosure, Transition } from '@headlessui/react';
 import {
   ComputerDesktopIcon,
   Square2StackIcon,
@@ -12,6 +12,8 @@ import {
 import { ListBulletIcon } from '@heroicons/react/20/solid';
 import { BreadCrumb } from './breadcrumb';
 
+// TODO -- enable this when we have examples
+const DISPLAY_CHILDREN = false;
 /**
  * Hardcoded sidebars, most of these are just external links.
  * It looks nice though.
@@ -25,16 +27,21 @@ const navigation = [
     linkType: 'internal'
   },
   {
-    name: 'Develop',
-    href: 'https://github.com/dagworks-inc/burr',
-    icon: ComputerDesktopIcon,
-    current: false,
-    linkType: 'external'
-  },
-  {
     name: 'Examples',
     href: 'https://github.com/DAGWorks-Inc/burr/tree/main/examples',
     icon: ListBulletIcon,
+    current: false,
+    linkType: 'external',
+    children: [
+      { name: 'counter', href: '#', current: false },
+      { name: 'chatbot', href: '#', current: false },
+      { name: 'cowsay', href: '#', current: false }
+    ]
+  },
+  {
+    name: 'Develop',
+    href: 'https://github.com/dagworks-inc/burr',
+    icon: ComputerDesktopIcon,
     current: false,
     linkType: 'external'
   },
@@ -202,30 +209,64 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
                   <ul role="list" className="-mx-2 space-y-1">
                     {navigation.map((item) => (
                       <li key={item.name}>
-                        <a
-                          target={item.linkType === 'external' ? '_blank' : undefined}
-                          rel="noopener noreferrer"
-                          href={item.href}
-                          className={classNames(
-                            item.current && item.linkType === 'internal'
-                              ? 'bg-gray-50 text-dwdarkblue'
-                              : item.linkType === 'external'
-                                ? 'text-gray-700 hover:text-dwdarkblue'
-                                : 'text-gray-700 hover:text-dwdarkblue hover:bg-gray-50',
-                            'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
-                          )}
-                        >
-                          <item.icon
+                        {!item.children || !DISPLAY_CHILDREN ? (
+                          <a
+                            href={item.href}
                             className={classNames(
-                              item.current
-                                ? 'text-dwdarkblue'
-                                : 'text-gray-400 group-hover:text-dwdarkblue',
-                              'h-6 w-6 shrink-0'
+                              item.current ? 'bg-gray-50' : 'hover:bg-gray-50',
+                              'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold text-gray-700'
                             )}
-                            aria-hidden="true"
-                          />
-                          {item.name}
-                        </a>
+                          >
+                            <item.icon
+                              className="h-6 w-6 shrink-0 text-gray-400"
+                              aria-hidden="true"
+                            />
+                            {item.name}
+                          </a>
+                        ) : (
+                          <Disclosure as="div">
+                            {({ open }) => (
+                              <>
+                                <Disclosure.Button
+                                  className={classNames(
+                                    item.current ? 'bg-gray-50' : 'hover:bg-gray-50',
+                                    'flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm leading-6 font-semibold text-gray-700'
+                                  )}
+                                >
+                                  <item.icon
+                                    className="h-6 w-6 shrink-0 text-gray-400"
+                                    aria-hidden="true"
+                                  />
+                                  {item.name}
+                                  <ChevronRightIcon
+                                    className={classNames(
+                                      open ? 'rotate-90 text-gray-500' : 'text-gray-400',
+                                      'ml-auto h-5 w-5 shrink-0'
+                                    )}
+                                    aria-hidden="true"
+                                  />
+                                </Disclosure.Button>
+                                <Disclosure.Panel as="ul" className="mt-1 px-2">
+                                  {item.children.map((subItem) => (
+                                    <li key={subItem.name}>
+                                      {/* 44px */}
+                                      <Disclosure.Button
+                                        as="a"
+                                        href={subItem.href}
+                                        className={classNames(
+                                          subItem.current ? 'bg-gray-50' : 'hover:bg-gray-50',
+                                          'block rounded-md py-2 pr-2 pl-9 text-sm leading-6 text-gray-700'
+                                        )}
+                                      >
+                                        {subItem.name}
+                                      </Disclosure.Button>
+                                    </li>
+                                  ))}
+                                </Disclosure.Panel>
+                              </>
+                            )}
+                          </Disclosure>
+                        )}
                       </li>
                     ))}
                   </ul>
