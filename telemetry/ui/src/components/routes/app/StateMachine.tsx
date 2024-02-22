@@ -27,9 +27,9 @@ export const AppStateView = (props: {
     tabs.push({ id: 'action', displayName: 'Action' });
   }
   return (
-    <div className="px-10 h-full w-full">
+    <>
       <Tabs tabs={tabs} currentTab={currentTab} setCurrentTab={setCurrentTab} />
-      <div className="h-full w-full">
+      <div className="px-10 h-full w-full overflow-y-auto">
         {currentTab === 'graph' && (
           <GraphView
             stateMachine={props.stateMachine}
@@ -45,6 +45,6 @@ export const AppStateView = (props: {
         {currentTab === 'data' && <DataView currentStep={currentStep} priorStep={priorStep} />}
         {currentTab === 'action' && <ActionView currentAction={actionModel} />}
       </div>
-    </div>
+    </>
   );
 };
