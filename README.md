@@ -43,3 +43,7 @@ pip install burr
 
 Next, see the documentation for [getting started](https://studious-spork-n8kznlw.pages.github.io/getting_started/simple-example.html), and follow the example.
 Then read through some of the concepts and write your own application!
+
+# Contributing
+
+We welcome contributors! To get started on developing, see the [developer-facing docs]([documentation](https://studious-spork-n8kznlw.pages.github.io/contributing))_

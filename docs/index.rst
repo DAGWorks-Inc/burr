@@ -21,3 +21,10 @@
    :caption: Reference:
 
    reference/index
+
+.. toctree::
+   :hidden:
+   :maxdepth: 2
+   :caption: Contributing:
+
+   contributing/index

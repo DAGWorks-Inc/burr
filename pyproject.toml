@@ -82,6 +82,7 @@ developer = [
   "loguru", # I love loguru TBH, but not for any prod stuff
   "build",
   "twine",
+  "pre-commit",
 ]
 
 [tool.setuptools]
@@ -103,6 +104,7 @@ Repository = "https://github.com/dagworks-inc/burr"
 "Bug Tracker" = "https://github.com/dagworks-inc/burr"
 
 [project.scripts]
-server = "burr.cli.__main__:cli_run_server"
-publish = "burr.cli.__main__:cli_build_and_publish"
-build-ui = "burr.cli.__main__:cli_build_ui"
+burr = "burr.cli.__main__:cli_run_server"
+burr-admin-server = "burr.cli.__main__:cli_run_server"
+burr-admin-publish = "burr.cli.__main__:cli_build_and_publish"
+burr-admin-build-ui = "burr.cli.__main__:cli_build_ui"

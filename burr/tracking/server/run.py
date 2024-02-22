@@ -14,6 +14,9 @@ app = FastAPI()
 
 backend = backend.LocalBackend()
 
+SERVE_STATIC = os.getenv("BURR_SERVE_STATIC", "true").lower() == "true"
+print(SERVE_STATIC)
+
 
 @app.get("/api/v0/projects", response_model=Sequence[schema.Project])
 async def get_projects(request: Request) -> Sequence[schema.Project]:
@@ -55,20 +58,22 @@ async def ready() -> bool:
     return True
 
 
-BASE_ASSET_DIRECTORY = str(files("burr").joinpath("tracking/server/build"))
+if SERVE_STATIC:
+    BASE_ASSET_DIRECTORY = str(files("burr").joinpath("tracking/server/build"))
 
-templates = Jinja2Templates(directory=BASE_ASSET_DIRECTORY)
-app.mount("/static", StaticFiles(directory=os.path.join(BASE_ASSET_DIRECTORY, "static")), "/static")
-# public assets in create react app don't get put under build/static, we need to route them over
-app.mount("/public", StaticFiles(directory=BASE_ASSET_DIRECTORY, html=True), "/public")
+    templates = Jinja2Templates(directory=BASE_ASSET_DIRECTORY)
+    app.mount(
+        "/static", StaticFiles(directory=os.path.join(BASE_ASSET_DIRECTORY, "static")), "/static"
+    )
+    # public assets in create react app don't get put under build/static, we need to route them over
+    app.mount("/public", StaticFiles(directory=BASE_ASSET_DIRECTORY, html=True), "/public")
 
-
-@app.get("/{rest_of_path:path}")
-async def react_app(req: Request, rest_of_path: str):
-    """Quick trick to server the react app
-    Thanks to https://github.com/hop-along-polly/fastapi-webapp-react for the example/demo
-    """
-    return templates.TemplateResponse("index.html", {"request": req})
+    @app.get("/{rest_of_path:path}")
+    async def react_app(req: Request, rest_of_path: str):
+        """Quick trick to server the react app
+        Thanks to https://github.com/hop-along-polly/fastapi-webapp-react for the example/demo
+        """
+        return templates.TemplateResponse("index.html", {"request": req})
 
 
 if __name__ == "__main__":
