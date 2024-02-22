@@ -13,11 +13,11 @@ const TwoColumnLayout: React.FC<TwoColumnLayoutProps> = ({
 }) => {
   return (
     <div className="flex h-full w-full">
-      <div className="w-1/2 h-full hide-scrollbar overflow-y-auto">
+      <div className="w-1/2 h-full">
         {/* Render left column content */}
         {leftColumnContent}
       </div>
-      <div className="w-1/2 h-full  hide-scrollbar overflow-hidden">
+      <div className="w-1/2 h-full">
         {/* Render right column content */}
         {rightColumnContent}
       </div>

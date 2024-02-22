@@ -24,7 +24,7 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
   const error = props.currentStep?.step_end_log?.exception;
 
   return (
-    <div className="h-full overflow-y-auto pl-3 pt-2 flex flex-col gap-2">
+    <div className="h-full pl-3 pt-2 flex flex-col gap-2">
       <div className="flex flex-row justify-between">
         <h1 className="text-2xl text-gray-600 font-semibold">State</h1>
         <div className="flex flex-row justify-end gap-2 pr-2">
