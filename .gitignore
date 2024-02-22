@@ -160,3 +160,6 @@ cython_debug/
 #.idea/
 #
 _build
+
+# Symlink gnerated in build
+burr/tracking/server/build

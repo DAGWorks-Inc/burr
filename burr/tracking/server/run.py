@@ -1,6 +1,11 @@
+import os
+from importlib.resources import files
 from typing import Sequence
 
+import uvicorn
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
+from starlette.templating import Jinja2Templates
 
 from burr.tracking.server import backend, schema
 from burr.tracking.server.schema import ApplicationLogs
@@ -43,3 +48,29 @@ async def get_application_logs(request: Request, project_id: str, app_id: str) -
     :return: A list of steps with all associated step data
     """
     return await backend.get_application_logs(request, project_id=project_id, app_id=app_id)
+
+
+@app.get("/api/v0/ready")
+async def ready() -> bool:
+    return True
+
+
+BASE_ASSET_DIRECTORY = str(files("burr").joinpath("tracking/server/build"))
+
+templates = Jinja2Templates(directory=BASE_ASSET_DIRECTORY)
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_ASSET_DIRECTORY, "static")), "/static")
+# public assets in create react app don't get put under build/static, we need to route them over
+app.mount("/public", StaticFiles(directory=BASE_ASSET_DIRECTORY, html=True), "/public")
+
+
+@app.get("/{rest_of_path:path}")
+async def react_app(req: Request, rest_of_path: str):
+    """Quick trick to server the react app
+    Thanks to https://github.com/hop-along-polly/fastapi-webapp-react for the example/demo
+    """
+    return templates.TemplateResponse("index.html", {"request": req})
+
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8000))  # Default to 8000 if no PORT environment variable is set
+    uvicorn.run(app, host="0.0.0.0", port=port)

@@ -56,23 +56,53 @@ tracking-client = [
 ]
 
 tracking-server = [
+  "click",
   "fastapi",
   "uvicorn",
   "pydantic",
   "fastapi-pagination",
-  "aiofiles"
+  "aiofiles",
+  "requests",
+  "jinja2",
 ]
 
 tracking = [
   "burr[tracking-client]",
-  "burr[tracking-server]"
+  "burr[tracking-server]",
+  "loguru",
 ]
 
+# just install everything for developers
+developer = [
+  "burr[streamlit]",
+  "burr[graphviz]",
+  "burr[tracking]",
+  "burr[tests]",
+  "burr[documentation]",
+  "loguru", # I love loguru TBH, but not for any prod stuff
+  "build",
+  "twine",
+]
+
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
-include = ["burr"]
+include = ["burr", "burr.*"]
+
+# we need to ensure this is there...
+[tool.setuptools.package-data]
+burr = [
+  "burr/tracking/server/build/**/*",
+]
 
 [project.urls]
 Homepage = "https://github.com/dagworks-inc/burr"
 Documentation = "https://github.com/dagworks-inc/burr"
 Repository = "https://github.com/dagworks-inc/burr"
 "Bug Tracker" = "https://github.com/dagworks-inc/burr"
+
+[project.scripts]
+server = "burr.cli.__main__:cli_run_server"
+publish = "burr.cli.__main__:cli_build_and_publish"
+build-ui = "burr.cli.__main__:cli_build_ui"

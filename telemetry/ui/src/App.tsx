@@ -4,16 +4,21 @@ import { ProjectList } from './components/routes/ProjectList';
 import { AppList } from './components/routes/AppList';
 import { AppView } from './components/routes/app/AppView';
 import { QueryClient, QueryClientProvider } from 'react-query';
-import { OpenAPI } from './api';
 import { AppContainer } from './components/nav/appcontainer';
 
-// TODO -- unhardcode
-OpenAPI.BASE = 'http://localhost:7241';
 /**
  * Basic application. We have an AppContainer -- this has a breadcrumb and a sidebar.
  * We refer to route paths to gather parameters, as its simple to wire through. We may
  * want to consider passing parameters in to avoid overly coupled dependencies/ensure
  * more reusable top-level components.
+ *
+ * Note that you can run this in one of two modes:
+ * 1. As an asset served by the backend
+ * 2. Standalone, using npm run
+ *
+ * npm run will proxy to port 7241, versus the asset which will
+ * hit the backend (on the same port/server as the FE, its just a static route).
+ *
  * @returns A rendered application object
  */
 const App = () => {
