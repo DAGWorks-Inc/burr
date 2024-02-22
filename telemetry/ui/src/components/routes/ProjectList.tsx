@@ -2,7 +2,6 @@ import { useQuery } from 'react-query';
 import { DefaultService, Project } from '../../api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../common/table';
 import { Loading } from '../common/loading';
-import { LinkText } from '../common/href';
 import { DateDisplay } from '../common/dates';
 import { Button } from '../common/button';
 
@@ -23,7 +22,7 @@ export const ProjectListTable = (props: { projects: Project[] }) => {
           <TableHeader>Created</TableHeader>
           <TableHeader>Last Run</TableHeader>
           <TableHeader># of traces</TableHeader>
-          <TableHeader>path</TableHeader>
+          <TableHeader>Path</TableHeader>
           <TableHeader></TableHeader>
         </TableRow>
       </TableHead>
@@ -39,7 +38,7 @@ export const ProjectListTable = (props: { projects: Project[] }) => {
             </TableCell>
             <TableCell>{project.num_apps}</TableCell>
             <TableCell>
-              <LinkText href={`file:///${project.uri}`} text={project.uri}></LinkText>
+              <code className="text-gray-600">{project.uri}</code>
             </TableCell>
             <TableCell>
               <Button color="white" href={`/project/${project.id}`}>
