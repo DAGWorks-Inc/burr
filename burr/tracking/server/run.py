@@ -2,20 +2,37 @@ import os
 from importlib.resources import files
 from typing import Sequence
 
-import uvicorn
-from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
-from starlette.templating import Jinja2Templates
+from burr.integrations.base import require_plugin
 
-from burr.tracking.server import backend, schema
-from burr.tracking.server.schema import ApplicationLogs
+try:
+    import uvicorn
+    from fastapi import FastAPI, Request
+    from fastapi.staticfiles import StaticFiles
+    from starlette.templating import Jinja2Templates
+
+    from burr.tracking.server import backend, schema
+    from burr.tracking.server.schema import ApplicationLogs
+except ImportError as e:
+    require_plugin(
+        e,
+        [
+            "click",
+            "fastapi",
+            "uvicorn",
+            "pydantic",
+            "fastapi-pagination",
+            "aiofiles",
+            "requests",
+            "jinja2",
+        ],
+        "tracking",
+    )
 
 app = FastAPI()
 
 backend = backend.LocalBackend()
 
 SERVE_STATIC = os.getenv("BURR_SERVE_STATIC", "true").lower() == "true"
-print(SERVE_STATIC)
 
 
 @app.get("/api/v0/projects", response_model=Sequence[schema.Project])

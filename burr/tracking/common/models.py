@@ -13,7 +13,7 @@ except ImportError as e:
     require_plugin(
         e,
         ["pydantic"],
-        "tracking-client",
+        "tracking",
     )
 
 
