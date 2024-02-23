@@ -6,9 +6,18 @@ import time
 import webbrowser
 from contextlib import contextmanager
 
-import click
-import requests
-from loguru import logger
+from burr.integrations.base import require_plugin
+
+try:
+    import click
+    import requests
+    from loguru import logger
+except ImportError as e:
+    require_plugin(
+        e,
+        ["click", "requests", "loguru"],
+        "start",
+    )
 
 
 def _command(command: str, capture_output: bool) -> str:
