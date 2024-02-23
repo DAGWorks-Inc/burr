@@ -168,6 +168,8 @@ class LifecycleAdapterSet:
         futures = []
         for adapter in self.async_hooks[hook_name]:
             futures.append(getattr(adapter, hook_name)(**kwargs))
+        if len(futures) == 0:
+            return  # No async hooks to call
         await asyncio.gather(*futures)
 
     async def call_all_lifecycle_hooks_sync_and_async(self, hook_name: str, **kwargs):

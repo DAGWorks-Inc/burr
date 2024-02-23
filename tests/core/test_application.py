@@ -830,6 +830,50 @@ async def test_application_run_step_hooks_async():
     assert len(tracker.post_called) == 11
 
 
+async def test_application_run_step_runs_hooks():
+    class ActionTracker(PreRunStepHook, PostRunStepHook):
+        def __init__(self):
+            self.pre_called_count = 0
+            self.post_called_count = 0
+
+        def pre_run_step(self, **future_kwargs):
+            self.pre_called_count += 1
+
+        def post_run_step(self, **future_kwargs):
+            self.post_called_count += 1
+
+    class ActionTrackerAsync(PreRunStepHookAsync, PostRunStepHookAsync):
+        def __init__(self):
+            self.pre_called_count = 0
+            self.post_called_count = 0
+
+        async def pre_run_step(self, **future_kwargs):
+            await asyncio.sleep(0.0001)
+            self.pre_called_count += 1
+
+        async def post_run_step(self, **future_kwargs):
+            await asyncio.sleep(0.0001)
+            self.post_called_count += 1
+
+    hooks = [ActionTracker(), ActionTrackerAsync()]
+
+    counter_action = base_counter_action.with_name("counter")
+    app = Application(
+        actions=[counter_action],
+        transitions=[
+            Transition(counter_action, counter_action, default),
+        ],
+        state=State({}),
+        initial_step="counter",
+        adapter_set=internal.LifecycleAdapterSet(*hooks),
+    )
+    await app.astep()
+    assert hooks[0].pre_called_count == 1
+    assert hooks[0].post_called_count == 1
+    assert hooks[1].pre_called_count == 1
+    assert hooks[1].post_called_count == 1
+
+
 def test_application_post_application_create_hook():
     class PostApplicationCreateTracker(PostApplicationCreateHook):
         def __init__(self):
