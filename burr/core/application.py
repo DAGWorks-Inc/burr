@@ -207,17 +207,25 @@ class Application:
         the method you want -- you'll want iterate() (if you want to see the state/
         results along the way), or run() (if you just want the final state/results).
 
-        :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world
+        :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world        :param __run_hooks:
         :return: Tuple[Function, dict, State] -- the function that was just ran, the result of running it, and the new state
         """
+        return self._step(inputs=inputs, _run_hooks=True)
+
+    def _step(
+        self, inputs: Optional[Dict[str, Any]] = None, _run_hooks: bool = True
+    ) -> Optional[Tuple[Action, dict, State]]:
+        """Internal-facing version of step. This is the same as step, but with an additional
+        parameter to hide hook execution so async can leverage it."""
         next_action = self.get_next_action()
         if next_action is None:
             return None
         if inputs is None:
             inputs = {}
-        self._adapter_set.call_all_lifecycle_hooks_sync(
-            "pre_run_step", action=next_action, state=self._state
-        )
+        if _run_hooks:
+            self._adapter_set.call_all_lifecycle_hooks_sync(
+                "pre_run_step", action=next_action, state=self._state
+            )
         exc = None
         result = None
         new_state = self._state
@@ -234,9 +242,14 @@ class Application:
             logger.exception(_format_error_message(next_action, self._state, inputs))
             raise e
         finally:
-            self._adapter_set.call_all_lifecycle_hooks_sync(
-                "post_run_step", action=next_action, state=new_state, result=result, exception=exc
-            )
+            if _run_hooks:
+                self._adapter_set.call_all_lifecycle_hooks_sync(
+                    "post_run_step",
+                    action=next_action,
+                    state=new_state,
+                    result=result,
+                    exception=exc,
+                )
         return next_action, result, new_state
 
     async def astep(self, inputs: Dict[str, Any] = None) -> Optional[Tuple[Action, dict, State]]:
@@ -252,7 +265,7 @@ class Application:
             inputs = {}
         if next_action is None:
             return None
-        await self._adapter_set.call_all_lifecycle_hooks_async(
+        await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
             "pre_run_step", action=next_action, state=self._state
         )
         exc = None
@@ -265,7 +278,9 @@ class Application:
                 # TODO -- add an option/configuration to launch a thread (yikes, not super safe, but for a pure function
                 # which this is supposed to be its OK).
                 # this delegates hooks to the synchronous version, so we'll call all of them as well
-                return self.step(inputs=inputs)
+                return self._step(
+                    inputs=inputs, _run_hooks=False
+                )  # Skip hooks as we already ran all of them/will run all of them in this function's finally
             if next_action.single_step:
                 result, new_state = await _arun_single_step_action(
                     next_action, self._state, inputs=inputs

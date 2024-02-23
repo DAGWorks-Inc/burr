@@ -50,4 +50,15 @@ To include this in the application, you pass it into the :py:meth:`with_hooks <b
         ...
         .build())
 
+.. note::
+
+    There are synchronous and asynchronous hooks. Synchronous hooks will be called with both synchronous and asynchronous run methods
+    (all of ``step``, ``astep``, ``iterate``, ``aiterate``, ``run``, and ``arun``), whereas synchronous hooks will only be called with
+    the asynchronous methods (``astep``, ``aiterate``, ``arun``).
+
+.. warning::
+    Hook order is currently undefined -- they happen to be called now in the order in which they are defined. We will likely
+    alter them to be called in the order they are defined (for `pre...`) hooks and in reverse order for `post...` hooks,
+    but this is not yet implemented.
+
 Read more about the hook API in the :ref:`hooks section <hooksref>`.
