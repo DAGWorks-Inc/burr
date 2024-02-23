@@ -41,21 +41,24 @@ but realized that it has a wide array of applications and decided to release it.
 
 To get started, install from `pypi`, using your favorite package manager:
 
-```
-pip install burr
+```bash
+pip install "burr[start]"
 ```
 
+This includes the dependencies for the tracking server (see next step) -- alternatively if you want the core library only then just run `pip install burr`.
 Then, run the server and check out the demo projects:
 
-```
-burr
+```bash
+$ burr
+
+2024-02-23 11:43:21.249 | INFO     | burr.cli.__main__:run_server:88 - Starting server on port 7241
 ```
 
-This will open up a browser window with a few demo projects preloaded for you to play with.
+This will start a server and open up a browser window with a few demo projects preloaded for you to play with.
 
 Next, see the documentation for [getting started](https://studious-spork-n8kznlw.pages.github.io/getting_started/simple-example.html), and follow the example.
 Then read through some of the concepts and write your own application!
 
 # Contributing
 
-We welcome contributors! To get started on developing, see the [developer-facing docs]([documentation](https://studious-spork-n8kznlw.pages.github.io/contributing))_
+We welcome contributors! To get started on developing, see the [developer-facing docs](https://studious-spork-n8kznlw.pages.github.io/contributing).

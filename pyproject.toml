@@ -72,6 +72,10 @@ tracking = [
   "loguru",
 ]
 
+start = [
+  "burr[tracking]"
+]
+
 # just install everything for developers
 developer = [
   "burr[streamlit]",
@@ -79,7 +83,6 @@ developer = [
   "burr[tracking]",
   "burr[tests]",
   "burr[documentation]",
-  "loguru", # I love loguru TBH, but not for any prod stuff
   "build",
   "twine",
   "pre-commit",
