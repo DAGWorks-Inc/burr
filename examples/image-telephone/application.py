@@ -143,7 +143,7 @@ if __name__ == "__main__":
         output_file_path="telephone_graph", include_conditions=True, view=True, format="png"
     )
     if coin_flip:
-        app.run(until=["terminal"])
+        app.run(halt_after=["terminal"])
     else:
         # alternate way to run:
         while True:

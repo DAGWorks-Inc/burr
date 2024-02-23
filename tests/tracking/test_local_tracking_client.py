@@ -41,7 +41,7 @@ def test_application_tracks_end_to_end(tmpdir: str):
     log_dir = os.path.join(tmpdir, "tracking")
     project_name = "test_application_tracks_end_to_end"
     app = sample_application(project_name, log_dir, app_id)
-    app.run(until=["result"])
+    app.run(halt_after=["result"])
     results_dir = os.path.join(log_dir, project_name, app_id)
     assert os.path.exists(results_dir)
     assert os.path.exists(log_output := os.path.join(results_dir, LocalTrackingClient.LOG_FILENAME))
@@ -74,7 +74,7 @@ def test_application_tracks_end_to_end_broken(tmpdir: str):
     project_name = "test_application_tracks_end_to_end"
     app = sample_application(project_name, log_dir, app_id, broken=True)
     with pytest.raises(ValueError):
-        app.run(until=["result"])
+        app.run(halt_after=["result"])
     results_dir = os.path.join(log_dir, project_name, app_id)
     assert os.path.exists(results_dir)
     assert os.path.exists(log_output := os.path.join(results_dir, LocalTrackingClient.LOG_FILENAME))

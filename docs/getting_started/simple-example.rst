@@ -79,7 +79,7 @@ Finally, we can run the application:
 
 .. code-block:: python
 
-    app.run(until=["printer"])
+    app.run(halt_after=["printer"])
 
 If you want to copy/paste, you can open up the following code block and add to a file called ``run.py``:
 
@@ -126,7 +126,7 @@ If you want to copy/paste, you can open up the following code block and add to a
                 .build()
             )
             app.visualize("./graph", format="png", include_conditions=True, include_state=True)
-            app.run(until=["printer"])
+            app.run(halt_after=["printer"])
 
 
 And the output looks exactly as we expect!
