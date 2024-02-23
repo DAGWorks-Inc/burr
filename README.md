@@ -7,6 +7,10 @@ is always hard!
 
 Link to [documentation](https://studious-spork-n8kznlw.pages.github.io/).
 
+Burr is:
+1. A (dependency-free) python library that enables you to build and manage state machines with simple python functions
+2. A server that can run your state machines and provide a UI to track execution/debug
+
 ## What can you do with Burr?
 
 Burr can be used for a variety of applications. Burr can build a state machine to orchestrate, express, and track:
@@ -20,7 +24,7 @@ And a lot more!
 Using hooks and other integrations you can (a) integrate with any of your favorite vendors (LLM observability, storage, etc...), and
 (b) build custom actions that delegate to your favorite libraries.
 
-Bur will _not_ tell you how to build your models, how to query APIs, or how to manage your data. It will help you tie all these together
+Burr will _not_ tell you how to build your models, how to query APIs, or how to manage your data. It will help you tie all these together
 in a way that scales with your needs and makes following the logic of your system easy. Burr comes out of the box with a host of integrations
 including tooling to build a UI in streamlit and watch your state machine execute.
 
@@ -40,6 +44,14 @@ To get started, install from `pypi`, using your favorite package manager:
 ```
 pip install burr
 ```
+
+Then, run the server and check out the demo projects:
+
+```
+burr
+```
+
+This will open up a browser window with a few demo projects preloaded for you to play with.
 
 Next, see the documentation for [getting started](https://studious-spork-n8kznlw.pages.github.io/getting_started/simple-example.html), and follow the example.
 Then read through some of the concepts and write your own application!
