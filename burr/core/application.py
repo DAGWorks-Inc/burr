@@ -303,98 +303,98 @@ class Application:
     def iterate(
         self,
         *,
-        until: list[str],
-        gate: TerminationCondition = "any_complete",
+        halt_before: list[str] = None,
+        halt_after: list[str] = None,
         inputs: Optional[Dict[str, Any]] = None,
-    ) -> Generator[Tuple[Action, dict, State], None, Tuple[State, List[dict]]]:
+    ) -> Generator[Tuple[Action, dict, State], None, Tuple[Action, Optional[dict], State]]:
         """Returns a generator that calls step() in a row, enabling you to see the state
         of the system as it updates. Note this returns a generator, and also the final result
         (for convenience).
 
-        :param until: The list of actions to run until -- these must be strings
-            that match the names of the actions.
-        :param gate: The gate to run until. This can be "any_complete" or "all_complete"
+        :param halt_before: The list of actions to halt before execution of. It will halt on the first one.
+        :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
         :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world.
             Note that this is only used for the first iteration -- subsequent iterations will not use this.
         :return: Each iteration returns the result of running `step`
-            The final result is the current state + results in the order that they were specified.
+            The final result is the action, result, current state,
         """
+        if not halt_before and not halt_after:
+            logger.warning("No halt termination specified -- running forever!")
         if inputs is None:
             inputs = {}
-
-        if gate != "any_complete":
-            raise NotImplementedError(
-                "Only any_complete is supported for now -- "
-                "please reach out to the developers to unblock other gate types!"
-            )
-
-        results: List[Optional[dict]] = [None for _ in until]
-        index_by_name = {name: index for index, name in enumerate(until)}
-        seen_results = set()
-
-        condition = (
-            lambda: any(item in seen_results for item in until)
-            if gate == "any_complete"
-            else lambda: len(seen_results) == len(until)
-        )
-
-        while not condition():
+        result = None
+        action: Optional[Action] = None
+        while True:
             state_output = self.step(inputs=inputs)
             inputs = {}  # only pass inputs in the first time
             if state_output is None:
                 break
             action, result, state = state_output
-            if action.name in until:
-                seen_results.add(action.name)
-                results[index_by_name[action.name]] = result
             yield action, result, state
-        return self._state, results
+            if (
+                halt_before
+                and self.get_next_action()
+                and self.get_next_action().name in halt_before
+            ):
+                break
+            elif halt_after and action and action.name in halt_after:
+                break
+
+        if action and halt_after and action.name in halt_after:
+            return action, result, self._state
+        elif self.get_next_action() and halt_before and self.get_next_action().name in halt_before:
+            return self.get_next_action(), None, self._state
+        return action, result, self._state
 
     async def aiterate(
         self,
         *,
-        until: list[str],
-        gate: TerminationCondition = "any_complete",
+        halt_before: list[str] = None,
+        halt_after: list[str] = None,
         inputs: Optional[Dict[str, Any]] = None,
-    ) -> AsyncGenerator[Tuple[Action, dict, State], Tuple[State, List[dict]]]:
+    ) -> AsyncGenerator[Tuple[Action, dict, State], Tuple[Action, Optional[dict], State]]:
         """Returns a generator that calls step() in a row, enabling you to see the state
         of the system as it updates. This is the asynchronous version so it has no capability of t
 
-        :param until: The list of actions to run until -- these must be strings
-            that match the names of the action.
-        :param gate: The gate to run until. This can be "any_complete" or "all_complete"
+        :param halt_before: The list of actions to halt before execution of. It will halt on the first one.
+        :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
         :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world.
             Note that this is only used for the first iteration -- subsequent iterations will not use this.
         :return: Each iteration returns the result of running `step`
-            The final result is the current state + results in the order that they were specified.
+            The final result is the action, result, current state,
         """
-
-        seen_results = set()
-        condition = (
-            lambda: any(item in seen_results for item in until)
-            if gate == "any_complete"
-            else lambda: len(seen_results) == len(until)
-        )
+        if not halt_before and not halt_after:
+            logger.warning("No halt termination specified -- running forever!")
         if inputs is None:
             inputs = {}
 
-        while not condition():
-            result = await self.astep(inputs=inputs)
+        while True:
+            step_result = await self.astep(inputs=inputs)
             inputs = {}  # only pass inputs in the first time
-            if result is None:
+            if step_result is None:
                 break
-            action, result, state = result
-            if action.name in until:
-                seen_results.add(action.name)
+            action, result, state = step_result
             yield action, result, state
+            if (
+                halt_before
+                and self.get_next_action()
+                and self.get_next_action().name in halt_before
+            ):
+                yield self.get_next_action(), None, self._state
+                # we don't need to go around the loop again.
+                break
+            elif halt_after and action and action.name in halt_after:
+                # we've already yielded where we want to stop
+                # and we don't want to yield the same thing twice -- and there's no return in async generators
+                break
 
     def run(
         self,
         *,
-        until: list[str],
-        gate: TerminationCondition = "any_complete",
+        halt_before: list[str] = None,
+        halt_after: list[str] = None,
         inputs: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[State, List[dict]]:
+    ) -> Tuple[Action, Optional[dict], State]:
         """Runs your application through until completion. Does
         not give access to the state along the way -- if you want that, use iterate().
 
@@ -403,7 +403,7 @@ class Application:
         :param gate: Gate to run until -- only accepts "any_complete" for now
         :return: The final state, and the results of running the actions in the order that they were specified.
         """
-        gen = self.iterate(until=until, gate=gate, inputs=inputs)
+        gen = self.iterate(halt_before=halt_before, halt_after=halt_after, inputs=inputs)
         while True:
             try:
                 next(gen)
@@ -413,25 +413,26 @@ class Application:
     async def arun(
         self,
         *,
-        until: list[str],
-        gate: TerminationCondition = "any_complete",
+        halt_before: list[str] = None,
+        halt_after: list[str] = None,
         inputs: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> Tuple[Action, Optional[dict], State]:
         """Runs your application through until completion, using async. Does
         not give access to the state along the way -- if you want that, use iterate().
 
-        :param until: The list of actions to run until -- these must be strings
+        :param halt_before: The list of actions to halt before execution of. It will halt on the first one.
+        :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
         :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world
-        :param gate: Gate to run until -- only accepts "any_complete" for now
         :return: The final state, and the results of running the actions in the order that they were specified.
         """
         state = self._state
-        results: List[Optional[dict]] = [None for _ in until]
-        index_by_name = {name: index for index, name in enumerate(until)}
-        async for action, result, state in self.aiterate(until=until, gate=gate, inputs=inputs):
-            if action.name in until:
-                results[index_by_name[action.name]] = result
-        return state, results
+        action = None
+        result = None
+        async for action, result, state in self.aiterate(
+            halt_before=halt_before, halt_after=halt_after, inputs=inputs
+        ):
+            pass
+        return action, result, state
 
     def visualize(
         self,

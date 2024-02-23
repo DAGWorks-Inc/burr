@@ -67,7 +67,7 @@ Iterate just runs ``step`` in a row, functioning as a generator:
 
 .. code-block:: python
 
-    for action, result, state in application.iterate(until=["final_action_1", "final_action_2"]):
+    for action, result, state in application.iterate(halt_after=["final_action_1", "final_action_2"]):
         print(action.name, result)
 
 You can also run ``aiterate`` in an async context:
@@ -78,8 +78,10 @@ You can also run ``aiterate`` in an async context:
         print(action.name, result)
 
 In the synchronous context this also has a return value of a tuple of:
-1. the final state
-2. A list of the actions that were run, one for each result
+1. the action that was specified in `halt_after` or `halt_before`. In the `after` case the action will have already run.
+In the `before` case the action will not have run.
+2. The result of the action, in the `halt_after` case, else None in the `halt_before` case.
+3. The state of the application at the time of halting.
 
 You can access this by looking at the ``value`` variable of the ``StopIteration`` exception that is thrown
 at the end of the loop, as is standard for python.
@@ -98,19 +100,20 @@ In the async context, this does not return anything
 
 Run just calls out to ``iterate`` and returns the final state.
 
-The ``until`` variable is a ``or`` gate (E.G. ``any_complete``), although we will be adding an ``and`` gate (E.G. ``all_complete``),
-and the ability to run until the state machine naturally executes (``until=None``).
+The ``halt_after`` and ``halt_before`` keyword arguments specify when to break out of running the state machine
+and return control back. ``halt_after`` will stop after the specified action(s) has run, and ``halt_before`` will stop before the specified action(s) has run.
+If multiple are specified, it will stop after the first one encountered, and the return values will be for that action.
 
 .. code-block:: python
 
-    final_state, results = application.run(until=["final_action_1", "final_action_2"])
+    final_state, results = application.run(halt_after=["final_action_1", "final_action_2"])
 
 
 In the async context, you can run ``arun``:
 
 .. code-block:: python
 
-    final_state = await application.arun(until=["final_action_1", "final_action_2"])
+    final_state = await application.arun(halt_after=["final_action_1", "final_action_2"])
 
 .. note::
     You can add inputs to ``run``/``arun`` in the same way as you can with ``iterate`` -- it will only apply to the first action.

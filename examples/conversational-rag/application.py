@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import burr.core
 from burr.core import Action, ApplicationBuilder, State, default, expr
 from burr.core.action import action
 from burr.lifecycle import PostRunStepHook
@@ -16,6 +17,8 @@ converasation_rag_dr = (
 
 
 class PrintStepHook(PostRunStepHook):
+    """Custom hook to print the state and action after each step."""
+
     def post_run_step(self, *, state: "State", action: "Action", **future_kwargs):
         print("action=====\n", action)
         print("state======\n", state)
@@ -35,36 +38,35 @@ def ai_converse(state: State) -> Tuple[dict, State]:
             "chat_history": state["chat_history"],
         },
     )
-    new_history = f"Human: {state['question']}\nAI: {result['conversational_rag_response']}"
+    new_history = f"AI: {result['conversational_rag_response']}"
     return result, state.append(chat_history=new_history)
 
 
-# procedural way to do this
 @action(
-    reads=["chat_history"],
-    writes=["question"],
+    reads=[],
+    writes=["question", "chat_history"],
 )
-def human_converse(state: State) -> Tuple[dict, State]:
-    user_question = input("What is your next question: ")
-    return {"question": user_question}, state.update(question=user_question)
-
-
-@action(
-    reads=["question"],
-    writes=["question"],
-)
-def human_converse_placeholder(state: State) -> Tuple[dict, State]:
-    user_question = state["question"]
+def human_converse(state: State, user_question: str) -> Tuple[dict, State]:
+    state = state.update(question=user_question).append(chat_history=f"Human: {user_question}")
     return {"question": user_question}, state
 
 
-@action(reads=[], writes=[])
-def terminal_step(state: State) -> Tuple[dict, State]:
-    return {}, state
+@action(
+    reads=[],
+    writes=["question", "chat_history"],
+)
+def human_converse_input(state: State) -> Tuple[dict, State]:
+    user_question = input("What is your question?: ")
+    state = state.update(question=user_question).append(chat_history=f"Human: {user_question}")
+    return {"question": user_question}, state
 
 
-def use_inputs_within_action():
-    """This is one way -- you use inputs within an action."""
+def main(input_via_control_flow: bool):
+    """This is one way -- you provide input via the control flow"""
+    if input_via_control_flow:
+        human_action = human_converse
+    else:
+        human_action = human_converse_input
     app = (
         ApplicationBuilder()
         .with_state(
@@ -81,8 +83,8 @@ def use_inputs_within_action():
         )
         .with_actions(
             ai_converse=ai_converse,
-            human_converse=human_converse,
-            terminal=terminal_step,
+            human_converse=human_action,
+            terminal=burr.core.Result("chat_history"),
         )
         .with_transitions(
             ("ai_converse", "human_converse", default),
@@ -90,57 +92,40 @@ def use_inputs_within_action():
             ("human_converse", "ai_converse", default),
         )
         .with_entrypoint("human_converse")
+        .with_tracker("demo-conversational-rag")
         .with_hooks(PrintStepHook())
         .build()
     )
     app.visualize(
         output_file_path="conversational_rag", include_conditions=True, view=True, format="png"
     )
-    app.run(until=["terminal"])
+    if input_via_control_flow:
+        while True:
+            user_question = input("What is your question: ")
+            action, result, state = app.run(
+                halt_before=["human_converse"],
+                halt_after=["terminal"],
+                inputs={"user_question": user_question},
+            )
+            if action.name == "terminal":
+                # reached the end
+                print(result)
+                break
+    else:
+        # async way to run things
+        # import asyncio
+        # action, result, state = asyncio.run(app.arun(
+        #     halt_after=["terminal"],
+        # ))
+        action, result, state = app.run(
+            halt_after=["terminal"],
+        )
+        print(result)
     return
 
 
-def manipulate_state():
-    """This way to run the application manipulates state directly."""
-    app = (
-        ApplicationBuilder()
-        .with_state(
-            **{
-                "input_texts": [
-                    "harrison worked at kensho",
-                    "stefan worked at Stitch Fix",
-                    "stefan likes tacos",
-                    "elijah worked at TwoSigma",
-                ],
-                "question": "",
-                "chat_history": [],
-            }
-        )
-        .with_actions(
-            ai_converse=ai_converse,
-            human_converse=human_converse_placeholder,
-            terminal=terminal_step,
-        )
-        .with_transitions(
-            ("ai_converse", "human_converse", default),
-            ("human_converse", "terminal", expr("'exit' in question")),
-            ("human_converse", "ai_converse", default),
-        )
-        .with_entrypoint("human_converse")
-        .with_hooks(PrintStepHook())
-        .build()
-    )
-    app.visualize(
-        output_file_path="conversational_rag", include_conditions=True, view=True, format="png"
-    )
-    while True:
-        action, result, state = app.step()
-        if action.name == "human_converse":
-            user_question = input("What is your next question: ")
-            app.update_state(state.update(question=user_question))
-        if action.name == "terminal":
-            break
-
-
 if __name__ == "__main__":
-    manipulate_state()
+    import random
+
+    choice = random.choice([True, False])
+    main(choice)

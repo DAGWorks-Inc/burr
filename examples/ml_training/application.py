@@ -104,7 +104,7 @@ def application(epochs: int) -> burr.core.application.Application:
 
 if __name__ == "__main__":
     app = application(100)  # doing good data science is up to you...
-    # state, result = app.run(until=["result"])
+    # action, state, result = app.run(halt_after=["result"])
     app.visualize(output_file_path="ml_training.png", include_conditions=True, view=True)
     # assert state["counter"] == 10
     # print(state["counter"])

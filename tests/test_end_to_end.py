@@ -55,7 +55,7 @@ def test_end_to_end_collatz_with_function_api():
         .with_hooks(hook)
         .build()
     )
-    state, [result] = application.run(until=["result"], inputs={"n": 1000})
+    run_action, result, state = application.run(halt_after=["result"], inputs={"n": 1000})
     assert result["n_history"][-1] == 1
     assert hook.count == 112
 
@@ -77,7 +77,9 @@ def test_echo_bot():
     )
     prompt = "hello"
     with patch("sys.stdin", new=StringIO(prompt)):
-        state, [result] = application.run(until=["response"], inputs={"prompt": input()})
+        run_action, result, state = application.run(
+            halt_after=["response"], inputs={"prompt": input()}
+        )
 
     application.visualize(
         output_file_path="digraph",
