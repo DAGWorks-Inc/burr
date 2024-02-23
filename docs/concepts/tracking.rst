@@ -5,7 +5,17 @@ Tracking Burr
 =============
 
 Burr comes with a telemetry system that allows tracking a variety of information for debugging,
-both in development and production. Note this is a WIP.
+both in development and production.
+
+The data model for tracking is simple:
+
+1. **Projects** are the top-level grouping of data (the first page). This is specified in the constructor for the
+   :py:meth:`with_tracker <burr.core.application.ApplicationBuilder.with_tracker>`, as the only required argument.
+2. **Applications** get logged to projects. An application would be considered similar to a "trace" in distributed
+   tracing systems. This is (optionally) specified as the ``app_id`` argument for the :py:meth:`with_tracker <burr.core.application.ApplicationBuilder.with_tracker>`
+   method. A single ``application`` has shared state path across all its steps.
+3. **Steps** are the individual steps that are executed in the state machine. The Burr UI will show the state of the
+   state machine at the time of the step execution, as well as the input to and results of the step.
 
 ---------------
 Tracking Client
@@ -22,6 +32,18 @@ This is a lifecycle hook that does the following:
     - The timestamps
 
 This currently defaults to (and only supports) the :py:class:`LocalTrackingClient <burr.tracking.LocalTrackingClient>` class, which
-writes to a local file system, althoguh we will be making it pluggable in the future.
+writes to a local file system, although we will be making it pluggable in the future. It will, by default, write to the directory
+``~/.burr``.
 
-This will be used with the UI, which can serve out of the specified directory. More coming soon!
+---------------
+Tracking Server
+---------------
+
+The tracking server (now) is meant for visualizing the state machine and the steps that have been executed. You can
+run it with the following command:
+
+.. code-block:: bash
+
+    burr
+
+This will start a server on port 7241, and open up a browser window with the UI for you to explore.
