@@ -11,22 +11,27 @@ import requests
 from loguru import logger
 
 
-def _command(command: str) -> str:
+def _command(command: str, capture_output: bool) -> str:
     """Runs a simple command"""
     logger.info(f"Running command: {command}")
     if isinstance(command, str):
         command = command.split(" ")
-    try:
-        output = subprocess.check_output(command, stderr=subprocess.PIPE, shell=False)
-        return output.decode().strip()  # If command is successful, print the output.
-    except subprocess.CalledProcessError as e:
-        print(e.stdout.decode())
-        print(e.stderr.decode())
-        raise e
+        if capture_output:
+            try:
+                return (
+                    subprocess.check_output(command, stderr=subprocess.PIPE, shell=False)
+                    .decode()
+                    .strip()
+                )
+            except subprocess.CalledProcessError as e:
+                print(e.stdout.decode())
+                print(e.stderr.decode())
+                raise e
+        subprocess.run(command, shell=False, check=True)
 
 
 def _get_git_root() -> str:
-    return _command("git rev-parse --show-toplevel")
+    return _command("git rev-parse --show-toplevel", capture_output=True)
 
 
 def open_when_ready(check_url: str, open_url: str):
@@ -60,10 +65,10 @@ def cli():
 
 def _build_ui():
     cmd = "npm run build --prefix telemetry/ui"
-    _command(cmd)
+    _command(cmd, capture_output=False)
     # create a symlink so we can get packages inside it...
     cmd = "ln -s telemetry/ui/build burr/tracking/server/build"
-    _command(cmd)
+    _command(cmd, capture_output=False)
 
 
 @cli.command()
@@ -94,7 +99,7 @@ def run_server(port: int, dev_mode: bool, no_open: bool):
             daemon=True,
         )
         thread.start()
-    _command(cmd)
+    _command(cmd, capture_output=False)
 
 
 @cli.command(help="Publishes the package to a repository")
@@ -104,14 +109,14 @@ def build_and_publish(prod: bool, no_wipe_dist: bool):
     git_root = _get_git_root()
     with cd(git_root):
         logger.info("Building UI -- this may take a bit...")
-        # _build_ui()
+        _build_ui()
         logger.info("Built UI!")
         if not no_wipe_dist:
             logger.info("Wiping dist/ directory for a clean publish.")
             shutil.rmtree("dist", ignore_errors=True)
-        _command("python3 -m build")
+        _command("python3 -m build", capture_output=False)
         repository = "pypi" if prod else "testpypi"
-        _command(f"python3 -m twine upload --repository {repository} dist/*")
+        _command(f"python3 -m twine upload --repository {repository} dist/*", capture_output=False)
         logger.info(f"Published to {repository}! 🎉")
 
 
