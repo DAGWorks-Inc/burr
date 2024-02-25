@@ -15,6 +15,7 @@ from burr.core.application import (
     _arun_single_step_action,
     _assert_set,
     _run_function,
+    _run_reducer,
     _run_single_step_action,
     _validate_actions,
     _validate_start,
@@ -169,6 +170,34 @@ def test__run_function_cant_run_async():
         _run_function(action, state, inputs={})
 
 
+def test__run_reducer_modifies_state():
+    """Tests that we can run a reducer and it behaves as expected"""
+    reducer = PassedInAction(
+        reads=["counter"],
+        writes=["counter"],
+        fn=...,
+        update_fn=lambda result, state: state.update(**result),
+        inputs=[],
+    )
+    state = State({"counter": 0})
+    state = _run_reducer(reducer, state, {"counter": 1}, "reducer")
+    assert state["counter"] == 1
+
+
+def test__run_reducer_deletes_state():
+    """Tests that we can run a reducer that deletes an item from state"""
+    reducer = PassedInAction(
+        reads=["counter"],
+        writes=[],  # TODO -- figure out how we can better know that it deletes items...ß
+        fn=...,
+        update_fn=lambda result, state: state.wipe(delete=["counter"]),
+        inputs=[],
+    )
+    state = State({"counter": 0})
+    state = _run_reducer(reducer, state, {}, "deletion_reducer")
+    assert "counter" not in state
+
+
 async def test__arun_function():
     """Tests that we can run an async function"""
     action = base_counter_action_async
@@ -277,6 +306,38 @@ async def test__arun_single_step_action_with_inputs():
     )
     assert result == {"count": 4}
     assert state.subset("count", "tracker").get_all() == {"count": 4, "tracker": [2, 4]}
+
+
+class SingleStepActionWithDeletion(SingleStepAction):
+    def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
+        return {}, state.wipe(delete=["to_delete"])
+
+    @property
+    def reads(self) -> list[str]:
+        return ["to_delete"]
+
+    @property
+    def writes(self) -> list[str]:
+        return ["to_delete"]
+
+
+def test__run_single_step_action_deletes_state():
+    action = SingleStepActionWithDeletion()
+    state = State({"to_delete": 0})
+    result, state = _run_single_step_action(action, state, inputs={})
+    assert "to_delete" not in state
+
+
+class SingleStepActionWithDeletionAsync(SingleStepActionWithDeletion):
+    async def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
+        return {}, state.wipe(delete=["to_delete"])
+
+
+async def test__arun_single_step_action_deletes_state():
+    action = SingleStepActionWithDeletionAsync()
+    state = State({"to_delete": 0})
+    result, state = await _arun_single_step_action(action, state, inputs={})
+    assert "to_delete" not in state
 
 
 def test_app_step():
