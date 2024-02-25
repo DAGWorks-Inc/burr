@@ -23,7 +23,7 @@ class Function(abc.ABC):
     @abc.abstractmethod
     def run(self, state: State, **run_kwargs) -> dict:
         """Runs the function on the given state and returns the result.
-        The result is jsut a key/value dictionary.
+        The result is just a key/value dictionary.
 
         :param state: State to run the function on
         :param run_kwargs: Additional arguments to the function passed at runtime.
@@ -177,12 +177,12 @@ class Condition(Function):
 
         # Compile the expression into a callable function
         def condition_func(state: State) -> bool:
-            __globals = state.get_all()  # we can get all becuase externally we will subset
+            __globals = state.get_all()  # we can get all because externally we will subset
             return eval(compile(tree, "<string>", "eval"), {}, __globals)
 
         return Condition(keys, condition_func, name=expr)
 
-    def run(self, state: State, **kwargs) -> dict:
+    def run(self, state: State, **run_kwargs) -> dict:
         return {Condition.KEY: self._resolver(state)}
 
     @property

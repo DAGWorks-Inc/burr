@@ -156,9 +156,10 @@ def main():
         )
         .with_entrypoint("researcher")
         .with_hooks(PrintStepHook())
+        .with_tracker("hamilton-multi-agent")
         .build()
     )
-    app.run(until=["terminal"])
+    app.run(halt_after=["terminal"])
     # return app
 
 
@@ -187,7 +188,7 @@ if __name__ == "__main__":
             "system_message": "You should provide accurate data for the chart generator to use.",
             "user_query": "Fetch the UK's GDP over the past 5 years,"
             " then draw a line graph of it."
-            " Once you code it up, finish.",
+            " Once you have written code for the graph, finish.",
         },
     )
     import pprint

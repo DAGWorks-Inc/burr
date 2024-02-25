@@ -208,11 +208,13 @@ def executed_tool_calls(
     for tool_call in parsed_tool_calls:
         tool_name = tool_call["function_name"]
         tool_args = tool_call["function_args"]
+        tool_found = False
         for tool in tools:
             name = getattr(tool, "name", None)
             if name is None:
                 name = tool.__name__
             if name == tool_name:
+                tool_found = True
                 kwargs = json.loads(tool_args)
                 if hasattr(tool, "_run"):
                     result = tool._run(**kwargs)
@@ -229,6 +231,8 @@ def executed_tool_calls(
                         },
                     )
                 )
+        if not tool_found:
+            raise ValueError(f"Tool {tool_name} not found.")
     # TODO: do we add a sentinel if no tool call was required.
     return results
 
