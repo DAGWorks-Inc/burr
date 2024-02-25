@@ -768,7 +768,7 @@ class ApplicationBuilder:
         """Adds a lifecycle adapter to the application. This is a way to add hooks to the application so that
         they are run at the appropriate times. You can use this to synchronize state out, log results, etc...
 
-        :param adapter: Adapter to add
+        :param adapters: Adapter to add
         :return: The application builder for future chaining.
         """
         self.lifecycle_adapters.extend(adapters)

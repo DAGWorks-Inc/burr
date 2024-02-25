@@ -180,7 +180,7 @@ def application():
     app.visualize(
         output_file_path="lcel-multi-agent", include_conditions=True, view=True, format="png"
     )
-    app.run(until=["terminal"])
+    app.run(halt_after=["terminal"])
 
 
 if __name__ == "__main__":
