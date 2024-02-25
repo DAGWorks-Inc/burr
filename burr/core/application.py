@@ -285,6 +285,78 @@ class Application:
         self._set_state(new_state)
         return next_action, result, new_state
 
+    def _clean_iterate_params(
+        self,
+        halt_before: list[str] = None,
+        halt_after: list[str] = None,
+        inputs: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[list[str], list[str], Dict[str, Any]]:
+        """Utility function to clean out iterate params so we have less duplication between iterate/aiterate
+        and the logic is cleaner later.
+        """
+        if halt_before is None and halt_after is None:
+            logger.warning(
+                "No halt termination specified -- this has the possibility of running forever!"
+            )
+        if halt_before is None:
+            halt_before = []
+        if halt_after is None:
+            halt_after = []
+        if inputs is None:
+            inputs = {}
+        return halt_before, halt_after, inputs
+
+    def has_next_action(self) -> bool:
+        """Returns whether or not there is a next action to run.
+
+        :return: True if there is a next action, False otherwise
+        """
+        return self.get_next_action() is not None
+
+    def _should_halt_iterate(
+        self, halt_before: list[str], halt_after: list[str], prior_action: Action
+    ) -> bool:
+        """Internal utility function to determine whether or not to halt during iteration"""
+        if self.has_next_action() and self.get_next_action().name in halt_before:
+            logger.debug(f"Halting before executing {self.get_next_action().name}")
+            return True
+        elif prior_action.name in halt_after:
+            logger.debug(f"Halting after executing {prior_action.name}")
+            return True
+        return False
+
+    def _return_value_iterate(
+        self,
+        halt_before: list[str],
+        halt_after: list[str],
+        prior_action: Optional[Action],
+        result: Optional[dict],
+    ) -> Tuple[Action, Optional[dict], State]:
+        """Utility function to decide what to return for iterate/arun. Note that run() will delegate to the return value of
+        iterate, whereas arun cannot delegate to the return value of aiterate (as async generators cannot return a value).
+        We put the code centrally to clean up the logic.
+        """
+        if self.has_next_action() and self.get_next_action().name in halt_before:
+            logger.debug(
+                f"We have hit halt_before condition with next action: {self.get_next_action().name}. "
+                f"Returning: next_action={self.get_next_action()}, None, and state"
+            )
+            return self.get_next_action(), None, self._state
+        if prior_action is not None and prior_action.name in halt_after:
+            prior_action_name = prior_action.name if prior_action is not None else None
+            logger.debug(
+                f"We have hit halt_after condition with prior action: {prior_action_name}. "
+                f"Returning: prior_action={prior_action}, result, and state"
+            )
+        logger.warning(
+            "We have it an undefined condition -- do not rely on this behavior. "
+            "This is trying to return without having computed a single action -- "
+            "we'll end up just returning some Nones. This means that nothing was executed "
+            "(E.G. that the state machine had nowhere to go). Either fix the state machine or"
+            f"the halt conditions, or both... Halt conditions are: halt_before={halt_before}, halt_after={halt_after}."
+        )
+        return prior_action, result, self._state
+
     def iterate(
         self,
         *,
@@ -296,40 +368,30 @@ class Application:
         of the system as it updates. Note this returns a generator, and also the final result
         (for convenience).
 
-        :param halt_before: The list of actions to halt before execution of. It will halt on the first one.
-        :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
+        Note the nuance with halt_before and halt_after. halt_before conditions will take precedence to halt_after. Furthermore,
+        a single iteration will always be executed prior to testing for any halting conditions.
+
+        :param halt_before: The list of actions to halt before execution of. It will halt prior to the execution of the first one it sees.
+        :param halt_after: The list of actions to halt after execution of. It will halt after the execution of the first one it sees.
         :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world.
             Note that this is only used for the first iteration -- subsequent iterations will not use this.
-        :return: Each iteration returns the result of running `step`
-            The final result is the action, result, current state,
+        :return: Each iteration returns the result of running `step`. This generator also returns a tuple of
+            [action, result, current state]
         """
-        if not halt_before and not halt_after:
-            logger.warning("No halt termination specified -- running forever!")
-        if inputs is None:
-            inputs = {}
-        result = None
-        action: Optional[Action] = None
-        while True:
-            state_output = self.step(inputs=inputs)
-            inputs = {}  # only pass inputs in the first time
-            if state_output is None:
-                break
-            action, result, state = state_output
-            yield action, result, state
-            if (
-                halt_before
-                and self.get_next_action()
-                and self.get_next_action().name in halt_before
-            ):
-                break
-            elif halt_after and action and action.name in halt_after:
-                break
+        halt_before, halt_after, inputs = self._clean_iterate_params(
+            halt_before, halt_after, inputs
+        )
 
-        if action and halt_after and action.name in halt_after:
-            return action, result, self._state
-        elif self.get_next_action() and halt_before and self.get_next_action().name in halt_before:
-            return self.get_next_action(), None, self._state
-        return action, result, self._state
+        result = None
+        prior_action: Optional[Action] = None
+        while self.has_next_action():
+            # self.step will only return None if there is no next action, so we can rely on tuple unpacking
+            prior_action, result, state = self.step(inputs=inputs)
+            inputs = {}  # only pass inputs in the first time
+            yield prior_action, result, state
+            if self._should_halt_iterate(halt_before, halt_after, prior_action):
+                break
+        return self._return_value_iterate(halt_before, halt_after, prior_action, result)
 
     async def aiterate(
         self,
@@ -345,32 +407,19 @@ class Application:
         :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
         :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world.
             Note that this is only used for the first iteration -- subsequent iterations will not use this.
-        :return: Each iteration returns the result of running `step`
-            The final result is the action, result, current state,
+        :return: Each iteration returns the result of running `step`. This returns nothing -- it's an async generator which is not
+            allowed to have a return value.
         """
-        if not halt_before and not halt_after:
-            logger.warning("No halt termination specified -- running forever!")
-        if inputs is None:
-            inputs = {}
+        halt_before, halt_after, inputs = self._clean_iterate_params(
+            halt_before, halt_after, inputs
+        )
 
-        while True:
-            step_result = await self.astep(inputs=inputs)
+        while self.has_next_action():
+            # self.step will only return None if there is no next action, so we can rely on tuple unpacking
+            prior_action, result, state = await self.astep(inputs=inputs)
             inputs = {}  # only pass inputs in the first time
-            if step_result is None:
-                break
-            action, result, state = step_result
-            yield action, result, state
-            if (
-                halt_before
-                and self.get_next_action()
-                and self.get_next_action().name in halt_before
-            ):
-                yield self.get_next_action(), None, self._state
-                # we don't need to go around the loop again.
-                break
-            elif halt_after and action and action.name in halt_after:
-                # we've already yielded where we want to stop
-                # and we don't want to yield the same thing twice -- and there's no return in async generators
+            yield prior_action, result, state
+            if self._should_halt_iterate(halt_before, halt_after, prior_action):
                 break
 
     def run(
@@ -383,9 +432,10 @@ class Application:
         """Runs your application through until completion. Does
         not give access to the state along the way -- if you want that, use iterate().
 
-        :param until: The list of actions to run until -- these must be strings
-        :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world
-        :param gate: Gate to run until -- only accepts "any_complete" for now
+        :param halt_before: The list of actions to halt before execution of. It will halt on the first one.
+        :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
+        :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world.
+            Note that this is only used for the first iteration -- subsequent iterations will not use this.
         :return: The final state, and the results of running the actions in the order that they were specified.
         """
         gen = self.iterate(halt_before=halt_before, halt_after=halt_after, inputs=inputs)
@@ -410,14 +460,13 @@ class Application:
         :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world
         :return: The final state, and the results of running the actions in the order that they were specified.
         """
-        state = self._state
-        action = None
+        prior_action = None
         result = None
-        async for action, result, state in self.aiterate(
+        async for prior_action, result, state in self.aiterate(
             halt_before=halt_before, halt_after=halt_after, inputs=inputs
         ):
             pass
-        return action, result, state
+        return self._return_value_iterate(halt_before, halt_after, prior_action, result)
 
     def visualize(
         self,

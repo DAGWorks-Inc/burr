@@ -35,7 +35,7 @@ but realized that it has a wide array of applications and decided to release it.
 
 
 # Getting Started
-
+``
 To get started, install from `pypi`, using your favorite package manager:
 
 ```
