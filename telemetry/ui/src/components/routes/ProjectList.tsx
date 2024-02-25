@@ -21,7 +21,7 @@ export const ProjectListTable = (props: { projects: Project[] }) => {
           <TableHeader>Name</TableHeader>
           <TableHeader>Created</TableHeader>
           <TableHeader>Last Run</TableHeader>
-          <TableHeader># of traces</TableHeader>
+          <TableHeader>App Runs</TableHeader>
           <TableHeader>Path</TableHeader>
           <TableHeader></TableHeader>
         </TableRow>

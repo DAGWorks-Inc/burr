@@ -78,7 +78,7 @@ class Reducer(abc.ABC):
     @property
     @abc.abstractmethod
     def writes(self) -> list[str]:
-        """Returns the keys from the state that this reducer writes
+        """Returns the keys from the state that this reducer writes.
 
         :return: A list of keys
         """
