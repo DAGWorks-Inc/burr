@@ -621,6 +621,7 @@ def test_run_with_inputs():
         initial_step="counter",
     )
     action, result, state = app.run(halt_after=["result"], inputs={"additional_increment": 10})
+    assert action.name == "result"
     assert state["counter"] == result["counter"] == 11
 
 
@@ -638,6 +639,7 @@ async def test_arun():
     )
     action, result, state = await app.arun(halt_after=["result"])
     assert state["counter"] == result["counter"] == 10
+    assert action.name == "result"
 
 
 async def test_arun_halt_before():
@@ -674,6 +676,7 @@ async def test_arun_with_inputs():
         halt_after=["result"], inputs={"additional_increment": 10}
     )
     assert state["counter"] == result["counter"] == 11
+    assert action.name == "result"
 
 
 async def test_app_a_run_async_and_sync():

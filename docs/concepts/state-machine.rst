@@ -77,23 +77,32 @@ You can also run ``aiterate`` in an async context:
     async for action, result, state in application.aiterate():
         print(action.name, result)
 
+
 In the synchronous context this also has a return value of a tuple of:
-1. the action that was specified in `halt_after` or `halt_before`. In the `after` case the action will have already run.
-In the `before` case the action will not have run.
-2. The result of the action, in the `halt_after` case, else None in the `halt_before` case.
-3. The state of the application at the time of halting.
+
+
+#. the action that was specified in ``halt_after`` or ``halt_before``. In the `after` case the action will have already run. In the ``before`` case the action will not have run.
+
+#. The result of that action, in the ``halt_after`` case, else None in the ``halt_before`` case.
+
+#. The state of the application at the time of halting.
 
 You can access this by looking at the ``value`` variable of the ``StopIteration`` exception that is thrown
-at the end of the loop, as is standard for python.
+at the end of the loop, as is standard for python generators.
 See the function implementation of ``run`` to show how this is done.
 
-In the async context, this does not return anything
-(asynchronous generators are not allowed a return value).
+In the async context, this does not return anything (asynchronous generators are not allowed a return value).
+
+If you want it to (attempt to) run forever, you can pass empty lists to ``halt_after`` and ``halt_before``.
 
 .. note::
     You can add inputs to ``iterate``/``aiterate`` by passing in a dictionary of inputs through the ``inputs`` parameter.
     This will only apply to the first action. Actions that are not the first but require inputs are considered undefined behavior.
 
+.. warning::
+    The state machine has the capability of halting even if it does not reach one of the specified conditions -- if there are
+    no more transitions to take. This, however, is not a supported feature (and will log a warning). This is considered undefined behavior
+    -- use at your own risk, and consider adding a halting condition, or a default transition to a terminal.
 
 ``run``/``arun``
 ----------------
@@ -117,6 +126,8 @@ In the async context, you can run ``arun``:
 
 .. note::
     You can add inputs to ``run``/``arun`` in the same way as you can with ``iterate`` -- it will only apply to the first action.
+
+``run`` and ``arun`` largely have the same behavior as ``iterate`` and ``aiterate``.
 
 ----------
 Inspection
