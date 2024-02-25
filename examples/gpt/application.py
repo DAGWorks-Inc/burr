@@ -175,6 +175,7 @@ def base_application(hooks: List[LifecycleAdapter] = None):
             ("error", "prompt", default),
         )
         .with_hooks(*hooks)
+        .with_tracker("demo:chatbot")
         .build()
     )
 
@@ -250,6 +251,7 @@ def hamilton_application(hooks: List[LifecycleAdapter] = None):
             ("error", "prompt", default),
         )
         .with_hooks(*hooks)
+        .with_tracker("demo:chatbot")
         .build()
     )
     return application
