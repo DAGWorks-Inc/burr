@@ -1,0 +1,4 @@
+{"type":"begin_entry","start_time":"2024-02-26T15:28:45.244603","action":"counter","inputs":{}}
+{"type":"end_entry","end_time":"2024-02-26T15:28:45.244753","action":"counter","result":{"counter":1},"exception":null,"state":{"counter":1,"__PRIOR_STEP":"counter"}}
+{"type":"begin_entry","start_time":"2024-02-26T15:28:45.244854","action":"result","inputs":{}}
+{"type":"end_entry","end_time":"2024-02-26T15:28:45.244919","action":"result","result":{"counter":1},"exception":null,"state":{"counter":1,"__PRIOR_STEP":"result"}}
