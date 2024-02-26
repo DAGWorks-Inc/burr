@@ -1,5 +1,5 @@
 import abc
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 if TYPE_CHECKING:
     # type-checking-only for a circular import
@@ -13,11 +13,14 @@ class PreRunStepHook(abc.ABC):
     """Hook that runs before a step is executed"""
 
     @abc.abstractmethod
-    def pre_run_step(self, *, state: "State", action: "Action", **future_kwargs: Any):
+    def pre_run_step(
+        self, *, state: "State", action: "Action", inputs: Dict[str, Any], **future_kwargs: Any
+    ):
         """Run before a step is executed.
 
         :param state: State prior to step execution
         :param action: Action to be executed
+        :param inputs: Inputs to the action
         :param future_kwargs: Future keyword arguments
         """
         pass
@@ -28,11 +31,14 @@ class PreRunStepHookAsync(abc.ABC):
     """Async hook that runs before a step is executed"""
 
     @abc.abstractmethod
-    async def pre_run_step(self, *, state: "State", action: "Action", **future_kwargs: Any):
+    async def pre_run_step(
+        self, *, state: "State", action: "Action", inputs: Dict[str, Any], **future_kwargs: Any
+    ):
         """Async run before a step is executed.
 
         :param state: State prior to step execution
         :param action: Action to be executed
+        :param inputs: Inputs to the action
         :param future_kwargs: Future keyword arguments
         """
         pass
@@ -48,7 +54,7 @@ class PostRunStepHook(abc.ABC):
         *,
         state: "State",
         action: "Action",
-        result: Optional[dict],
+        result: Optional[Dict[str, Any]],
         exception: Exception,
         **future_kwargs: Any,
     ):
