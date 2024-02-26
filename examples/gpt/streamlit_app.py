@@ -12,6 +12,13 @@ from burr.integrations.streamlit import (
     update_state,
 )
 
+st.set_page_config(layout="wide")
+
+"""This file is a work in progress. Note that this will be replaced shortly
+with a simple chatbot + a reference to the Burr UI (to be run in a separate page),
+which is more powerful and much simpler to understand. For now,
+this is purely for demos."""
+
 
 def render_chat_message(record: Record):
     if record.action in ["prompt", "response"]:
@@ -32,6 +39,8 @@ def render_chat_message(record: Record):
 
 def retrieve_state():
     if "burr_state" not in st.session_state:
+        # TODO --enable usage of hamilton. Currently its not wiring in inputs
+        # But it should be easy enough
         state = AppState.from_empty(
             app=chatbot_application.application(use_hamilton=False),
         )
@@ -47,15 +56,17 @@ def chatbot_step(app_state: AppState, prompt: Optional[str]) -> bool:
     :param prompt: Prompt to set the chatbot to. If this is None it means it should continue and not be reset.
     :return:
     """
+    inputs = None
     if prompt is not None:
         # We need to update
-        app_state.app.update_state(app_state.app.state.update(prompt=prompt))
+        inputs = {"prompt": prompt}
+        # app_state.app.update_state(app_state.app.state.update(prompt=prompt))
         st.session_state.running = True  # set to running
     # if its not running this is a no-op
     if not st.session_state.get("running", False):
         return False
     application = app_state.app
-    step_output = application.step()
+    step_output = application.step(inputs=inputs)
     if step_output is None:
         st.session_state.running = False
         return False
@@ -70,7 +81,6 @@ def chatbot_step(app_state: AppState, prompt: Optional[str]) -> bool:
 
 
 def main():
-    st.set_page_config(layout="wide")
     st.title("Chatbot example with Burr")
     app_state = retrieve_state()  # retrieve first so we can use for the ret of the step
     columns = st.columns(2)
