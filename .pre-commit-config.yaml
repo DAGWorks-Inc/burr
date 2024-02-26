@@ -4,7 +4,7 @@
 #   $ cd /PATH/TO/REPO
 #   $ pre-commit install
 
-exclude: '^telemetry/ui'
+exclude: '^telemetry/ui|^burr/tracking/server/demo_data(/|$)'
 repos:
   - repo: https://github.com/ambv/black
     rev: 23.11.0
