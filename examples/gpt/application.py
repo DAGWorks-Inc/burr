@@ -18,12 +18,12 @@ MODES = {
 }
 
 
-@action(reads=["prompt"], writes=["chat_history"])
-def process_prompt(state: State) -> Tuple[dict, State]:
-    result = {"processed_prompt": {"role": "user", "content": state["prompt"], "type": "text"}}
+@action(reads=[], writes=["chat_history", "prompt"])
+def process_prompt(state: State, prompt: str) -> Tuple[dict, State]:
+    result = {"processed_prompt": {"role": "user", "content": prompt, "type": "text"}}
     return result, state.wipe(keep=["prompt", "chat_history"]).append(
         chat_history=result["processed_prompt"]
-    )
+    ).update(prompt=prompt)
 
 
 @action(reads=["prompt"], writes=["safe"])

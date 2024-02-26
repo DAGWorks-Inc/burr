@@ -56,7 +56,7 @@ class Function(abc.ABC):
         if missing_inputs or additional_inputs:
             raise ValueError(
                 f"Inputs to function {self} are invalid. "
-                f"Missing the following inputs: {', '.join(missing_inputs)}."
+                + f"Missing the following inputs: {', '.join(missing_inputs)}."
                 if missing_inputs
                 else "" f"Additional inputs: {','.join(additional_inputs)}."
                 if additional_inputs
