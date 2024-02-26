@@ -1,3 +1,6 @@
+import json
+import os.path
+
 import func_agent
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_experimental.utilities import PythonREPL
@@ -123,16 +126,46 @@ class PrintStepHook(PostRunStepHook):
         print("state======\n", state)
 
 
-def main():
+def initialize_state_from_logs(tracker_name: str, app_id: str) -> tuple[dict, str]:
+    """Initialize the state to debug from an exception
+
+    :param tracker_name:
+    :param app_id:
+    :return:
+    """
+    # open ~/.burr/{tracker_name}/{app_id}/log.jsonl
+    # find the first entry with an exception -- and pull state from it.
+    with open(f"{os.path.expanduser('~/')}/.burr/{tracker_name}/{app_id}/log.jsonl", "r") as f:
+        lines = f.readlines()
+    for line in lines:
+        line = json.loads(line)
+        if "exception" in line:
+            state = line["state"]
+            entry_point = line["action"]
+            return state, entry_point
+    raise ValueError(f"No exception found in logs for {tracker_name}/{app_id}")
+
+
+def default_state_and_entry_point() -> tuple[dict, str]:
+    return {
+        "messages": [],
+        "query": "Fetch the UK's GDP over the past 5 years,"
+        " then draw a line graph of it."
+        " Once you code it up, finish.",
+        "next_hop": "",
+    }, "researcher"
+
+
+def main(app_instance_id: str = None):
+    tracker_name = "hamilton-multi-agent"
+    if app_instance_id:
+        state, entry_point = initialize_state_from_logs(tracker_name, app_instance_id)
+    else:
+        state, entry_point = default_state_and_entry_point()
+
     app = (
         ApplicationBuilder()
-        .with_state(
-            messages=[],
-            query="Fetch the UK's GDP over the past 5 years,"
-            " then draw a line graph of it."
-            " Once you code it up, finish.",
-            next_hop="",
-        )
+        .with_state(**state)
         .with_actions(
             researcher=researcher,
             chart_generator=chart_generator,
@@ -154,9 +187,9 @@ def main():
                 core.expr("next_hop == 'complete'"),
             ),  # core.expr("'FINAL ANSWER' in messages[-1]['content']")),
         )
-        .with_entrypoint("researcher")
+        .with_entrypoint(entry_point)
         .with_hooks(PrintStepHook())
-        .with_tracker("hamilton-multi-agent")
+        .with_tracker(tracker_name)
         .build()
     )
     app.run(halt_after=["terminal"])
@@ -164,7 +197,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    _app_id = "app_4d1618d2-79d1-4d89-8e3f-70c216c71e63"
+    main(_app_id)
     import sys
 
     sys.exit(0)

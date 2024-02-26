@@ -101,6 +101,9 @@ class LocalBackend(BackendBase):
             raise fastapi.HTTPException(status_code=404, detail=f"Project: {project_id} not found")
         out = []
         for entry in await aiofilesos.listdir(project_filepath):
+            if entry.startswith("."):
+                # skip hidden files/directories
+                continue
             full_path = os.path.join(project_filepath, entry)
             log_path = os.path.join(full_path, "log.jsonl")
             if os.path.isdir(full_path):
