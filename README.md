@@ -70,11 +70,11 @@ While Burr is stable and well-tested, we have quite a few tools/features on our 
    4. Framework-level error management
    5. More integration with popular action implementations
 2. UI/server improvements for self-hosting and DB backing (currently its filesystem-only)
-3. State persistence, management, and recovery tooling (store state in a global cache and pick up a state machine from where your left it off)
+3. State persistence, management, and recovery tooling (store state in a global cache and pick up a state machine from where it failed/where you left it)
 4. Tooling for hosted execution of state machines, integrating with your infrastructure
 
-If you want to avoid self-hosting the above solutions, we are also starting a pilot program for Burr Cloud -- sign up
-[here](https://forms.gle/w9u2QKcPrztApRedA).
+If you want to avoid self-hosting the above solutions we're building Burr Cloud. To let us know you're interested
+ sign up [here](https://forms.gle/w9u2QKcPrztApRedA) for the waitlist to get access.
 
 # Contributing
 
