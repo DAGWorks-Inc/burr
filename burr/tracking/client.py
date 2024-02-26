@@ -4,7 +4,7 @@ import logging
 import os
 import traceback
 import uuid
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from burr.core import Action, ApplicationGraph, State
 from burr.integrations.base import require_plugin
@@ -91,11 +91,13 @@ class LocalTrackingClient(PostApplicationCreateHook, PreRunStepHook, PostRunStep
         self.f.write(model.model_dump_json() + "\n")
         self.f.flush()
 
-    def pre_run_step(self, *, state: State, action: Action, **future_kwargs: Any):
+    def pre_run_step(
+        self, *, state: State, action: Action, inputs: Dict[str, Any], **future_kwargs: Any
+    ):
         pre_run_entry = BeginEntryModel(
             start_time=datetime.datetime.now(),
             action=action.name,
-            inputs={},
+            inputs=inputs,
         )
         self._append_write_line(pre_run_entry)
 
