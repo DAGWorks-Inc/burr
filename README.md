@@ -59,6 +59,23 @@ This will start a server and open up a browser window with a few demo projects p
 Next, see the documentation for [getting started](https://studious-spork-n8kznlw.pages.github.io/getting_started/simple-example.html), and follow the example.
 Then read through some of the concepts and write your own application!
 
+# Roadmap
+
+While Burr is stable and well-tested, we have quite a few tools/features on our roadmap!
+
+1. Various efficiency/usability improvements for the core library (see [planned capabilities](https://studious-spork-n8kznlw.pages.github.io/concepts/planned-capabilities.html) for more details). This includes:
+   1. Typing for State
+   2. Performant/truly immutable state management
+   3. Pre-execution compilation/validation
+   4. Framework-level error management
+   5. More integration with popular action implementations
+2. UI/server improvements for self-hosting and DB backing (currently its filesystem-only)
+3. State persistence, management, and recovery tooling (store state in a global cache and pick up a state machine from where your left it off)
+4. Tooling for hosted execution of state machines, integrating with your infrastructure
+
+If you want to avoid self-hosting the above solutions, we are also starting a pilot program for Burr Cloud -- sign up
+[here](https://forms.gle/w9u2QKcPrztApRedA).
+
 # Contributing
 
 We welcome contributors! To get started on developing, see the [developer-facing docs](https://studious-spork-n8kznlw.pages.github.io/contributing).
