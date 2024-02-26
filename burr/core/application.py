@@ -224,7 +224,7 @@ class Application:
             inputs = {}
         if _run_hooks:
             self._adapter_set.call_all_lifecycle_hooks_sync(
-                "pre_run_step", action=next_action, state=self._state
+                "pre_run_step", action=next_action, state=self._state, inputs=inputs
             )
         exc = None
         result = None
@@ -266,7 +266,7 @@ class Application:
         if next_action is None:
             return None
         await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
-            "pre_run_step", action=next_action, state=self._state
+            "pre_run_step", action=next_action, state=self._state, inputs=inputs
         )
         exc = None
         result = None
