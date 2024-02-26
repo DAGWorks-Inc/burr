@@ -64,14 +64,11 @@ Then read through some of the concepts and write your own application!
 While Burr is stable and well-tested, we have quite a few tools/features on our roadmap!
 
 1. Various efficiency/usability improvements for the core library (see [planned capabilities](https://studious-spork-n8kznlw.pages.github.io/concepts/planned-capabilities.html) for more details). This includes:
-   1. Typing for State
-   2. Performant/truly immutable state management
-   3. Pre-execution compilation/validation
-   4. Framework-level error management
-   5. More integration with popular action implementations
-2. UI/server improvements for self-hosting and DB backing (currently its filesystem-only)
-3. State persistence, management, and recovery tooling (store state in a global cache and pick up a state machine from where it failed/where you left it)
-4. Tooling for hosted execution of state machines, integrating with your infrastructure
+   1. Fully typed state with validation
+   2. First-class support for retries + exception management
+   3. More integration with popular frameworks (LCEL, LLamaIndex, Hamilton, etc...)
+2. Cloud-based checkpointing/restart (save state to db and replay/warm start, backed by a configurable database)
+3. Tooling for hosted execution of state machines, integrating with your infrastructure (Ray, modal, FastAPI + EC2, etc...)
 
 If you want to avoid self-hosting the above solutions we're building Burr Cloud. To let us know you're interested
  sign up [here](https://forms.gle/w9u2QKcPrztApRedA) for the waitlist to get access.
