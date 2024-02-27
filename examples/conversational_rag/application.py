@@ -1,7 +1,7 @@
 import pprint
 from typing import List, Optional, Tuple
 
-from hamilton import dataflows, driver, lifecycle
+from hamilton import dataflows, driver
 
 import burr.core
 from burr.core import Action, Application, ApplicationBuilder, State, default, expr

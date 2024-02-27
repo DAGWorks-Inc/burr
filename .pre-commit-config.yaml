@@ -32,10 +32,11 @@ repos:
             'black',
             '--line-length=100',
             '--known-local-folder',
+            'examples',
+            '--known-local-folder',
             'tests',
             '-p',
             'burr',
-            'examples'
           ]
   - repo: https://github.com/pycqa/flake8
     rev: 6.1.0
