@@ -76,6 +76,10 @@ learn = [
   "burr[tracking,streamlit,graphviz]"
 ]
 
+start = [
+  "burr[learn]"
+]
+
 # just install everything for developers
 developer = [
   "burr[streamlit]",
@@ -98,6 +102,7 @@ include = ["burr", "burr.*"]
 [tool.setuptools.package-data]
 burr = [
   "burr/tracking/server/build/**/*",
+  "burr/tracking/server/demo_data/**/*"
 ]
 
 [project.urls]

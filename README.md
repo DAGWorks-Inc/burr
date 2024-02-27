@@ -38,7 +38,7 @@ built Burr as a _harness_ to handle state between executions of Hamilton DAGs,
 but realized that it has a wide array of applications and decided to release it.
 
 # Getting Started
-``
+
 To get started, install from `pypi`, using your favorite package manager:
 
 ```bash
