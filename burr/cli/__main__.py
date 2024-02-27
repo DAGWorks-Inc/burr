@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import webbrowser
@@ -91,13 +92,24 @@ def build_ui():
 @click.option("--port", default=7241, help="Port to run the server on")
 @click.option("--dev-mode", is_flag=True, help="Run the server in development mode")
 @click.option("--no-open", is_flag=True, help="Run the server without opening it")
-def run_server(port: int, dev_mode: bool, no_open: bool):
+@click.option("--no-copy-demo_data", is_flag=True, help="Don't copy demo data over.")
+def run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: bool):
     # TODO: Implement server running logic here
     # Example: Start a web server, configure ports, etc.
     logger.info(f"Starting server on port {port}")
     cmd = f"uvicorn burr.tracking.server.run:app --port {port}"
     if dev_mode:
         cmd += " --reload"
+    base_dir = os.path.expanduser("~/.burr")
+    if not no_copy_demo_data:
+        logger.info(f"Copying demo data over to {base_dir}...")
+        git_root = _get_git_root()
+        demo_data_path = f"{git_root}/burr/tracking/server/demo_data"
+        for top_level in os.listdir(demo_data_path):
+            if not os.path.exists(f"{base_dir}/{top_level}"):
+                logger.info(f"Copying {top_level} over...")
+                shutil.copytree(f"{demo_data_path}/{top_level}", f"{base_dir}/{top_level}")
+
     if not no_open:
         thread = threading.Thread(
             target=open_when_ready,
@@ -127,6 +139,20 @@ def build_and_publish(prod: bool, no_wipe_dist: bool):
         repository = "pypi" if prod else "testpypi"
         _command(f"python3 -m twine upload --repository {repository} dist/*", capture_output=False)
         logger.info(f"Published to {repository}! 🎉")
+
+
+@cli.command(help="generate demo data for the UI")
+def generate_demo_data():
+    git_root = _get_git_root()
+    # We need to add the examples directory to the path so we have all the imports
+    # The GPT-one relies on a local import
+    sys.path.extend([git_root, f"{git_root}/examples/gpt"])
+    from burr.cli.demo_data import generate_all
+
+    with cd(git_root):
+        logger.info("Removing old demo data")
+        shutil.rmtree("burr/tracking/server/demo_data", ignore_errors=True)
+        generate_all("burr/tracking/server/demo_data")
 
 
 # quick trick to expose every subcommand as a variable
