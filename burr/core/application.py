@@ -387,12 +387,13 @@ class Application:
                 f"We have hit halt_after condition with prior action: {prior_action_name}. "
                 f"Returning: prior_action={prior_action}, result, and state"
             )
+            return prior_action, result, self._state
         logger.warning(
-            "We have it an undefined condition -- do not rely on this behavior. "
             "This is trying to return without having computed a single action -- "
             "we'll end up just returning some Nones. This means that nothing was executed "
             "(E.G. that the state machine had nowhere to go). Either fix the state machine or"
             f"the halt conditions, or both... Halt conditions are: halt_before={halt_before}, halt_after={halt_after}."
+            f"Note that this is considered undefined behavior -- if you get here, you should fix!"
         )
         return prior_action, result, self._state
 
