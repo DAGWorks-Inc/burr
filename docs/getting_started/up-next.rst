@@ -2,7 +2,7 @@
 Next Steps
 =================
 
-You've written your own burr application in a few lines of code. Nice work! Let's look at some more powerful examples.
+You've written your own burr application in a few lines of code. Nice work! Let's look at some less trivial examples.
 Note you'll need the repository cloned to run these -- you can also explore the results without running them in the UI -- it is pre
 populated with sample runs.
 
