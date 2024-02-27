@@ -72,8 +72,8 @@ tracking = [
   "loguru",
 ]
 
-start = [
-  "burr[tracking]"
+learn = [
+  "burr[tracking,streamlit,graphviz]"
 ]
 
 # just install everything for developers

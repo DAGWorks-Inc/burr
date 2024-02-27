@@ -9,11 +9,12 @@ from burr.lifecycle import LifecycleAdapter
 @action(reads=["counter"], writes=["counter"])
 def counter(state: State) -> Tuple[dict, State]:
     result = {"counter": state["counter"] + 1}
+    print(f"counted to {result['counter']}")
     return result, state.update(**result)
 
 
 def application(
-    count_up_to: int = 100,
+    count_up_to: int = 10,
     app_id: Optional[str] = None,
     storage_dir: Optional[str] = "~/.burr",
     hooks: Optional[List[LifecycleAdapter]] = None,
