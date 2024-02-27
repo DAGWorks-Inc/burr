@@ -1,10 +1,11 @@
 from typing import Tuple
 
+from hamilton import dataflows, driver
+
 from burr.core import Action, ApplicationBuilder, State, default, expr
 from burr.core.action import action
 from burr.integrations import hamilton
 from burr.lifecycle import PostRunStepHook
-from hamilton import dataflows, driver
 
 caption_images = dataflows.import_module("caption_images", "elijahbenizzy")
 generate_images = dataflows.import_module("generate_images", "elijahbenizzy")

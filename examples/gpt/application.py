@@ -2,12 +2,12 @@ from typing import List, Optional, Tuple
 
 import dag
 import openai
+from hamilton import driver
 
 from burr.core import Application, ApplicationBuilder, State, default, when
 from burr.core.action import action
 from burr.integrations.hamilton import Hamilton, append_state, from_state, update_state
 from burr.lifecycle import LifecycleAdapter
-from hamilton import driver
 
 MODES = {
     "answer_question": "text",

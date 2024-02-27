@@ -244,7 +244,6 @@ if __name__ == "__main__":
     pprint.pprint(jspec)
 
     import __main__
-
     from hamilton import driver
 
     dr = driver.Builder().with_modules(__main__).build()
