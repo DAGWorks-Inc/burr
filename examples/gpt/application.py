@@ -40,8 +40,8 @@ def choose_mode(state: State) -> Tuple[dict, State]:
     prompt = (
         f"You are a chatbot. You've been prompted this: {state['prompt']}. "
         f"You have the capability of responding in the following modes: {', '.join(MODES)}. "
-        "Please respond with *only* a single word representing the mode that most accurately"
-        " corresponds to the prompt. Fr instance, if the prompt is 'draw a picture of a cat', "
+        "Please respond with *only* a single word representing the mode that most accurately "
+        "corresponds to the prompt. Fr instance, if the prompt is 'draw a picture of a cat', "
         "the mode would be 'generate_image'. If the prompt is 'what is the capital of France', the mode would be 'answer_question'."
         "If none of these modes apply, please respond with 'unknown'."
     )
@@ -65,8 +65,7 @@ def choose_mode(state: State) -> Tuple[dict, State]:
 def prompt_for_more(state: State) -> Tuple[dict, State]:
     result = {
         "response": {
-            "content": f"None of the response modes I support: ({','.join(MODES)}) "
-            f"apply to your question. Please clarify?",
+            "content": "None of the response modes I support apply to your question. Please clarify?",
             "type": "text",
             "role": "assistant",
         }

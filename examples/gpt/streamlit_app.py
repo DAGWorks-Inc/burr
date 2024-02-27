@@ -14,10 +14,10 @@ from burr.integrations.streamlit import (
 
 st.set_page_config(layout="wide")
 
-"""This file is a work in progress. Note that this will be replaced shortly
-with a simple chatbot + a reference to the Burr UI (to be run in a separate page),
-which is more powerful and much simpler to understand. For now,
-this is purely for demos."""
+st.markdown(
+    "This is a prototype of the streamlit app -- we've left around a UI for demonstration purposes, but you can"
+    " run the real UI by running `burr` -- a window will pop up and you can follow the results live!"
+)
 
 
 def render_chat_message(record: Record):
