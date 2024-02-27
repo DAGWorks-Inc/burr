@@ -225,9 +225,13 @@ class Condition(Function):
         return self._name
 
 
-default = Condition.default
-when = Condition.when
-expr = Condition.expr
+# Annotated inline as linters don't understand classmethods + properties
+# These, however, are allowed up until python 3.13
+# We're only keeping them as methods for documentation
+# TODO -- remove the static methods and make them
+default: Condition = Condition.default
+when: Condition = Condition.when
+expr: Condition = Condition.expr
 
 
 class Result(Action):
