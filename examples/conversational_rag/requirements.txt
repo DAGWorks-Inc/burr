@@ -1,0 +1,6 @@
+burr
+faiss-cpu
+hamilton
+langchain
+langchain-community
+langchain-openai

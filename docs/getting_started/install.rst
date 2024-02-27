@@ -2,24 +2,13 @@
 Installing
 ==========
 
-Burr requires almost no dependencies. Every "extra"/"plugin" is an additional install target.
+Burr itself requires almost no dependencies. Every "extra"/"plugin" is an additional install target.
+
+We recommend you start with installing the ``learn`` target -- this has dependencies necessary to track burr through the UI,
+along with a fully built server.
 
 .. code-block:: bash
 
-    pip install burr
+    pip install burr[learn]
 
-To get visualization capabilities, you can install the `burr[graphviz]` extra:
-
-.. code-block:: bash
-
-    pip install burr[graphviz]
-
-And to visualize your state machines on streamlit, you can install the `burr[streamlit]` extra:
-
-.. code-block:: bash
-
-    pip install burr[streamlit]
-
-Don't worry, you can always install these extras later if you need them.
-
-Note, if you're using ``zsh``, you'll need to add quotes around the install target, like `pip install "burr[graphviz]"`.
+This will give you tools to visualize, track, and interact with the UI. Note, if you're using ``zsh``, you'll need to add quotes around the install target, (``pip install "burr[learn]"``).

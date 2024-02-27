@@ -55,6 +55,7 @@ Next, let's put together our application. To do this, we'll use an ``Application
             ("count", "count", expr("counter < 10")), # Keep counting if the counter is less than 10
             ("count", "done", default) # Otherwise, we're done
         ).with_entrypoint("count") # we have to start somewhere
+        .with_tracker("my_first_app")
         .build()
     )
 
@@ -123,10 +124,11 @@ If you want to copy/paste, you can open up the following code block and add to a
                     ("count", "count", expr("counter < 10")),  # Keep counting if the counter is less than 10
                     ("count", "done", default)  # Otherwise, we're done
                 ).with_entrypoint("count")  # we have to start somewhere
+                .with_tracker("my_first_app")
                 .build()
             )
             app.visualize("./graph", format="png", include_conditions=True, include_state=True)
-            app.run(halt_after=["printer"])
+            app.run(halt_after=["done"])
 
 
 And the output looks exactly as we expect!
@@ -146,6 +148,14 @@ And the output looks exactly as we expect!
     counted to 9
     counted to 10
     Bob's your uncle
+
+Finally, let's open up the UI and see what it looks like (not that if you have not installed ``burr[learn]`` now is a good time...).
+
+.. code-block:: bash
+
+    burr
+
+You'll see the UI pop up with projects. Navigate to `the UI <http://localhost:7241/project/my_first_app>`_ and explore!
 
 All this to increment? Well, if all you want to do is count to 10, this might not be for you. But we imagine most of you want to do more exciting things
 than count to 10...
