@@ -15,7 +15,7 @@ from burr.integrations.streamlit import (
 st.set_page_config(layout="wide")
 
 st.markdown(
-    "This is a prototype of the streamlit app -- we've left around a UI for demonstration purposes, but you can"
+    "This is a prototype streamlit app -- this is a UI for demonstration purposes, but you can"
     " run the real UI by running `burr` -- a window will pop up and you can follow the results live!"
 )
 

@@ -149,7 +149,7 @@ And the output looks exactly as we expect!
     counted to 10
     Bob's your uncle
 
-Finally, let's open up the UI and see what it looks like (not that if you have not installed ``burr[learn]`` now is a good time...).
+Finally, let's open up the UI and see what it looks like (note, that if you have not installed ``burr[learn]`` now is a good time...).
 
 .. code-block:: bash
 
