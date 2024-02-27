@@ -6,6 +6,7 @@ import threading
 import time
 import webbrowser
 from contextlib import contextmanager
+from importlib.resources import files
 
 from burr.integrations.base import require_plugin
 
@@ -103,8 +104,7 @@ def run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: bool
     base_dir = os.path.expanduser("~/.burr")
     if not no_copy_demo_data:
         logger.info(f"Copying demo data over to {base_dir}...")
-        git_root = _get_git_root()
-        demo_data_path = f"{git_root}/burr/tracking/server/demo_data"
+        demo_data_path = files("burr").joinpath("tracking/server/demo_data")
         for top_level in os.listdir(demo_data_path):
             if not os.path.exists(f"{base_dir}/{top_level}"):
                 logger.info(f"Copying {top_level} over...")
