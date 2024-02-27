@@ -1,9 +1,9 @@
-from typing import Tuple
+from typing import List, Optional, Tuple
 
 import burr.core
-from burr.core import Result, State, default, expr
+from burr.core import Application, Result, State, default, expr
 from burr.core.action import action
-from burr.lifecycle import StateAndResultsFullLogger
+from burr.lifecycle import LifecycleAdapter
 
 
 @action(reads=["counter"], writes=["counter"])
@@ -12,7 +12,12 @@ def counter(state: State) -> Tuple[dict, State]:
     return result, state.update(**result)
 
 
-def application(count_up_to: int = 100, log_file: str = None):
+def application(
+    count_up_to: int = 100,
+    app_id: Optional[str] = None,
+    storage_dir: Optional[str] = "~/.burr",
+    hooks: Optional[List[LifecycleAdapter]] = None,
+) -> Application:
     return (
         burr.core.ApplicationBuilder()
         .with_state(counter=0)
@@ -20,18 +25,16 @@ def application(count_up_to: int = 100, log_file: str = None):
         .with_transitions(
             ("counter", "counter", expr(f"counter < {count_up_to}")),
             ("counter", "result", default),
-            ("result", "counter", expr("counter == 0")),  # when we've reset, manually
         )
         .with_entrypoint("counter")
-        .with_tracker("counter")
-        .with_hooks(*[StateAndResultsFullLogger(log_file)] if log_file else [])
+        .with_tracker("demo:counter", params={"app_id": app_id, "storage_dir": storage_dir})
+        .with_hooks(*hooks if hooks else [])
         .build()
     )
 
 
 if __name__ == "__main__":
-    app = application(log_file="counter.jsonl")
+    app = application()
     action, state, result = app.run(halt_after=["result"])
-    app.visualize(output_file_path="digraph", include_conditions=True, view=False, format="png")
-    assert state["counter"] == 100
+    # app.visualize(output_file_path="digraph", include_conditions=True, view=False, format="png")
     print(state["counter"])

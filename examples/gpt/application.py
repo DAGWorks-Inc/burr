@@ -1,10 +1,9 @@
-import functools
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import dag
 import openai
 
-from burr.core import Application, ApplicationBuilder, State, default, expr, when
+from burr.core import Application, ApplicationBuilder, State, default, when
 from burr.core.action import action
 from burr.integrations.hamilton import Hamilton, append_state, from_state, update_state
 from burr.lifecycle import LifecycleAdapter
@@ -32,7 +31,6 @@ def check_safety(state: State) -> Tuple[dict, State]:
     return result, state.update(safe=result["safe"])
 
 
-@functools.lru_cache(maxsize=None)
 def _get_openai_client():
     return openai.Client()
 
@@ -125,13 +123,14 @@ def response(state: State) -> Tuple[dict, State]:
     return result, state.append(chat_history=result["processed_response"])
 
 
-@action(reads=["error"], writes=["chat_history"])
-def error(state: State) -> Tuple[dict, State]:
-    result = {"chat_record": {"role": "assistant", "content": str(state["error"]), "type": "error"}}
-    return result, state.append(chat_history=result["chat_record"])
+# TODO -- add in error handling
+# @action(reads=["error"], writes=["chat_history"])
+# def error(state: State) -> Tuple[dict, State]:
+#     result = {"chat_record": {"role": "assistant", "content": str(state["error"]), "type": "error"}}
+#     return result, state.append(chat_history=result["chat_record"])
 
 
-def base_application(hooks: List[LifecycleAdapter] = None):
+def base_application(hooks: List[LifecycleAdapter], app_id: str, storage_dir: str):
     if hooks is None:
         hooks = []
     return (
@@ -149,7 +148,6 @@ def base_application(hooks: List[LifecycleAdapter] = None):
             ),
             prompt_for_more=prompt_for_more,
             response=response,
-            error=error,
         )
         .with_entrypoint("prompt")
         .with_state(chat_history=[])
@@ -164,25 +162,16 @@ def base_application(hooks: List[LifecycleAdapter] = None):
             (
                 ["generate_image", "answer_question", "generate_code", "prompt_for_more"],
                 "response",
-                when(error=None),
-            ),
-            (
-                ["generate_image", "answer_question", "generate_code", "prompt_for_more"],
-                "error",
-                expr("error is not None"),
             ),
             ("response", "prompt", default),
-            ("error", "prompt", default),
         )
         .with_hooks(*hooks)
-        .with_tracker("demo:chatbot")
+        .with_tracker("demo:chatbot", params={"app_id": app_id, "storage_dir": storage_dir})
         .build()
     )
 
 
-def hamilton_application(hooks: List[LifecycleAdapter] = None):
-    if hooks is None:
-        hooks = []
+def hamilton_application(hooks: List[LifecycleAdapter], app_id: str, storage_dir: str):
     dr = driver.Driver({"provider": "openai"}, dag)  # TODO -- add modules
     Hamilton.set_driver(dr)
     application = (
@@ -227,7 +216,6 @@ def hamilton_application(hooks: List[LifecycleAdapter] = None):
                 },
                 outputs={"processed_response": append_state("chat_history")},
             ),
-            error=error,
         )
         .with_transitions(
             ("prompt", "check_safety", default),
@@ -240,27 +228,25 @@ def hamilton_application(hooks: List[LifecycleAdapter] = None):
             (
                 ["generate_image", "answer_question", "generate_code", "prompt_for_more"],
                 "response",
-                when(error=None),
-            ),
-            (
-                ["generate_image", "answer_question", "generate_code", "prompt_for_more"],
-                "error",
-                expr("error is not None"),
             ),
             ("response", "prompt", default),
-            ("error", "prompt", default),
         )
         .with_hooks(*hooks)
-        .with_tracker("demo:chatbot")
+        .with_tracker("demo:chatbot", params={"app_id": app_id, "storage_dir": storage_dir})
         .build()
     )
     return application
 
 
-def application(use_hamilton: bool, hooks: List[LifecycleAdapter] = []) -> Application:
+def application(
+    use_hamilton: bool,
+    app_id: Optional[str] = None,
+    storage_dir: Optional[str] = "~/.burr",
+    hooks: Optional[List[LifecycleAdapter]] = None,
+) -> Application:
     if use_hamilton:
-        return hamilton_application(hooks)
-    return base_application(hooks)
+        return hamilton_application(hooks, app_id, storage_dir)
+    return base_application(hooks, app_id, storage_dir)
 
 
 if __name__ == "__main__":
