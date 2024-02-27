@@ -1,8 +1,8 @@
 import pytest
+from hamilton import ad_hoc_utils, driver
 
 from burr.core import State
 from burr.integrations.hamilton import Hamilton, from_state, from_value, update_state
-from hamilton import ad_hoc_utils, driver
 
 
 def _incrementing_driver():

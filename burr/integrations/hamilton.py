@@ -1,8 +1,9 @@
 import dataclasses
 from typing import Any, Dict, Literal, Tuple, Union
 
-from burr.core import Action, State
 from hamilton.driver import Driver
+
+from burr.core import Action, State
 
 
 @dataclasses.dataclass

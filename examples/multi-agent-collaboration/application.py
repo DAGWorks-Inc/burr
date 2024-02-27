@@ -2,6 +2,7 @@ import json
 import os.path
 
 import func_agent
+from hamilton import driver
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_experimental.utilities import PythonREPL
 
@@ -9,7 +10,6 @@ from burr import core
 from burr.core import Action, ApplicationBuilder, State
 from burr.core.action import action
 from burr.lifecycle import PostRunStepHook
-from hamilton import driver
 
 # @action(reads=["code"], writes=["code_result"])
 # def run_code(state: State) -> tuple[dict, State]:

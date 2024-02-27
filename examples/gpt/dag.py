@@ -2,7 +2,6 @@ import copy
 from typing import Dict, Optional, TypedDict
 
 import openai
-
 from hamilton.function_modifiers import config
 
 ChatContents = TypedDict("ChatContents", {"role": str, "content": str, "type": str})

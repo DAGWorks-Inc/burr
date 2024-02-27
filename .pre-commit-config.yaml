@@ -34,7 +34,8 @@ repos:
             '--known-local-folder',
             'tests',
             '-p',
-            'hamilton'
+            'burr',
+            'examples'
           ]
   - repo: https://github.com/pycqa/flake8
     rev: 6.1.0
