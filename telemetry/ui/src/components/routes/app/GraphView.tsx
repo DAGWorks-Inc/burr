@@ -75,7 +75,8 @@ const ActionNode = (props: { data: NodeData }) => {
     <>
       <Handle type="target" position={Position.Top} />
       <div
-        className={`${bgColor} ${opacity} ${additionalClasses} text-lg font-sans  p-3 rounded-md border-dwlightblue b-2 border`}>
+        className={`${bgColor} ${opacity} ${additionalClasses} text-lg font-sans  p-3 rounded-md border-dwlightblue b-2 border`}
+      >
         {props.data.action.name}
       </div>
       <Handle type="source" position={Position.Bottom} id="a" />
@@ -218,7 +219,8 @@ export const _Graph = (props: {
         highlightedActions: props.previousActions,
         hoverAction: props.hoverAction,
         currentAction: props.currentAction
-      }}>
+      }}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -227,7 +229,10 @@ export const _Graph = (props: {
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
+        maxZoom={100}
+        minZoom={0.1}
       />
+
       <MiniMap pannable className="pr-10" />
       <Controls position="bottom-right" />
     </NodeStateProvider.Provider>
