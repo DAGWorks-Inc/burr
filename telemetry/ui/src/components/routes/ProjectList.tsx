@@ -22,7 +22,6 @@ export const ProjectListTable = (props: { projects: Project[] }) => {
           <TableHeader>Created</TableHeader>
           <TableHeader>Last Run</TableHeader>
           <TableHeader>App Runs</TableHeader>
-          <TableHeader>Path</TableHeader>
           <TableHeader></TableHeader>
         </TableRow>
       </TableHead>
@@ -37,9 +36,9 @@ export const ProjectListTable = (props: { projects: Project[] }) => {
               <DateDisplay date={project.last_written} />
             </TableCell>
             <TableCell>{project.num_apps}</TableCell>
-            <TableCell>
+            {/* <TableCell>
               <code className="text-gray-600">{project.uri}</code>
-            </TableCell>
+            </TableCell> */}
             <TableCell>
               <Button color="white" href={`/project/${project.id}`}>
                 App Runs
