@@ -5,7 +5,7 @@
 Burr is a state machine for data/AI projects. You can (and should!) use it for anything where managing state can be hard. Hint: managing state
 is always hard!
 
-Link to [documentation](https://studious-spork-n8kznlw.pages.github.io/). Quick video intro [here](https://www.loom.com/share/8a92474bb7574d6eb4cd25c21913adf2).
+Link to [documentation](https://burr.dagworks.io/). Quick video intro [here](https://www.loom.com/share/8a92474bb7574d6eb4cd25c21913adf2).
 
 Burr is:
 1. A (dependency-free) python library that enables you to build and manage state machines with simple python functions
@@ -56,14 +56,14 @@ $ burr
 
 This will start a server and open up a browser window with a few demo projects preloaded for you to play with.
 
-Next, see the documentation for [getting started](https://studious-spork-n8kznlw.pages.github.io/getting_started/simple-example.html), and follow the example.
+Next, see the documentation for [getting started](https://burr.dagworks.io/getting_started/simple-example.html), and follow the example.
 Then read through some of the concepts and write your own application!
 
 # Roadmap
 
 While Burr is stable and well-tested, we have quite a few tools/features on our roadmap!
 
-1. Various efficiency/usability improvements for the core library (see [planned capabilities](https://studious-spork-n8kznlw.pages.github.io/concepts/planned-capabilities.html) for more details). This includes:
+1. Various efficiency/usability improvements for the core library (see [planned capabilities](https://burr.dagworks.io/concepts/planned-capabilities.html) for more details). This includes:
    1. Fully typed state with validation
    2. First-class support for retries + exception management
    3. More integration with popular frameworks (LCEL, LLamaIndex, Hamilton, etc...)
@@ -75,4 +75,4 @@ If you want to avoid self-hosting the above solutions we're building Burr Cloud.
 
 # Contributing
 
-We welcome contributors! To get started on developing, see the [developer-facing docs](https://studious-spork-n8kznlw.pages.github.io/contributing).
+We welcome contributors! To get started on developing, see the [developer-facing docs](https://burr.dagworks.io/contributing).
