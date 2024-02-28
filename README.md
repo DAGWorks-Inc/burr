@@ -33,6 +33,7 @@ including tooling to build a UI in streamlit and watch your state machine execut
 ## Why the name Burr?
 
 Burr is named after [Aaron Burr](https://en.wikipedia.org/wiki/Aaron_Burr), founding father, third VP of the United States, and murderer/arch-nemesis of [Alexander Hamilton](https://en.wikipedia.org/wiki/Alexander_Hamilton).
+What's the connection with Hamilton? This is [DAGWorks](www.dagworks.io)' second open-source library release after the [Hamilton library](https://github.com/dagworks-inc/hamilton)
 In our version of things here, we imagine a world in which Burr and Hamilton lived in harmony and saw through their differences and thus were happy to work together. We originally
 built Burr as a _harness_ to handle state between executions of Hamilton DAGs (because DAGs don't have cycles), 
 but realized that it has a wide array of applications and decided to release it more broadly. 
