@@ -22,7 +22,7 @@ Burr can be used for a variety of applications. Burr can build a state machine t
 And a lot more!
 
 Using hooks and other integrations you can (a) integrate with any of your favorite vendors (LLM observability, storage, etc...), and
-(b) build custom actions that delegate to your favorite libraries like [Hamilton](github.com/DAGWorks-Inc/hamilton).
+(b) build custom actions that delegate to your favorite libraries (like [Hamilton](github.com/DAGWorks-Inc/hamilton)).
 
 Burr will _not_ tell you how to build your models, how to query APIs, or how to manage your data. It will help you tie all these together
 in a way that scales with your needs and makes following the logic of your system easy. Burr comes out of the box with a host of integrations
