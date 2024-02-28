@@ -2,14 +2,14 @@
 
 ## What is Burr?
 
-Burr is a state machine for data/AI projects. You can (and should!) use it for anything where managing state can be hard. Hint: managing state
-is always hard!
+Burr is a way to express a state machine (i.e. a graph/flowchart) for data/AI projects. You can (and should!) use it for anything where managing state can be hard. Hint: managing state
+is always hard! Like in a RAG chat application, or if you're doing hyperparameter tuning, or a trading simulation.
 
 Link to [documentation](https://burr.dagworks.io/). Quick video intro [here](https://www.loom.com/share/8a92474bb7574d6eb4cd25c21913adf2).
 
 Burr is:
-1. A (dependency-free) python library that enables you to build and manage state machines with simple python functions
-2. A server that can run your state machines and provide a UI to track execution/debug
+1. A (dependency-free) low abstraction python library that enables you to build and manage state machines with simple python functions
+2. It comes with a UI you can use view execution telemetry for introspection and debugging
 
 ## What can you do with Burr?
 
@@ -22,7 +22,7 @@ Burr can be used for a variety of applications. Burr can build a state machine t
 And a lot more!
 
 Using hooks and other integrations you can (a) integrate with any of your favorite vendors (LLM observability, storage, etc...), and
-(b) build custom actions that delegate to your favorite libraries.
+(b) build custom actions that delegate to your favorite libraries (like [Hamilton](github.com/DAGWorks-Inc/hamilton)).
 
 Burr will _not_ tell you how to build your models, how to query APIs, or how to manage your data. It will help you tie all these together
 in a way that scales with your needs and makes following the logic of your system easy. Burr comes out of the box with a host of integrations
@@ -32,10 +32,11 @@ including tooling to build a UI in streamlit and watch your state machine execut
 
 ## Why the name Burr?
 
-Burr is named after Aaron Burr, founding father, third VP of the United States, and murderer/arch-nemesis of Alexander Hamilton.
-We imagine a world in which Burr and Hamilton lived in harmony and saw through their differences. We originally
-built Burr as a _harness_ to handle state between executions of Hamilton DAGs,
-but realized that it has a wide array of applications and decided to release it.
+Burr is named after [Aaron Burr](https://en.wikipedia.org/wiki/Aaron_Burr), founding father, third VP of the United States, and murderer/arch-nemesis of [Alexander Hamilton](https://en.wikipedia.org/wiki/Alexander_Hamilton).
+What's the connection with Hamilton? This is [DAGWorks](www.dagworks.io)' second open-source library release after the [Hamilton library](https://github.com/dagworks-inc/hamilton)
+Here we imagine a world in which Burr and Hamilton lived in harmony and saw through their differences and thus were happy to work together. We originally
+built Burr as a _harness_ to handle state between executions of Hamilton DAGs (because DAGs don't have cycles),
+but realized that it has a wide array of applications and decided to release it more broadly.
 
 # Getting Started
 
