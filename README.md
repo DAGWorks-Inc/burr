@@ -68,7 +68,8 @@ While Burr is stable and well-tested, we have quite a few tools/features on our 
    1. Fully typed state with validation
    2. First-class support for retries + exception management
    3. More integration with popular frameworks (LCEL, LLamaIndex, Hamilton, etc...)
-2. Cloud-based checkpointing/restart (save state to db and replay/warm start, backed by a configurable database)
+   4. Capturing & surfacing extra metadata, e.g. annotations for particular point in time, that you can then pull out for fine-tuning, etc.
+2. Cloud-based checkpointing/restart for debugging or production use cases (save state to db and replay/warm start, backed by a configurable database)
 3. Tooling for hosted execution of state machines, integrating with your infrastructure (Ray, modal, FastAPI + EC2, etc...)
 
 If you want to avoid self-hosting the above solutions we're building Burr Cloud. To let us know you're interested
