@@ -5,7 +5,7 @@
 Burr is a state machine for data/AI projects. You can (and should!) use it for anything where managing state can be hard. Hint: managing state
 is always hard!
 
-Link to [documentation](https://studious-spork-n8kznlw.pages.github.io/).
+Link to [documentation](https://studious-spork-n8kznlw.pages.github.io/). Quick video intro [here](https://www.loom.com/share/8a92474bb7574d6eb4cd25c21913adf2).
 
 Burr is:
 1. A (dependency-free) python library that enables you to build and manage state machines with simple python functions
