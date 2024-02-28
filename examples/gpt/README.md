@@ -35,4 +35,11 @@ To run on streamlit, you can launch the app:
 streamlit run streamlit_app.py
 ```
 
-This allows you to input a prompt, watch it "think", and explore the history/"why" of the response.
+This has the state machihne displayed as well as a quick debugging/demo. You should be using the UI,
+however, as it is more powerful and responsive. You can run the simple app with:
+
+```bash
+streamlit run simple_streamlit_app.py & burr
+```
+
+This will open up both a streamlit app and a server at the same time.

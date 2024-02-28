@@ -19,9 +19,9 @@ MODES = {
 
 @action(reads=[], writes=["chat_history", "prompt"])
 def process_prompt(state: State, prompt: str) -> Tuple[dict, State]:
-    result = {"processed_prompt": {"role": "user", "content": prompt, "type": "text"}}
+    result = {"chat_item": {"role": "user", "content": prompt, "type": "text"}}
     return result, state.wipe(keep=["prompt", "chat_history"]).append(
-        chat_history=result["processed_prompt"]
+        chat_history=result["chat_item"]
     ).update(prompt=prompt)
 
 
@@ -111,15 +111,15 @@ def image_response(state: State, model: str = "dall-e-2") -> Tuple[dict, State]:
 def response(state: State) -> Tuple[dict, State]:
     if not state["safe"]:
         result = {
-            "processed_response": {
+            "chat_item": {
                 "role": "assistant",
                 "content": "I'm sorry, I can't respond to that.",
                 "type": "text",
             }
         }
     else:
-        result = {"processed_response": state["response"]}
-    return result, state.append(chat_history=result["processed_response"])
+        result = {"chat_item": state["response"]}
+    return result, state.append(chat_history=result["chat_item"])
 
 
 # TODO -- add in error handling
