@@ -9,7 +9,7 @@ Link to [documentation](https://burr.dagworks.io/). Quick video intro [here](htt
 
 Burr is:
 1. A (dependency-free) low abstraction python library that enables you to build and manage state machines with simple python functions
-2. It optionally comes with a server to view execution telemetry for introspection and debugging
+2. It optionally comes with a UI to view execution telemetry for introspection and debugging
 
 ## What can you do with Burr?
 
