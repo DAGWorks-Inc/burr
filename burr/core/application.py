@@ -44,6 +44,7 @@ class Transition:
 TerminationCondition = Literal["any_complete", "all_complete"]
 
 PRIOR_STEP = "__PRIOR_STEP"
+SEQUENCE_ID = "__SEQUENCE_ID"
 
 
 def _run_function(function: Function, state: State, inputs: Dict[str, Any]) -> dict:
@@ -259,7 +260,14 @@ class Application:
             else:
                 result = _run_function(next_action, self._state, inputs)
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
-            new_state = new_state.update(**{PRIOR_STEP: next_action.name})
+
+            new_state = new_state.update(
+                **{
+                    PRIOR_STEP: next_action.name,
+                    # make it a string for future proofing
+                    SEQUENCE_ID: str(int(self._state.get(SEQUENCE_ID, 0)) + 1),
+                }
+            )
             self._set_state(new_state)
         except Exception as e:
             exc = e
@@ -312,7 +320,13 @@ class Application:
             else:
                 result = await _arun_function(next_action, self._state, inputs=inputs)
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
-            new_state = new_state.update(**{PRIOR_STEP: next_action.name})
+            new_state = new_state.update(
+                **{
+                    PRIOR_STEP: next_action.name,
+                    # make it a string for future proofing
+                    SEQUENCE_ID: str(int(self._state.get(SEQUENCE_ID, 0)) + 1),
+                }
+            )
         except Exception as e:
             exc = e
             logger.exception(_format_error_message(next_action, self._state, inputs))
@@ -780,7 +794,7 @@ class ApplicationBuilder:
     ):
         """Adds a "tracker" to the application. The tracker specifies
         a project name (used for disambiguating groups of tracers), and plugs into the
-        Burr UI. Currently the only supported tracker is local, which takes in the params
+        Burr UI. Currently, the only supported tracker is local, which takes in the params
         `storage_dir` and `app_id`, which have automatic defaults.
 
         :param project: Project name

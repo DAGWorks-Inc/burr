@@ -1,11 +1,12 @@
+import json
+
 import func_agent
 from hamilton import driver
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_experimental.utilities import PythonREPL
 
 from burr import core
-from burr.core import Action, ApplicationBuilder, State
-from burr.core.action import action
+from burr.core import Action, ApplicationBuilder, State, action, default
 from burr.lifecycle import PostRunStepHook
 from burr.tracking import client as burr_tclient
 
@@ -24,7 +25,7 @@ def python_repl(code: str) -> dict:
     try:
         result = repl.run(code)
     except BaseException as e:
-        return {"error": repr(e), "status": "error"}
+        return {"error": repr(e), "status": "error", "code": f"```python\n{code}\n```"}
     return {"status": "success", "code": f"```python\n{code}\n```", "Stdout": result}
 
 
@@ -32,7 +33,7 @@ def python_repl(code: str) -> dict:
 def chart_generator(state: State) -> tuple[dict, State]:
     query = state["query"]
     result = tool_dag.execute(
-        ["executed_tool_calls", "parsed_tool_calls", "llm_function_message"],
+        ["parsed_tool_calls", "llm_function_message"],
         inputs={
             "tools": [python_repl],
             "system_message": "Any charts you display will be visible by the user.",
@@ -41,20 +42,11 @@ def chart_generator(state: State) -> tuple[dict, State]:
         },
     )
     # _code = result["parsed_tool_calls"][0]["function_args"]["code"]
-    new_messages = [result["llm_function_message"]]
-    for tool_name, tool_result in result["executed_tool_calls"]:
-        new_messages.append(tool_result)
-    if len(new_messages) == 1:
-        if new_messages[0]["content"] and "FINAL ANSWER" in new_messages[0]["content"]:
-            next_hop = "complete"
-        else:
-            next_hop = "continue"
-    else:
-        # assess tool results
-        next_hop = "self"
-    state = state.update(next_hop=next_hop)
-    for message in new_messages:
-        state = state.append(messages=message)
+    new_message = result["llm_function_message"]
+    parsed_tool_calls = result["parsed_tool_calls"]
+    state = state.update(parsed_tool_calls=parsed_tool_calls)
+    state = state.append(messages=new_message)
+    state = state.update(sender="chart_generator")
     return result, state
 
 
@@ -65,7 +57,7 @@ tavily_tool = TavilySearchResults(max_results=5)
 def researcher(state: State) -> tuple[dict, State]:
     query = state["query"]
     result = tool_dag.execute(
-        ["executed_tool_calls", "parsed_tool_calls", "llm_function_message"],
+        ["parsed_tool_calls", "llm_function_message"],
         inputs={
             "tools": [tavily_tool],
             "system_message": "You should provide accurate data for the chart generator to use.",
@@ -73,21 +65,57 @@ def researcher(state: State) -> tuple[dict, State]:
             "messages": state["messages"],
         },
     )
-    new_messages = [result["llm_function_message"]]
-    for tool_name, tool_result in result["executed_tool_calls"]:
-        new_messages.append(tool_result)
-    if len(new_messages) == 1:
-        if "FINAL ANSWER" in new_messages[0]["content"]:
-            next_hop = "complete"
-        else:
-            next_hop = "continue"
-    else:
-        # assess tool results
-        next_hop = "self"
-    state = state.update(next_hop=next_hop)
-    for message in new_messages:
-        state = state.append(messages=message)
+    new_message = result["llm_function_message"]
+    parsed_tool_calls = result["parsed_tool_calls"]
+    state = state.update(parsed_tool_calls=parsed_tool_calls)
+    state = state.append(messages=new_message)
+    state = state.update(sender="researcher")
     return result, state
+
+
+tools = [tavily_tool, python_repl]
+
+
+@action(reads=["messages", "parsed_tool_calls"], writes=["messages", "parsed_tool_calls"])
+def tool_node(state: State) -> tuple[dict, State]:
+    """This runs tools in the graph
+
+    It takes in an agent action and calls that tool and returns the result."""
+    new_messages = []
+    parsed_tool_calls = state["parsed_tool_calls"]
+
+    for tool_call in parsed_tool_calls:
+        tool_name = tool_call["function_name"]
+        tool_args = tool_call["function_args"]
+        tool_found = False
+        for tool in tools:
+            name = getattr(tool, "name", None)
+            if name is None:
+                name = tool.__name__
+            if name == tool_name:
+                tool_found = True
+                kwargs = json.loads(tool_args)
+                if hasattr(tool, "_run"):
+                    result = tool._run(**kwargs)
+                else:
+                    result = tool(**kwargs)
+                # str_result = str(result)
+                new_messages.append(
+                    {
+                        "tool_call_id": tool_call["id"],
+                        "role": "tool",
+                        "name": tool_name,
+                        "content": result,
+                    }
+                )
+        if not tool_found:
+            raise ValueError(f"Tool {tool_name} not found.")
+
+    for tool_result in new_messages:
+        state = state.append(messages=tool_result)
+    state = state.update(parsed_tool_calls=[])
+    # We return a list, because this will get added to the existing list
+    return {"messages": new_messages}, state
 
 
 @action(reads=[], writes=[])
@@ -107,12 +135,13 @@ def default_state_and_entry_point() -> tuple[dict, str]:
         "query": "Fetch the UK's GDP over the past 5 years,"
         " then draw a line graph of it."
         " Once you code it up, finish.",
-        "next_hop": "",
+        "sender": "",
+        "parsed_tool_calls": [],
     }, "researcher"
 
 
 def main(app_instance_id: str = None):
-    project_name = "demo:hamilton-multi-agent"
+    project_name = "demo:hamilton-multi-agent-v1"
     if app_instance_id:
         state, entry_point = burr_tclient.LocalTrackingClient.get_state(
             project_name, app_instance_id
@@ -126,23 +155,26 @@ def main(app_instance_id: str = None):
         .with_actions(
             researcher=researcher,
             chart_generator=chart_generator,
+            tool_node=tool_node,
             terminal=terminal_step,
         )
         .with_transitions(
-            ("researcher", "researcher", core.expr("next_hop == 'self'")),
-            ("researcher", "chart_generator", core.expr("next_hop == 'continue'")),
-            ("chart_generator", "chart_generator", core.expr("next_hop == 'self'")),
-            ("chart_generator", "researcher", core.expr("next_hop == 'continue'")),
+            ("researcher", "tool_node", core.expr("len(parsed_tool_calls) > 0")),
             (
                 "researcher",
                 "terminal",
-                core.expr("next_hop == 'complete'"),
-            ),  # core.expr("'FINAL ANSWER' in messages[-1]['content']")),
+                core.expr("'FINAL ANSWER' in messages[-1]['content']"),
+            ),
+            ("researcher", "chart_generator", default),
+            ("chart_generator", "tool_node", core.expr("len(parsed_tool_calls) > 0")),
             (
                 "chart_generator",
                 "terminal",
-                core.expr("next_hop == 'complete'"),
-            ),  # core.expr("'FINAL ANSWER' in messages[-1]['content']")),
+                core.expr("'FINAL ANSWER' in messages[-1]['content']"),
+            ),
+            ("chart_generator", "researcher", default),
+            ("tool_node", "researcher", core.expr("sender == 'researcher'")),
+            ("tool_node", "chart_generator", core.expr("sender == 'chart_generator'")),
         )
         .with_entrypoint(entry_point)
         .with_hooks(PrintStepHook())
@@ -150,15 +182,15 @@ def main(app_instance_id: str = None):
         .build()
     )
     app.visualize(
-        output_file_path="hamilton-multi-agent", include_conditions=True, view=True, format="png"
+        output_file_path="hamilton-multi-agent-v2", include_conditions=True, view=True, format="png"
     )
     app.run(halt_after=["terminal"])
 
 
 if __name__ == "__main__":
     # Add an app_id to restart from last sequence in that state
-    # e.g. fine the ID in the UI and then put it in here "app_4d1618d2-79d1-4d89-8e3f-70c216c71e63"
-    _app_id = None
+    # e.g. fine the ID in the UI and then put it in here "app_f0e4a918-b49c-4ee1-9d2b-30c15104c51c"
+    _app_id = None  # "app_fb52ca3b-9198-4e5a-9ee0-9c07df1d7edd"
     main(_app_id)
 
     # some test code

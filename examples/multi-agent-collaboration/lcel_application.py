@@ -13,6 +13,7 @@ from langgraph.prebuilt.tool_executor import ToolExecutor, ToolInvocation
 from burr import core
 from burr.core import Action, State, action, default, expr
 from burr.lifecycle import PostRunStepHook
+from burr.tracking import client as burr_tclient
 
 tavily_tool = TavilySearchResults(max_results=5)
 
@@ -143,10 +144,9 @@ class PrintStepHook(PostRunStepHook):
         print("state======\n", state)
 
 
-def application():
-    app = (
-        core.ApplicationBuilder()
-        .with_state(
+def default_state_and_entry_point() -> tuple[dict, str]:
+    return (
+        dict(
             messages=[
                 HumanMessage(
                     content="Fetch the UK's GDP over the past 5 years,"
@@ -155,7 +155,23 @@ def application():
                 )
             ],
             sender=None,
+        ),
+        "researcher",
+    )
+
+
+def main(app_instance_id: str = None):
+    project_name = "demo:hamilton-multi-agent"
+    if app_instance_id:
+        initial_state, entry_point = burr_tclient.LocalTrackingClient.get_state(
+            project_name, app_instance_id
         )
+        # TODO: rehydrate langchain objects from JSON
+    else:
+        initial_state, entry_point = default_state_and_entry_point()
+    app = (
+        core.ApplicationBuilder()
+        .with_state(**initial_state)
         .with_actions(
             researcher=research_node,
             charter=chart_node,
@@ -172,9 +188,9 @@ def application():
             ("call_tool", "researcher", expr("sender == 'Researcher'")),
             ("call_tool", "charter", expr("sender == 'Chart Generator'")),
         )
-        .with_entrypoint("researcher")
+        .with_entrypoint(entry_point)
         .with_hooks(PrintStepHook())
-        .with_tracker("lcel-multi-agent")
+        .with_tracker("demo:lcel-multi-agent")
         .build()
     )
     app.visualize(
@@ -184,4 +200,5 @@ def application():
 
 
 if __name__ == "__main__":
-    application()
+    main()
+    # main(SOME_APP_ID)  # use this to restart from a previous state
