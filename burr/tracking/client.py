@@ -39,11 +39,12 @@ class LocalTrackingClient(PostApplicationCreateHook, PreRunStepHook, PostRunStep
 
     GRAPH_FILENAME = "graph.json"
     LOG_FILENAME = "log.jsonl"
+    DEFAULT_STORAGE_DIR = "~/.burr"
 
     def __init__(
         self,
         project: str,
-        storage_dir: str = "~/.burr",
+        storage_dir: str = DEFAULT_STORAGE_DIR,
         app_id: Optional[str] = None,
     ):
         """Instantiates a local tracking client. This will create the following directories, if they don't exist:
@@ -61,11 +62,61 @@ class LocalTrackingClient(PostApplicationCreateHook, PreRunStepHook, PostRunStep
         """
         if app_id is None:
             app_id = f"app_{str(uuid.uuid4())}"
-        storage_dir = os.path.join(os.path.expanduser(storage_dir), project)
+        storage_dir = self.get_storage_path(project, storage_dir)
         self.app_id = app_id
         self.storage_dir = storage_dir
         self._ensure_dir_structure()
         self.f = open(os.path.join(self.storage_dir, self.app_id, self.LOG_FILENAME), "a")
+
+    @staticmethod
+    def get_storage_path(project, storage_dir):
+        return os.path.join(os.path.expanduser(storage_dir), project)
+
+    @classmethod
+    def get_state(
+        cls,
+        project: str,
+        app_id: str,
+        sequence_no: int = -1,
+        storage_dir: str = DEFAULT_STORAGE_DIR,
+    ) -> tuple[dict, str]:
+        """Initialize the state to debug from an exception.
+
+        :param project:
+        :param app_id:
+        :param sequence_no:
+        :param storage_dir:
+        :return:
+        """
+        if sequence_no is None:
+            sequence_no = -1  # get the last one
+        path = os.path.join(cls.get_storage_path(project, storage_dir), app_id, cls.LOG_FILENAME)
+        if not os.path.exists(path):
+            raise ValueError(f"No logs found for {project}/{app_id} under {storage_dir}")
+        with open(path, "r") as f:
+            json_lines = f.readlines()
+        json_lines = [json.loads(js_line) for js_line in json_lines]
+        json_lines = [js_line for js_line in json_lines if js_line["type"] == "end_entry"]
+        line = {}
+        if sequence_no < 0:
+            line = json_lines[sequence_no]
+        else:
+            found_line = False
+            for line in json_lines:
+                if line["sequence_no"] == sequence_no:
+                    found_line = True
+                    break
+            if not found_line:
+                raise ValueError(f"Sequence number {sequence_no} not found for {project}/{app_id}.")
+        state = line["state"]
+        to_delete = []
+        for key in state.keys():
+            if key.startswith("__"):
+                to_delete.append(key)
+        for key in to_delete:
+            del state[key]
+        entry_point = line["action"]
+        return state, entry_point
 
     def _ensure_dir_structure(self):
         if not os.path.exists(self.storage_dir):
