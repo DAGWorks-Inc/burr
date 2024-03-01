@@ -38,3 +38,9 @@ after the action is complete. Pseudocode:
     current_state = current_state.merge(new_state)
 
 If you're used to thinking about version control, this is a bit like a commit/checkout/merge mechanism.
+
+Reloading Prior State
+---------------------
+Note, if state is serializeable, it means that if stored, it can be reloaded. This is useful for
+reloading state from a previous run (for debugging or as part of the application), or for storing state in a database.
+We are building more capabilties here, for now for debugging purposes, see the :ref:`tracking <trackingclientref>` section.

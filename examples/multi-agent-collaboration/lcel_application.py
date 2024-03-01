@@ -163,7 +163,7 @@ def default_state_and_entry_point() -> tuple[dict, str]:
 def main(app_instance_id: str = None):
     project_name = "demo:hamilton-multi-agent"
     if app_instance_id:
-        initial_state, entry_point = burr_tclient.LocalTrackingClient.get_state(
+        initial_state, entry_point = burr_tclient.LocalTrackingClient.load_state(
             project_name, app_instance_id
         )
         # TODO: rehydrate langchain objects from JSON

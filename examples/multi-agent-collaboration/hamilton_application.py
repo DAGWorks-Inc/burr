@@ -143,7 +143,7 @@ def default_state_and_entry_point() -> tuple[dict, str]:
 def main(app_instance_id: str = None):
     project_name = "demo:hamilton-multi-agent-v1"
     if app_instance_id:
-        state, entry_point = burr_tclient.LocalTrackingClient.get_state(
+        state, entry_point = burr_tclient.LocalTrackingClient.load_state(
             project_name, app_instance_id
         )
     else:
