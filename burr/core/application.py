@@ -261,13 +261,7 @@ class Application:
                 result = _run_function(next_action, self._state, inputs)
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
 
-            new_state = new_state.update(
-                **{
-                    PRIOR_STEP: next_action.name,
-                    # make it a string for future proofing
-                    SEQUENCE_ID: str(int(self._state.get(SEQUENCE_ID, 0)) + 1),
-                }
-            )
+            new_state = self.update_internal_state_value(new_state, next_action)
             self._set_state(new_state)
         except Exception as e:
             exc = e
@@ -283,6 +277,17 @@ class Application:
                     exception=exc,
                 )
         return next_action, result, new_state
+
+    def update_internal_state_value(self, new_state: State, next_action: Action) -> State:
+        """Updates the internal state values of the new state."""
+        new_state = new_state.update(
+            **{
+                PRIOR_STEP: next_action.name,
+                # make it a string for future proofing
+                SEQUENCE_ID: str(int(self._state.get(SEQUENCE_ID, 0)) + 1),
+            }
+        )
+        return new_state
 
     async def astep(self, inputs: Dict[str, Any] = None) -> Optional[Tuple[Action, dict, State]]:
         """Asynchronous version of step.
@@ -320,13 +325,7 @@ class Application:
             else:
                 result = await _arun_function(next_action, self._state, inputs=inputs)
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
-            new_state = new_state.update(
-                **{
-                    PRIOR_STEP: next_action.name,
-                    # make it a string for future proofing
-                    SEQUENCE_ID: str(int(self._state.get(SEQUENCE_ID, 0)) + 1),
-                }
-            )
+            new_state = self.update_internal_state_value(new_state, next_action)
         except Exception as e:
             exc = e
             logger.exception(_format_error_message(next_action, self._state, inputs))
@@ -794,7 +793,7 @@ class ApplicationBuilder:
     ):
         """Adds a "tracker" to the application. The tracker specifies
         a project name (used for disambiguating groups of tracers), and plugs into the
-        Burr UI. Currently, the only supported tracker is local, which takes in the params
+        Burr UI. Currently the only supported tracker is local, which takes in the params
         `storage_dir` and `app_id`, which have automatic defaults.
 
         :param project: Project name

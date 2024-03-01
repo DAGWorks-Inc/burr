@@ -62,31 +62,35 @@ class LocalTrackingClient(PostApplicationCreateHook, PreRunStepHook, PostRunStep
         """
         if app_id is None:
             app_id = f"app_{str(uuid.uuid4())}"
-        storage_dir = self.get_storage_path(project, storage_dir)
+        storage_dir = LocalTrackingClient.get_storage_path(project, storage_dir)
         self.app_id = app_id
         self.storage_dir = storage_dir
         self._ensure_dir_structure()
         self.f = open(os.path.join(self.storage_dir, self.app_id, self.LOG_FILENAME), "a")
 
-    @staticmethod
-    def get_storage_path(project, storage_dir):
+    @classmethod
+    def get_storage_path(cls, project, storage_dir):
         return os.path.join(os.path.expanduser(storage_dir), project)
 
     @classmethod
-    def get_state(
+    def load_state(
         cls,
         project: str,
         app_id: str,
         sequence_no: int = -1,
         storage_dir: str = DEFAULT_STORAGE_DIR,
     ) -> tuple[dict, str]:
-        """Initialize the state to debug from an exception.
+        """Function to load state from what the tracking client got.
 
-        :param project:
-        :param app_id:
-        :param sequence_no:
-        :param storage_dir:
-        :return:
+        It defaults to loading the last state, but you can supply a sequence number.
+
+        We will make loading state more ergonomic, but at this time this is what you get.
+
+        :param project: the name of the project
+        :param app_id: the application instance id
+        :param sequence_no: the sequence number of the state to load. Defaults to last index (i.e. -1).
+        :param storage_dir: the storage directory.
+        :return: the state as a dictionary, and the entry point as a string.
         """
         if sequence_no is None:
             sequence_no = -1  # get the last one
@@ -95,28 +99,33 @@ class LocalTrackingClient(PostApplicationCreateHook, PreRunStepHook, PostRunStep
             raise ValueError(f"No logs found for {project}/{app_id} under {storage_dir}")
         with open(path, "r") as f:
             json_lines = f.readlines()
+        # load as JSON
         json_lines = [json.loads(js_line) for js_line in json_lines]
+        # filter to only end_entry
         json_lines = [js_line for js_line in json_lines if js_line["type"] == "end_entry"]
-        line = {}
-        if sequence_no < 0:
+        try:
             line = json_lines[sequence_no]
-        else:
-            found_line = False
-            for line in json_lines:
-                if line["sequence_no"] == sequence_no:
-                    found_line = True
-                    break
-            if not found_line:
-                raise ValueError(f"Sequence number {sequence_no} not found for {project}/{app_id}.")
-        state = line["state"]
+        except IndexError:
+            raise ValueError(f"Sequence number {sequence_no} not found for {project}/{app_id}.")
+        # check sequence number matches if non-negative
+        line_seq = int(line["sequence_no"])
+        if -1 < sequence_no != line_seq:
+            logger.warning(
+                f"Sequence number mismatch. For {project}/{app_id}: "
+                f"actual:{line_seq} != expected:{sequence_no}"
+            )
+        # get the prior state
+        prior_state = line["state"]
+        entry_point = line["action"]
+        # delete internally stuff. We can't loop over the keys and delete them in the same loop
         to_delete = []
-        for key in state.keys():
+        for key in prior_state.keys():
+            # remove any internal "__" state
             if key.startswith("__"):
                 to_delete.append(key)
         for key in to_delete:
-            del state[key]
-        entry_point = line["action"]
-        return state, entry_point
+            del prior_state[key]
+        return prior_state, entry_point
 
     def _ensure_dir_structure(self):
         if not os.path.exists(self.storage_dir):
