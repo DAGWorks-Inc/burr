@@ -349,7 +349,9 @@ def test_app_step():
         state=State({}),
         initial_step="counter",
     )
+    assert app.sequence_id == 0
     action, result, state = app.step()
+    assert app.sequence_id == 1
     assert action.name == "counter"
     assert result == {"counter": 1}
     assert state[PRIOR_STEP] == "counter"  # internal contract, not part of the public API
@@ -417,7 +419,9 @@ async def test_app_astep():
         state=State({}),
         initial_step="counter_async",
     )
+    assert app.sequence_id == 0
     action, result, state = await app.astep()
+    assert app.sequence_id == 1
     assert action.name == "counter_async"
     assert result == {"counter": 1}
     assert state[PRIOR_STEP] == "counter_async"  # internal contract, not part of the public API
@@ -539,6 +543,7 @@ def test_iterate():
     action, result, state = generator_result
     assert state["counter"] == 10
     assert result["counter"] == 10
+    assert app.sequence_id == 11
 
 
 def test_iterate_with_inputs():
@@ -577,16 +582,20 @@ async def test_aiterate():
         state=State({}),
         initial_step="counter",
     )
+    assert app.sequence_id == 0
     gen = app.aiterate(halt_after=["result"])
+    assert app.sequence_id == 0
     counter = 0
     # Note that we use an async-for loop cause the API is different, this doesn't
     # return anything (async generators are not allowed to).
     async for action, result, state in gen:
+        print("si", app.sequence_id, action.name, state)
         if action.name == "counter":
             assert state["counter"] == result["counter"] == counter + 1
             counter = result["counter"]
         else:
             assert state["counter"] == result["counter"] == 10
+    assert app.sequence_id == 11
 
 
 async def test_aiterate_halt_before():
