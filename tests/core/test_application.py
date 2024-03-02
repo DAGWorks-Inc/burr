@@ -379,7 +379,7 @@ def test_app_step_with_inputs_missing():
         state=State({"count": 0, "tracker": []}),
         initial_step="counter",
     )
-    with pytest.raises(ValueError, match="Missing the following inputs"):
+    with pytest.raises(ValueError, match="missing required inputs"):
         app.step(inputs={})
 
 
@@ -447,7 +447,7 @@ async def test_app_astep_with_inputs_missing():
         state=State({"count": 0, "tracker": []}),
         initial_step="counter_async",
     )
-    with pytest.raises(ValueError, match="Missing the following inputs"):
+    with pytest.raises(ValueError, match="missing required inputs"):
         await app.astep(inputs={})
 
 
