@@ -117,7 +117,7 @@ class PostApplicationCreateHook(abc.ABC):
 @lifecycle.base_hook("pre_start_span")
 class PreStartSpanHook(abc.ABC):
     """Hook that runs before a span is started in the tracing API.
-    This can be either a context manager or a logger."""
+    This can be either a context manager or a logger of sorts."""
 
     @abc.abstractmethod
     def pre_start_span(
