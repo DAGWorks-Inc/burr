@@ -86,6 +86,13 @@ class ApplicationModel(IdentifyingModel):
         )
 
 
+INPUT_FILTERLIST = {"__tracer"}
+
+
+def _filter_inputs(d: dict) -> dict:
+    return {k: v for k, v in d.items() if k not in INPUT_FILTERLIST}
+
+
 class BeginEntryModel(IdentifyingModel):
     """Pydantic model that represents an entry for the beginning of a step"""
 
@@ -93,6 +100,10 @@ class BeginEntryModel(IdentifyingModel):
     action: str
     inputs: Dict[str, Any]
     type: str = "begin_entry"
+
+    @field_serializer("inputs")
+    def serialize_inputs(self, inputs):
+        return _serialize_object(_filter_inputs(inputs))
 
 
 def _serialize_object(d: object) -> Union[dict, list, object]:
@@ -104,8 +115,7 @@ def _serialize_object(d: object) -> Union[dict, list, object]:
         return d.model_dump()
     elif hasattr(d, "to_json"):
         return d.to_json()
-    else:
-        return d
+    return d
 
 
 class EndEntryModel(IdentifyingModel):
