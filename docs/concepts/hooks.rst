@@ -35,6 +35,7 @@ We implement the pre/post run step hooks.
             state: "State",
             action: "Action",
             result: Optional[dict],
+            sequence_id: int,
             exception: Exception,
             **future_kwargs: Any,
         ):

@@ -1,5 +1,5 @@
 ====================
-Planned capabilities
+Planned Capabilities
 ====================
 
 These are on the roadmap (and will be part of Burr in the imminent future), but have not been built yet.
@@ -109,6 +109,7 @@ One could imagine adding it as a condition (a few possibilities)
           error(APIException) # infinite retries
           error(APIException, max=3) # 3 visits to this edge then it gets reset if this is not chosen
           # That's stored in state
+       )
     )
 
 Will have to come up with ergonomic APIs -- the above are just some ideas.

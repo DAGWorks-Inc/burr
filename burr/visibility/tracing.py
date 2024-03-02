@@ -79,14 +79,22 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
     Note that a new instance of this will be passed to every action that is traced. This allows
     us to reset this based on state. This can handle both synchronous and asynchronous contexts.
 
+    You will be using this through the action API. When you declare ``__tracer`` as a parameter,
+    it gives you a callable that, when called with a span name, returns an `ActionSpanTracer`
+
+    .. code-block:: python
+
+        @action(reads=[...], writes=[...])
+        def my_action(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
+            context_manager: ActionSpanTracer = __tracer("my_span_name")
+            with context_manager:
+                ...
 
 
-    The following hooks are ran:
-    - pre_span_start
-    - post_span_end
+    The following hooks are respected:
 
-    And we'll likely add:
-    - log_artifact
+    - :py:class:`pre_span_start <burr.lifecycle.base.PreSpanStart>` and :py:class:`async pre_span_start <burr.lifecycle.base.PreSpanStartAsync>`
+    - :py:class:`post_span_end <burr.lifecycle.base.PostSpanEnd>` and :py:class:`async post_span_end <burr.lifecycle.base.PostSpanEndAsync>`
     """
 
     def __init__(
@@ -172,6 +180,7 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
         )
 
     def __enter__(self):
+        """Enters the context manager"""
         enter_context = self._enter()
         self._sync_hooks_enter(enter_context)
         return self
@@ -182,7 +191,7 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
         __exc_value: Optional[Type[BaseException]],
         __traceback: Optional[Type[BaseException]],
     ) -> Optional[bool]:
-        """Raise any exception triggered within the runtime context."""
+        """Exits the context manager."""
         prior_execution_context = self._exit()
         self._sync_hooks_exit(prior_execution_context)
         return None
@@ -191,6 +200,7 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
         raise NotImplementedError
 
     async def __aenter__(self) -> "ActionSpanTracer":
+        """Enters the context manager, async mode"""
         enter_context = self._enter()
         self._sync_hooks_enter(enter_context)
         await self._async_hooks_enter(self.context_var.get())
@@ -202,6 +212,7 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
         __exc_value: Optional[Type[BaseException]],
         __traceback: Optional[Type[BaseException]],
     ) -> Optional[bool]:
+        """Exits the context manager, async mode"""
         prior_execution_context = self._exit()
         self._sync_hooks_exit(prior_execution_context)
         await self._async_hooks_exit(prior_execution_context)
@@ -209,6 +220,26 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
 
 
 class TracerFactory:
+    """Represents a tracer factory to create tracer instances. User never instantiates this
+    directly. Rather, this gets injected by the application. This gives a new span.
+
+    Note this carries state -- the top level span count. This is important for the sequence id
+    at the root level.
+
+    You will only ever see a tracer factory in the context of an action, passed through the `__tracer`
+    parameter.
+
+     .. code-block:: python
+
+        @action(reads=[...], writes=[...])
+        def my_action(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
+            context_manager: ActionSpanTracer = __tracer("my_span_name")
+            with context_manager:
+                ...
+
+
+    """
+
     def __init__(
         self,
         action: str,
@@ -216,11 +247,7 @@ class TracerFactory:
         lifecycle_adapters: LifecycleAdapterSet,
         _context_var: ContextVar[Optional[ActionSpan]] = execution_context_var,
     ):
-        """Represents a tracer factory to create tracer instances. User never instantiates this
-        directly. Rather, this gets injected by the application. This gives a new span.
-
-        Note this carries state -- the top level span count. This is important for the sequence id
-        at the root level.
+        """Instantiates a tracer factory.
 
         :param action: Action name
         :param lifecycle_adapters: Lifecycle adapters
