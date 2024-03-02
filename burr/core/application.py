@@ -244,9 +244,11 @@ class Application:
         :return: Tuple[Function, dict, State] -- the function that was just ran, the result of running it, and the new state
         """
 
-        out = self._step(inputs=inputs, _run_hooks=True)
-        self._increment_sequence_id()
-        return out
+        try:
+            out = self._step(inputs=inputs, _run_hooks=True)
+            return out
+        finally:
+            self._increment_sequence_id()
 
     def _step(
         self, inputs: Optional[Dict[str, Any]] = None, _run_hooks: bool = True
@@ -364,6 +366,7 @@ class Application:
                 result = await _arun_function(next_action, self._state, inputs=inputs)
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
             new_state = self.update_internal_state_value(new_state, next_action)
+            self._set_state(new_state)
         except Exception as e:
             exc = e
             logger.exception(_format_error_message(next_action, self._state, inputs))
@@ -372,8 +375,9 @@ class Application:
             await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
                 "post_run_step", action=next_action, state=new_state, result=result, exception=exc
             )
-        self._set_state(new_state)
-        self._increment_sequence_id()
+            # we want to increment regardless of failure
+            self._increment_sequence_id()
+
         return next_action, result, new_state
 
     def _clean_iterate_params(
