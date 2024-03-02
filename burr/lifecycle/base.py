@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 if TYPE_CHECKING:
     # type-checking-only for a circular import
     from burr.core import State, Action, ApplicationGraph
+    from burr.visibility import ActionSpan
 
 from burr.lifecycle.internal import lifecycle
 
@@ -113,6 +114,72 @@ class PostApplicationCreateHook(abc.ABC):
         pass
 
 
+@lifecycle.base_hook("pre_start_span")
+class PreStartSpanHook(abc.ABC):
+    """Hook that runs before a span is started in the tracing API.
+    This can be either a context manager or a logger."""
+
+    @abc.abstractmethod
+    def pre_start_span(
+        self,
+        *,
+        action: str,
+        action_sequence_id: int,
+        span: "ActionSpan",
+        span_dependencies: list[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+
+@lifecycle.base_hook("pre_start_span")
+class PreStartSpanHookAsync(abc.ABC):
+    @abc.abstractmethod
+    async def pre_start_span(
+        self,
+        *,
+        action: str,
+        action_sequence_id: int,
+        span: "ActionSpan",
+        span_dependencies: list[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+
+@lifecycle.base_hook("post_end_span")
+class PostEndSpanHook(abc.ABC):
+    """Hook that runs after a span is ended in the tracing API.
+    This can be either a context manager or a logger."""
+
+    @abc.abstractmethod
+    def post_end_span(
+        self,
+        *,
+        action: str,
+        action_sequence_id: int,
+        span: "ActionSpan",
+        span_dependencies: list[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+
+@lifecycle.base_hook("post_end_span")
+class PostEndSpanHookAsync(abc.ABC):
+    @abc.abstractmethod
+    async def post_end_span(
+        self,
+        *,
+        action: str,
+        action_sequence_id: int,
+        span: "ActionSpan",
+        span_dependencies: list[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+
 # THESE ARE NOT IN USE
 # TODO -- implement/decide how to use them
 @lifecycle.base_hook("pre_run_application")
@@ -159,4 +226,8 @@ LifecycleAdapter = Union[
     PostRunApplicationHook,
     PostRunApplicationHookAsync,
     PostApplicationCreateHook,
+    PreStartSpanHook,
+    PreStartSpanHookAsync,
+    PostEndSpanHook,
+    PostEndSpanHookAsync,
 ]

@@ -1,5 +1,6 @@
 import collections
 import dataclasses
+import functools
 import logging
 import pprint
 from typing import (
@@ -16,6 +17,7 @@ from typing import (
     Union,
 )
 
+from burr import visibility
 from burr.core.action import (
     Action,
     Condition,
@@ -221,6 +223,12 @@ class Application:
         self._adapter_set.call_all_lifecycle_hooks_sync(
             "post_application_create", state=self._state, application_graph=self._graph
         )
+        # TODO -- consider adding global inputs + global input factories to the builder
+        self.dependency_factory = {
+            "__tracer": functools.partial(
+                visibility.tracing.TracerFactory, lifecycle_adapters=self._adapter_set
+            )
+        }
 
     def step(self, inputs: Optional[Dict[str, Any]] = None) -> Optional[Tuple[Action, dict, State]]:
         """Performs a single step, advancing the state machine along.
@@ -228,14 +236,17 @@ class Application:
         the action, and the new state.
 
         Use this if you just want to do something with the state and not rely on generators.
-        E.G. press forward/backwards, hnuman in the loop, etc... Odds are this is not
+        E.G. press forward/backwards, human in the loop, etc... Odds are this is not
         the method you want -- you'll want iterate() (if you want to see the state/
         results along the way), or run() (if you just want the final state/results).
 
-        :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world        :param __run_hooks:
+        :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world
         :return: Tuple[Function, dict, State] -- the function that was just ran, the result of running it, and the new state
         """
-        return self._step(inputs=inputs, _run_hooks=True)
+
+        out = self._step(inputs=inputs, _run_hooks=True)
+        self._increment_sequence_id()
+        return out
 
     def _step(
         self, inputs: Optional[Dict[str, Any]] = None, _run_hooks: bool = True
@@ -247,6 +258,7 @@ class Application:
             return None
         if inputs is None:
             inputs = {}
+        inputs = self._process_inputs(inputs, next_action)
         if _run_hooks:
             self._adapter_set.call_all_lifecycle_hooks_sync(
                 "pre_run_step", action=next_action, state=self._state, inputs=inputs
@@ -283,11 +295,36 @@ class Application:
         new_state = new_state.update(
             **{
                 PRIOR_STEP: next_action.name,
-                # make it a string for future proofing
-                SEQUENCE_ID: str(int(self._state.get(SEQUENCE_ID, 0)) + 1),
             }
         )
         return new_state
+
+    def _process_inputs(self, inputs: Dict[str, Any], action: Action) -> Dict[str, Any]:
+        inputs = inputs.copy()
+        processed_inputs = {}
+        for key in list(inputs.keys()):
+            if key in action.inputs:
+                processed_inputs[key] = inputs.pop(key)
+        if len(inputs) > 0:
+            raise ValueError(
+                f"Keys {inputs.keys()} were passed in as inputs to action "
+                f"{action.name}, but not declared by the action as an input! "
+                f"Action needs: {action.inputs}"
+            )
+        missing_inputs = set(action.inputs) - set(processed_inputs.keys())
+        for required_input in list(missing_inputs):
+            # if we can find it in the dependency factory, we'll use that
+            if required_input in self.dependency_factory:
+                processed_inputs[required_input] = self.dependency_factory[required_input](
+                    action, self.sequence_id
+                )
+                missing_inputs.remove(required_input)
+        if len(missing_inputs) > 0:
+            raise ValueError(
+                f"Action {action.name} is missing required inputs: {missing_inputs}. "
+                f"Has inputs: {processed_inputs}"
+            )
+        return processed_inputs
 
     async def astep(self, inputs: Dict[str, Any] = None) -> Optional[Tuple[Action, dict, State]]:
         """Asynchronous version of step.
@@ -298,10 +335,11 @@ class Application:
         :return: Tuple[Function, dict, State] -- the action that was just ran, the result of running it, and the new state
         """
         next_action = self.get_next_action()
-        if inputs is None:
-            inputs = {}
         if next_action is None:
             return None
+        if inputs is None:
+            inputs = {}
+        inputs = self._process_inputs(inputs, next_action)
         await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
             "pre_run_step", action=next_action, state=self._state, inputs=inputs
         )
@@ -335,6 +373,7 @@ class Application:
                 "post_run_step", action=next_action, state=new_state, result=result, exception=exc
             )
         self._set_state(new_state)
+        self._increment_sequence_id()
         return next_action, result, new_state
 
     def _clean_iterate_params(
@@ -515,6 +554,9 @@ class Application:
         """
         prior_action = None
         result = None
+        halt_before, halt_after, inputs = self._clean_iterate_params(
+            halt_before, halt_after, inputs
+        )
         async for prior_action, result, state in self.aiterate(
             halt_before=halt_before, halt_after=halt_after, inputs=inputs
         ):
@@ -646,6 +688,20 @@ class Application:
         :return: The application graph object
         """
         return self._graph
+
+    @property
+    def sequence_id(self) -> Optional[int]:
+        """gives the sequence ID of the current (next) action.
+        This is incremented after every step is taken -- meaning that incremeneting
+        it is the very last action that is done. Any logging, etc... will use the current
+        step's sequence ID
+
+        :return:
+        """
+        return self._state.get(SEQUENCE_ID, 0)
+
+    def _increment_sequence_id(self):
+        self._state = self._state.update(**{SEQUENCE_ID: self.sequence_id + 1})
 
 
 def _assert_set(value: Optional[Any], field: str, method: str):
