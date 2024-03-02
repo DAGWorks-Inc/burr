@@ -408,6 +408,9 @@ class FunctionBasedAction(SingleStepAction):
     def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
         return self._fn(state, **self._bound_params, **run_kwargs)
 
+    def is_async(self) -> bool:
+        return inspect.iscoroutinefunction(self._fn)
+
 
 def _validate_action_function(fn: Callable):
     """Validates that an action has the signature: (state: State) -> Tuple[dict, State]

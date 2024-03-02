@@ -1,3 +1,4 @@
+import asyncio
 from typing import Tuple
 
 import pytest
@@ -195,6 +196,64 @@ def test_function_based_action_with_defaults():
     )
     assert fn_based_action.inputs == ["unbound_input"]
     result, state = fn_based_action.run_and_update(State({"input_variable": 1}), unbound_input=100)
+    assert state.get_all() == {"input_variable": 1, "output_variable": 1111}
+    assert result == {"output_variable": 1111}
+
+
+async def test_function_based_action_async():
+    @action(reads=["input_variable"], writes=["output_variable"])
+    async def my_action(state: State) -> Tuple[dict, State]:
+        await asyncio.sleep(0.01)
+        return {"output_variable": state["input_variable"]}, state.update(
+            output_variable=state["input_variable"]
+        )
+
+    fn_based_action = create_action(my_action, name="my_action")
+    assert fn_based_action.is_async()
+    assert fn_based_action.single_step is True
+    assert fn_based_action.name == "my_action"
+    assert fn_based_action.reads == ["input_variable"]
+    assert fn_based_action.writes == ["output_variable"]
+    result, state = await fn_based_action.run_and_update(State({"input_variable": "foo"}))
+    assert result == {"output_variable": "foo"}
+    assert state.get_all() == {"input_variable": "foo", "output_variable": "foo"}
+
+
+async def test_function_based_action_with_inputs_async():
+    @action(reads=["input_variable"], writes=["output_variable"])
+    async def my_action(state: State, bound_input: int, unbound_input: int) -> Tuple[dict, State]:
+        await asyncio.sleep(0.01)
+        res = state["input_variable"] + bound_input + unbound_input
+        return {"output_variable": res}, state.update(output_variable=res)
+
+    fn_based_action: SingleStepAction = create_action(
+        my_action.bind(bound_input=10), name="my_action"
+    )
+    assert fn_based_action.is_async()
+    assert fn_based_action.inputs == ["unbound_input"]
+    result, state = await fn_based_action.run_and_update(
+        State({"input_variable": 1}), unbound_input=100
+    )
+    assert state.get_all() == {"input_variable": 1, "output_variable": 111}
+    assert result == {"output_variable": 111}
+
+
+async def test_function_based_action_with_defaults_async():
+    @action(reads=["input_variable"], writes=["output_variable"])
+    async def my_action(
+        state: State, bound_input: int, unbound_input: int, unbound_default_input: int = 1000
+    ) -> Tuple[dict, State]:
+        await asyncio.sleep(0.01)
+        res = state["input_variable"] + bound_input + unbound_input + unbound_default_input
+        return {"output_variable": res}, state.update(output_variable=res)
+
+    fn_based_action: SingleStepAction = create_action(
+        my_action.bind(bound_input=10), name="my_action"
+    )
+    assert fn_based_action.inputs == ["unbound_input"]
+    result, state = await fn_based_action.run_and_update(
+        State({"input_variable": 1}), unbound_input=100
+    )
     assert state.get_all() == {"input_variable": 1, "output_variable": 1111}
     assert result == {"output_variable": 1111}
 
