@@ -99,6 +99,7 @@ class BeginEntryModel(IdentifyingModel):
     start_time: datetime.datetime
     action: str
     inputs: Dict[str, Any]
+    sequence_id: int
     type: str = "begin_entry"
 
     @field_serializer("inputs")
@@ -126,6 +127,7 @@ class EndEntryModel(IdentifyingModel):
     result: Optional[dict]
     exception: Optional[str]
     state: Dict[str, Any]  # TODO -- consider logging updates to the state so we can recreate
+    sequence_id: int
     type: str = "end_entry"
 
     @field_serializer("result")
@@ -135,3 +137,24 @@ class EndEntryModel(IdentifyingModel):
     @field_serializer("state")
     def serialize_state(self, state):
         return _serialize_object(state)
+
+
+class BeginSpanModel(IdentifyingModel):
+    """Pydantic model that represents an entry for the beginning of a span"""
+
+    start_time: datetime.datetime
+    action_sequence_id: int
+    span_id: str  # unique among the application
+    span_name: str
+    parent_span_id: Optional[str]
+    span_dependencies: list[str]
+    type: str = "begin_span"
+
+
+class EndSpanModel(IdentifyingModel):
+    """Pydantic model that represents an entry for the end of a span"""
+
+    end_time: datetime.datetime
+    action_sequence_id: int
+    span_id: str  # unique among the application
+    type: str = "end_span"

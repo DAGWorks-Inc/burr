@@ -9,8 +9,15 @@ from typing import Any, Dict, Optional
 from burr.core import Action, ApplicationGraph, State
 from burr.integrations.base import require_plugin
 from burr.lifecycle import PostRunStepHook, PreRunStepHook
-from burr.lifecycle.base import PostApplicationCreateHook
-from burr.tracking.common.models import ApplicationModel, BeginEntryModel, EndEntryModel
+from burr.lifecycle.base import PostApplicationCreateHook, PostEndSpanHook, PreStartSpanHook
+from burr.tracking.common.models import (
+    ApplicationModel,
+    BeginEntryModel,
+    BeginSpanModel,
+    EndEntryModel,
+    EndSpanModel,
+)
+from burr.visibility import ActionSpan
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +37,13 @@ def _format_exception(exception: Exception) -> Optional[str]:
     return "".join(traceback.format_exception(type(exception), exception, exception.__traceback__))
 
 
-class LocalTrackingClient(PostApplicationCreateHook, PreRunStepHook, PostRunStepHook):
+class LocalTrackingClient(
+    PostApplicationCreateHook,
+    PreRunStepHook,
+    PostRunStepHook,
+    PreStartSpanHook,
+    PostEndSpanHook,
+):
     """Tracker to track locally -- goes along with the Burr UI. Writes
     down the following:
     #. The whole application + debugging information (e.g. source code) to a file
@@ -152,21 +165,27 @@ class LocalTrackingClient(PostApplicationCreateHook, PreRunStepHook, PostRunStep
         self.f.flush()
 
     def pre_run_step(
-        self, *, state: State, action: Action, inputs: Dict[str, Any], **future_kwargs: Any
+        self,
+        state: State,
+        action: Action,
+        inputs: Dict[str, Any],
+        sequence_id: int,
+        **future_kwargs: Any,
     ):
         pre_run_entry = BeginEntryModel(
             start_time=datetime.datetime.now(),
             action=action.name,
             inputs=inputs,
+            sequence_id=sequence_id,
         )
         self._append_write_line(pre_run_entry)
 
     def post_run_step(
         self,
-        *,
         state: State,
         action: Action,
         result: Optional[dict],
+        sequence_id: int,
         exception: Exception,
         **future_kwargs: Any,
     ):
@@ -174,10 +193,46 @@ class LocalTrackingClient(PostApplicationCreateHook, PreRunStepHook, PostRunStep
             end_time=datetime.datetime.now(),
             action=action.name,
             result=result,
+            sequence_id=sequence_id,
             exception=_format_exception(exception),
             state=state.get_all(),
         )
         self._append_write_line(post_run_entry)
+
+    def pre_start_span(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        span: ActionSpan,
+        span_dependencies: list[str],
+        **future_kwargs: Any,
+    ):
+        being_span_model = BeginSpanModel(
+            start_time=datetime.datetime.now(),
+            action_sequence_id=sequence_id,
+            span_id=span.uid,
+            parent_span_id=span.parent.uid if span.parent else None,
+            span_dependencies=span_dependencies,
+            span_name=span.name,
+        )
+        self._append_write_line(being_span_model)
+
+    def post_end_span(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        span: ActionSpan,
+        span_dependencies: list[str],
+        **future_kwargs: Any,
+    ):
+        end_span_model = EndSpanModel(
+            end_time=datetime.datetime.now(),
+            action_sequence_id=sequence_id,
+            span_id=span.uid,
+        )
+        self._append_write_line(end_span_model)
 
     def __del__(self):
         self.f.close()

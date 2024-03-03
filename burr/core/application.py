@@ -263,7 +263,11 @@ class Application:
         inputs = self._process_inputs(inputs, next_action)
         if _run_hooks:
             self._adapter_set.call_all_lifecycle_hooks_sync(
-                "pre_run_step", action=next_action, state=self._state, inputs=inputs
+                "pre_run_step",
+                action=next_action,
+                state=self._state,
+                inputs=inputs,
+                sequence_id=self.sequence_id,
             )
         exc = None
         result = None
@@ -288,6 +292,7 @@ class Application:
                     action=next_action,
                     state=new_state,
                     result=result,
+                    sequence_id=self.sequence_id,
                     exception=exc,
                 )
         return next_action, result, new_state
@@ -343,7 +348,11 @@ class Application:
             inputs = {}
         inputs = self._process_inputs(inputs, next_action)
         await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
-            "pre_run_step", action=next_action, state=self._state, inputs=inputs
+            "pre_run_step",
+            action=next_action,
+            state=self._state,
+            inputs=inputs,
+            sequence_id=self.sequence_id,
         )
         exc = None
         result = None
@@ -373,7 +382,12 @@ class Application:
             raise e
         finally:
             await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
-                "post_run_step", action=next_action, state=new_state, result=result, exception=exc
+                "post_run_step",
+                action=next_action,
+                state=new_state,
+                result=result,
+                sequence_id=self.sequence_id,
+                exception=exc,
             )
             # we want to increment regardless of failure
             self._increment_sequence_id()
@@ -619,6 +633,9 @@ class Application:
             )
             digraph.node(action.name, label=label, shape="box", style="rounded")
             for input_ in action.inputs:
+                if input_.startswith("__"):
+                    # These are internally injected by the framework
+                    continue
                 input_name = f"input__{input_}"
                 digraph.node(input_name, shape="oval", style="dashed", label=f"input: {input_}")
                 digraph.edge(input_name, action.name)
