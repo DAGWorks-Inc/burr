@@ -15,13 +15,20 @@ class PreRunStepHook(abc.ABC):
 
     @abc.abstractmethod
     def pre_run_step(
-        self, *, state: "State", action: "Action", inputs: Dict[str, Any], **future_kwargs: Any
+        self,
+        *,
+        state: "State",
+        action: "Action",
+        inputs: Dict[str, Any],
+        sequence_id: int,
+        **future_kwargs: Any,
     ):
         """Run before a step is executed.
 
         :param state: State prior to step execution
         :param action: Action to be executed
         :param inputs: Inputs to the action
+        :param sequence_id: Sequence ID of the action
         :param future_kwargs: Future keyword arguments
         """
         pass
@@ -33,13 +40,20 @@ class PreRunStepHookAsync(abc.ABC):
 
     @abc.abstractmethod
     async def pre_run_step(
-        self, *, state: "State", action: "Action", inputs: Dict[str, Any], **future_kwargs: Any
+        self,
+        *,
+        state: "State",
+        action: "Action",
+        inputs: Dict[str, Any],
+        sequence_id: int,
+        **future_kwargs: Any,
     ):
         """Async run before a step is executed.
 
         :param state: State prior to step execution
         :param action: Action to be executed
         :param inputs: Inputs to the action
+        :param sequence_id: Sequence ID of the action
         :param future_kwargs: Future keyword arguments
         """
         pass
@@ -56,6 +70,7 @@ class PostRunStepHook(abc.ABC):
         state: "State",
         action: "Action",
         result: Optional[Dict[str, Any]],
+        sequence_id: int,
         exception: Exception,
         **future_kwargs: Any,
     ):
@@ -64,6 +79,7 @@ class PostRunStepHook(abc.ABC):
         :param state: State after step execution
         :param action: Action that was executed
         :param result: Result of the action
+        :param sequence_id: Sequence ID of the action
         :param exception: Exception that was raised
         :param future_kwargs: Future keyword arguments
         """
@@ -81,6 +97,7 @@ class PostRunStepHookAsync(abc.ABC):
         state: "State",
         action: "Action",
         result: Optional[dict],
+        sequence_id: int,
         exception: Exception,
         **future_kwargs: Any,
     ):
@@ -89,6 +106,7 @@ class PostRunStepHookAsync(abc.ABC):
         :param state: State after step execution
         :param action: Action that was executed
         :param result: Result of the action
+        :param sequence_id: Sequence ID of the action
         :param exception: Exception that was raised
         :param future_kwargs: Future keyword arguments
         """

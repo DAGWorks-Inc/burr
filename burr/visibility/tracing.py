@@ -129,7 +129,7 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
             action=self.action,
             span=context,
             span_dependencies=self.span_dependencies,
-            action_sequence_id=self.action_sequence_id,
+            sequence_id=self.action_sequence_id,
         )
 
     async def _async_hooks_enter(self, context: ActionSpan):
@@ -138,7 +138,7 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
             action=self.action,
             span=context,
             span_dependencies=self.span_dependencies,
-            action_sequence_id=self.action_sequence_id,
+            sequence_id=self.action_sequence_id,
         )
 
     async def _async_hooks_exit(self, context: ActionSpan):
@@ -147,7 +147,7 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
             action=self.action,
             span=context,
             span_dependencies=self.span_dependencies,
-            action_sequence_id=self.action_sequence_id,
+            sequence_id=self.action_sequence_id,
         )
 
     def _enter(self):
@@ -177,6 +177,7 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
             action=self.action,
             span=context,
             span_dependencies=self.span_dependencies,
+            sequence_id=self.action_sequence_id,
         )
 
     def __enter__(self):
@@ -264,6 +265,8 @@ class TracerFactory:
     ) -> ActionSpanTracer:
         if self.context_var.get() is None:
             self.top_level_span_count += 1
+        if span_dependencies is None:
+            span_dependencies = []
         return ActionSpanTracer(
             action=self.action,
             action_sequence_id=self.action_sequence_id,
