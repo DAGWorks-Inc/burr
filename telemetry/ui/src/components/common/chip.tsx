@@ -6,7 +6,9 @@ const chipColorMap = {
   input: 'bg-yellow-500',
   success: 'bg-green-500',
   failure: 'bg-dwred',
-  running: 'bg-dwlightblue'
+  running: 'bg-dwlightblue',
+  demo: 'bg-yellow-400',
+  test: 'bg-gray-800'
 };
 
 export type ChipType = keyof typeof chipColorMap;
@@ -23,7 +25,8 @@ export const Chip = (props: { label: string; chipType: ChipType; className?: str
       className={`relative grid select-none items-center whitespace-nowrap rounded-lg
         p-1 px-3 font-sans text-xs font-semibold text-white ${bgColor} ${
           props.className ? props.className : ''
-        }`}>
+        }`}
+    >
       <span className="">{props.label}</span>
     </div>
   );

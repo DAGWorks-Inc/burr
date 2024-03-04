@@ -57,6 +57,15 @@ class BackendBase(abc.ABC):
         pass
 
 
+def get_uri(project_id: str) -> str:
+    project_id_map = {
+        "demo:counter": "https://github.com/DAGWorks-Inc/burr/tree/main/examples/counter",
+        "demo:chatbot": "https://github.com/DAGWorks-Inc/burr/tree/main/examples/gpt",
+        "demo:conversational-rag": "https://github.com/DAGWorks-Inc/burr/tree/main/examples/conversational-rag",
+    }
+    return project_id_map.get(project_id, "")
+
+
 class LocalBackend(BackendBase):
     """Quick implementation of a local backend for testing purposes. This is not a production backend."""
 
@@ -77,7 +86,7 @@ class LocalBackend(BackendBase):
                     schema.Project(
                         name=entry,
                         id=entry,
-                        uri=full_path,  # TODO -- figure out what
+                        uri=get_uri(entry),
                         last_written=await aiofilesos.path.getmtime(full_path),
                         created=await aiofilesos.path.getctime(full_path),
                         num_apps=len(await aiofilesos.listdir(full_path)),

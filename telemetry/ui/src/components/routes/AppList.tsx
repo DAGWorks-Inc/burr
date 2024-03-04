@@ -59,7 +59,11 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
       </TableHead>
       <TableBody>
         {appsToDisplay.map((app) => (
-          <TableRow key={app.app_id}>
+          <TableRow
+            key={props.projectId}
+            className="hover:bg-gray-50 cursor-pointer"
+            href={`/project/${props.projectId}/${app.app_id}`}
+          >
             <TableCell className="font-semibold text-gray-700">{app.app_id}</TableCell>
             <TableCell>
               <DateTimeDisplay date={app.first_written} mode="long" />
