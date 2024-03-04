@@ -60,7 +60,7 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
       <TableBody>
         {appsToDisplay.map((app) => (
           <TableRow
-            key={props.projectId}
+            key={app.app_id}
             className="hover:bg-gray-50 cursor-pointer"
             href={`/project/${props.projectId}/${app.app_id}`}
           >
