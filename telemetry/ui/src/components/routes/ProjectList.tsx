@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Loading } from '../common/loading';
 import { DateDisplay } from '../common/dates';
 import { Button } from '../common/button';
+import { Chip } from '../common/chip';
 
 /**
  * Table of a project list. Uses the tailwind catalyst component.
@@ -21,31 +22,60 @@ export const ProjectListTable = (props: { projects: Project[] }) => {
           <TableHeader>Name</TableHeader>
           <TableHeader>Created</TableHeader>
           <TableHeader>Last Run</TableHeader>
+          <TableHeader>Link</TableHeader>
           <TableHeader>App Runs</TableHeader>
           <TableHeader></TableHeader>
         </TableRow>
       </TableHead>
       <TableBody>
-        {projectsSorted.map((project) => (
-          <TableRow key={project.id}>
-            <TableCell className="font-semibold text-gray-700">{project.name}</TableCell>
-            <TableCell>
-              <DateDisplay date={project.created} />
-            </TableCell>
-            <TableCell>
-              <DateDisplay date={project.last_written} />
-            </TableCell>
-            <TableCell>{project.num_apps}</TableCell>
-            {/* <TableCell>
-              <code className="text-gray-600">{project.uri}</code>
-            </TableCell> */}
-            <TableCell>
-              <Button color="white" href={`/project/${project.id}`}>
-                App Runs
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
+        {projectsSorted.map((project) => {
+          let projectName = project.name;
+          const chipType = projectName.startsWith('demo:')
+            ? 'demo'
+            : projectName.startsWith('test:')
+              ? 'test'
+              : undefined;
+          if (chipType) {
+            projectName = projectName.slice(5);
+          }
+
+          return (
+            <TableRow
+              key={project.id}
+              className="hover:bg-gray-50 cursor-pointer"
+              href={`/project/${project.id}`}
+            >
+              <TableCell className="font-semibold text-gray-700">
+                <div className="flex flex-row gap-1">
+                  {chipType !== undefined && <Chip label={chipType} chipType={chipType}></Chip>}
+                  {projectName}
+                </div>
+              </TableCell>
+              <TableCell>
+                <DateDisplay date={project.created} />
+              </TableCell>
+              <TableCell>
+                <DateDisplay date={project.last_written} />
+              </TableCell>
+              <TableCell>
+                <a
+                  href={project.uri}
+                  className="text-dwlightblue hover:underline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {project.uri.replace('https://github.com/DAGWorks-Inc/burr/tree/main/', '')}
+                </a>
+              </TableCell>
+              <TableCell>{project.num_apps}</TableCell>
+              <TableCell>
+                <Button color="white" href={`/project/${project.id}`}>
+                  App Runs
+                </Button>
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );
