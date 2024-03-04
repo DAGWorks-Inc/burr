@@ -167,18 +167,20 @@ export const AppView = () => {
     <TwoColumnLayout
       mode={minimizedTable ? 'first-minimal' : 'half'}
       leftColumnContent={
-        <StepList
-          steps={stepsSorted}
-          currentHoverIndex={hoverIndex}
-          setCurrentHoverIndex={setCurrentHoverIndex}
-          currentSelectedIndex={currentActionIndex}
-          setCurrentSelectedIndex={setCurrentActionIndex}
-          numPriorIndices={NUM_PREVIOUS_ACTIONS}
-          autoRefresh={autoRefresh}
-          setAutoRefresh={setAutoRefresh}
-          minimized={minimizedTable}
-          setMinimized={setMinimizedTable}
-        />
+        <div className="overflow-y-scroll hide-scrollbar h-full w-full">
+          <StepList
+            steps={stepsSorted}
+            currentHoverIndex={hoverIndex}
+            setCurrentHoverIndex={setCurrentHoverIndex}
+            currentSelectedIndex={currentActionIndex}
+            setCurrentSelectedIndex={setCurrentActionIndex}
+            numPriorIndices={NUM_PREVIOUS_ACTIONS}
+            autoRefresh={autoRefresh}
+            setAutoRefresh={setAutoRefresh}
+            minimized={minimizedTable}
+            setMinimized={setMinimizedTable}
+          />
+        </div>
       }
       rightColumnContent={
         <AppStateView
