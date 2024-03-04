@@ -7,7 +7,7 @@ import aiofiles
 import aiofiles.os as aiofilesos
 import fastapi
 
-from burr.tracking.common.models import BeginEntryModel, EndEntryModel
+from burr.tracking.common.models import BeginEntryModel, BeginSpanModel, EndEntryModel, EndSpanModel
 from burr.tracking.server import schema
 from burr.tracking.server.schema import ApplicationLogs, ApplicationSummary
 
@@ -85,12 +85,16 @@ class LocalBackend(BackendBase):
                 )
         return out
 
-    async def count_lines(self, file_path: str) -> int:
-        """Quick tool to count lines"""
+    async def get_max_sequence_id(self, file_path: str) -> int:
+        """Quick tool to get the latest sequence ID from a log file.
+        This is not efficient and should be replaced."""
         count = 0
         async with aiofiles.open(file_path, "rb") as f:
-            async for _ in f:
-                count += 1
+            for line in reversed(await f.readlines()):
+                line_data = json.loads(line)
+                if "sequence_id" in line_data:
+                    # Just return the latest for now
+                    return line_data["sequence_id"]
         return count
 
     async def list_apps(
@@ -112,7 +116,7 @@ class LocalBackend(BackendBase):
                         app_id=entry,
                         first_written=await aiofilesos.path.getctime(full_path),
                         last_written=await aiofilesos.path.getmtime(full_path),
-                        num_steps=await self.count_lines(log_path) // 2,
+                        num_steps=await self.get_max_sequence_id(log_path),
                         tags={},
                     )
                 )
@@ -135,26 +139,39 @@ class LocalBackend(BackendBase):
                 f"{app_id} from project: {project_id}. "
                 f"Was this properly executed?",
             )
-        steps = []
+        steps_by_sequence_id = {}
+        spans_by_id = {}
         if os.path.exists(log_file):
-            steps = []
             async with aiofiles.open(log_file) as f:
-                for i, line in enumerate(await f.readlines()):
+                for line in await f.readlines():
                     json_line = json.loads(line)
+                    # TODO -- make these into constants
                     if json_line["type"] == "begin_entry":
                         begin_step = BeginEntryModel.parse_obj(json_line)
-                        steps.append(
-                            schema.Step(
-                                step_start_log=begin_step,
-                                step_end_log=None,
-                                step_sequence_id=i // 2,
-                            )
+                        steps_by_sequence_id[begin_step.sequence_id] = schema.Step(
+                            step_start_log=begin_step, step_end_log=None, spans=[]
                         )
-                    else:
-                        steps[-1].step_end_log = EndEntryModel.parse_obj(json_line)
-
+                    elif json_line["type"] == "end_entry":
+                        # this assumes they'll be in order
+                        step_end_log = EndEntryModel.parse_obj(json_line)
+                        step = steps_by_sequence_id[step_end_log.sequence_id]
+                        step.step_end_log = step_end_log
+                    elif json_line["type"] == "begin_span":
+                        span = BeginSpanModel.parse_obj(json_line)
+                        spans_by_id[span.span_id] = schema.Span(
+                            begin_entry=span,
+                            end_entry=None,
+                        )
+                    elif json_line["type"] == "end_span":
+                        end_span = EndSpanModel.parse_obj(json_line)
+                        span = spans_by_id[end_span.span_id]
+                        span.end_entry = end_span
+        for span in spans_by_id.values():
+            step = steps_by_sequence_id[span.begin_entry.action_sequence_id]
+            step.spans.append(span)
         async with aiofiles.open(graph_file) as f:
             str_graph = await f.read()
         return ApplicationLogs(
-            application=schema.ApplicationModel.parse_raw(str_graph), steps=steps
+            application=schema.ApplicationModel.parse_raw(str_graph),
+            steps=list(steps_by_sequence_id.values()),
         )
