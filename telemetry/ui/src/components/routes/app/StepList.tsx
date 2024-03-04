@@ -5,7 +5,12 @@ import { backgroundColorsForIndex } from './AppView';
 import { Status, getActionStatus } from '../../../utils';
 import { Chip } from '../../common/chip';
 import { useState } from 'react';
-import { MinusCircleIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MinusIcon,
+  PlusIcon
+} from '@heroicons/react/24/outline';
 
 import { RiCornerDownRightLine } from 'react-icons/ri';
 
@@ -121,6 +126,7 @@ const ActionTableRow = (props: {
   numPriorIndices: number;
   isExpanded: boolean;
   toggleExpanded: (index: number) => void;
+  minimized: boolean;
 }) => {
   const sequenceID = props.step.step_start_log.sequence_id;
   const isHovered = props.currentHoverIndex === sequenceID;
@@ -129,7 +135,7 @@ const ActionTableRow = (props: {
     props.currentSelectedIndex !== undefined &&
     sequenceID <= props.currentSelectedIndex &&
     sequenceID >= props.currentSelectedIndex - props.numPriorIndices;
-  const ExpandIcon = props.isExpanded ? MinusCircleIcon : PlusCircleIcon;
+  const ExpandIcon = props.isExpanded ? MinusIcon : PlusIcon;
   return (
     <CommonTableRow
       sequenceID={sequenceID}
@@ -140,40 +146,46 @@ const ActionTableRow = (props: {
       setCurrentHoverIndex={props.setCurrentHoverIndex}
       setCurrentSelectedIndex={props.setCurrentSelectedIndex}
     >
-      <TableCell className="text-gray-200 w-12 max-w-12 min-w-12">{sequenceID}</TableCell>
-      <TableCell className="truncate w-48 min-w-48">{props.step.step_start_log.action}</TableCell>
-      <TableCell>
-        <div className="flex flex-row justify-end">
-          <DateTimeDisplay date={props.step.step_start_log.start_time} mode={'short'} />
-        </div>
-      </TableCell>
-      <TableCell>
-        <RuntimeDisplay
-          start={props.step.step_start_log.start_time}
-          end={props.step.step_end_log?.end_time}
-        />
-      </TableCell>
-      <TableCell>
-        {spanCount > 0 ? (
-          <div className="flex gap-1 items-center">
-            <ExpandIcon
-              className="h-4 w-4 text-gray-600 hover:scale-110 cursor-pointer"
-              onClick={(e) => {
-                props.toggleExpanded(sequenceID);
-                e.stopPropagation();
-              }}
+      <TableCell className="text-gray-500 w-12 max-w-12 min-w-12">{sequenceID}</TableCell>
+      {!props.minimized && (
+        <>
+          <TableCell className="truncate w-48 min-w-48">
+            {props.step.step_start_log.action}
+          </TableCell>
+          <TableCell>
+            <div className="flex flex-row justify-end">
+              <DateTimeDisplay date={props.step.step_start_log.start_time} mode={'short'} />
+            </div>
+          </TableCell>
+          <TableCell>
+            <RuntimeDisplay
+              start={props.step.step_start_log.start_time}
+              end={props.step.step_end_log?.end_time}
             />
-            <span className="text-gray-600">{spanCount}</span>
-          </div>
-        ) : (
-          <span></span>
-        )}
-      </TableCell>
-      <TableCell>
-        <div className="max-w-min">
-          <StatusChip status={getActionStatus(props.step)} />
-        </div>
-      </TableCell>
+          </TableCell>
+          <TableCell>
+            {spanCount > 0 ? (
+              <div className="flex gap-1 items-center">
+                <ExpandIcon
+                  className="h-4 w-4 text-gray-600 hover:scale-110 cursor-pointer"
+                  onClick={(e) => {
+                    props.toggleExpanded(sequenceID);
+                    e.stopPropagation();
+                  }}
+                />
+                <span className="text-gray-600">{spanCount}</span>
+              </div>
+            ) : (
+              <span></span>
+            )}
+          </TableCell>
+          <TableCell>
+            <div className="max-w-min">
+              <StatusChip status={getActionStatus(props.step)} />
+            </div>
+          </TableCell>
+        </>
+      )}
     </CommonTableRow>
   );
 };
@@ -186,6 +198,7 @@ const TraceSubTable = (props: {
   currentSelectedIndex: number | undefined;
   setCurrentSelectedIndex: (index?: number) => void;
   numPriorIndices: number;
+  minimized: boolean;
 }) => {
   return (
     <>
@@ -202,6 +215,8 @@ const TraceSubTable = (props: {
           sequenceID <= props.currentSelectedIndex &&
           sequenceID >= props.currentSelectedIndex - props.numPriorIndices;
         console.log(depth, Array(depth));
+        const lightText = 'text-gray-300';
+        const normalText = shouldBeHighlighted ? 'text-gray-100' : 'text-gray-400';
         return (
           <CommonTableRow
             key={span.begin_entry.span_id}
@@ -213,31 +228,33 @@ const TraceSubTable = (props: {
             setCurrentHoverIndex={props.setCurrentHoverIndex}
             setCurrentSelectedIndex={props.setCurrentSelectedIndex}
           >
-            <TableCell className="text-gray-200 w-10 min-w-10">{spanIDUniqueToAction}</TableCell>
-
-            <TableCell className="text-gray-200 w-12 max-w-12 min-w-12">
-              <div className="flex flex-row gap-1 items-center min-w-48">
-                {[...Array(depth).keys()].map((i) => (
-                  <RiCornerDownRightLine
-                    key={i}
-                    className={`${i == depth - 1 ? 'opacity-100' : 'opacity-0'} text-lg`}
-                  ></RiCornerDownRightLine>
-                ))}
-                {span.begin_entry.span_name}
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="flex flex-row justify-end">
-                <TimeDisplay date={props.step.step_start_log.start_time} />
-              </div>
-            </TableCell>
-            <TableCell colSpan={3}>
-              <RuntimeDisplay start={span.begin_entry.start_time} end={span.end_entry?.end_time} />
-            </TableCell>
-
-            {/* <TableCell colSpan={1} className="text-gray-400">
-              {span.begin_entry.span_name}
-            </TableCell> */}
+            <TableCell className={` ${lightText} w-10 min-w-10`}>{spanIDUniqueToAction}</TableCell>
+            {!props.minimized && (
+              <>
+                <TableCell className={`${normalText}  w-12 max-w-12 min-w-12`}>
+                  <div className="flex flex-row gap-1 items-center min-w-48">
+                    {[...Array(depth).keys()].map((i) => (
+                      <RiCornerDownRightLine
+                        key={i}
+                        className={`${i == depth - 1 ? 'opacity-100' : 'opacity-0'} text-lg`}
+                      ></RiCornerDownRightLine>
+                    ))}
+                    {span.begin_entry.span_name}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-row justify-end">
+                    <TimeDisplay date={props.step.step_start_log.start_time} />
+                  </div>
+                </TableCell>
+                <TableCell colSpan={3}>
+                  <RuntimeDisplay
+                    start={span.begin_entry.start_time}
+                    end={span.end_entry?.end_time}
+                  />
+                </TableCell>
+              </>
+            )}
           </CommonTableRow>
         );
       })}
@@ -264,6 +281,8 @@ export const StepList = (props: {
   numPriorIndices: number;
   autoRefresh: boolean;
   setAutoRefresh: (b: boolean) => void;
+  minimized: boolean;
+  setMinimized: (b: boolean) => void;
 }) => {
   // This is a quick way of expanding the actions all at once
   const [expandedActions, setExpandedActions] = useState<number[]>([]);
@@ -275,7 +294,7 @@ export const StepList = (props: {
     }
   };
   const [intentionExpandAll, setIntentionExpandAll] = useState(false);
-  const ExpandAllIcon = intentionExpandAll ? MinusCircleIcon : PlusCircleIcon;
+  const ExpandAllIcon = intentionExpandAll ? MinusIcon : PlusIcon;
   const expandAll = () => {
     const allIndices = props.steps.map((step) => step.step_start_log.sequence_id);
     setExpandedActions(allIndices);
@@ -291,34 +310,49 @@ export const StepList = (props: {
   const isExpanded = (index: number) => {
     return expandedActions.includes(index);
   };
+  const MinimizeTableIcon = props.minimized ? ChevronRightIcon : ChevronLeftIcon;
   return (
     <Table dense={2}>
       <TableHead className="">
         <TableRow>
-          <TableHeader></TableHeader>
-          <TableHeader>Action</TableHeader>
           <TableHeader>
-            <span className="flex justify-end">Ran</span>
-          </TableHeader>
-          <TableHeader>Duration</TableHeader>
-          <TableHeader>
-            <div className="flex flex-row items-center gap-2">
-              <ExpandAllIcon
+            <div className="py-1">
+              <MinimizeTableIcon
                 className="h-4 w-4 text-gray-600 hover:scale-110 cursor-pointer"
                 onClick={(e) => {
-                  toggleExpandAll();
+                  props.setMinimized(!props.minimized);
                   e.stopPropagation();
                 }}
               />
-              Spans
             </div>
           </TableHeader>
-          <TableHeader>
-            <AutoRefreshSwitch
-              setAutoRefresh={props.setAutoRefresh}
-              autoRefresh={props.autoRefresh}
-            />
-          </TableHeader>
+          {!props.minimized && (
+            <>
+              <TableHeader>Action</TableHeader>
+              <TableHeader>
+                <span className="flex justify-end">Ran</span>
+              </TableHeader>
+              <TableHeader>Duration</TableHeader>
+              <TableHeader>
+                <div className="flex flex-row items-center gap-2">
+                  <ExpandAllIcon
+                    className="h-4 w-4 text-gray-600 hover:scale-110 cursor-pointer"
+                    onClick={(e) => {
+                      toggleExpandAll();
+                      e.stopPropagation();
+                    }}
+                  />
+                  Spans
+                </div>
+              </TableHeader>
+              <TableHeader>
+                <AutoRefreshSwitch
+                  setAutoRefresh={props.setAutoRefresh}
+                  autoRefresh={props.autoRefresh}
+                />
+              </TableHeader>
+            </>
+          )}
         </TableRow>
       </TableHead>
       <TableBody>
@@ -334,6 +368,7 @@ export const StepList = (props: {
                 numPriorIndices={props.numPriorIndices}
                 isExpanded={isExpanded(step.step_start_log.sequence_id)}
                 toggleExpanded={toggleExpanded}
+                minimized={props.minimized}
               ></ActionTableRow>
               {isExpanded(step.step_start_log.sequence_id) && (
                 <TraceSubTable
@@ -344,6 +379,7 @@ export const StepList = (props: {
                   currentSelectedIndex={props.currentSelectedIndex}
                   setCurrentSelectedIndex={props.setCurrentSelectedIndex}
                   numPriorIndices={props.numPriorIndices}
+                  minimized={props.minimized}
                 />
               )}
             </>
