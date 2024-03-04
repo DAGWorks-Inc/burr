@@ -4,7 +4,12 @@
 /* eslint-disable */
 import type { ApplicationModel } from './ApplicationModel';
 import type { Step } from './Step';
+/**
+ * Application logs are purely flat --
+ * we will likely be rethinking this but for now this provides for easy parsing.
+ */
 export type ApplicationLogs = {
-  application: ApplicationModel;
-  steps: Array<Step>;
+    application: ApplicationModel;
+    steps: Array<Step>;
 };
+

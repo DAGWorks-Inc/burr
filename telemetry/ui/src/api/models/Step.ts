@@ -4,8 +4,13 @@
 /* eslint-disable */
 import type { BeginEntryModel } from './BeginEntryModel';
 import type { EndEntryModel } from './EndEntryModel';
+import type { Span } from './Span';
+/**
+ * Log of  astep -- has a start and an end.
+ */
 export type Step = {
-  step_start_log: BeginEntryModel;
-  step_end_log: EndEntryModel | null;
-  step_sequence_id: number;
+    step_start_log: BeginEntryModel;
+    step_end_log: (EndEntryModel | null);
+    spans: Array<Span>;
 };
+

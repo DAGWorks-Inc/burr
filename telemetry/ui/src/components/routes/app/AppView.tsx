@@ -94,7 +94,7 @@ export const AppView = () => {
     const steps = data?.steps || [];
     const handleKeyDown = (event: KeyboardEvent) => {
       switch (event.key) {
-        case 'ArrowUp':
+        case 'ArrowDown':
           setCurrentActionIndex((prevIndex) => {
             if (prevIndex === undefined || prevIndex <= 0) {
               return 0;
@@ -103,7 +103,7 @@ export const AppView = () => {
             }
           });
           break;
-        case 'ArrowDown':
+        case 'ArrowUp':
           setCurrentActionIndex((prevIndex) => {
             if (prevIndex === undefined) {
               return 0;

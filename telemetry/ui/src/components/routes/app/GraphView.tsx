@@ -60,8 +60,7 @@ const ActionNode = (props: { data: NodeData }) => {
     hoverAction,
     currentAction
   } = React.useContext(NodeStateProvider);
-  // const bgColor = highlightedActions?.includes(props.data.action.name) ? 'bg-dwlightblue' : '';
-  const highlightedActions = [currentAction, ...(previousActions || [])];
+  const highlightedActions = [currentAction, ...(previousActions || [])].reverse();
   const indexOfAction = highlightedActions.findIndex(
     (step) => step?.step_start_log.action === props.data.action.name
   );
