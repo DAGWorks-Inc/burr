@@ -102,7 +102,10 @@ def _state_update(state_to_modify: State, modified_state: State) -> State:
     old_state_keys = set(state_to_modify.keys())
     new_state_keys = set(modified_state.keys())
     deleted_keys = list(old_state_keys - new_state_keys)
-    return state_to_modify.merge(modified_state).wipe(delete=deleted_keys)
+    # TODO -- unify the logic of choosing whether a key is internal or not
+    # Right now this is __sequence_id and __prior_step, but it could be more
+    deleted_keys_filtered = [item for item in deleted_keys if not item.startswith("__")]
+    return state_to_modify.merge(modified_state).wipe(delete=deleted_keys_filtered)
 
 
 def _run_reducer(reducer: Reducer, state: State, result: dict, name: str) -> State:
