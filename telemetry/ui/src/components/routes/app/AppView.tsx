@@ -77,6 +77,7 @@ export const AppView = () => {
   const [hoverIndex, setCurrentHoverIndex] = useState<number | undefined>(undefined);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const shouldQuery = projectId !== undefined && appId !== undefined;
+  const [minimizedTable, setMinimizedTable] = useState(false);
   const { data, error } = useQuery(
     ['apps', projectId],
     () =>
@@ -125,6 +126,14 @@ export const AppView = () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [data?.steps]);
+  useEffect(() => {
+    if (autoRefresh) {
+      const maxSequenceID = Math.max(
+        ...(data?.steps.map((step) => step.step_start_log.sequence_id) || [])
+      );
+      setCurrentActionIndex(maxSequenceID);
+    }
+  }, [data, autoRefresh]);
   if (!shouldQuery) {
     return <Navigate to={'/projects'} />;
   }
@@ -156,6 +165,7 @@ export const AppView = () => {
   });
   return (
     <TwoColumnLayout
+      mode={minimizedTable ? 'first-minimal' : 'half'}
       leftColumnContent={
         <StepList
           steps={stepsSorted}
@@ -166,6 +176,8 @@ export const AppView = () => {
           numPriorIndices={NUM_PREVIOUS_ACTIONS}
           autoRefresh={autoRefresh}
           setAutoRefresh={setAutoRefresh}
+          minimized={minimizedTable}
+          setMinimized={setMinimizedTable}
         />
       }
       rightColumnContent={
