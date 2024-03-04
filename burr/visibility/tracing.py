@@ -198,7 +198,11 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
         return None
 
     def log_artifact(self, name: str, value: Any):
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Logging artifacts is not yet implemented. See "
+            "(and comment on) the following issue for more details: "
+            "https://github.com/DAGWorks-Inc/burr/issues/46"
+        )
 
     async def __aenter__(self) -> "ActionSpanTracer":
         """Enters the context manager, async mode"""
