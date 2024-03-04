@@ -28,6 +28,17 @@ export const DateTimeDisplay: React.FC<{ date: string; mode: 'short' | 'long' }>
   return <span className="whitespace-nowrap text-sm text-gray-500">{displayDateTime}</span>;
 };
 
+export const TimeDisplay: React.FC<{ date: string }> = ({ date }) => {
+  const displayTime = new Date(date).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: 'numeric',
+    hour12: true // Use AM/PM format. Set to false for 24-hour format.
+  });
+
+  return <span className="whitespace-nowrap text-sm text-gray-500">{displayTime}</span>;
+};
+
 /**
  * Formats a duration in a human-readable format.
  * Works for durations in milliseconds, seconds, and microseconds,
