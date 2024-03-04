@@ -6,11 +6,14 @@ import { Status, getActionStatus } from '../../../utils';
 import { Chip } from '../../common/chip';
 import { useState } from 'react';
 import {
+  ArrowPathIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   MinusIcon,
   PlusIcon
 } from '@heroicons/react/24/outline';
+
+import { PauseIcon } from '@heroicons/react/24/solid';
 
 import { RiCornerDownRightLine } from 'react-icons/ri';
 
@@ -50,27 +53,15 @@ const AutoRefreshSwitch = (props: {
   autoRefresh: boolean;
   setAutoRefresh: (b: boolean) => void;
 }) => {
+  const AutoRefreshIcon = props.autoRefresh ? PauseIcon : ArrowPathIcon;
   return (
-    <fieldset>
-      <div className="space-y-5">
-        <div className="relative flex items-start">
-          <div className="flex h-6 items-center">
-            <input
-              type="checkbox"
-              value={props.autoRefresh ? 'on' : 'off'}
-              checked={props.autoRefresh}
-              onChange={(e) => props.setAutoRefresh(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-dwdarkblue focus:ring-dwdarkblue selected:bg-dwdarkblue"
-            />
-          </div>
-          <div className="ml-3 text-sm leading-6">
-            <label htmlFor="comments" className="font-medium text-gray-500">
-              Tail
-            </label>
-          </div>
-        </div>
-      </div>
-    </fieldset>
+    <AutoRefreshIcon
+      className="h-4 w-4 text-gray-600 hover:scale-110 cursor-pointer"
+      onClick={(e) => {
+        props.setAutoRefresh(!props.autoRefresh);
+        e.stopPropagation();
+      }}
+    />
   );
 };
 /**
@@ -262,6 +253,19 @@ const TraceSubTable = (props: {
   );
 };
 
+const ExpandAllButton = (props: { isExpanded: boolean; toggleExpandAll: () => void }) => {
+  const ExpandAllIcon = props.isExpanded ? MinusIcon : PlusIcon;
+  return (
+    <ExpandAllIcon
+      className="h-4 w-4 text-gray-600 hover:scale-110 cursor-pointer"
+      onClick={(e) => {
+        props.toggleExpandAll();
+        e.stopPropagation();
+      }}
+    />
+  );
+};
+
 /**
  * Table with a list of steps.
  * The indexing is off here -- as it updates the index stays the same.
@@ -294,7 +298,7 @@ export const StepList = (props: {
     }
   };
   const [intentionExpandAll, setIntentionExpandAll] = useState(false);
-  const ExpandAllIcon = intentionExpandAll ? MinusIcon : PlusIcon;
+  // const ExpandAllIcon = intentionExpandAll ? MinusIcon : PlusIcon;
   const expandAll = () => {
     const allIndices = props.steps.map((step) => step.step_start_log.sequence_id);
     setExpandedActions(allIndices);
@@ -313,10 +317,10 @@ export const StepList = (props: {
   const MinimizeTableIcon = props.minimized ? ChevronRightIcon : ChevronLeftIcon;
   return (
     <Table dense={2}>
-      <TableHead className="">
-        <TableRow>
-          <TableHeader>
-            <div className="py-1">
+      <TableHead className=" bg-white">
+        <TableRow className="">
+          <TableHeader className="">
+            <div className="py-1 flex flex-row gap-2">
               <MinimizeTableIcon
                 className="h-4 w-4 text-gray-600 hover:scale-110 cursor-pointer"
                 onClick={(e) => {
@@ -324,6 +328,22 @@ export const StepList = (props: {
                   e.stopPropagation();
                 }}
               />
+              {props.minimized ? (
+                <ExpandAllButton
+                  isExpanded={intentionExpandAll}
+                  toggleExpandAll={toggleExpandAll}
+                />
+              ) : (
+                <></>
+              )}
+              {props.minimized ? (
+                <AutoRefreshSwitch
+                  setAutoRefresh={props.setAutoRefresh}
+                  autoRefresh={props.autoRefresh}
+                />
+              ) : (
+                <></>
+              )}
             </div>
           </TableHeader>
           {!props.minimized && (
@@ -335,27 +355,28 @@ export const StepList = (props: {
               <TableHeader>Duration</TableHeader>
               <TableHeader>
                 <div className="flex flex-row items-center gap-2">
-                  <ExpandAllIcon
-                    className="h-4 w-4 text-gray-600 hover:scale-110 cursor-pointer"
-                    onClick={(e) => {
-                      toggleExpandAll();
-                      e.stopPropagation();
-                    }}
+                  <ExpandAllButton
+                    isExpanded={intentionExpandAll}
+                    toggleExpandAll={toggleExpandAll}
                   />
                   Spans
                 </div>
               </TableHeader>
               <TableHeader>
-                <AutoRefreshSwitch
-                  setAutoRefresh={props.setAutoRefresh}
-                  autoRefresh={props.autoRefresh}
-                />
+                <div className="flex flex-row items-center gap-2">
+                  <AutoRefreshSwitch
+                    setAutoRefresh={props.setAutoRefresh}
+                    autoRefresh={props.autoRefresh}
+                  />
+                  <span>Tail</span>
+                </div>
               </TableHeader>
             </>
           )}
         </TableRow>
       </TableHead>
-      <TableBody>
+      {/* <div className="h-10"></div> */}
+      <TableBody className="pt-10">
         {props.steps.map((step) => {
           return (
             <>
