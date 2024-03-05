@@ -35,11 +35,7 @@ export const AppStateView = (props: {
         {currentTab === 'graph' && (
           <GraphView
             stateMachine={props.stateMachine}
-            currentAction={
-              props.currentSequenceID !== undefined
-                ? props.steps[props.currentSequenceID]
-                : undefined
-            }
+            currentAction={currentStep}
             highlightedActions={props.highlightedActions}
             hoverAction={props.hoverAction}
           />
