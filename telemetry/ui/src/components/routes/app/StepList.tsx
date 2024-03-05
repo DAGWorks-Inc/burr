@@ -1,10 +1,10 @@
 import { Span, Step } from '../../../api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../common/table';
 import { DateTimeDisplay, DurationDisplay, TimeDisplay } from '../../common/dates';
-import { backgroundColorsForIndex } from './AppView';
+import { backgroundColorsForIndex, backgroundColorsForStatus } from './AppView';
 import { Status, getActionStatus } from '../../../utils';
 import { Chip } from '../../common/chip';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   ArrowPathIcon,
   ChevronLeftIcon,
@@ -238,18 +238,56 @@ const TraceSubTable = (props: {
                     <TimeDisplay date={props.step.step_start_log.start_time} />
                   </div>
                 </TableCell>
-                <TableCell colSpan={3}>
+                <TableCell colSpan={1}>
                   <RuntimeDisplay
                     start={span.begin_entry.start_time}
                     end={span.end_entry?.end_time}
                   />
                 </TableCell>
+                <TableCell colSpan={1} className="h-full">
+                  <WaterfallPiece
+                    step={props.step}
+                    span={span}
+                    bgColor={backgroundColorsForStatus(getActionStatus(props.step))}
+                    isHighlighted={shouldBeHighlighted}
+                  />
+                </TableCell>
+                <TableCell />
               </>
             )}
           </CommonTableRow>
         );
       })}
     </>
+  );
+};
+
+const WaterfallPiece: React.FC<{
+  step: Step;
+  span: Span;
+  bgColor: string;
+  isHighlighted: boolean;
+}> = (props) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const totalTimeMilliseconds =
+    new Date(props.step.step_end_log?.end_time || new Date()).getTime() -
+    new Date(props.step.step_start_log.start_time).getTime();
+
+  const spanStartMilliseconds = new Date(props.span.begin_entry.start_time).getTime();
+  const spanEndMilliseconds = new Date(props.span.end_entry?.end_time || new Date()).getTime();
+  const bgColor = props.isHighlighted ? 'bg-white' : props.bgColor;
+  return (
+    <div ref={containerRef} className="w-full h-4 px-3">
+      <div
+        className={`${bgColor} opacity-50`}
+        style={{
+          width: `${Math.max(((spanEndMilliseconds - spanStartMilliseconds) / totalTimeMilliseconds) * 100, 1)}%`,
+          position: 'relative',
+          height: '100%',
+          left: `${((spanStartMilliseconds - new Date(props.step.step_start_log.start_time).getTime()) / totalTimeMilliseconds) * 100}%`
+        }}
+      ></div>
+    </div>
   );
 };
 
