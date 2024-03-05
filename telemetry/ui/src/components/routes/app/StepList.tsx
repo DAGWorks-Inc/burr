@@ -291,13 +291,21 @@ const WaterfallPiece: React.FC<{
   );
 };
 
-const ExpandAllButton = (props: { isExpanded: boolean; toggleExpandAll: () => void }) => {
+const ExpandAllButton = (props: {
+  isExpanded: boolean;
+  toggleExpandAll: () => void;
+  disabled: boolean;
+}) => {
   const ExpandAllIcon = props.isExpanded ? MinusIcon : PlusIcon;
+  const textColor = props.disabled ? 'text-gray-300' : 'text-gray-600';
+  const hoverScale = props.disabled ? '' : 'hover:scale-110 cursor-pointer';
   return (
     <ExpandAllIcon
-      className="h-4 w-4 text-gray-600 hover:scale-110 cursor-pointer"
+      className={`h-4 w-4 cursor-pointer ${textColor} ${hoverScale}`}
       onClick={(e) => {
-        props.toggleExpandAll();
+        if (!props.disabled) {
+          props.toggleExpandAll();
+        }
         e.stopPropagation();
       }}
     />
@@ -353,6 +361,7 @@ export const StepList = (props: {
     return expandedActions.includes(index);
   };
   const MinimizeTableIcon = props.minimized ? ChevronRightIcon : ChevronLeftIcon;
+  const hasAnySpans = props.steps.some((step) => step.spans.length > 0);
   return (
     <Table dense={2}>
       <TableHead className=" bg-white">
@@ -368,6 +377,7 @@ export const StepList = (props: {
               />
               {props.minimized ? (
                 <ExpandAllButton
+                  disabled={!hasAnySpans}
                   isExpanded={intentionExpandAll}
                   toggleExpandAll={toggleExpandAll}
                 />
@@ -394,6 +404,7 @@ export const StepList = (props: {
               <TableHeader>
                 <div className="flex flex-row items-center gap-2">
                   <ExpandAllButton
+                    disabled={!hasAnySpans}
                     isExpanded={intentionExpandAll}
                     toggleExpandAll={toggleExpandAll}
                   />
@@ -406,7 +417,7 @@ export const StepList = (props: {
                     setAutoRefresh={props.setAutoRefresh}
                     autoRefresh={props.autoRefresh}
                   />
-                  <span>Tail</span>
+                  <span>Live</span>
                 </div>
               </TableHeader>
             </>
