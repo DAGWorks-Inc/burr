@@ -197,7 +197,7 @@ export const AppView = () => {
           stateMachine={data.application}
           highlightedActions={previousActions}
           hoverAction={hoverIndex ? stepsSorted[hoverIndex] : undefined}
-          currentActionIndex={currentActionIndex}
+          currentSequenceID={currentActionIndex}
         />
       }
     />
