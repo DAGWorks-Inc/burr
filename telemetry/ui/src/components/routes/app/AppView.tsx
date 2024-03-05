@@ -18,6 +18,15 @@ const getPriorActions = (currentActionIndex: number, steps: Step[], numPrevious:
 
 const REFRESH_INTERVAL = 500;
 
+export const backgroundColorsForStatus = (status: Status) => {
+  const colorsByStatus = {
+    success: 'bg-green-500/80',
+    failure: 'bg-dwred/80',
+    running: 'bg-dwlightblue/80'
+  };
+  return colorsByStatus[status];
+};
+
 /**
  * Some tailwind mappings for bg colors -- we get progressively lighter the further back in
  * time we go
