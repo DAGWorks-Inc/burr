@@ -6,3 +6,5 @@ How to run:
 ```
 OPENAI_API_KEY=<your key> python application.py
 ```
+
+![State Machine](digraph.png)
