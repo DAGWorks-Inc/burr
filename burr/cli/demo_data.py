@@ -7,6 +7,7 @@ from burr.lifecycle import PostRunStepHook, PreRunStepHook
 from examples.conversational_rag import application as conversational_rag_application
 from examples.counter import application as counter_application
 from examples.gpt import application as chatbot_application
+from examples.gpt import application_with_traces as chatbot_application_with_traces
 
 
 class ProgressHook(
@@ -27,7 +28,7 @@ class ProgressHook(
         print(f">>> Action {action.name} completed")
 
 
-def generate_chatbot_data(data_dir: str):
+def generate_chatbot_data(data_dir: str, use_traces: bool):
     working_conversations = {
         "chat-1-giraffe": [
             "Please draw a giraffe.",  # Answered by the image mode
@@ -63,11 +64,11 @@ def generate_chatbot_data(data_dir: str):
     broken_conversations = {"chat-6-demonstrate-errors": working_conversations["chat-1-giraffe"]}
 
     def _run_conversation(app_id, prompts):
-        app = chatbot_application.application(
-            use_hamilton=False,
+        app = (chatbot_application_with_traces if use_traces else chatbot_application).application(
             app_id=app_id,
             storage_dir=data_dir,
             hooks=[ProgressHook()],
+            **({"use_hamilton": False} if not use_traces else {}),
         )
         for prompt in prompts:
             app.run(halt_after=["response"], inputs={"prompt": prompt})
@@ -136,6 +137,10 @@ def generate_rag_data(data_dir: str = "~/.burr"):
 
 
 def generate_all(data_dir: str):
-    generate_chatbot_data(data_dir)
+    generate_chatbot_data(data_dir, False)
+    generate_chatbot_data(data_dir, True)
     generate_counter_data(data_dir)
     generate_rag_data(data_dir)
+
+
+#
