@@ -128,7 +128,7 @@ def application(
         )
         .with_entrypoint("start")
         .with_tracker(
-            "Dog Adventure", params={"app_id": app_id, "storage_dir": storage_dir}
+            "demo:corgi_adventure", params={"app_id": app_id, "storage_dir": storage_dir}
         )
         .build()
     )
