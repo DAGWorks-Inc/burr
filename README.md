@@ -78,3 +78,9 @@ If you want to avoid self-hosting the above solutions we're building Burr Cloud.
 # Contributing
 
 We welcome contributors! To get started on developing, see the [developer-facing docs](https://burr.dagworks.io/contributing).
+
+## Contributors
+- [Elijah ben Izzy](https://github.com/elijahbenizzy)
+- [Stefan Krawczyk](https://github.com/skrawcz)
+- [Joseph Booth](https://github.com/jombooth)
+- [Thierry Jean](https://github.com/zilto)
