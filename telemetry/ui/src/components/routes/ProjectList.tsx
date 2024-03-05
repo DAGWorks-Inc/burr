@@ -47,7 +47,7 @@ export const ProjectListTable = (props: { projects: Project[] }) => {
               href={`/project/${project.id}`}
             >
               <TableCell className="font-semibold text-gray-700">
-                <div className="flex flex-row gap-1">
+                <div className="flex flex-row gap-2">
                   {chipType !== undefined && <Chip label={chipType} chipType={chipType}></Chip>}
                   {projectName}
                 </div>
