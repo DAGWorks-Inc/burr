@@ -55,7 +55,7 @@ def generate_chatbot_data(data_dir: str, use_traces: bool):
             "What is the meaning of life?",  # answered by the question mode (ish)
         ],
         "chat-5-jokes": [
-            "Please draw a picture of a good joke joke",  # answered by the image mode
+            "Please draw a picture of a good joke",  # answered by the image mode
             "Please write code for an interactive knock-knock joke",  # answered by the code mode
             "What is a good joke?",  # answered by the question mode
             "The chicken crossed the road because it was a free-range chicken",  # answered by nothing

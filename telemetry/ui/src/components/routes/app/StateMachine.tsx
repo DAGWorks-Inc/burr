@@ -10,13 +10,15 @@ export const AppStateView = (props: {
   stateMachine: ApplicationModel;
   highlightedActions: Step[] | undefined;
   hoverAction: Step | undefined;
-  currentActionIndex: number | undefined;
+  currentSequenceID: number | undefined;
 }) => {
   const [currentTab, setCurrentTab] = useState('graph');
-  const currentStep =
-    props.currentActionIndex !== undefined ? props.steps[props.currentActionIndex] : undefined;
-  const priorStep =
-    props.currentActionIndex !== undefined ? props.steps[props.currentActionIndex + 1] : undefined;
+  const currentStep = props.steps.find(
+    (step) => step.step_start_log.sequence_id === props.currentSequenceID
+  );
+  const priorStep = props.steps.find(
+    (step) => step.step_start_log.sequence_id === (props.currentSequenceID || 0) - 1
+  );
 
   const actionModel = props.stateMachine.actions.find(
     (action) => action.name === currentStep?.step_start_log.action
@@ -34,8 +36,8 @@ export const AppStateView = (props: {
           <GraphView
             stateMachine={props.stateMachine}
             currentAction={
-              props.currentActionIndex !== undefined
-                ? props.steps[props.currentActionIndex]
+              props.currentSequenceID !== undefined
+                ? props.steps[props.currentSequenceID]
                 : undefined
             }
             highlightedActions={props.highlightedActions}
