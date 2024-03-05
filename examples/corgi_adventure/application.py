@@ -1,12 +1,12 @@
+import json
 from typing import List, Optional, Tuple
+
+from openai import Client
 
 import burr.core
 from burr.core import Application, State, default, when
 from burr.core.action import action
 from burr.lifecycle import LifecycleAdapter
-from openai import Client
-import json
-
 
 RESTRICTIONS = """You're a small corgi with short legs. You can't jump high,
  you can't run fast, you can't perform feats of athleticism in general
@@ -41,7 +41,6 @@ def prompt_for_challenge(state: State) -> Tuple[dict, State]:
     writes=["challenge_solved", "what_happened"],
 )
 def evaluate_attempt(state: State) -> Tuple[dict, State]:
-
     result = Client().chat.completions.create(
         model="gpt-4",
         messages=[
@@ -65,9 +64,12 @@ def evaluate_attempt(state: State) -> Tuple[dict, State]:
     content = result.choices[0].message.content
     try:
         json_result = json.loads(content)
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError:
         print("bad json: ", content)
-        json_result = {"solved": False, "what_happened": "Not sure, really. I'm a dog. I can't read json. I can't read at all."}
+        json_result = {
+            "solved": False,
+            "what_happened": "Not sure, really. I'm a dog. I can't read json. I can't read at all.",
+        }
 
     result = {"challenge_solved": json_result["solved"], "txt_result": content}
 
@@ -88,9 +90,7 @@ def maybe_progress(state: State) -> Tuple[dict, State]:
             result = {"did_win": True}
         else:
             result = {
-                "current_challenge": challenges[
-                    challenges.index(state["current_challenge"]) + 1
-                ]
+                "current_challenge": challenges[challenges.index(state["current_challenge"]) + 1]
             }
     else:
         result = {"current_challenge": state["current_challenge"]}
@@ -127,16 +127,12 @@ def application(
             ("maybe_progress", "prompt_for_challenge", default),
         )
         .with_entrypoint("start")
-        .with_tracker(
-            "demo:corgi_adventure", params={"app_id": app_id, "storage_dir": storage_dir}
-        )
+        .with_tracker("demo:corgi_adventure", params={"app_id": app_id, "storage_dir": storage_dir})
         .build()
     )
 
 
 if __name__ == "__main__":
     app = application()
-    app.visualize(
-        output_file_path="digraph", include_conditions=True, view=False, format="png"
-    )
+    app.visualize(output_file_path="digraph", include_conditions=True, view=False, format="png")
     action, state, result = app.run(halt_after=["win"])
