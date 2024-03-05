@@ -26,7 +26,7 @@ We have three files:
 - [application.py](application.py) -- This contains a mainline to generate the graph portrayal.
 - [requirements.txt](requirements.txt) -- Just the requirements. All this needs is Burr/Streamlit/openai
 - [streamlit_app.py](streamlit_app.py) -- This contains a simple Streamlit app to interact with the cow
-
+- [application_with_traces.py](application_with_traces.py) -- This showcases how to use the tracing feature.
 You must have your `OPENAI_API_KEY` set in your environment. You can do this by running.
 
 To run on streamlit, you can launch the app:

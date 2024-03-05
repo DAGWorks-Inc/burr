@@ -60,6 +60,7 @@ class BackendBase(abc.ABC):
 def get_uri(project_id: str) -> str:
     project_id_map = {
         "demo:counter": "https://github.com/DAGWorks-Inc/burr/tree/main/examples/counter",
+        "demo:tracing": "https://github.com/DAGWorks-Inc/burr/tree/main/examples/gpt/application_with_traces.py",
         "demo:chatbot": "https://github.com/DAGWorks-Inc/burr/tree/main/examples/gpt",
         "demo:conversational-rag": "https://github.com/DAGWorks-Inc/burr/tree/main/examples/conversational-rag",
     }

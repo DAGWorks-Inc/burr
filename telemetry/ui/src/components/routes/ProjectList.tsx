@@ -5,6 +5,7 @@ import { Loading } from '../common/loading';
 import { DateDisplay } from '../common/dates';
 import { Button } from '../common/button';
 import { Chip } from '../common/chip';
+import { LinkText } from '../common/href';
 
 /**
  * Table of a project list. Uses the tailwind catalyst component.
@@ -58,14 +59,10 @@ export const ProjectListTable = (props: { projects: Project[] }) => {
                 <DateDisplay date={project.last_written} />
               </TableCell>
               <TableCell>
-                <a
+                <LinkText
                   href={project.uri}
-                  className="text-dwlightblue hover:underline"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {project.uri.replace('https://github.com/DAGWorks-Inc/burr/tree/main/', '')}
-                </a>
+                  text={project.uri.replace('https://github.com/DAGWorks-Inc/burr/tree/main/', '')}
+                />
               </TableCell>
               <TableCell>{project.num_apps}</TableCell>
               <TableCell>
