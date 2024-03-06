@@ -13,7 +13,7 @@ const TwoColumnLayout: React.FC<TwoColumnLayoutProps> = ({
   rightColumnContent,
   mode
 }) => {
-  if (mode == 'first-minimal') {
+  if (mode === 'first-minimal') {
     return (
       <div className={`flex h-full w-full ${mode === 'first-minimal' ? 'flex flex-1' : ''}`}>
         <div className="h-full">{leftColumnContent}</div>

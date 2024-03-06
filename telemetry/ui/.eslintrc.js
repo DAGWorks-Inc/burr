@@ -23,6 +23,7 @@ module.exports = {
     '@typescript-eslint/ban-ts-comment': 'off',
     'react/prop-types': 'off', //Appears to be busted: see https://stackoverflow.com/questions/38684925/react-eslint-error-missing-in-props-validation
     'eqeqeq': 'error',
+    'no-console': 'warn',
   },
   settings: {
     react: {
