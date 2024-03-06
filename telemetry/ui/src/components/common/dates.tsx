@@ -17,7 +17,7 @@ export const DateDisplay: React.FC<{ date: string }> = ({ date }) => {
 export const DateTimeDisplay: React.FC<{ date: string; mode: 'short' | 'long' }> = (props) => {
   const displayDateTime = new Date(props.date).toLocaleString('en-US', {
     day: 'numeric',
-    month: props.mode == 'short' ? 'numeric' : 'long',
+    month: props.mode === 'short' ? 'numeric' : 'long',
     year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',

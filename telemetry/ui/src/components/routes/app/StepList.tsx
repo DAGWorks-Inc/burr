@@ -96,7 +96,7 @@ const CommonTableRow = (props: {
         props.setCurrentHoverIndex(props.sequenceID);
       }}
       onClick={() => {
-        if (props.currentSelectedIndex == props.sequenceID) {
+        if (props.currentSelectedIndex === props.sequenceID) {
           props.setCurrentSelectedIndex(undefined);
         } else {
           props.setCurrentSelectedIndex(props.sequenceID);
@@ -205,7 +205,6 @@ const TraceSubTable = (props: {
           props.currentSelectedIndex !== undefined &&
           sequenceID <= props.currentSelectedIndex &&
           sequenceID >= props.currentSelectedIndex - props.numPriorIndices;
-        console.log(depth, Array(depth));
         const lightText = 'text-gray-300';
         const normalText = shouldBeHighlighted ? 'text-gray-100' : 'text-gray-400';
         return (
@@ -227,7 +226,7 @@ const TraceSubTable = (props: {
                     {[...Array(depth).keys()].map((i) => (
                       <RiCornerDownRightLine
                         key={i}
-                        className={`${i == depth - 1 ? 'opacity-100' : 'opacity-0'} text-lg`}
+                        className={`${i === depth - 1 ? 'opacity-100' : 'opacity-0'} text-lg`}
                       ></RiCornerDownRightLine>
                     ))}
                     {span.begin_entry.span_name}

@@ -204,7 +204,7 @@ export const AppView = () => {
           highlightedActions={previousActions}
           hoverAction={
             hoverSequenceID
-              ? stepsSorted.find((step) => step.step_start_log.sequence_id == hoverSequenceID)
+              ? stepsSorted.find((step) => step.step_start_log.sequence_id === hoverSequenceID)
               : undefined
           }
           currentSequenceID={currentActionIndex}
