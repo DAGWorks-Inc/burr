@@ -13,7 +13,13 @@ import { Status } from '../../../utils';
  * most recent to least recent. We should probably switch that.
  */
 const getPriorActions = (currentActionIndex: number, steps: Step[], numPrevious: number) => {
-  return steps.slice(currentActionIndex, currentActionIndex + numPrevious);
+  return steps
+    .filter(
+      (step) =>
+        step.step_start_log.sequence_id < currentActionIndex &&
+        step.step_start_log.sequence_id > currentActionIndex - numPrevious
+    )
+    .slice(0, numPrevious);
 };
 
 const REFRESH_INTERVAL = 500;
@@ -83,7 +89,7 @@ const NUM_PREVIOUS_ACTIONS = 6;
 export const AppView = () => {
   const { projectId, appId } = useParams();
   const [currentActionIndex, setCurrentActionIndex] = useState<number | undefined>(undefined);
-  const [hoverIndex, setCurrentHoverIndex] = useState<number | undefined>(undefined);
+  const [hoverSequenceID, setHoverSequenceID] = useState<number | undefined>(undefined);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const shouldQuery = projectId !== undefined && appId !== undefined;
   const [minimizedTable, setMinimizedTable] = useState(false);
@@ -179,8 +185,8 @@ export const AppView = () => {
         <div className="overflow-y-scroll hide-scrollbar h-full w-full">
           <StepList
             steps={stepsSorted}
-            currentHoverIndex={hoverIndex}
-            setCurrentHoverIndex={setCurrentHoverIndex}
+            currentHoverIndex={hoverSequenceID}
+            setCurrentHoverIndex={setHoverSequenceID}
             currentSelectedIndex={currentActionIndex}
             setCurrentSelectedIndex={setCurrentActionIndex}
             numPriorIndices={NUM_PREVIOUS_ACTIONS}
@@ -196,7 +202,11 @@ export const AppView = () => {
           steps={stepsSorted}
           stateMachine={data.application}
           highlightedActions={previousActions}
-          hoverAction={hoverIndex ? stepsSorted[hoverIndex] : undefined}
+          hoverAction={
+            hoverSequenceID
+              ? stepsSorted.find((step) => step.step_start_log.sequence_id == hoverSequenceID)
+              : undefined
+          }
           currentSequenceID={currentActionIndex}
         />
       }

@@ -3,19 +3,23 @@ import { ActionModel, ApplicationModel, Step } from '../../../api';
 import ELK from 'elkjs/lib/elk.bundled.js';
 import React, { createContext, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import ReactFlow, {
+  BaseEdge,
   Controls,
+  EdgeProps,
   Handle,
   MarkerType,
   MiniMap,
   Position,
   ReactFlowProvider,
+  getBezierPath,
+  useNodes,
   useReactFlow
 } from 'reactflow';
 
 import 'reactflow/dist/style.css';
 import { backgroundColorsForIndex } from './AppView';
 import { getActionStatus } from '../../../utils';
-import SmartBezierEdge from '@tisoap/react-flow-smart-edge';
+import { getSmartEdge } from '@tisoap/react-flow-smart-edge';
 
 const elk = new ELK();
 
@@ -43,6 +47,11 @@ type NodeType = {
   };
 };
 
+type EdgeData = {
+  from: string;
+  to: string;
+  condition: string;
+};
 type EdgeType = {
   id: string;
   source: string;
@@ -52,6 +61,7 @@ type EdgeType = {
     width: number;
     height: number;
   };
+  data: EdgeData;
 };
 
 const ActionNode = (props: { data: NodeData }) => {
@@ -64,21 +74,90 @@ const ActionNode = (props: { data: NodeData }) => {
   const indexOfAction = highlightedActions.findIndex(
     (step) => step?.step_start_log.action === props.data.action.name
   );
+  const shouldHighlight = indexOfAction !== -1;
   const step = highlightedActions[indexOfAction];
-  const isCurrentAction = indexOfAction === 0;
+  const isCurrentAction = currentAction?.step_start_log.action === props.data.action.name;
   const bgColor =
-    step !== undefined ? backgroundColorsForIndex(indexOfAction, getActionStatus(step)) : '';
+    isCurrentAction && step !== undefined
+      ? backgroundColorsForIndex(0, getActionStatus(step))
+      : shouldHighlight
+        ? 'bg-gray-100'
+        : '';
   const opacity = hoverAction?.step_start_log.action === props.data.action.name ? 'opacity-50' : '';
-  const additionalClasses = isCurrentAction ? 'border-5 border-dwdarkblue/60 text-white' : '';
+  const additionalClasses = isCurrentAction
+    ? 'border-dwlightblue/50 text-white border-2'
+    : shouldHighlight
+      ? 'border-dwlightblue/50 border-2'
+      : 'border-dwlightblue/20 border-2';
   return (
     <>
       <Handle type="target" position={Position.Top} />
       <div
-        className={`${bgColor} ${opacity} ${additionalClasses} text-lg font-sans  p-3 rounded-md border-dwlightblue b-2 border`}
+        className={`${bgColor} ${opacity} ${additionalClasses} text-xl font-sans p-4 rounded-md border`}
       >
         {props.data.action.name}
       </div>
       <Handle type="source" position={Position.Bottom} id="a" />
+    </>
+  );
+};
+export const ActionActionEdge = ({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  markerEnd,
+  data
+}: EdgeProps) => {
+  const nodes = useNodes();
+  data = data as EdgeData;
+  const { highlightedActions: previousActions, currentAction } =
+    React.useContext(NodeStateProvider);
+  const allActionsInPath = [...(previousActions || []), ...(currentAction ? [currentAction] : [])];
+  const containsFrom = allActionsInPath.some(
+    (action) => action.step_start_log.action === data.from
+  );
+  const containsTo = allActionsInPath.some((action) => action.step_start_log.action === data.to);
+  const shouldHighlight = containsFrom && containsTo;
+  console.log(previousActions, currentAction);
+  const getSmartEdgeResponse = getSmartEdge({
+    sourcePosition,
+    targetPosition,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    nodes
+  });
+  let edgePath = null;
+  if (getSmartEdgeResponse !== null) {
+    edgePath = getSmartEdgeResponse.svgPathString;
+  } else {
+    edgePath = getBezierPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition
+    })[0];
+  }
+
+  // const onEdgeClick = () => {
+  //   setEdges((edges) => edges.filter((edge) => edge.id !== id));
+  // };
+  console.log(id);
+  const style = {
+    // stroke: shouldHighlight ? 'black' : 'gray',
+    markerColor: shouldHighlight ? 'black' : 'gray',
+    strokeWidth: shouldHighlight ? 2 : 0.5
+  };
+  return (
+    <>
+      <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} label={'test'} />
     </>
   );
 };
@@ -95,6 +174,13 @@ const getLayoutedElements = (
       return acc;
     },
     {} as { [key: string]: NodeType }
+  );
+  const edgeNameMap = edges.reduce(
+    (acc, edge) => {
+      acc[edge.id] = edge;
+      return acc;
+    },
+    {} as { [key: string]: EdgeType }
   );
   const graph = {
     id: 'root',
@@ -133,9 +219,14 @@ const getLayoutedElements = (
     edges: (layoutedGraph?.edges || []).map((edge) => {
       return {
         ...edge,
-        markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+        markerEnd: { type: MarkerType.Arrow, width: 20, height: 20 },
         source: edge.sources[0],
-        target: edge.targets[0]
+        target: edge.targets[0],
+        data: {
+          from: edge.sources[0],
+          to: edge.targets[0],
+          condition: edgeNameMap[edge.id].data.condition
+        }
       };
     })
   }));
@@ -153,7 +244,8 @@ const convertApplicationToGraph = (stateMachine: ApplicationModel): [NodeType[],
       id: `${transition.from_}-${transition.to}-${transition.condition}`,
       source: transition.from_,
       target: transition.to,
-      markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 }
+      markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+      data: { from: transition.from_, to: transition.to, condition: transition.condition }
     }))
   ];
 };
@@ -163,7 +255,7 @@ const nodeTypes = {
 };
 
 const edgeTypes = {
-  default: SmartBezierEdge
+  default: ActionActionEdge
 };
 
 type NodeState = {
