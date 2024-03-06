@@ -31,7 +31,7 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
           {stateData !== undefined && (
             <StateButton
               label="after"
-              selected={whichState == 'after'}
+              selected={whichState === 'after'}
               setSelected={() => {
                 setWhichState('after');
               }}
@@ -41,7 +41,7 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
           {
             <StateButton
               label="before"
-              selected={whichState == 'before'}
+              selected={whichState === 'before'}
               setSelected={() => {
                 setWhichState('before');
               }}

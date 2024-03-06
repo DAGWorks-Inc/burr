@@ -102,7 +102,6 @@ const ActionNode = (props: { data: NodeData }) => {
   );
 };
 export const ActionActionEdge = ({
-  id,
   sourceX,
   sourceY,
   targetX,
@@ -122,7 +121,6 @@ export const ActionActionEdge = ({
   );
   const containsTo = allActionsInPath.some((action) => action.step_start_log.action === data.to);
   const shouldHighlight = containsFrom && containsTo;
-  console.log(previousActions, currentAction);
   const getSmartEdgeResponse = getSmartEdge({
     sourcePosition,
     targetPosition,
@@ -146,12 +144,7 @@ export const ActionActionEdge = ({
     })[0];
   }
 
-  // const onEdgeClick = () => {
-  //   setEdges((edges) => edges.filter((edge) => edge.id !== id));
-  // };
-  console.log(id);
   const style = {
-    // stroke: shouldHighlight ? 'black' : 'gray',
     markerColor: shouldHighlight ? 'black' : 'gray',
     strokeWidth: shouldHighlight ? 2 : 0.5
   };
@@ -197,7 +190,6 @@ const getLayoutedElements = (
       height: 100
     })),
     edges: edges.map((edge) => {
-      console.log(edge, nodeNameMap[edge.source], nodeNameMap[edge.target]);
       return {
         ...edge,
         sources: [edge.source],
