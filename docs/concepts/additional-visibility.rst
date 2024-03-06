@@ -25,8 +25,8 @@ For the function-based API, this would look as follows:
     from burr.visibility import TracingFactory
     from burr.core import action
 
-    @action(reads=['input_var'], writes=['output_var'], __tracer: TracingFactory)
-    def my_action(state: State) -> Tuple[dict, State]:
+    @action(reads=['input_var'], writes=['output_var'])
+    def my_action(state: State, __tracer: TracingFactory) -> Tuple[dict, State]:
         with __tracer('process_data'):
             initial_data = _process_data(state['input_var'])
             with __tracer('validate_data'):
@@ -68,19 +68,23 @@ For instance:
 
 .. code-block:: python
 
-    from burr.visibility import TracingFactory
+    from burr.visibility import TracingFactory, ArtifactLogger
     from burr.core import action
 
-    @action(reads=['input_var'], writes=['output_var'], __tracer: TracingFactory)
-    def my_action(state: State) -> Tuple[dict, State]:
+    @action(reads=['input_var'], writes=['output_var'])
+    def my_action(
+        state: State,
+        __tracer: TracingFactory,
+        __logger: ArtifactLogger
+        ) -> Tuple[dict, State]:
         with __tracer('process_data'):
             initial_data = _process_data(state['input_var'])
             with __tracer('validate_data'):
                 validation_results = _validate(initial_data)
                 t.log_artifact(validation_results=validation_results)
-        with __tracer('transform_data', dependencies=['process_data']) as t:
+        with __tracer('transform_data', dependencies=['process_data'])
             transformed_data = _transform(initial_data)
-            t.log_artifact(transformed_data_size=len(transformed_data))
+            __logger.log_artifact(transformed_data_size=len(transformed_data))
 
         return {'output_var': transformed_data}, state.update({'output_var': transformed_data})
 

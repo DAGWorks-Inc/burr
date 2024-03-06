@@ -6,12 +6,14 @@ import { DateDisplay } from '../common/dates';
 import { Button } from '../common/button';
 import { Chip } from '../common/chip';
 import { LinkText } from '../common/href';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Table of a project list. Uses the tailwind catalyst component.
  * This does not load or fetch any data, just renders it
  */
 export const ProjectListTable = (props: { projects: Project[] }) => {
+  const navigate = useNavigate();
   const projectsCopy = [...props.projects];
   const projectsSorted = projectsCopy.sort((a, b) => {
     return a.last_written > b.last_written ? -1 : 1;
@@ -44,7 +46,7 @@ export const ProjectListTable = (props: { projects: Project[] }) => {
             <TableRow
               key={project.id}
               className="hover:bg-gray-50 cursor-pointer"
-              href={`/project/${project.id}`}
+              onClick={() => navigate(`/project/${project.id}`)}
             >
               <TableCell className="font-semibold text-gray-700">
                 <div className="flex flex-row gap-2">
