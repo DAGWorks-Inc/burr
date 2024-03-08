@@ -3,7 +3,7 @@
 ## What is Burr?
 
 Burr is a way to express a state machine (i.e. a graph/flowchart) for data/AI projects. You can (and should!) use it for anything where managing state can be hard. Hint: managing state
-is always hard! Like in a RAG chat application, or if you're doing hyperparameter tuning, or a trading simulation.
+is always hard! This is true across a wide array of contexts, from building RAG applications to power a chatbot, to running ML parameter tuning/evaluation workflows, to conducting a complex forecasting simulation.
 
 Link to [documentation](https://burr.dagworks.io/). Quick video intro [here](https://www.loom.com/share/8a92474bb7574d6eb4cd25c21913adf2).
 
