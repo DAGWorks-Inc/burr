@@ -31,3 +31,12 @@ Actions
 
 .. autoclass:: burr.core.action.Reducer
    :members:
+
+.. autoclass:: burr.core.action.StreamingResultContainer
+   :members:
+
+.. autoclass:: burr.core.action.streaming_action
+   :members:
+
+.. autoclass:: burr.core.action.StreamingAction
+   :members:
