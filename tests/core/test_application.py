@@ -40,6 +40,7 @@ from burr.lifecycle import (
     internal,
 )
 from burr.lifecycle.base import PostApplicationCreateHook
+from burr.lifecycle.internal import LifecycleAdapterSet
 
 
 class PassedInAction(Action):
@@ -109,6 +110,32 @@ base_counter_action_with_inputs = PassedInAction(
     update_fn=lambda result, state: state.update(**result),
     inputs=["additional_increment"],
 )
+
+
+class ActionTracker(PreRunStepHook, PostRunStepHook):
+    def __init__(self):
+        self.pre_called = []
+        self.post_called = []
+
+    def pre_run_step(self, action: Action, **future_kwargs):
+        self.pre_called.append(action.name)
+
+    def post_run_step(self, action: Action, **future_kwargs):
+        self.post_called.append(action.name)
+
+
+class ActionTrackerAsync(PreRunStepHookAsync, PostRunStepHookAsync):
+    def __init__(self):
+        self.pre_called = []
+        self.post_called = []
+
+    async def pre_run_step(self, *, action: Action, **future_kwargs):
+        await asyncio.sleep(0.0001)
+        self.pre_called.append(action.name)
+
+    async def post_run_step(self, *, action: Action, **future_kwargs):
+        await asyncio.sleep(0.0001)
+        self.post_called.append(action.name)
 
 
 async def _counter_update_async(state: State, additional_increment: int = 0) -> dict:
@@ -857,6 +884,7 @@ async def test_app_a_run_async_and_sync():
 
 
 def test_stream_result_halt_after():
+    action_tracker = ActionTracker()
     counter_action = base_streaming_counter.with_name("counter")
     counter_action_2 = base_streaming_counter.with_name("counter_2")
     app = Application(
@@ -866,6 +894,7 @@ def test_stream_result_halt_after():
         ],
         state=State({"count": 0}),
         initial_step="counter",
+        adapter_set=LifecycleAdapterSet(action_tracker),
     )
     action, streaming_container = app.stream_result(halt_after=["counter_2"])
     results = list(streaming_container)
@@ -873,9 +902,14 @@ def test_stream_result_halt_after():
     result, state = streaming_container.get()
     assert result["count"] == state["count"] == 2
     assert state["tracker"] == [1, 2]
+    assert len(action_tracker.pre_called) == 2
+    assert len(action_tracker.post_called) == 2
+    assert set(action_tracker.pre_called) == {"counter", "counter_2"}
+    assert set(action_tracker.post_called) == {"counter", "counter_2"}
 
 
 def test_stream_result_halt_after_single_step():
+    action_tracker = ActionTracker()
     counter_action = base_streaming_single_step_counter.with_name("counter")
     counter_action_2 = base_streaming_single_step_counter.with_name("counter_2")
     app = Application(
@@ -885,6 +919,7 @@ def test_stream_result_halt_after_single_step():
         ],
         state=State({"count": 0}),
         initial_step="counter",
+        adapter_set=LifecycleAdapterSet(action_tracker),
     )
     action, streaming_container = app.stream_result(halt_after=["counter_2"])
     results = list(streaming_container)
@@ -892,11 +927,16 @@ def test_stream_result_halt_after_single_step():
     result, state = streaming_container.get()
     assert result["count"] == state["count"] == 2
     assert state["tracker"] == [1, 2]
+    assert len(action_tracker.pre_called) == 2
+    assert len(action_tracker.post_called) == 2
+    assert set(action_tracker.pre_called) == {"counter", "counter_2"}
+    assert set(action_tracker.post_called) == {"counter", "counter_2"}
 
 
 def test_stream_result_halt_after_run_through_final_streaming():
     """Tests what happens when we have an app that runs through non-streaming
     results before hitting a final streaming result specified by halt_after"""
+    action_tracker = ActionTracker()
     counter_non_streaming = base_counter_action.with_name("counter_non_streaming")
     counter_streaming = base_streaming_single_step_counter.with_name("counter_streaming")
 
@@ -908,15 +948,21 @@ def test_stream_result_halt_after_run_through_final_streaming():
         ],
         state=State({"count": 0}),
         initial_step="counter_non_streaming",
+        adapter_set=LifecycleAdapterSet(action_tracker),
     )
     action, streaming_container = app.stream_result(halt_after=["counter_streaming"])
     results = list(streaming_container)
     assert len(results) == 10
     result, state = streaming_container.get()
     assert result["count"] == state["count"] == 11
+    assert len(action_tracker.pre_called) == 11
+    assert len(action_tracker.post_called) == 11
+    assert set(action_tracker.pre_called) == {"counter_streaming", "counter_non_streaming"}
+    assert set(action_tracker.post_called) == {"counter_streaming", "counter_non_streaming"}
 
 
 def test_stream_result_halt_after_run_through_final_non_streaming():
+    action_tracker = ActionTracker()
     counter_non_streaming = base_counter_action.with_name("counter_non_streaming")
     counter_final_non_streaming = base_counter_action.with_name("counter_final_non_streaming")
 
@@ -928,12 +974,23 @@ def test_stream_result_halt_after_run_through_final_non_streaming():
         ],
         state=State({"count": 0}),
         initial_step="counter_non_streaming",
+        adapter_set=LifecycleAdapterSet(action_tracker),
     )
     action, streaming_container = app.stream_result(halt_after=["counter_final_non_streaming"])
     results = list(streaming_container)
     assert len(results) == 0  # nothing to steram
     result, state = streaming_container.get()
     assert result["count"] == state["count"] == 11
+    assert len(action_tracker.pre_called) == 11
+    assert len(action_tracker.post_called) == 11
+    assert set(action_tracker.pre_called) == {
+        "counter_non_streaming",
+        "counter_final_non_streaming",
+    }
+    assert set(action_tracker.post_called) == {
+        "counter_non_streaming",
+        "counter_final_non_streaming",
+    }
 
 
 def test_stream_result_halt_before():
@@ -1080,17 +1137,6 @@ def test_application_builder_unset():
 
 
 def test_application_run_step_hooks_sync():
-    class ActionTracker(PreRunStepHook, PostRunStepHook):
-        def __init__(self):
-            self.pre_called = []
-            self.post_called = []
-
-        def pre_run_step(self, *, action: Action, **future_kwargs):
-            self.pre_called.append(action.name)
-
-        def post_run_step(self, *, action: Action, **future_kwargs):
-            self.post_called.append(action.name)
-
     tracker = ActionTracker()
     counter_action = base_counter_action.with_name("counter")
     result_action = Result("count").with_name("result")
@@ -1114,19 +1160,6 @@ def test_application_run_step_hooks_sync():
 
 
 async def test_application_run_step_hooks_async():
-    class ActionTrackerAsync(PreRunStepHookAsync, PostRunStepHookAsync):
-        def __init__(self):
-            self.pre_called = []
-            self.post_called = []
-
-        async def pre_run_step(self, *, action: Action, **future_kwargs):
-            await asyncio.sleep(0.0001)
-            self.pre_called.append(action.name)
-
-        async def post_run_step(self, *, action: Action, **future_kwargs):
-            await asyncio.sleep(0.0001)
-            self.post_called.append(action.name)
-
     tracker = ActionTrackerAsync()
     counter_action = base_counter_action.with_name("counter")
     result_action = Result("count").with_name("result")
@@ -1148,30 +1181,6 @@ async def test_application_run_step_hooks_async():
 
 
 async def test_application_run_step_runs_hooks():
-    class ActionTracker(PreRunStepHook, PostRunStepHook):
-        def __init__(self):
-            self.pre_called_count = 0
-            self.post_called_count = 0
-
-        def pre_run_step(self, **future_kwargs):
-            self.pre_called_count += 1
-
-        def post_run_step(self, **future_kwargs):
-            self.post_called_count += 1
-
-    class ActionTrackerAsync(PreRunStepHookAsync, PostRunStepHookAsync):
-        def __init__(self):
-            self.pre_called_count = 0
-            self.post_called_count = 0
-
-        async def pre_run_step(self, **future_kwargs):
-            await asyncio.sleep(0.0001)
-            self.pre_called_count += 1
-
-        async def post_run_step(self, **future_kwargs):
-            await asyncio.sleep(0.0001)
-            self.post_called_count += 1
-
     hooks = [ActionTracker(), ActionTrackerAsync()]
 
     counter_action = base_counter_action.with_name("counter")
@@ -1185,10 +1194,10 @@ async def test_application_run_step_runs_hooks():
         adapter_set=internal.LifecycleAdapterSet(*hooks),
     )
     await app.astep()
-    assert hooks[0].pre_called_count == 1
-    assert hooks[0].post_called_count == 1
-    assert hooks[1].pre_called_count == 1
-    assert hooks[1].post_called_count == 1
+    assert len(hooks[0].pre_called) == 1
+    assert len(hooks[0].post_called) == 1
+    assert len(hooks[1].pre_called) == 1
+    assert len(hooks[1].post_called) == 1
 
 
 def test_application_post_application_create_hook():

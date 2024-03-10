@@ -741,6 +741,15 @@ class Application:
             # For context, this is specifically for the case in which you want to have
             # multiple terminal points with a unified API, where some are streaming, and some are not.
             if next_action.name in halt_before and next_action.name not in halt_after:
+                self._adapter_set.call_all_lifecycle_hooks_sync(
+                    "post_run_step",
+                    action=next_action,
+                    state=self._state,
+                    result=None,
+                    sequence_id=self.sequence_id,
+                    exception=None,
+                )
+                self._increment_sequence_id()
                 return next_action, StreamingResultContainer.pass_through(
                     results=results, final_state=state
                 )
@@ -781,6 +790,15 @@ class Application:
                 # In this case we are halting at a non-streaming condition
                 # This is allowed as we want to maintain a more consistent API
                 action, result, state = self._step(inputs=inputs, _run_hooks=False)
+                self._adapter_set.call_all_lifecycle_hooks_sync(
+                    "post_run_step",
+                    action=next_action,
+                    state=self._state,
+                    result=result,
+                    sequence_id=self.sequence_id,
+                    exception=None,
+                )
+                self._increment_sequence_id()
                 return action, StreamingResultContainer.pass_through(
                     results=result, final_state=state
                 )
