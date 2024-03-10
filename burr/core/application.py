@@ -15,6 +15,7 @@ from typing import (
     Set,
     Tuple,
     Union,
+    cast,
 )
 
 from burr import visibility
@@ -24,6 +25,9 @@ from burr.core.action import (
     Function,
     Reducer,
     SingleStepAction,
+    SingleStepStreamingAction,
+    StreamingAction,
+    StreamingResultContainer,
     create_action,
     default,
 )
@@ -182,6 +186,24 @@ def _run_single_step_action(
     return out
 
 
+def _run_single_step_streaming_action(
+    action: SingleStepStreamingAction, state: State, inputs: Optional[Dict[str, Any]]
+) -> Generator[dict, None, Tuple[dict, State]]:
+    action.validate_inputs(inputs)
+    generator = action.stream_run_and_update(state, **inputs)
+    return (yield from generator)
+
+
+def _run_multi_step_streaming_action(
+    action: StreamingAction, state: State, inputs: Optional[Dict[str, Any]]
+) -> Generator[dict, None, Tuple[dict, State]]:
+    action.validate_inputs(inputs)
+    generator = action.stream_run(state, **inputs)
+    result = yield from generator
+    new_state = _run_reducer(action, state, result, action.name)
+    return result, _state_update(state, new_state)
+
+
 async def _arun_single_step_action(
     action: SingleStepAction, state: State, inputs: Optional[Dict[str, Any]]
 ) -> Tuple[dict, State]:
@@ -254,7 +276,7 @@ class Application:
             self._increment_sequence_id()
 
     def _step(
-        self, inputs: Optional[Dict[str, Any]] = None, _run_hooks: bool = True
+        self, inputs: Optional[Dict[str, Any]], _run_hooks: bool = True
     ) -> Optional[Tuple[Action, dict, State]]:
         """Internal-facing version of step. This is the same as step, but with an additional
         parameter to hide hook execution so async can leverage it."""
@@ -282,7 +304,7 @@ class Application:
                 result = _run_function(next_action, self._state, inputs)
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
 
-            new_state = self.update_internal_state_value(new_state, next_action)
+            new_state = self._update_internal_state_value(new_state, next_action)
             self._set_state(new_state)
         except Exception as e:
             exc = e
@@ -300,7 +322,7 @@ class Application:
                 )
         return next_action, result, new_state
 
-    def update_internal_state_value(self, new_state: State, next_action: Action) -> State:
+    def _update_internal_state_value(self, new_state: State, next_action: Action) -> State:
         """Updates the internal state values of the new state."""
         new_state = new_state.update(
             **{
@@ -377,7 +399,7 @@ class Application:
             else:
                 result = await _arun_function(next_action, self._state, inputs=inputs)
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
-            new_state = self.update_internal_state_value(new_state, next_action)
+            new_state = self._update_internal_state_value(new_state, next_action)
             self._set_state(new_state)
         except Exception as e:
             exc = e
@@ -512,7 +534,7 @@ class Application:
         halt_before: list[str] = None,
         halt_after: list[str] = None,
         inputs: Optional[Dict[str, Any]] = None,
-    ) -> AsyncGenerator[Tuple[Action, dict, State], Tuple[Action, Optional[dict], State]]:
+    ) -> AsyncGenerator[Tuple[Action, dict, State], None]:
         """Returns a generator that calls step() in a row, enabling you to see the state
         of the system as it updates. This is the asynchronous version so it has no capability of t
 
@@ -583,6 +605,224 @@ class Application:
         ):
             pass
         return self._return_value_iterate(halt_before, halt_after, prior_action, result)
+
+    def _validate_streaming_inputs(self, halt_after: list[str]):
+        missing_actions = set(halt_after) - set([action.name for action in self._actions])
+        # TODO -- implement this check elsewhere as well, break out into further utility functions
+        if len(missing_actions) > 0:
+            raise ValueError(
+                f"Actions {missing_actions} were passed in as halt_after conditions, but not found in the actions list! "
+                f"Actions found: {[action.name for action in self._actions]}"
+            )
+
+    def stream_result(
+        self,
+        halt_after: list[str],
+        halt_before: list[str] = None,
+        inputs: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[Action, StreamingResultContainer]:
+        """Streams a result out.
+
+        :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
+        :param halt_before: The list of actions to halt before execution of. It will halt on the first one. Note that
+            if this is met, the streaming result container will be empty (and return None) for the result, having an empty generator.
+        :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world
+        :return: A streaming result container, which is a generator that will yield results as they come in, as wel as cache/give you the final result, and update state accordingly.
+
+        This is meant to be used with streaming actions -- :py:meth:`streaming_action <burr.core.action.streaming_action>`
+        or :py:class:`StreamingAction <burr.core.action.StreamingAction>` It returns a
+        :py:class:`StreamingResultContainer <burr.core.action.StreamingResultContainer>`, which has two capabilities:
+
+        1. It is a generator that streams out the intermediate results of the action
+        2. It has a ``.get()`` method that returns the final result of the action, and the final state.
+
+        If ``.get()`` is called before the generator is exhausted, it will block until the generator is exhausted.
+
+        While this container is meant to work with streaming actions, it can also be used with non-streaming actions. In this case,
+        the generator will be empty, and the ``.get()`` method will return the final result and state.
+
+        The rules for halt_before and halt_after are the same as for :py:meth:`iterate <burr.core.application.Application.iterate>`,
+        and :py:meth:`run <burr.core.application.Application.run>`. In this case, `halt_before` will indicate a *non* streaming action,
+        which will be empty. Thus ``halt_after`` takes precedence -- if it is met, the streaming result container will contain the result of the
+        halt_after condition.
+
+        The :py:class:`StreamingResultContainer <burr.core.action.StreamingResultContainer>` is meant as a convenience -- specifically this allows for
+        hooks, callbacks, etc... so you can take the control flow and still have state updated afterwards. Hooks/state update will be called after an exception
+        is thrown during streaming, or the stream is completed. Note that it is undefined behavior to attempt to execute another action while a stream is in progress.
+
+
+        To see how this works, let's take the following action (simplified as a single-node workflow) as an example:
+
+        .. code-block:: python
+
+            @streaming_action(reads=[], writes=['response'])
+            def streaming_response(state: State, prompt: str) -> Generator[dict, None, Tuple[dict, State]]:
+                response = client.chat.completions.create(
+                    model='gpt-3.5-turbo',
+                    messages=[{
+                        'role': 'user',
+                        'content': prompt
+                        }],
+                    temperature=0,
+                )
+                buffer = []
+                for chunk in response:
+                    delta = chunk.choices[0].delta.content
+                    buffer.append(delta)
+                    # yield partial results
+                    yield {'response': delta}
+                full_response = ''.join(buffer)
+                # return the final result
+                return {'response': full_response}, state.update(response=full_response)
+
+        To use streaming_result, you pass in names of streaming actions (such as the one above) to the halt_after
+        parameter:
+
+        .. code-block:: python
+
+            application = ApplicationBuilder().with_actions(streaming_response=streaming_response)...build()
+            prompt = "Count to 100, with a comma between each number and no newlines. E.g., 1, 2, 3, ..."
+            action, streaming_result = application.stream_result(halt_after='streaming_response', inputs={"prompt": prompt})
+            for result in streaming_result:
+                print(result['response']) # one by one
+
+            result, state = streaming_result.get()
+            print(result) #  all at once
+
+        Note that if you have multiple halt_after conditions, you can use the ``.action`` attribute to get the action that
+        was run.
+
+        .. code-block:: python
+
+            application = ApplicationBuilder().with_actions(
+                streaming_response=streaming_response,
+                error=error # another function that outputs an error, streaming
+            )...build()
+            prompt = "Count to 100, with a comma between each number and no newlines. E.g., 1, 2, 3, ..."
+            action, streaming_result = application.stream_result(halt_after='streaming_response', inputs={"prompt": prompt})
+            color = "red" if action.name == "error" else "green"
+            for result in streaming_result:
+                print(format(result['response'], color)) # assumes that error and streaming_response both have the same output shape
+
+        .. code-block:: python
+
+            application = ApplicationBuilder().with_actions(
+                streaming_response=streaming_response,
+                error=non_streaming_error # a non-streaming function that outputs an error
+            )...build()
+            prompt = "Count to 100, with a comma between each number and no newlines. E.g., 1, 2, 3, ..."
+            action, streaming_result = application.stream_result(halt_after='streaming_response', inputs={"prompt": prompt})
+            color = "red" if action.name == "error" else "green"
+            if action.name == "streaming_response": # can also use the ``.streaming`` attribute of action
+                for result in output:
+                     print(format(result['response'], color)) # assumes that error and streaming_response both have the same output shape
+            else:
+                result, state = output.get()
+                print(format(result['response'], color))
+        """
+        halt_before, halt_after, inputs = self._clean_iterate_params(
+            halt_before, halt_after, inputs
+        )
+
+        self._validate_streaming_inputs(halt_after)
+        next_action = self.get_next_action()
+        if next_action is None:
+            raise ValueError(
+                f"Cannot stream result -- no next action found! Prior action was: {self._state[PRIOR_STEP]}"
+            )
+
+        if next_action.name not in halt_after:
+            # fast forward until we get to the action
+            next_action, results, state = self.run(
+                halt_before=halt_after + halt_before, inputs=inputs
+            )
+            # In this case, we are ready to halt and return an empty generator
+            # The results will be None, and the state will be the final state
+            # For context, this is specifically for the case in which you want to have
+            # multiple terminal points with a unified API, where some are streaming, and some are not.
+            if next_action.name in halt_before and next_action.name not in halt_after:
+                return next_action, StreamingResultContainer.pass_through(
+                    results=results, final_state=state
+                )
+            inputs = {}  # inputs always go to the first action, we want to wipe them afterwards
+        self._adapter_set.call_all_lifecycle_hooks_sync(
+            "pre_run_step",
+            action=next_action,
+            state=self._state,
+            inputs=inputs,
+            sequence_id=self.sequence_id,
+        )
+        # we need to track if there's any exceptions that occur during this
+        try:
+
+            def process_result(result: dict, state: State) -> Tuple[Dict[str, Any], State]:
+                new_state = self._update_internal_state_value(state, next_action)
+                self._set_state(new_state)
+                return result, new_state
+
+            def callback(
+                result: Optional[dict],
+                state: State,
+                exc: Optional[Exception] = None,
+                seq_id=self.sequence_id,
+            ):
+                self._adapter_set.call_all_lifecycle_hooks_sync(
+                    "post_run_step",
+                    action=next_action,
+                    state=state,
+                    result=result,
+                    sequence_id=seq_id,
+                    exception=exc,
+                )
+                # we want to increment regardless of failure
+                self._increment_sequence_id()
+
+            if not next_action.streaming:
+                # In this case we are halting at a non-streaming condition
+                # This is allowed as we want to maintain a more consistent API
+                action, result, state = self._step(inputs=inputs, _run_hooks=False)
+                return action, StreamingResultContainer.pass_through(
+                    results=result, final_state=state
+                )
+
+            if next_action.single_step:
+                next_action = cast(SingleStepStreamingAction, next_action)
+                generator = _run_single_step_streaming_action(next_action, self._state, inputs)
+                return next_action, StreamingResultContainer(
+                    generator, self._state, process_result, callback
+                )
+            else:
+                next_action = cast(StreamingAction, next_action)
+                generator = _run_multi_step_streaming_action(next_action, self._state, inputs)
+        except Exception as e:
+            # We only want to raise this in the case of an exception
+            # otherwise, this will get delegated to the finally
+            # block of the streaming result container
+            self._adapter_set.call_all_lifecycle_hooks_sync(
+                "post_run_step",
+                action=next_action,
+                state=self._state,
+                result=None,
+                sequence_id=self.sequence_id,
+                exception=e,
+            )
+            self._increment_sequence_id()
+            raise
+        return next_action, StreamingResultContainer(
+            generator, self._state, process_result, callback
+        )
+
+    async def astream_result(
+        self,
+        halt_after: list[str],
+        halt_before: list[str] = None,
+        inputs: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[Action, ...]:
+        """Placeholder for the async version of stream_result. This is not yet implemented."""
+        raise NotImplementedError(
+            "This has not yet been implemented! See the github issue: https://github.com/DAGWorks-Inc/burr/issues/64"
+            " for details. Please comment or vote to get it implemented quickly!"
+        )
 
     def visualize(
         self,

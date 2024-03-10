@@ -1,9 +1,23 @@
 import abc
 import ast
+import collections
 import copy
 import inspect
+import sys
 import types
-from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    Iterator,
+    List,
+    Optional,
+    Protocol,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 from burr.core.state import State
 
@@ -126,6 +140,10 @@ class Action(Function, Reducer, abc.ABC):
 
     @property
     def single_step(self) -> bool:
+        return False
+
+    @property
+    def streaming(self) -> bool:
         return False
 
     def __repr__(self):
@@ -347,12 +365,35 @@ class SingleStepAction(Action, abc.ABC):
         return inspect.iscoroutinefunction(self.run_and_update)
 
 
+# the following exist to share implementation between FunctionBasedStreamingAction and FunctionBasedAction
+# TODO -- think through the class hierarchy to simplify, for now this is OK
+def _get_inputs(bound_params: dict, fn: Callable) -> list[str]:
+    sig = inspect.signature(fn)
+    out = []
+    for param_name, param in sig.parameters.items():
+        if param_name != "state" and param_name not in bound_params:
+            if param.default is inspect.Parameter.empty:
+                out.append(param_name)
+    return out
+
+
+FunctionBasedActionType = TypeVar(
+    "FunctionBasedActionType", bound=Union["FunctionBasedAction", "FunctionBasedStreamingAction"]
+)
+
+
+def _with_params(action: FunctionBasedActionType, **kwargs: Any) -> FunctionBasedActionType:
+    new_action = copy.copy(action)
+    new_action._bound_params = {**action._bound_params, **kwargs}
+    return new_action
+
+
 class FunctionBasedAction(SingleStepAction):
     ACTION_FUNCTION = "action_function"
 
     def __init__(
         self,
-        fn: Callable[..., Tuple[dict, State]],
+        fn: Callable,
         reads: List[str],
         writes: List[str],
         bound_params: dict = None,
@@ -384,13 +425,7 @@ class FunctionBasedAction(SingleStepAction):
 
     @property
     def inputs(self) -> list[str]:
-        sig = inspect.signature(self._fn)
-        out = []
-        for param_name, param in sig.parameters.items():
-            if param_name != "state" and param_name not in self._bound_params:
-                if param.default is inspect.Parameter.empty:
-                    out.append(param_name)
-        return out
+        return _get_inputs(self._bound_params, self._fn)
 
     def with_params(self, **kwargs: Any) -> "FunctionBasedAction":
         """Binds parameters to the function.
@@ -401,15 +436,237 @@ class FunctionBasedAction(SingleStepAction):
         :param kwargs:
         :return:
         """
-        new_action = copy.copy(self)
-        new_action._bound_params = {**self._bound_params, **kwargs}
-        return new_action
+        return _with_params(self, **kwargs)
 
     def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
         return self._fn(state, **self._bound_params, **run_kwargs)
 
     def is_async(self) -> bool:
         return inspect.iscoroutinefunction(self._fn)
+
+
+class StreamingAction(Action, abc.ABC):
+    @abc.abstractmethod
+    def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, dict]:
+        """Streaming action ``stream_run`` is different than standard action run. It:
+        1. streams in a result (the dict output)
+        2. Returns the final result
+
+        Note that the user, in this case, is responsible for joining the result.
+
+        For instance, you could have:
+
+        .. code-block:: python
+
+            def stream_run(state: State) -> Generator[dict, None, dict]:
+                buffer = [] # you might want to be more efficient than simple strcat
+                for token in query(state['prompt']):
+                    yield {'response' : token}
+                    buffer.append(token)
+                return {'response' : "".join(buffer)}
+
+        This would utilize a simple string buffer (implemented by a list) to store the results
+        and then join them at the end. We return the final result.
+
+        :param state: State to run the action on
+        :param run_kwargs: parameters passed to the run function -- these are specified by `inputs`
+        :return: A generator that streams in a result and returns the final result
+        """
+        pass
+
+    def run(self, state: State, **run_kwargs) -> dict:
+        gen = self.stream_run(state, **run_kwargs)
+        while True:
+            try:
+                next(gen)  # if we just run through, we do nothing with the result
+            except StopIteration as e:
+                return e.value
+
+    @property
+    def streaming(self) -> bool:
+        return True
+
+
+# TODO -- documentation for this
+class StreamingResultContainer(Iterator[dict]):
+    """Container for a streaming result. This allows you to:
+    1. Iterate over the result as it comes in
+    2. Get the final result/state at the end
+
+    If you're familiar with generators/iterators in python, this is effectively an
+    iterator that caches the final result after calling it. This is meant to be used
+    exclusively with the streaming action calls in `Application`. Note that you will
+    never instantiate this class directly, but you will use it in the API when it is returned
+    by :py:meth:`stream_result <burr.core.application.Application.stream_result>`.
+    For reference, here's how you would use it:
+
+    .. code-block:: python
+
+        streaming_result_container = application.stream_result(...)
+        action_we_just_ran = streaming_result_container.get()
+        print(f"getting streaming results for action={action_we_just_ran.name}")
+
+        for result_component in streaming_result_container:
+            print(result_component['response']) # this assumes you have a response key in your result
+
+        final_state, final_result = streaming_result_container.get()
+    """
+
+    @staticmethod
+    def pass_through(results: dict, final_state: State) -> "StreamingResultContainer":
+        """Instantiates a streaming result container that just passes through the given results
+        This is to be used internally -- it allows us to wrap non-streaming action results in a streaming
+        result container."""
+
+        def empty_generator() -> Generator[dict, None, Tuple[dict, State]]:
+            yield from ()
+            return results, final_state
+
+        return StreamingResultContainer(
+            empty_generator(),
+            final_state,
+            lambda result, state: (result, state),
+            lambda result, state, exc: None,
+        )
+
+    def __next__(self):
+        return next(self.generator())
+
+    def __init__(
+        self,
+        streaming_result_generator: Generator[dict, None, Tuple[dict, State]],
+        initial_state: State,
+        process_result: Callable[[dict, State], Tuple[dict, State]],
+        callback: Callable[[Optional[dict], State, Optional[Exception]], None],
+    ):
+        """Initializes a ``StreamingResultContainer``. This is meant to be used internally
+
+        :param streaming_result_generator: The generator that produces the streaming result
+        :param initial_state: The initial state
+        :param process_result: Function to process the result -- this gets called after the generator is exhausted, prior to returning the final result
+        :param callback: Callback to call at the very end. This will only get called *once*, and will be called during the finally block of the generator
+        """
+        self.streaming_result_generator = streaming_result_generator
+        self._action = action
+        self._callback = callback
+        self._process_result = process_result
+        self._initial_state = initial_state
+        self._result = None
+        self._callback_realized = False
+
+    def __iter__(self):
+        return self.generator()
+
+    def generator(self):
+        try:
+            if self._result is not None:
+                # this means we're already thorugh it, we can just call it a day
+                return
+            result = yield from self.streaming_result_generator
+            self._result = self._process_result(*result)
+        finally:
+            if self._result is None:
+                # This way we always have something after we exhaust the generator
+                self._result = None, self._initial_state
+            if not self._callback_realized:
+                exc = sys.exc_info()[1]
+                # For now this will not be the right exception type (Generator close),
+                # but its OK -- the exception is outside of our control fllow
+                self._callback_realized = True
+                self._callback(*self._result, exc)
+
+    def get(self) -> Tuple[Optional[dict], State]:
+        """Blocking call to get the final result of the streaming action. This will
+        run through the entire generator (or until an exception is raised) and return
+        the final result.
+
+        :return: A tuple of the result and the new state
+        """
+        collections.deque(
+            self, maxlen=0
+        )  # exhausts the generator, producing the `_result` variable
+        return self._result
+
+
+class SingleStepStreamingAction(SingleStepAction, abc.ABC):
+    """Class to represent a "single-step" streaming action. This is meant to
+    work with the functional API. Note this is not user-facing -- the user will
+    only interact with this by using the ``@streaming_action`` decorator.
+    """
+
+    @abc.abstractmethod
+    def stream_run_and_update(
+        self, state: State, **run_kwargs
+    ) -> Generator[dict, None, Tuple[dict, State]]:
+        """Streaming version of the run and update function. This
+        return type is a generator that streams in a result, has no "send"
+        value, and returns the final result (new result + state).
+        """
+        pass
+
+    def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
+        """Runs the action and returns the final result. This allows us to run this as a
+        single step action. This is helpful for when the streaming result needs to be
+        run as an intermediate.
+        """
+        gen = self.stream_run_and_update(state, **run_kwargs)
+        while True:
+            try:
+                next(gen)  # if we just run through, we do nothing with the result
+            except StopIteration as e:
+                return e.value
+
+    @property
+    def streaming(self) -> bool:
+        return True
+
+
+class FunctionBasedStreamingAction(SingleStepStreamingAction):
+    _fn: Callable[..., Generator[dict, None, Tuple[dict, State]]]
+
+    def __init__(
+        self,
+        fn: Callable[..., Generator[dict, None, Tuple[dict, State]]],
+        reads: List[str],
+        writes: List[str],
+        bound_params: dict = None,
+    ):
+        """Instantiates a function-based streaming action with the given function, reads, and writes.
+        The function must take in a state (and inputs) and return a generator of (result, new_state).
+
+        :param fn: Function to use
+        :param reads:
+        :param writes:
+        """
+        super(FunctionBasedStreamingAction, self).__init__()
+        self._fn = fn
+        self._reads = reads
+        self._writes = writes
+        self._bound_params = bound_params if bound_params is not None else {}
+
+    def stream_run_and_update(
+        self, state: State, **run_kwargs
+    ) -> Generator[dict, None, Tuple[dict, State]]:
+        return (yield from self._fn(state, **self._bound_params, **run_kwargs))
+
+    @property
+    def reads(self) -> list[str]:
+        return self._reads
+
+    @property
+    def writes(self) -> list[str]:
+        return self._writes
+
+    @property
+    def streaming(self) -> bool:
+        return True
+
+    def with_params(self, **kwargs: Any) -> "FunctionBasedStreamingAction":
+        return _with_params(self, **kwargs)
+
+    @property
+    def inputs(self) -> list[str]:
+        return _get_inputs(self._bound_params, self._fn)
 
 
 def _validate_action_function(fn: Callable):
@@ -445,7 +702,7 @@ C = TypeVar("C", bound=Callable)  # placeholder for any Callable
 
 
 class FunctionRepresentingAction(Protocol[C]):
-    action_function: FunctionBasedAction
+    action_function: FunctionBasedActionType
     __call__: C
 
     def bind(self, **kwargs: Any):
@@ -496,6 +753,54 @@ def action(reads: List[str], writes: List[str]) -> Callable[[Callable], Function
     return decorator
 
 
+def streaming_action(
+    reads: List[str], writes: List[str]
+) -> Callable[[Callable], FunctionRepresentingAction]:
+    """Decorator to create a streaming function-based action. This is user-facing.
+
+    If parameters are not bound, they will be interpreted as inputs and must be passed in at runtime.
+
+    See the following example for how to use this decorator -- this reads ``prompt`` from the state and writes
+    ``response`` back out, yielding all intermediate chunks.
+
+    Note that this *must* return a value. If it does not, we will not know how to update the state, and
+    we will error out.
+
+    .. code-block:: python
+
+        @streaming_action(reads=["prompt"], writes=['response'])
+        def streaming_response(state: State) -> Generator[dict, None, Tuple[dict, State]]:
+            response = client.chat.completions.create(
+                model='gpt-3.5-turbo',
+                messages=[{
+                    'role': 'user',
+                    'content': state["prompt"]
+                    }],
+                temperature=0,
+            )
+            buffer = []
+            for chunk in response:
+                delta = chunk.choices[0].delta.content
+                buffer.append(delta)
+                # yield partial results
+                yield {'response': delta}
+            full_response = ''.join(buffer)
+            # return the final result
+            return {'response': full_response}, state.update(response=full_response)
+    """
+
+    # TODO -- see if we want to consolidate this in some way with the above
+    # Currently this is our only other way to use a decorator to implement actions, so it is OK to duplicate
+    def decorator(fn) -> FunctionRepresentingAction:
+        setattr(
+            fn, FunctionBasedAction.ACTION_FUNCTION, FunctionBasedStreamingAction(fn, reads, writes)
+        )
+        setattr(fn, "bind", types.MethodType(bind, fn))
+        return fn
+
+    return decorator
+
+
 def create_action(action_: Union[Callable, Action], name: str) -> Action:
     """Factory function to create an action. This is meant to be called by
     the ApplicationBuilder, and not by the user. The internal API may change.
@@ -508,6 +813,6 @@ def create_action(action_: Union[Callable, Action], name: str) -> Action:
         action_ = getattr(action_, FunctionBasedAction.ACTION_FUNCTION)
     elif not isinstance(action_, Action):
         raise ValueError(
-            f"Object {action_} is not a valid action. Have you decorated it with @action?"
+            f"Object {action_} is not a valid action. Have you decorated it with @action or @streaming_action?"
         )
     return action_.with_name(name)

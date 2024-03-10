@@ -1,5 +1,5 @@
 import asyncio
-from typing import Tuple
+from typing import Generator, Tuple
 
 import pytest
 
@@ -11,10 +11,12 @@ from burr.core.action import (
     Input,
     Result,
     SingleStepAction,
+    SingleStepStreamingAction,
     _validate_action_function,
     action,
     create_action,
     default,
+    streaming_action,
 )
 
 
@@ -305,6 +307,36 @@ def test_create_action_fn_api_with_bind():
         "output_variable_1": "foo",
         "output_variable_2": 2,
     }
+
+
+def test_create_action_streaming_fn_api_with_bind():
+    @streaming_action(reads=["input_variable"], writes=["output_variable"])
+    def test_action(state: State, prefix: str) -> Generator[dict, None, Tuple[dict, State]]:
+        buffer = []
+        for c in prefix + state["input_variable"]:
+            buffer.append(c)
+            yield {"output_variable": c}  # intermediate results
+        result = {"output_variable": "".join(buffer)}
+        return result, state.update(output_variable=result["output_variable"])
+
+    created_action = create_action(test_action.bind(prefix="prefix_"), name="my_action")
+    assert created_action.streaming
+    assert isinstance(created_action, SingleStepStreamingAction)
+    assert created_action.name == "my_action"
+    assert created_action.reads == ["input_variable"]
+    assert created_action.writes == ["output_variable"]
+    assert created_action.single_step
+    gen = created_action.stream_run_and_update(State({"input_variable": "foo"}))
+    out = []
+    while True:
+        try:
+            out.append(next(gen)["output_variable"])
+        except StopIteration as e:
+            result, state = e.value
+            assert result == {"output_variable": "prefix_foo"}
+            assert state.get_all() == {"input_variable": "foo", "output_variable": "prefix_foo"}
+            break
+    assert out == list("prefix_foo")
 
 
 def test_create_action_undecorated_function():
