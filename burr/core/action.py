@@ -668,6 +668,10 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
     def inputs(self) -> list[str]:
         return _get_inputs(self._bound_params, self._fn)
 
+    @property
+    def fn(self) -> Callable:
+        return self._fn
+
 
 def _validate_action_function(fn: Callable):
     """Validates that an action has the signature: (state: State) -> Tuple[dict, State]

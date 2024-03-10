@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional, Union
 from pydantic import field_serializer
 
 from burr.core import Action
-from burr.core.action import FunctionBasedAction
+from burr.core.action import FunctionBasedAction, FunctionBasedStreamingAction
 from burr.core.application import ApplicationGraph, Transition
 from burr.integrations.base import require_plugin
 
@@ -39,7 +39,7 @@ class ActionModel(IdentifyingModel):
         :param action: Action to create the model from
         :return:
         """
-        if isinstance(action, FunctionBasedAction):
+        if isinstance(action, (FunctionBasedAction, FunctionBasedStreamingAction)):
             code = inspect.getsource(action.fn)
         else:
             code = inspect.getsource(action.__class__)
