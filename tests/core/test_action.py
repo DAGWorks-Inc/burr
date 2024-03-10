@@ -12,6 +12,8 @@ from burr.core.action import (
     Result,
     SingleStepAction,
     SingleStepStreamingAction,
+    StreamingAction,
+    StreamingResultContainer,
     _validate_action_function,
     action,
     create_action,
@@ -376,3 +378,112 @@ def test__validate_action_function_invalid_signature_correct():
         pass
 
     _validate_action_function(correct_signature)
+
+
+def test_streaming_action_stream_run():
+    class SimpleStreamingAction(StreamingAction):
+        def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, dict]:
+            buffer = []
+            for char in state["echo"]:
+                yield {"response": char}
+                buffer.append(char)
+            return {"response": "".join(buffer)}
+
+        @property
+        def reads(self) -> list[str]:
+            return []
+
+        @property
+        def writes(self) -> list[str]:
+            return ["response"]
+
+        def update(self, result: dict, state: State) -> State:
+            return state.update(**result)
+
+    action = SimpleStreamingAction()
+    STR = "test streaming action"
+    assert action.run(State({"echo": STR}))["response"] == STR
+
+
+def sample_generator(chars: str) -> Generator[dict, None, Tuple[dict, State]]:
+    buffer = []
+    for c in chars:
+        buffer.append(c)
+        yield {"response": c}
+    joined = "".join(buffer)
+    return {"response": joined}, State({"response": joined})
+
+
+def test_streaming_result_container_iterate():
+    string_value = "test streaming action"
+    container = StreamingResultContainer(
+        sample_generator(string_value),
+        initial_state=State(),
+        process_result=lambda r, s: (r, s),
+        callback=lambda s, r, e: None,
+    )
+    assert [item["response"] for item in list(container)] == list(string_value)
+    result, state = container.get()
+    assert result["response"] == string_value
+
+
+def test_streaming_result_get_runs_through():
+    string_value = "test streaming action"
+    container = StreamingResultContainer(
+        sample_generator(string_value),
+        initial_state=State(),
+        process_result=lambda r, s: (r, s),
+        callback=lambda s, r, e: None,
+    )
+    result, state = container.get()
+    assert result["response"] == string_value
+
+
+def test_streaming_result_callback_called():
+    called = []
+    string_value = "test streaming action"
+
+    container = StreamingResultContainer(
+        sample_generator(string_value),
+        # initial state is here solely for returning debugging so we can return an
+        # state to the user in the case of failure
+        initial_state=State({"foo": "bar"}),
+        process_result=lambda r, s: (r, s),
+        callback=lambda s, r, e: called.append((s, r, e)),
+    )
+    container.get()
+    assert len(called) == 1
+    state, result, error = called[0]
+    assert result["response"] == string_value
+    assert state["response"] == string_value
+    assert error is None
+
+
+def test_streaming_result_callback_error():
+    """This tests whether the callback is called when an error occurs in the generator. Note that try/except
+    blocks -- this is required so we can end up delegating to the generators closing capability"""
+
+    class SentinelError(Exception):
+        pass
+
+    try:
+        called = []
+        string_value = "test streaming action"
+        container = StreamingResultContainer(
+            sample_generator(string_value),
+            initial_state=State({"foo": "bar"}),
+            process_result=lambda r, s: (r, s),
+            callback=lambda r, s, e: called.append((r, s, e)),
+        )
+        try:
+            next(container)
+            raise SentinelError("error")
+        finally:
+            assert len(called) == 1
+            ((result, state, error),) = called
+            assert state["foo"] == "bar"
+            assert result is None
+            # Exception is currently not exactly what we want, so won't assert on that.
+            # See note in StreamingResultContainer
+    except SentinelError:
+        pass

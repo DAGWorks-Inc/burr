@@ -1,11 +1,20 @@
 import asyncio
 import logging
-from typing import Awaitable, Callable, Tuple
+from typing import Awaitable, Callable, Generator, Tuple
 
 import pytest
 
 from burr.core import State
-from burr.core.action import Action, Condition, Result, SingleStepAction, default
+from burr.core.action import (
+    Action,
+    Condition,
+    Result,
+    SingleStepAction,
+    SingleStepStreamingAction,
+    StreamingAction,
+    default,
+    expr,
+)
 from burr.core.application import (
     PRIOR_STEP,
     Application,
@@ -15,8 +24,10 @@ from burr.core.application import (
     _arun_single_step_action,
     _assert_set,
     _run_function,
+    _run_multi_step_streaming_action,
     _run_reducer,
     _run_single_step_action,
+    _run_single_step_streaming_action,
     _validate_actions,
     _validate_start,
     _validate_transitions,
@@ -82,18 +93,18 @@ class PassedInActionAsync(PassedInAction):
 
 
 base_counter_action = PassedInAction(
-    reads=["counter"],
-    writes=["counter"],
-    fn=lambda state: {"counter": state.get("counter", 0) + 1},
+    reads=["count"],
+    writes=["count"],
+    fn=lambda state: {"count": state.get("count", 0) + 1},
     update_fn=lambda result, state: state.update(**result),
     inputs=[],
 )
 
 base_counter_action_with_inputs = PassedInAction(
-    reads=["counter"],
-    writes=["counter"],
+    reads=["count"],
+    writes=["count"],
     fn=lambda state, additional_increment: {
-        "counter": state.get("counter", 0) + 1 + additional_increment
+        "count": state.get("count", 0) + 1 + additional_increment
     },
     update_fn=lambda result, state: state.update(**result),
     inputs=["additional_increment"],
@@ -103,20 +114,20 @@ base_counter_action_with_inputs = PassedInAction(
 async def _counter_update_async(state: State, additional_increment: int = 0) -> dict:
     await asyncio.sleep(0.0001)  # just so we can make this *truly* async
     # does not matter, but more accurately simulates an async function
-    return {"counter": state.get("counter", 0) + 1 + additional_increment}
+    return {"count": state.get("count", 0) + 1 + additional_increment}
 
 
 base_counter_action_async = PassedInActionAsync(
-    reads=["counter"],
-    writes=["counter"],
+    reads=["count"],
+    writes=["count"],
     fn=_counter_update_async,
     update_fn=lambda result, state: state.update(**result),
     inputs=[],
 )
 
 base_counter_action_with_inputs_async = PassedInActionAsync(
-    reads=["counter"],
-    writes=["counter"],
+    reads=["count"],
+    writes=["count"],
     fn=lambda state, additional_increment: _counter_update_async(
         state, additional_increment=additional_increment
     ),
@@ -151,7 +162,7 @@ def test__run_function():
     action = base_counter_action
     state = State({})
     result = _run_function(action, state, inputs={})
-    assert result == {"counter": 1}
+    assert result == {"count": 1}
 
 
 def test__run_function_with_inputs():
@@ -159,7 +170,7 @@ def test__run_function_with_inputs():
     action = base_counter_action_with_inputs
     state = State({})
     result = _run_function(action, state, inputs={"additional_increment": 1})
-    assert result == {"counter": 2}
+    assert result == {"count": 2}
 
 
 def test__run_function_cant_run_async():
@@ -173,29 +184,29 @@ def test__run_function_cant_run_async():
 def test__run_reducer_modifies_state():
     """Tests that we can run a reducer and it behaves as expected"""
     reducer = PassedInAction(
-        reads=["counter"],
-        writes=["counter"],
+        reads=["count"],
+        writes=["count"],
         fn=...,
         update_fn=lambda result, state: state.update(**result),
         inputs=[],
     )
-    state = State({"counter": 0})
-    state = _run_reducer(reducer, state, {"counter": 1}, "reducer")
-    assert state["counter"] == 1
+    state = State({"count": 0})
+    state = _run_reducer(reducer, state, {"count": 1}, "reducer")
+    assert state["count"] == 1
 
 
 def test__run_reducer_deletes_state():
     """Tests that we can run a reducer that deletes an item from state"""
     reducer = PassedInAction(
-        reads=["counter"],
+        reads=["count"],
         writes=[],  # TODO -- figure out how we can better know that it deletes items...ß
         fn=...,
-        update_fn=lambda result, state: state.wipe(delete=["counter"]),
+        update_fn=lambda result, state: state.wipe(delete=["count"]),
         inputs=[],
     )
-    state = State({"counter": 0})
+    state = State({"count": 0})
     state = _run_reducer(reducer, state, {}, "deletion_reducer")
-    assert "counter" not in state
+    assert "count" not in state
 
 
 async def test__arun_function():
@@ -203,7 +214,7 @@ async def test__arun_function():
     action = base_counter_action_async
     state = State({})
     result = await _arun_function(action, state, inputs={})
-    assert result == {"counter": 1}
+    assert result == {"count": 1}
 
 
 async def test__arun_function_with_inputs():
@@ -211,7 +222,7 @@ async def test__arun_function_with_inputs():
     action = base_counter_action_with_inputs_async
     state = State({})
     result = await _arun_function(action, state, inputs={"additional_increment": 1})
-    assert result == {"counter": 2}
+    assert result == {"count": 2}
 
 
 class SingleStepCounter(SingleStepAction):
@@ -254,10 +265,55 @@ class SingleStepCounterWithInputsAsync(SingleStepCounterAsync):
         return ["additional_increment"]
 
 
+class StreamingCounter(StreamingAction):
+    def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, dict]:
+        if "steps_per_couunt" in run_kwargs:
+            steps_per_count = run_kwargs["granularity"]
+        else:
+            steps_per_count = 10
+        count = state["count"]
+        for i in range(steps_per_count):
+            yield {"count": count + ((i + 1) / 10)}
+        return {"count": count + 1}
+
+    @property
+    def reads(self) -> list[str]:
+        return ["count"]
+
+    @property
+    def writes(self) -> list[str]:
+        return ["count", "tracker"]
+
+    def update(self, result: dict, state: State) -> State:
+        return state.update(**result).append(tracker=result["count"])
+
+
+class SingleStepStreamingCounter(SingleStepStreamingAction):
+    def stream_run_and_update(
+        self, state: State, **run_kwargs
+    ) -> Generator[dict, None, Tuple[dict, State]]:
+        steps_per_count = run_kwargs.get("granularity", 10)
+        count = state["count"]
+        for i in range(steps_per_count):
+            yield {"count": count + ((i + 1) / 10)}
+        return {"count": count + 1}, state.update(count=count + 1).append(tracker=count + 1)
+
+    @property
+    def reads(self) -> list[str]:
+        return ["count"]
+
+    @property
+    def writes(self) -> list[str]:
+        return ["count", "tracker"]
+
+
 base_single_step_counter = SingleStepCounter()
 base_single_step_counter_async = SingleStepCounterAsync()
 base_single_step_counter_with_inputs = SingleStepCounterWithInputs()
 base_single_step_counter_with_inputs_async = SingleStepCounterWithInputsAsync()
+
+base_streaming_counter = StreamingCounter()
+base_streaming_single_step_counter = SingleStepStreamingCounter()
 
 
 def test__run_single_step_action():
@@ -328,6 +384,38 @@ def test__run_single_step_action_deletes_state():
     assert "to_delete" not in state
 
 
+def test__run_multistep_streaming_action():
+    action = base_streaming_counter.with_name("counter")
+    state = State({"count": 0, "tracker": []})
+    generator = _run_multi_step_streaming_action(action, state, inputs={})
+    last_result = -1
+    try:
+        while True:
+            result = next(generator)
+            assert result["count"] > last_result
+            last_result = result["count"]
+    except StopIteration as e:
+        result, state = e.value
+        assert result == {"count": 1}
+        assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+
+
+def test__run_single_step_streaming_action():
+    action = base_streaming_single_step_counter.with_name("counter")
+    state = State({"count": 0, "tracker": []})
+    generator = _run_single_step_streaming_action(action, state, inputs={})
+    last_result = -1
+    try:
+        while True:
+            result = next(generator)
+            assert result["count"] > last_result
+            last_result = result["count"]
+    except StopIteration as e:
+        result, state = e.value
+        assert result == {"count": 1}
+        assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+
+
 class SingleStepActionWithDeletionAsync(SingleStepActionWithDeletion):
     async def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
         return {}, state.wipe(delete=["to_delete"])
@@ -353,7 +441,7 @@ def test_app_step():
     action, result, state = app.step()
     assert app.sequence_id == 1
     assert action.name == "counter"
-    assert result == {"counter": 1}
+    assert result == {"count": 1}
     assert state[PRIOR_STEP] == "counter"  # internal contract, not part of the public API
 
 
@@ -423,7 +511,7 @@ async def test_app_astep():
     action, result, state = await app.astep()
     assert app.sequence_id == 1
     assert action.name == "counter_async"
-    assert result == {"counter": 1}
+    assert result == {"count": 1}
     assert state[PRIOR_STEP] == "counter_async"  # internal contract, not part of the public API
 
 
@@ -493,7 +581,7 @@ def test_app_many_steps():
     for i in range(100):
         action, result, state = app.step()
     assert action.name == "counter"
-    assert result == {"counter": 100}
+    assert result == {"count": 100}
 
 
 async def test_app_many_a_steps():
@@ -508,16 +596,16 @@ async def test_app_many_a_steps():
     for i in range(100):
         action, result, state = await app.astep()
     assert action.name == "counter_async"
-    assert result == {"counter": 100}
+    assert result == {"count": 100}
 
 
 def test_iterate():
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     counter_action = base_counter_action.with_name("counter")
     app = Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, counter_action, Condition.expr("counter < 10")),
+            Transition(counter_action, counter_action, Condition.expr("count < 10")),
             Transition(counter_action, result_action, default),
         ],
         state=State({}),
@@ -530,29 +618,29 @@ def test_iterate():
         while True:
             action, result, state = next(gen)
             if action.name == "counter":
-                assert state["counter"] == counter + 1
-                assert result["counter"] == state["counter"]
-                counter = result["counter"]
+                assert state["count"] == counter + 1
+                assert result["count"] == state["count"]
+                counter = result["count"]
             else:
                 res.append(result)
-                assert state["counter"] == 10
-                assert result["counter"] == 10
+                assert state["count"] == 10
+                assert result["count"] == 10
     except StopIteration as e:
         stop_iteration_error = e
     generator_result = stop_iteration_error.value
     action, result, state = generator_result
-    assert state["counter"] == 10
-    assert result["counter"] == 10
+    assert state["count"] == 10
+    assert result["count"] == 10
     assert app.sequence_id == 11
 
 
 def test_iterate_with_inputs():
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     counter_action = base_counter_action_with_inputs.with_name("counter")
     app = Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, counter_action, Condition.expr("counter < 2")),
+            Transition(counter_action, counter_action, Condition.expr("count < 2")),
             Transition(counter_action, result_action, default),
         ],
         state=State({}),
@@ -566,17 +654,17 @@ def test_iterate_with_inputs():
             action, result, state = next(gen)
         except StopIteration as e:
             a, r, s = e.value
-            assert r["counter"] == 11  # 1 + 10, for the first one
+            assert r["count"] == 11  # 1 + 10, for the first one
             break
 
 
 async def test_aiterate():
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     counter_action = base_counter_action_async.with_name("counter")
     app = Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, counter_action, Condition.expr("counter < 10")),
+            Transition(counter_action, counter_action, Condition.expr("count < 10")),
             Transition(counter_action, result_action, default),
         ],
         state=State({}),
@@ -591,20 +679,20 @@ async def test_aiterate():
     async for action, result, state in gen:
         print("si", app.sequence_id, action.name, state)
         if action.name == "counter":
-            assert state["counter"] == result["counter"] == counter + 1
-            counter = result["counter"]
+            assert state["count"] == result["count"] == counter + 1
+            counter = result["count"]
         else:
-            assert state["counter"] == result["counter"] == 10
+            assert state["count"] == result["count"] == 10
     assert app.sequence_id == 11
 
 
 async def test_aiterate_halt_before():
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     counter_action = base_counter_action_async.with_name("counter")
     app = Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, counter_action, Condition.expr("counter < 10")),
+            Transition(counter_action, counter_action, Condition.expr("count < 10")),
             Transition(counter_action, result_action, default),
         ],
         state=State({}),
@@ -616,20 +704,20 @@ async def test_aiterate_halt_before():
     # return anything (async generators are not allowed to).
     async for action, result, state in gen:
         if action.name == "counter":
-            assert state["counter"] == counter + 1
-            counter = result["counter"]
+            assert state["count"] == counter + 1
+            counter = result["count"]
         else:
             assert result is None
-            assert state["counter"] == 10
+            assert state["count"] == 10
 
 
 async def test_app_aiterate_with_inputs():
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     counter_action = base_counter_action_with_inputs_async.with_name("counter")
     app = Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, counter_action, Condition.expr("counter < 10")),
+            Transition(counter_action, counter_action, Condition.expr("count < 10")),
             Transition(counter_action, result_action, default),
         ],
         state=State({}),
@@ -638,53 +726,53 @@ async def test_app_aiterate_with_inputs():
     gen = app.aiterate(halt_after=["result"], inputs={"additional_increment": 10})
     async for action, result, state in gen:
         if action.name == "counter":
-            assert result["counter"] == state["counter"] == 11
+            assert result["count"] == state["count"] == 11
         else:
-            assert state["counter"] == result["counter"] == 11
+            assert state["count"] == result["count"] == 11
 
 
 def test_run():
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     counter_action = base_counter_action.with_name("counter")
     app = Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, counter_action, Condition.expr("counter < 10")),
+            Transition(counter_action, counter_action, Condition.expr("count < 10")),
             Transition(counter_action, result_action, default),
         ],
         state=State({}),
         initial_step="counter",
     )
     action, result, state = app.run(halt_after=["result"])
-    assert state["counter"] == 10
-    assert result["counter"] == 10
+    assert state["count"] == 10
+    assert result["count"] == 10
 
 
 def test_run_halt_before():
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     counter_action = base_counter_action.with_name("counter")
     app = Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, counter_action, Condition.expr("counter < 10")),
+            Transition(counter_action, counter_action, Condition.expr("count < 10")),
             Transition(counter_action, result_action, default),
         ],
         state=State({}),
         initial_step="counter",
     )
     action, result, state = app.run(halt_before=["result"])
-    assert state["counter"] == 10
+    assert state["count"] == 10
     assert result is None
     assert action.name == "result"
 
 
 def test_run_with_inputs():
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     counter_action = base_counter_action_with_inputs.with_name("counter")
     app = Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, counter_action, Condition.expr("counter < 10")),
+            Transition(counter_action, counter_action, Condition.expr("count < 10")),
             Transition(counter_action, result_action, default),
         ],
         state=State({}),
@@ -692,51 +780,51 @@ def test_run_with_inputs():
     )
     action, result, state = app.run(halt_after=["result"], inputs={"additional_increment": 10})
     assert action.name == "result"
-    assert state["counter"] == result["counter"] == 11
+    assert state["count"] == result["count"] == 11
 
 
 async def test_arun():
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     counter_action = base_counter_action_async.with_name("counter")
     app = Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, counter_action, Condition.expr("counter < 10")),
+            Transition(counter_action, counter_action, Condition.expr("count < 10")),
             Transition(counter_action, result_action, default),
         ],
         state=State({}),
         initial_step="counter",
     )
     action, result, state = await app.arun(halt_after=["result"])
-    assert state["counter"] == result["counter"] == 10
+    assert state["count"] == result["count"] == 10
     assert action.name == "result"
 
 
 async def test_arun_halt_before():
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     counter_action = base_counter_action_async.with_name("counter")
     app = Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, counter_action, Condition.expr("counter < 10")),
+            Transition(counter_action, counter_action, Condition.expr("count < 10")),
             Transition(counter_action, result_action, default),
         ],
         state=State({}),
         initial_step="counter",
     )
     action, result, state = await app.arun(halt_before=["result"])
-    assert state["counter"] == 10
+    assert state["count"] == 10
     assert result is None
     assert action.name == "result"
 
 
 async def test_arun_with_inputs():
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     counter_action = base_counter_action_with_inputs_async.with_name("counter")
     app = Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, counter_action, Condition.expr("counter < 10")),
+            Transition(counter_action, counter_action, Condition.expr("count < 10")),
             Transition(counter_action, result_action, default),
         ],
         state=State({}),
@@ -745,18 +833,18 @@ async def test_arun_with_inputs():
     action, result, state = await app.arun(
         halt_after=["result"], inputs={"additional_increment": 10}
     )
-    assert state["counter"] == result["counter"] == 11
+    assert state["count"] == result["count"] == 11
     assert action.name == "result"
 
 
 async def test_app_a_run_async_and_sync():
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     counter_action_sync = base_counter_action_async.with_name("counter_sync")
     counter_action_async = base_counter_action_async.with_name("counter_async")
     app = Application(
         actions=[counter_action_sync, counter_action_async, result_action],
         transitions=[
-            Transition(counter_action_sync, counter_action_async, Condition.expr("counter < 20")),
+            Transition(counter_action_sync, counter_action_async, Condition.expr("count < 20")),
             Transition(counter_action_async, counter_action_sync, default),
             Transition(counter_action_sync, result_action, default),
         ],
@@ -764,8 +852,110 @@ async def test_app_a_run_async_and_sync():
         initial_step="counter_sync",
     )
     action, result, state = await app.arun(halt_after=["result"])
-    assert state["counter"] > 20
-    assert result["counter"] > 20
+    assert state["count"] > 20
+    assert result["count"] > 20
+
+
+def test_stream_result_halt_after():
+    counter_action = base_streaming_counter.with_name("counter")
+    counter_action_2 = base_streaming_counter.with_name("counter_2")
+    app = Application(
+        actions=[counter_action, counter_action_2],
+        transitions=[
+            Transition(counter_action, counter_action_2, default),
+        ],
+        state=State({"count": 0}),
+        initial_step="counter",
+    )
+    action, streaming_container = app.stream_result(halt_after=["counter_2"])
+    results = list(streaming_container)
+    assert len(results) == 10
+    result, state = streaming_container.get()
+    assert result["count"] == state["count"] == 2
+    assert state["tracker"] == [1, 2]
+
+
+def test_stream_result_halt_after_single_step():
+    counter_action = base_streaming_single_step_counter.with_name("counter")
+    counter_action_2 = base_streaming_single_step_counter.with_name("counter_2")
+    app = Application(
+        actions=[counter_action, counter_action_2],
+        transitions=[
+            Transition(counter_action, counter_action_2, default),
+        ],
+        state=State({"count": 0}),
+        initial_step="counter",
+    )
+    action, streaming_container = app.stream_result(halt_after=["counter_2"])
+    results = list(streaming_container)
+    assert len(results) == 10
+    result, state = streaming_container.get()
+    assert result["count"] == state["count"] == 2
+    assert state["tracker"] == [1, 2]
+
+
+def test_stream_result_halt_after_run_through_final_streaming():
+    """Tests what happens when we have an app that runs through non-streaming
+    results before hitting a final streaming result specified by halt_after"""
+    counter_non_streaming = base_counter_action.with_name("counter_non_streaming")
+    counter_streaming = base_streaming_single_step_counter.with_name("counter_streaming")
+
+    app = Application(
+        actions=[counter_non_streaming, counter_streaming],
+        transitions=[
+            Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
+            Transition(counter_non_streaming, counter_streaming, default),
+        ],
+        state=State({"count": 0}),
+        initial_step="counter_non_streaming",
+    )
+    action, streaming_container = app.stream_result(halt_after=["counter_streaming"])
+    results = list(streaming_container)
+    assert len(results) == 10
+    result, state = streaming_container.get()
+    assert result["count"] == state["count"] == 11
+
+
+def test_stream_result_halt_after_run_through_final_non_streaming():
+    counter_non_streaming = base_counter_action.with_name("counter_non_streaming")
+    counter_final_non_streaming = base_counter_action.with_name("counter_final_non_streaming")
+
+    app = Application(
+        actions=[counter_non_streaming, counter_final_non_streaming],
+        transitions=[
+            Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
+            Transition(counter_non_streaming, counter_final_non_streaming, default),
+        ],
+        state=State({"count": 0}),
+        initial_step="counter_non_streaming",
+    )
+    action, streaming_container = app.stream_result(halt_after=["counter_final_non_streaming"])
+    results = list(streaming_container)
+    assert len(results) == 0  # nothing to steram
+    result, state = streaming_container.get()
+    assert result["count"] == state["count"] == 11
+
+
+def test_stream_result_halt_before():
+    counter_non_streaming = base_counter_action.with_name("counter_non_streaming")
+    counter_streaming = base_streaming_single_step_counter.with_name("counter_final")
+
+    app = Application(
+        actions=[counter_non_streaming, counter_streaming],
+        transitions=[
+            Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
+            Transition(counter_non_streaming, counter_streaming, default),
+        ],
+        state=State({"count": 0}),
+        initial_step="counter_non_streaming",
+    )
+    action, streaming_container = app.stream_result(halt_after=[], halt_before=["counter_final"])
+    results = list(streaming_container)
+    assert len(results) == 0  # nothing to steram
+    result, state = streaming_container.get()
+    assert action.name == "counter_final"  # halt before this one
+    assert result is None
+    assert state["count"] == 10
 
 
 def test_app_set_state():
@@ -778,10 +968,10 @@ def test_app_set_state():
     )
     assert "counter" not in app.state  # initial value
     app.step()
-    assert app.state["counter"] == 1  # updated value
+    assert app.state["count"] == 1  # updated value
     state = app.state
-    app.update_state(state.update(counter=2))
-    assert app.state["counter"] == 2  # updated value
+    app.update_state(state.update(count=2))
+    assert app.state["count"] == 2  # updated value
 
 
 def test_app_get_next_step():
@@ -814,10 +1004,10 @@ def test_app_get_next_step():
 def test_application_builder_complete():
     app = (
         ApplicationBuilder()
-        .with_state(counter=0)
-        .with_actions(counter=base_counter_action, result=Result("counter"))
+        .with_state(count=0)
+        .with_actions(counter=base_counter_action, result=Result("count"))
         .with_transitions(
-            ("counter", "counter", Condition.expr("counter < 10")), ("counter", "result")
+            ("counter", "counter", Condition.expr("count < 10")), ("counter", "result")
         )
         .with_entrypoint("counter")
         .build()
@@ -829,7 +1019,7 @@ def test_application_builder_complete():
 
 def test__validate_transitions_correct():
     _validate_transitions(
-        [("counter", "counter", Condition.expr("counter < 10")), ("counter", "result", default)],
+        [("counter", "counter", Condition.expr("count < 10")), ("counter", "result", default)],
         {"counter", "result"},
     )
 
@@ -838,7 +1028,7 @@ def test__validate_transitions_missing_action():
     with pytest.raises(ValueError, match="not found"):
         _validate_transitions(
             [
-                ("counter", "counter", Condition.expr("counter < 10")),
+                ("counter", "counter", Condition.expr("count < 10")),
                 ("counter", "result", default),
             ],
             {"counter"},
@@ -849,7 +1039,7 @@ def test__validate_transitions_redundant_transition():
     with pytest.raises(ValueError, match="redundant"):
         _validate_transitions(
             [
-                ("counter", "counter", Condition.expr("counter < 10")),
+                ("counter", "counter", Condition.expr("count < 10")),
                 ("counter", "result", default),
                 ("counter", "counter", default),  # this is unreachable as we already have a default
             ],
@@ -903,11 +1093,11 @@ def test_application_run_step_hooks_sync():
 
     tracker = ActionTracker()
     counter_action = base_counter_action.with_name("counter")
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     app = Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, result_action, Condition.expr("counter >= 10")),
+            Transition(counter_action, result_action, Condition.expr("count >= 10")),
             Transition(counter_action, counter_action, default),
         ],
         state=State({}),
@@ -939,11 +1129,11 @@ async def test_application_run_step_hooks_async():
 
     tracker = ActionTrackerAsync()
     counter_action = base_counter_action.with_name("counter")
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     app = Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, result_action, Condition.expr("counter >= 10")),
+            Transition(counter_action, result_action, Condition.expr("count >= 10")),
             Transition(counter_action, counter_action, default),
         ],
         state=State({}),
@@ -1013,11 +1203,11 @@ def test_application_post_application_create_hook():
 
     tracker = PostApplicationCreateTracker()
     counter_action = base_counter_action.with_name("counter")
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, result_action, Condition.expr("counter >= 10")),
+            Transition(counter_action, result_action, Condition.expr("count >= 10")),
             Transition(counter_action, counter_action, default),
         ],
         state=State({}),
@@ -1031,11 +1221,11 @@ def test_application_post_application_create_hook():
 
 async def test_application_gives_graph():
     counter_action = base_counter_action.with_name("counter")
-    result_action = Result("counter").with_name("result")
+    result_action = Result("count").with_name("result")
     app = Application(
         actions=[counter_action, result_action],
         transitions=[
-            Transition(counter_action, result_action, Condition.expr("counter >= 10")),
+            Transition(counter_action, result_action, Condition.expr("count >= 10")),
             Transition(counter_action, counter_action, default),
         ],
         state=State({}),
