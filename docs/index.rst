@@ -28,3 +28,12 @@
    :caption: Contributing:
 
    contributing/index
+
+.. toctree::
+   :hidden:
+   :caption: EXTERNAL RESOURCES
+
+   GitHub <https://github.com/dagworks-inc/burr>
+   Burr Cloud <https://forms.gle/w9u2QKcPrztApRedA>
+   Blog <https://blog.dagworks.io/>
+   Twitter <https://twitter.com/dagworks>
