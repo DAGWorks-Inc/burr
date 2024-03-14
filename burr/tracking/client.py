@@ -120,8 +120,8 @@ class LocalTrackingClient(
             line = json_lines[sequence_no]
         except IndexError:
             raise ValueError(f"Sequence number {sequence_no} not found for {project}/{app_id}.")
-        # check sequence number matches if non-negative
-        line_seq = int(line["sequence_no"])
+        # check sequence number matches if non-negative; will break if either is None.
+        line_seq = int(line["sequence_id"])
         if -1 < sequence_no != line_seq:
             logger.warning(
                 f"Sequence number mismatch. For {project}/{app_id}: "
