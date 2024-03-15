@@ -2,9 +2,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import './App.css';
 import { ProjectList } from './components/routes/ProjectList';
 import { AppList } from './components/routes/AppList';
-import { AppView } from './components/routes/app/AppView';
+import { AppViewContainer } from './components/routes/app/AppView';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { AppContainer } from './components/nav/appcontainer';
+import { ChatbotWithTelemetry } from './examples/Chatbot';
+import { Counter } from './examples/Counter';
 
 /**
  * Basic application. We have an AppContainer -- this has a breadcrumb and a sidebar.
@@ -30,7 +32,9 @@ const App = () => {
             <Route path="/" element={<Navigate to="/projects" />} />
             <Route path="/projects" element={<ProjectList />} />
             <Route path="/project/:projectId" element={<AppList />} />
-            <Route path="/project/:projectId/:appId" element={<AppView />} />
+            <Route path="/project/:projectId/:appId" element={<AppViewContainer />} />
+            <Route path="/demos/counter" element={<Counter />} />
+            <Route path="/demos/chatbot" element={<ChatbotWithTelemetry />} />
             <Route path="*" element={<Navigate to="/projects" />} />
           </Routes>
         </AppContainer>

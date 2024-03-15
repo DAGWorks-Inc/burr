@@ -68,9 +68,7 @@ export const ProjectListTable = (props: { projects: Project[] }) => {
               </TableCell>
               <TableCell>{project.num_apps}</TableCell>
               <TableCell>
-                <Button color="white" href={`/project/${project.id}`}>
-                  App Runs
-                </Button>
+                <Button color="white">App Runs</Button>
               </TableCell>
             </TableRow>
           );

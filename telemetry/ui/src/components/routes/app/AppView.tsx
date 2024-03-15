@@ -3,7 +3,7 @@ import { DefaultService, Step } from '../../../api';
 import { useQuery } from 'react-query';
 import { Loading } from '../../common/loading';
 import { StepList } from './StepList';
-import TwoColumnLayout from '../../common/layout';
+import { TwoColumnLayout, TwoRowLayout } from '../../common/layout';
 import { AppStateView } from './StateMachine';
 import { useEffect, useState } from 'react';
 import { Status } from '../../../utils';
@@ -86,15 +86,20 @@ const NUM_PREVIOUS_ACTIONS = 6;
  * 1. A list of steps
  * 2. A view of the state machine/data/action
  */
-export const AppView = () => {
-  const { projectId, appId } = useParams();
+export const AppView = (props: {
+  projectId: string;
+  appId: string;
+  orientation: 'stacked_vertical' | 'stacked_horizontal';
+  defaultAutoRefresh?: boolean;
+}) => {
+  const { projectId, appId } = props;
   const [currentActionIndex, setCurrentActionIndex] = useState<number | undefined>(undefined);
   const [hoverSequenceID, setHoverSequenceID] = useState<number | undefined>(undefined);
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(props.defaultAutoRefresh || false);
   const shouldQuery = projectId !== undefined && appId !== undefined;
   const [minimizedTable, setMinimizedTable] = useState(false);
   const { data, error } = useQuery(
-    ['apps', projectId],
+    ['steps', appId],
     () =>
       DefaultService.getApplicationLogsApiV0ProjectIdAppIdAppsGet(
         projectId as string,
@@ -178,10 +183,11 @@ export const AppView = () => {
     // Otherwise, compare milliseconds
     return timeB - timeA;
   });
+  const Layout = props.orientation === 'stacked_horizontal' ? TwoColumnLayout : TwoRowLayout;
   return (
-    <TwoColumnLayout
+    <Layout
       mode={minimizedTable ? 'first-minimal' : 'half'}
-      leftColumnContent={
+      firstItem={
         <div className="overflow-y-scroll hide-scrollbar h-full w-full">
           <StepList
             steps={stepsSorted}
@@ -197,7 +203,7 @@ export const AppView = () => {
           />
         </div>
       }
-      rightColumnContent={
+      secondItem={
         <AppStateView
           steps={stepsSorted}
           stateMachine={data.application}
@@ -212,4 +218,12 @@ export const AppView = () => {
       }
     />
   );
+};
+
+export const AppViewContainer = () => {
+  const { projectId, appId } = useParams();
+  if (projectId === undefined || appId === undefined) {
+    return <div>Invalid URL</div>;
+  }
+  return <AppView projectId={projectId} appId={appId} orientation={'stacked_horizontal'} />;
 };

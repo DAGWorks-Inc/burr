@@ -7,6 +7,7 @@ import { DateTimeDisplay } from '../common/dates';
 import { Button } from '../common/button';
 import { useState } from 'react';
 import { FunnelIcon } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
 
 const StepCountHeader = (props: {
   displayZeroCount: boolean;
@@ -33,6 +34,7 @@ const StepCountHeader = (props: {
 export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: string }) => {
   const appsCopy = [...props.apps];
   const [displayZeroCount, setDisplayZeroCount] = useState(false);
+  const navigate = useNavigate();
   const appsToDisplay = appsCopy
     .sort((a, b) => {
       return new Date(a.last_written) > new Date(b.last_written) ? -1 : 1;
@@ -63,7 +65,9 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
           <TableRow
             key={app.app_id}
             className="hover:bg-gray-50 cursor-pointer"
-            href={`/project/${props.projectId}/${app.app_id}`}
+            onClick={() => {
+              navigate(`/project/${props.projectId}/${app.app_id}`);
+            }}
           >
             <TableCell className="text-gray-600 font-sans">{app.partition_key}</TableCell>
             <TableCell className="font-semibold text-gray-700">{app.app_id}</TableCell>
