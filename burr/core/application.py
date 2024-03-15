@@ -300,6 +300,8 @@ class Application:
                 state=self._state,
                 inputs=inputs,
                 sequence_id=self.sequence_id,
+                app_id=self._id,
+                partition_key=self._partition_key,
             )
         exc = None
         result = None
@@ -389,6 +391,8 @@ class Application:
             state=self._state,
             inputs=inputs,
             sequence_id=self.sequence_id,
+            app_id=self._id,
+            partition_key=self._partition_key,
         )
         exc = None
         result = None
@@ -424,6 +428,8 @@ class Application:
                 result=result,
                 sequence_id=self.sequence_id,
                 exception=exc,
+                app_id=self._id,
+                partition_key=self._partition_key,
             )
 
         return next_action, result, new_state
@@ -474,7 +480,7 @@ class Application:
         halt_after: list[str],
         prior_action: Optional[Action],
         result: Optional[dict],
-    ) -> Tuple[Action, Optional[dict], State]:
+    ) -> Tuple[Optional[Action], Optional[dict], State]:
         """Utility function to decide what to return for iterate/arun. Note that run() will delegate to the return value of
         iterate, whereas arun cannot delegate to the return value of aiterate (as async generators cannot return a value).
         We put the code centrally to clean up the logic.
@@ -1248,6 +1254,40 @@ class ApplicationBuilder:
             self.lifecycle_adapters.append(persisterWrapper())
         return self
 
+    def _load_from_persister(self):
+        """Loads from the set persister and into this current object.
+
+        Mutates:
+         - self.state
+         - self.sequence_id
+         - maybe self.start
+
+        """
+        # load state from persister
+        load_result = self.persister.load(self.partition_key, self.app_id, self.sequence_id)
+        if load_result is None:
+            # there was nothing to load -- use default state
+            self.state = self.state.update(**self.default_state)
+            self.sequence_id = 0
+        else:
+            # there was something
+            last_position = load_result["position"]
+            self.state = load_result["state"]
+            self.sequence_id = load_result["sequence_id"]
+            status = load_result["status"]
+            if self.resume_at_next_action:
+                # if we're supposed to resume where we saved from
+                if status == "completed":
+                    # completed means we set prior step to current to go to next action
+                    self.state = self.state.update(**{PRIOR_STEP: last_position})
+                else:
+                    # else we failed we just start at that node
+                    self.start = last_position
+                    self.state = self.state.wipe(delete=[PRIOR_STEP])
+            else:
+                # self.start is already set to the default. We don't need to do anything.
+                pass
+
     def build(self) -> Application:
         """Builds the application.
 
@@ -1261,31 +1301,11 @@ class ApplicationBuilder:
         _validate_transitions(self.transitions, all_actions)
         _validate_app_id(self.app_id)
 
-        loaded_sequence_id = None
         if self.persister:
-            # load state from persister
-            load_result = self.persister.load(self.partition_key, self.app_id, self.sequence_id)
-            if load_result is None:
-                self.state = self.state.update(**self.default_state)
-            else:
-                last_position = load_result["position"]
-                self.state = load_result["state"]
-                loaded_sequence_id = load_result["sequence_id"]
-                status = load_result["status"]
-                if self.resume_at_next_action:
-                    if status == "completed":
-                        self.state = self.state.update(**{PRIOR_STEP: last_position})
-                    else:
-                        # if failed we just start at that node
-                        self.start = last_position
-                        self.state = self.state.wipe(delete=[PRIOR_STEP])
-                else:
-                    # self.start is already set to the default. We don't need to do anything.
-                    pass
+            # sets state, sequence_id, and maybe start
+            self._load_from_persister()
         _validate_start(self.start, all_actions)
 
-        if self.sequence_id is None:
-            self.sequence_id = loaded_sequence_id if loaded_sequence_id else 0
         return Application(
             actions=self.actions,
             transitions=[

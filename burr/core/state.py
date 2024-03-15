@@ -121,7 +121,6 @@ class DeleteField(StateDelta):
     def apply_mutate(self, inputs: dict):
         for key in self.keys:
             inputs.pop(key, None)
-        print(inputs)
 
 
 class State(Mapping):
@@ -279,11 +278,11 @@ class SQLLitePersistence(BasicStatePersistence):
         """
         self.db_path = db_path
         self.table_name = table_name
+        self.connection = sqlite3.connect(db_path)
 
     @staticmethod
-    def create_table_if_not_exists(db_path: str, table_name: str):
+    def create_table_if_not_exists(db_path: str, table_name: str, conn: sqlite3.Connection):
         """Helper function to create the table where things are stored if it doesn't exist."""
-        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         cursor.execute(
@@ -305,16 +304,14 @@ class SQLLitePersistence(BasicStatePersistence):
         """
         )
         conn.commit()
-        conn.close()
 
     def initialize(self):
         """Creates the table if it doesn't exist"""
         # Usage
-        self.create_table_if_not_exists(self.db_path, self.table_name)
+        self.create_table_if_not_exists(self.db_path, self.table_name, self.connection)
 
     def list_app_ids(self, partition_key: str) -> list[str]:
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        cursor = self.connection.cursor()
         cursor.execute(
             f"SELECT DISTINCT app_id FROM {self.table_name} "
             f"WHERE partition_key = ? "
@@ -322,7 +319,6 @@ class SQLLitePersistence(BasicStatePersistence):
             (partition_key,),
         )
         app_ids = [row[0] for row in cursor.fetchall()]
-        conn.close()
         return app_ids
 
     def load(
@@ -339,8 +335,7 @@ class SQLLitePersistence(BasicStatePersistence):
         :return:
         """
         logger.debug("Loading %s, %s, %s", partition_key, app_id, sequence_id)
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        cursor = self.connection.cursor()
         if app_id is None:
             # get latest for all app_ids
             cursor.execute(
@@ -363,7 +358,6 @@ class SQLLitePersistence(BasicStatePersistence):
                 (partition_key, app_id, sequence_id),
             )
         row = cursor.fetchone()
-        conn.close()
         if row is None:
             return None
         _state = State(json.loads(row[1])["_state"])
@@ -412,21 +406,23 @@ class SQLLitePersistence(BasicStatePersistence):
             state,
             status,
         )
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        cursor = self.connection.cursor()
         json_state = json.dumps(state.__dict__)
         cursor.execute(
             f"INSERT INTO {self.table_name} (partition_key, app_id, sequence_id, position, state, status) "
             f"VALUES (?, ?, ?, ?, ?, ?)",
             (partition_key, app_id, sequence_id, position, json_state, status),
         )
-        conn.commit()
-        conn.close()
+        self.connection.commit()
+
+    def __del__(self):
+        # closes connection at end when things are being shutdown.
+        self.connection.close()
 
 
 if __name__ == "__main__":
     s = SQLLitePersistence(db_path=".sqllite.db", table_name="test1")
     s.initialize()
-    s.save("pk", "app_id", 1, "pos", State({"a": 1, "b": 2}))
+    s.save("pk", "app_id", 1, "pos", State({"a": 1, "b": 2}), "completed")
     print(s.list_app_ids("pk"))
     print(s.load("pk", "app_id"))
