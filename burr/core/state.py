@@ -268,7 +268,7 @@ class BasicStatePersistence(abc.ABC):
 
 
 class SQLLitePersistence(BasicStatePersistence):
-    """Class for SQLLite persistence of state. This is a simple implementation that uses SQLLite."""
+    """Class for SQLLite persistence of state. This is a simple implementation."""
 
     def __init__(self, db_path: str, table_name: str = "burr_state"):
         """Constructor

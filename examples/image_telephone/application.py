@@ -81,7 +81,7 @@ def regular_action_main():
         )
         .with_entrypoint("caption")
         .with_hooks(PrintStepHook())
-        .with_tracker("image-telephone")
+        .with_tracker(project="image-telephone")
         .build()
     )
     return app
@@ -126,7 +126,7 @@ def hamilton_action_main():
         )
         .with_entrypoint("caption")
         .with_hooks(PrintStepHook())
-        .with_tracker("image-telephone")
+        .with_tracker(project="image-telephone")
         .build()
     )
     return app
