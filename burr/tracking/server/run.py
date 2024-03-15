@@ -3,6 +3,7 @@ from importlib.resources import files
 from typing import Sequence
 
 from burr.integrations.base import require_plugin
+from burr.tracking.server.examples import chatbot
 
 try:
     import uvicorn
@@ -10,7 +11,8 @@ try:
     from fastapi.staticfiles import StaticFiles
     from starlette.templating import Jinja2Templates
 
-    from burr.tracking.server import backend, schema
+    from burr.tracking.server import backend as backend_module
+    from burr.tracking.server import schema
     from burr.tracking.server.schema import ApplicationLogs
 except ImportError as e:
     require_plugin(
@@ -30,9 +32,9 @@ except ImportError as e:
 
 app = FastAPI()
 
-backend = backend.LocalBackend()
-
 SERVE_STATIC = os.getenv("BURR_SERVE_STATIC", "true").lower() == "true"
+
+backend = backend_module.LocalBackend()
 
 
 @app.get("/api/v0/projects", response_model=Sequence[schema.Project])
@@ -73,6 +75,10 @@ async def get_application_logs(request: Request, project_id: str, app_id: str) -
 @app.get("/api/v0/ready")
 async def ready() -> bool:
     return True
+
+
+# Examples -- todo -- put them behind `if` statements
+chatbot.register(app, "/api/v0/chatbot")
 
 
 if SERVE_STATIC:

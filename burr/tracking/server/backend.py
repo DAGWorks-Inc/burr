@@ -155,10 +155,10 @@ class LocalBackend(BackendBase):
         if not os.path.exists(graph_file):
             raise fastapi.HTTPException(
                 status_code=404,
-                detail=f"Graph file not found for app: "
-                f"{app_id} from project: {project_id}. "
-                f"Was this properly executed?",
+                detail=f"Graph file for app: {app_id} from project: {project_id} not found",
             )
+        async with aiofiles.open(graph_file) as f:
+            str_graph = await f.read()
         steps_by_sequence_id = {}
         spans_by_id = {}
         if os.path.exists(log_file):
@@ -189,8 +189,6 @@ class LocalBackend(BackendBase):
         for span in spans_by_id.values():
             step = steps_by_sequence_id[span.begin_entry.action_sequence_id]
             step.spans.append(span)
-        async with aiofiles.open(graph_file) as f:
-            str_graph = await f.read()
         return ApplicationLogs(
             application=schema.ApplicationModel.parse_raw(str_graph),
             steps=list(steps_by_sequence_id.values()),
