@@ -1,5 +1,7 @@
 from burr.lifecycle.base import (
     LifecycleAdapter,
+    PostApplicationCreateHook,
+    PostEndSpanHook,
     PostRunApplicationHook,
     PostRunApplicationHookAsync,
     PostRunStepHook,
@@ -8,6 +10,7 @@ from burr.lifecycle.base import (
     PreRunApplicationHookAsync,
     PreRunStepHook,
     PreRunStepHookAsync,
+    PreStartSpanHook,
 )
 from burr.lifecycle.default import StateAndResultsFullLogger
 
@@ -22,4 +25,7 @@ __all__ = [
     "PostRunApplicationHookAsync",
     "LifecycleAdapter",
     "StateAndResultsFullLogger",
+    "PostApplicationCreateHook",
+    "PostEndSpanHook",
+    "PreStartSpanHook",
 ]

@@ -190,7 +190,7 @@ def main(app_instance_id: str = None):
         )
         .with_entrypoint(entry_point)
         .with_hooks(PrintStepHook())
-        .with_tracker("demo:lcel-multi-agent")
+        .with_tracker(project="demo:lcel-multi-agent")
         .build()
     )
     app.visualize(

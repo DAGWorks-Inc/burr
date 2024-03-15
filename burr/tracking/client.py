@@ -4,12 +4,18 @@ import logging
 import os
 import traceback
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from burr.core import Action, ApplicationGraph, State
+from burr.core.state import BasicStatePersistence, PersistenceDict
 from burr.integrations.base import require_plugin
-from burr.lifecycle import PostRunStepHook, PreRunStepHook
-from burr.lifecycle.base import PostApplicationCreateHook, PostEndSpanHook, PreStartSpanHook
+from burr.lifecycle import (
+    PostApplicationCreateHook,
+    PostEndSpanHook,
+    PostRunStepHook,
+    PreRunStepHook,
+    PreStartSpanHook,
+)
 from burr.tracking.common.models import (
     ApplicationModel,
     BeginEntryModel,
@@ -43,6 +49,7 @@ class LocalTrackingClient(
     PostRunStepHook,
     PreStartSpanHook,
     PostEndSpanHook,
+    BasicStatePersistence,
 ):
     """Tracker to track locally -- goes along with the Burr UI. Writes
     down the following:
@@ -236,6 +243,32 @@ class LocalTrackingClient(
 
     def __del__(self):
         self.f.close()
+
+    def initialize(self):
+        # not needed because this one does things in the constructor
+        pass
+
+    def list_app_ids(self, partition_key: str) -> list[str]:
+        # TODO:
+        return []
+
+    def load(
+        self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None
+    ) -> Optional[PersistenceDict]:
+        # TODO:
+        pass
+
+    def save(
+        self,
+        partition_key: Optional[str],
+        app_id: str,
+        sequence_id: int,
+        position: str,
+        state: State,
+        status: Literal["completed", "failed"],
+    ):
+        # TODO:
+        pass
 
 
 # TODO -- implement async version

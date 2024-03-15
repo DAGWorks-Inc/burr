@@ -190,7 +190,7 @@ def base_application(hooks: List[LifecycleAdapter], app_id: str, storage_dir: st
             ("response", "prompt", default),
         )
         .with_hooks(*hooks)
-        .with_tracker("demo:tracing", params={"app_id": app_id, "storage_dir": storage_dir})
+        .with_tracker(project="demo:tracing", params={"app_id": app_id, "storage_dir": storage_dir})
         .build()
     )
 

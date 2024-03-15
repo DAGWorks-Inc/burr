@@ -127,7 +127,9 @@ def application(
             ("maybe_progress", "prompt_for_challenge", default),
         )
         .with_entrypoint("start")
-        .with_tracker("demo:corgi_adventure", params={"app_id": app_id, "storage_dir": storage_dir})
+        .with_tracker(
+            project="demo:corgi_adventure", params={"app_id": app_id, "storage_dir": storage_dir}
+        )
         .build()
     )
 

@@ -33,7 +33,13 @@ from burr.core.action import (
     default,
 )
 from burr.core.state import BasicStatePersistence, State
-from burr.lifecycle import PostRunStepHook
+from burr.lifecycle import (
+    PostApplicationCreateHook,
+    PostEndSpanHook,
+    PostRunStepHook,
+    PreRunStepHook,
+    PreStartSpanHook,
+)
 from burr.lifecycle.base import LifecycleAdapter
 from burr.lifecycle.internal import LifecycleAdapterSet
 
@@ -1074,7 +1080,7 @@ class ApplicationBuilder:
         self.lifecycle_adapters: List[LifecycleAdapter] = list()
         self.app_id: str = str(uuid.uuid4())
         self.partition_key: str = None
-        self.sequence_id: int = None
+        self.sequence_id: int = 0
         self.persister = None
         self.use_entrypoint_from_save_state: bool = None
         self.default_state: dict = None
@@ -1175,28 +1181,43 @@ class ApplicationBuilder:
         return self
 
     def with_tracker(
-        self, project: str, tracker: Literal["local"] = "local", params: Dict[str, Any] = None
+        self,
+        tracker: Union[Literal["local"], object] = "local",
+        project: str = "default",
+        params: Dict[str, Any] = None,
     ):
         """Adds a "tracker" to the application. The tracker specifies
         a project name (used for disambiguating groups of tracers), and plugs into the
         Burr UI. Currently the only supported tracker is local, which takes in the params
         `storage_dir` and `app_id`, which have automatic defaults.
 
-        :param project: Project name
-        :param tracker: Tracker to use, currently only ``local`` is available
-        :param params: Parameters to pass to the tracker
+        :param tracker: Tracker to use. ``local`` creates one, else pass one in.
+        :param project: Project name -- used if the tracker is local.
+        :param params: Parameters to pass to the tracker if it's local.
         :return: The application builder for future chaining.
         """
         if params is None:
             params = {}
-        if tracker == "local":
+        # if it's a lifecycle adapter, just add it
+        if isinstance(
+            tracker,
+            (
+                PostRunStepHook,
+                PreRunStepHook,
+                PostApplicationCreateHook,
+                PostEndSpanHook,
+                PreStartSpanHook,
+            ),
+        ):
+            self.lifecycle_adapters.append(tracker)
+        elif tracker == "local":
             from burr.tracking.client import LocalTrackingClient
 
             kwargs = {"project": project, "app_id": self.app_id}
             kwargs.update(params)
             self.lifecycle_adapters.append(LocalTrackingClient(**kwargs))
         else:
-            raise ValueError(f"Tracker {tracker} not supported")
+            raise ValueError(f"Tracker {tracker}:{project} not supported")
         return self
 
     def initialize_from(
