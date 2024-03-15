@@ -2,7 +2,6 @@ import copy
 import os
 from typing import List, Optional, Tuple
 
-import dag
 import openai
 from hamilton import driver
 
@@ -195,6 +194,8 @@ def base_application(
 def hamilton_application(
     hooks: List[LifecycleAdapter], app_id: str, storage_dir: str, project_id: str
 ):
+    import dag
+
     dr = driver.Driver({"provider": "openai"}, dag)  # TODO -- add modules
     Hamilton.set_driver(dr)
     application = (
