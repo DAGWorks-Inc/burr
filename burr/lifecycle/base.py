@@ -17,10 +17,12 @@ class PreRunStepHook(abc.ABC):
     def pre_run_step(
         self,
         *,
+        app_id: str,
+        partition_key: str,
+        sequence_id: int,
         state: "State",
         action: "Action",
         inputs: Dict[str, Any],
-        sequence_id: int,
         **future_kwargs: Any,
     ):
         """Run before a step is executed.
@@ -42,10 +44,12 @@ class PreRunStepHookAsync(abc.ABC):
     async def pre_run_step(
         self,
         *,
+        app_id: str,
+        partition_key: str,
+        sequence_id: int,
         state: "State",
         action: "Action",
         inputs: Dict[str, Any],
-        sequence_id: int,
         **future_kwargs: Any,
     ):
         """Async run before a step is executed.
@@ -67,10 +71,12 @@ class PostRunStepHook(abc.ABC):
     def post_run_step(
         self,
         *,
+        app_id: str,
+        partition_key: str,
+        sequence_id: int,
         state: "State",
         action: "Action",
         result: Optional[Dict[str, Any]],
-        sequence_id: int,
         exception: Exception,
         **future_kwargs: Any,
     ):
@@ -94,10 +100,12 @@ class PostRunStepHookAsync(abc.ABC):
     async def post_run_step(
         self,
         *,
+        app_id: str,
+        partition_key: str,
+        sequence_id: int,
         state: "State",
         action: "Action",
         result: Optional[dict],
-        sequence_id: int,
         exception: Exception,
         **future_kwargs: Any,
     ):
@@ -120,7 +128,13 @@ class PostApplicationCreateHook(abc.ABC):
 
     @abc.abstractmethod
     def post_application_create(
-        self, *, state: "State", application_graph: "ApplicationGraph", **future_kwargs: Any
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        state: "State",
+        application_graph: "ApplicationGraph",
+        **future_kwargs: Any,
     ):
         """Runs after an "application" object is instantiated. This is run by the Application, in its constructor,
         as the last step.
@@ -203,14 +217,18 @@ class PostEndSpanHookAsync(abc.ABC):
 @lifecycle.base_hook("pre_run_application")
 class PreRunApplicationHook(abc.ABC):
     @abc.abstractmethod
-    def pre_run_application(self, *, state: "State", **future_kwargs: Any):
+    def pre_run_application(
+        self, *, app_id: str, partition_key: str, state: "State", **future_kwargs: Any
+    ):
         pass
 
 
 @lifecycle.base_hook("pre_run_application")
 class PreRunApplicationHookAsync(abc.ABC):
     @abc.abstractmethod
-    async def pre_run_application(self, *, state: "State", **future_kwargs):
+    async def pre_run_application(
+        self, *, app_id: str, partition_key: str, state: "State", **future_kwargs
+    ):
         pass
 
 
@@ -218,7 +236,14 @@ class PreRunApplicationHookAsync(abc.ABC):
 class PostRunApplicationHook(abc.ABC):
     @abc.abstractmethod
     def post_run_application(
-        self, *, state: "State", until: list[str], results: list[dict], **future_kwargs
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        state: "State",
+        until: list[str],
+        results: list[dict],
+        **future_kwargs,
     ):
         pass
 
@@ -227,7 +252,14 @@ class PostRunApplicationHook(abc.ABC):
 class PostRunApplicationHookAsync(abc.ABC):
     @abc.abstractmethod
     async def post_run_application(
-        self, *, state: "State", until: list[str], results: list[dict], **future_kwargs
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        state: "State",
+        until: list[str],
+        results: list[dict],
+        **future_kwargs,
     ):
         pass
 
