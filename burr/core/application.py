@@ -171,7 +171,7 @@ def _format_error_message(action: Action, input_state: State, inputs: dict) -> s
 
 
 def _run_single_step_action(
-    action: SingleStepAction, state: State, inputs: Optional[Dict[str, Any]]
+        action: SingleStepAction, state: State, inputs: Optional[Dict[str, Any]]
 ) -> Tuple[Dict[str, Any], State]:
     """Runs a single step action. This API is internal-facing and a bit in flux, but
     it corresponds to the SingleStepAction class.
@@ -189,7 +189,7 @@ def _run_single_step_action(
 
 
 def _run_single_step_streaming_action(
-    action: SingleStepStreamingAction, state: State, inputs: Optional[Dict[str, Any]]
+        action: SingleStepStreamingAction, state: State, inputs: Optional[Dict[str, Any]]
 ) -> Generator[dict, None, Tuple[dict, State]]:
     action.validate_inputs(inputs)
     generator = action.stream_run_and_update(state, **inputs)
@@ -197,7 +197,7 @@ def _run_single_step_streaming_action(
 
 
 def _run_multi_step_streaming_action(
-    action: StreamingAction, state: State, inputs: Optional[Dict[str, Any]]
+        action: StreamingAction, state: State, inputs: Optional[Dict[str, Any]]
 ) -> Generator[dict, None, Tuple[dict, State]]:
     action.validate_inputs(inputs)
     generator = action.stream_run(state, **inputs)
@@ -207,7 +207,7 @@ def _run_multi_step_streaming_action(
 
 
 async def _arun_single_step_action(
-    action: SingleStepAction, state: State, inputs: Optional[Dict[str, Any]]
+        action: SingleStepAction, state: State, inputs: Optional[Dict[str, Any]]
 ) -> Tuple[dict, State]:
     """Runs a single step action in async. See the synchronous version for more details."""
     state_to_use = state
@@ -232,15 +232,15 @@ class ApplicationGraph:
 
 class Application:
     def __init__(
-        self,
-        actions: List[Action],
-        transitions: List[Transition],
-        state: State,
-        initial_step: str,
-        partition_key: str,
-        id: str,
-        sequence_id: int,
-        adapter_set: Optional[LifecycleAdapterSet] = None,
+            self,
+            actions: List[Action],
+            transitions: List[Transition],
+            state: State,
+            initial_step: str,
+            partition_key: str,
+            id: str,
+            sequence_id: int,
+            adapter_set: Optional[LifecycleAdapterSet] = None,
     ):
         self._partition_key = partition_key
         self._id = id
@@ -285,7 +285,7 @@ class Application:
         return out
 
     def _step(
-        self, inputs: Optional[Dict[str, Any]], _run_hooks: bool = True
+            self, inputs: Optional[Dict[str, Any]], _run_hooks: bool = True
     ) -> Optional[Tuple[Action, dict, State]]:
         """Internal-facing version of step. This is the same as step, but with an additional
         parameter to hide hook execution so async can leverage it."""
@@ -302,6 +302,8 @@ class Application:
                 state=self._state,
                 inputs=inputs,
                 sequence_id=self.sequence_id,
+                app_id=self._id,
+                partition_key=self._partition_key,
             )
         exc = None
         result = None
@@ -393,6 +395,8 @@ class Application:
             state=self._state,
             inputs=inputs,
             sequence_id=self.sequence_id,
+            app_id=self._id,
+            partition_key=self._partition_key,
         )
         exc = None
         result = None
@@ -428,15 +432,17 @@ class Application:
                 result=result,
                 sequence_id=self.sequence_id,
                 exception=exc,
+                app_id=self._id,
+                partition_key=self._partition_key,
             )
 
         return next_action, result, new_state
 
     def _clean_iterate_params(
-        self,
-        halt_before: list[str] = None,
-        halt_after: list[str] = None,
-        inputs: Optional[Dict[str, Any]] = None,
+            self,
+            halt_before: list[str] = None,
+            halt_after: list[str] = None,
+            inputs: Optional[Dict[str, Any]] = None,
     ) -> Tuple[list[str], list[str], Dict[str, Any]]:
         """Utility function to clean out iterate params so we have less duplication between iterate/aiterate
         and the logic is cleaner later.
@@ -461,7 +467,7 @@ class Application:
         return self.get_next_action() is not None
 
     def _should_halt_iterate(
-        self, halt_before: list[str], halt_after: list[str], prior_action: Action
+            self, halt_before: list[str], halt_after: list[str], prior_action: Action
     ) -> bool:
         """Internal utility function to determine whether or not to halt during iteration"""
         if self.has_next_action() and self.get_next_action().name in halt_before:
@@ -473,12 +479,12 @@ class Application:
         return False
 
     def _return_value_iterate(
-        self,
-        halt_before: list[str],
-        halt_after: list[str],
-        prior_action: Optional[Action],
-        result: Optional[dict],
-    ) -> Tuple[Action, Optional[dict], State]:
+            self,
+            halt_before: list[str],
+            halt_after: list[str],
+            prior_action: Optional[Action],
+            result: Optional[dict],
+    ) -> Tuple[Optional[Action], Optional[dict], State]:
         """Utility function to decide what to return for iterate/arun. Note that run() will delegate to the return value of
         iterate, whereas arun cannot delegate to the return value of aiterate (as async generators cannot return a value).
         We put the code centrally to clean up the logic.
@@ -507,11 +513,11 @@ class Application:
 
     @telemetry.capture_function_usage
     def iterate(
-        self,
-        *,
-        halt_before: list[str] = None,
-        halt_after: list[str] = None,
-        inputs: Optional[Dict[str, Any]] = None,
+            self,
+            *,
+            halt_before: list[str] = None,
+            halt_after: list[str] = None,
+            inputs: Optional[Dict[str, Any]] = None,
     ) -> Generator[Tuple[Action, dict, State], None, Tuple[Action, Optional[dict], State]]:
         """Returns a generator that calls step() in a row, enabling you to see the state
         of the system as it updates. Note this returns a generator, and also the final result
@@ -544,11 +550,11 @@ class Application:
 
     @telemetry.capture_function_usage
     async def aiterate(
-        self,
-        *,
-        halt_before: list[str] = None,
-        halt_after: list[str] = None,
-        inputs: Optional[Dict[str, Any]] = None,
+            self,
+            *,
+            halt_before: list[str] = None,
+            halt_after: list[str] = None,
+            inputs: Optional[Dict[str, Any]] = None,
     ) -> AsyncGenerator[Tuple[Action, dict, State], None]:
         """Returns a generator that calls step() in a row, enabling you to see the state
         of the system as it updates. This is the asynchronous version so it has no capability of t
@@ -574,11 +580,11 @@ class Application:
 
     @telemetry.capture_function_usage
     def run(
-        self,
-        *,
-        halt_before: list[str] = None,
-        halt_after: list[str] = None,
-        inputs: Optional[Dict[str, Any]] = None,
+            self,
+            *,
+            halt_before: list[str] = None,
+            halt_after: list[str] = None,
+            inputs: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Action, Optional[dict], State]:
         """Runs your application through until completion. Does
         not give access to the state along the way -- if you want that, use iterate().
@@ -598,11 +604,11 @@ class Application:
 
     @telemetry.capture_function_usage
     async def arun(
-        self,
-        *,
-        halt_before: list[str] = None,
-        halt_after: list[str] = None,
-        inputs: Optional[Dict[str, Any]] = None,
+            self,
+            *,
+            halt_before: list[str] = None,
+            halt_after: list[str] = None,
+            inputs: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Action, Optional[dict], State]:
         """Runs your application through until completion, using async. Does
         not give access to the state along the way -- if you want that, use iterate().
@@ -618,7 +624,7 @@ class Application:
             halt_before, halt_after, inputs
         )
         async for prior_action, result, state in self.aiterate(
-            halt_before=halt_before, halt_after=halt_after, inputs=inputs
+                halt_before=halt_before, halt_after=halt_after, inputs=inputs
         ):
             pass
         return self._return_value_iterate(halt_before, halt_after, prior_action, result)
@@ -634,10 +640,10 @@ class Application:
 
     @telemetry.capture_function_usage
     def stream_result(
-        self,
-        halt_after: list[str],
-        halt_before: list[str] = None,
-        inputs: Optional[Dict[str, Any]] = None,
+            self,
+            halt_after: list[str],
+            halt_before: list[str] = None,
+            inputs: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Action, StreamingResultContainer]:
         """Streams a result out.
 
@@ -788,10 +794,10 @@ class Application:
                 return result, new_state
 
             def callback(
-                result: Optional[dict],
-                state: State,
-                exc: Optional[Exception] = None,
-                seq_id=self.sequence_id,
+                    result: Optional[dict],
+                    state: State,
+                    exc: Optional[Exception] = None,
+                    seq_id=self.sequence_id,
             ):
                 self._adapter_set.call_all_lifecycle_hooks_sync(
                     "post_run_step",
@@ -849,10 +855,10 @@ class Application:
 
     @telemetry.capture_function_usage
     async def astream_result(
-        self,
-        halt_after: list[str],
-        halt_before: list[str] = None,
-        inputs: Optional[Dict[str, Any]] = None,
+            self,
+            halt_after: list[str],
+            halt_before: list[str] = None,
+            inputs: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Action, ...]:
         """Placeholder for the async version of stream_result. This is not yet implemented."""
         raise NotImplementedError(
@@ -862,13 +868,13 @@ class Application:
 
     @telemetry.capture_function_usage
     def visualize(
-        self,
-        output_file_path: Optional[str],
-        include_conditions: bool = False,
-        include_state: bool = False,
-        view: bool = False,
-        engine: Literal["graphviz"] = "graphviz",
-        **engine_kwargs: Any,
+            self,
+            output_file_path: Optional[str],
+            include_conditions: bool = False,
+            include_state: bool = False,
+            view: bool = False,
+            engine: Literal["graphviz"] = "graphviz",
+            **engine_kwargs: Any,
     ):
         """Visualizes the application graph using graphviz. This will render the graph.
 
@@ -1022,7 +1028,7 @@ def _assert_set(value: Optional[Any], field: str, method: str):
 
 
 def _validate_transitions(
-    transitions: Optional[List[Tuple[str, str, Condition]]], actions: Set[str]
+        transitions: Optional[List[Tuple[str, str, Condition]]], actions: Set[str]
 ):
     _assert_set(transitions, "_transitions", "with_transitions")
     exhausted = {}  # items for which we have seen a default transition
@@ -1085,7 +1091,7 @@ class ApplicationBuilder:
         self.default_state: dict = None
 
     def with_identifiers(
-        self, app_id: str = None, partition_key: str = None, sequence_id: int = None
+            self, app_id: str = None, partition_key: str = None, sequence_id: int = None
     ) -> "ApplicationBuilder":
         if app_id is not None:
             self.app_id = app_id
@@ -1135,10 +1141,10 @@ class ApplicationBuilder:
         return self
 
     def with_transitions(
-        self,
-        *transitions: Union[
-            Tuple[Union[str, list[str]], str], Tuple[Union[str, list[str]], str, Condition]
-        ],
+            self,
+            *transitions: Union[
+                Tuple[Union[str, list[str]], str], Tuple[Union[str, list[str]], str, Condition]
+            ],
     ) -> "ApplicationBuilder":
         """Adds transitions to the application. Transitions are specified as tuples of either:
             1. (from, to, condition)
@@ -1180,7 +1186,7 @@ class ApplicationBuilder:
         return self
 
     def with_tracker(
-        self, project: str, tracker: Literal["local"] = "local", params: Dict[str, Any] = None
+            self, project: str, tracker: Literal["local"] = "local", params: Dict[str, Any] = None
     ):
         """Adds a "tracker" to the application. The tracker specifies
         a project name (used for disambiguating groups of tracers), and plugs into the
@@ -1204,13 +1210,12 @@ class ApplicationBuilder:
             raise ValueError(f"Tracker {tracker} not supported")
         return self
 
-
     def initialize_from(
-        self,
-        persister: BasicStatePersistence,
-        resume_at_next_action: bool,
-        default_state: dict,
-        default_entry_point: str,
+            self,
+            persister: BasicStatePersistence,
+            resume_at_next_action: bool,
+            default_state: dict,
+            default_entry_point: str,
     ) -> "ApplicationBuilder":
         self.persister = persister
         self.resume_at_next_action = resume_at_next_action
@@ -1219,7 +1224,7 @@ class ApplicationBuilder:
         return self
 
     def with_state_persister(
-        self, persister: BasicStatePersistence, on_every: str = "step"
+            self, persister: BasicStatePersistence, on_every: str = "step"
     ) -> "ApplicationBuilder":
         """Adds a state persister to the application. This is a way to persist state out to a database, file, etc...
         at the specified interval.
@@ -1238,15 +1243,15 @@ class ApplicationBuilder:
             # TODO: pull this out more formally
             class persisterWrapper(PostRunStepHook):
                 def post_run_step(
-                    self,
-                    app_id: str,
-                    partition_key: str,
-                    sequence_id: int,
-                    state: "State",
-                    action: "Action",
-                    result: Optional[Dict[str, Any]],
-                    exception: Exception,
-                    **future_kwargs: Any,
+                        self,
+                        app_id: str,
+                        partition_key: str,
+                        sequence_id: int,
+                        state: "State",
+                        action: "Action",
+                        result: Optional[Dict[str, Any]],
+                        exception: Exception,
+                        **future_kwargs: Any,
                 ):
                     if exception is None:
                         persister.save(
@@ -1259,6 +1264,40 @@ class ApplicationBuilder:
 
             self.lifecycle_adapters.append(persisterWrapper())
         return self
+
+    def _load_from_persister(self):
+        """Loads from the set persister and into this current object.
+
+        Mutates:
+         - self.state
+         - self.sequence_id
+         - maybe self.start
+
+        """
+        # load state from persister
+        load_result = self.persister.load(self.partition_key, self.app_id, self.sequence_id)
+        if load_result is None:
+            # there was nothing to load -- use default state
+            self.state = self.state.update(**self.default_state)
+            self.sequence_id = 0
+        else:
+            # there was something
+            last_position = load_result["position"]
+            self.state = load_result["state"]
+            self.sequence_id = load_result["sequence_id"]
+            status = load_result["status"]
+            if self.resume_at_next_action:
+                # if we're supposed to resume where we saved from
+                if status == "completed":
+                    # completed means we set prior step to current to go to next action
+                    self.state = self.state.update(**{PRIOR_STEP: last_position})
+                else:
+                    # else we failed we just start at that node
+                    self.start = last_position
+                    self.state = self.state.wipe(delete=[PRIOR_STEP])
+            else:
+                # self.start is already set to the default. We don't need to do anything.
+                pass
 
     @telemetry.capture_function_usage
     def build(self) -> Application:
@@ -1274,31 +1313,11 @@ class ApplicationBuilder:
         _validate_transitions(self.transitions, all_actions)
         _validate_app_id(self.app_id)
 
-        loaded_sequence_id = None
         if self.persister:
-            # load state from persister
-            load_result = self.persister.load(self.partition_key, self.app_id, self.sequence_id)
-            if load_result is None:
-                self.state = self.state.update(**self.default_state)
-            else:
-                last_position = load_result["position"]
-                self.state = load_result["state"]
-                loaded_sequence_id = load_result["sequence_id"]
-                status = load_result["status"]
-                if self.resume_at_next_action:
-                    if status == "completed":
-                        self.state = self.state.update(**{PRIOR_STEP: last_position})
-                    else:
-                        # if failed we just start at that node
-                        self.start = last_position
-                        self.state = self.state.wipe(delete=[PRIOR_STEP])
-                else:
-                    # self.start is already set to the default. We don't need to do anything.
-                    pass
+            # sets state, sequence_id, and maybe start
+            self._load_from_persister()
         _validate_start(self.start, all_actions)
 
-        if self.sequence_id is None:
-            self.sequence_id = loaded_sequence_id if loaded_sequence_id else 0
         return Application(
             actions=self.actions,
             transitions=[
