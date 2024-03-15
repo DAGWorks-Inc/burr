@@ -50,8 +50,6 @@ class Transition:
     condition: Condition
 
 
-TerminationCondition = Literal["any_complete", "all_complete"]
-
 PRIOR_STEP = "__PRIOR_STEP"
 SEQUENCE_ID = "__SEQUENCE_ID"
 
