@@ -3,6 +3,7 @@ import dataclasses
 import functools
 import logging
 import pprint
+import uuid
 from typing import (
     Any,
     AsyncGenerator,
@@ -31,7 +32,8 @@ from burr.core.action import (
     create_action,
     default,
 )
-from burr.core.state import State
+from burr.core.state import BasicStatePersistence, State
+from burr.lifecycle import PostRunStepHook
 from burr.lifecycle.base import LifecycleAdapter
 from burr.lifecycle.internal import LifecycleAdapterSet
 
@@ -235,8 +237,14 @@ class Application:
         transitions: List[Transition],
         state: State,
         initial_step: str,
+        partition_key: str,
+        id: str,
+        sequence_id: int,
         adapter_set: Optional[LifecycleAdapterSet] = None,
     ):
+        self._partition_key = partition_key
+        self._id = id
+        self._sequence_id = sequence_id
         self._action_map = {action.name: action for action in actions}
         self._adjacency_map = Application._create_adjacency_map(transitions)
         self._transitions = transitions
@@ -268,12 +276,11 @@ class Application:
         :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world
         :return: Tuple[Function, dict, State] -- the function that was just ran, the result of running it, and the new state
         """
-
-        try:
-            out = self._step(inputs=inputs, _run_hooks=True)
-            return out
-        finally:
-            self._increment_sequence_id()
+        # we need to increment the sequence before we start computing
+        # that way if we're replaying from state, we don't get stuck
+        self._increment_sequence_id()
+        out = self._step(inputs=inputs, _run_hooks=True)
+        return out
 
     def _step(
         self, inputs: Optional[Dict[str, Any]], _run_hooks: bool = True
@@ -314,6 +321,8 @@ class Application:
             if _run_hooks:
                 self._adapter_set.call_all_lifecycle_hooks_sync(
                     "post_run_step",
+                    app_id=self._id,
+                    partition_key=self._partition_key,
                     action=next_action,
                     state=new_state,
                     result=result,
@@ -366,6 +375,8 @@ class Application:
 
         :return: Tuple[Function, dict, State] -- the action that was just ran, the result of running it, and the new state
         """
+        # we want to increment regardless of failure
+        self._increment_sequence_id()
         next_action = self.get_next_action()
         if next_action is None:
             return None
@@ -414,8 +425,6 @@ class Application:
                 sequence_id=self.sequence_id,
                 exception=exc,
             )
-            # we want to increment regardless of failure
-            self._increment_sequence_id()
 
         return next_action, result, new_state
 
@@ -980,10 +989,19 @@ class Application:
 
         :return:
         """
-        return self._state.get(SEQUENCE_ID, 0)
+        return self._sequence_id
 
     def _increment_sequence_id(self):
-        self._state = self._state.update(**{SEQUENCE_ID: self.sequence_id + 1})
+        self._sequence_id = self._sequence_id + 1
+        self._state = self._state.update(**{SEQUENCE_ID: self.sequence_id})
+
+    @property
+    def id(self) -> str:
+        return self._id
+
+    @property
+    def partition_key(self) -> str:
+        return self._partition_key
 
 
 def _assert_set(value: Optional[Any], field: str, method: str):
@@ -1028,6 +1046,14 @@ def _validate_start(start: Optional[str], actions: Set[str]):
         )
 
 
+def _validate_app_id(app_id: Optional[str]):
+    if app_id is None:
+        raise ValueError(
+            "App ID was None. Please ensure that you set an app ID using with_identifiers(app_id=...), or default"
+            "not setting it and letting the system generate one for you."
+        )
+
+
 def _validate_actions(actions: Optional[List[Action]]):
     _assert_set(actions, "_actions", "with_actions")
     if len(actions) == 0:
@@ -1041,6 +1067,23 @@ class ApplicationBuilder:
         self.actions: Optional[List[Action]] = None
         self.start: Optional[str] = None
         self.lifecycle_adapters: List[LifecycleAdapter] = list()
+        self.app_id: str = str(uuid.uuid4())
+        self.partition_key: str = None
+        self.sequence_id: int = None
+        self.persister = None
+        self.use_entrypoint_from_save_state: bool = None
+        self.default_state: dict = None
+
+    def with_identifiers(
+        self, app_id: str = None, partition_key: str = None, sequence_id: int = None
+    ) -> "ApplicationBuilder":
+        if app_id is not None:
+            self.app_id = app_id
+        if partition_key is not None:
+            self.partition_key = partition_key
+        if sequence_id is not None:
+            self.sequence_id = sequence_id
+        return self
 
     def with_state(self, **kwargs) -> "ApplicationBuilder":
         """Sets initial values in the state. If you want to load from a prior state,
@@ -1144,9 +1187,60 @@ class ApplicationBuilder:
         if tracker == "local":
             from burr.tracking.client import LocalTrackingClient
 
-            self.lifecycle_adapters.append(LocalTrackingClient(project=project, **params))
+            kwargs = {"project": project, "app_id": self.app_id}
+            kwargs.update(params)
+            self.lifecycle_adapters.append(LocalTrackingClient(**kwargs))
         else:
             raise ValueError(f"Tracker {tracker} not supported")
+        return self
+
+    def initialize_from(
+        self,
+        persister: BasicStatePersistence,
+        resume_at_next_action: bool,
+        default_state: dict,
+        default_entry_point: str,
+    ) -> "ApplicationBuilder":
+        self.persister = persister
+        self.resume_at_next_action = resume_at_next_action
+        self.default_state = default_state
+        self.start = default_entry_point
+        return self
+
+    def with_state_persister(
+        self, persister: BasicStatePersistence, on_every: str = "step"
+    ) -> "ApplicationBuilder":
+        """Adds a state persister to the application. This is a way to persist state out to a database, file, etc...
+        at the specified interval.
+
+        :param persister: The persister to add
+        :param on_every: The interval to persist state. Currently only "step" is supported.
+        :return: The application builder for future chaining.
+        """
+        if on_every != "step":
+            raise ValueError(f"on_every {on_every} not supported")
+        # stick persister into a post_step_hook if it doesn't implement it already.
+        if hasattr(persister, "post_step_hook"):
+            if persister not in self.lifecycle_adapters:
+                self.lifecycle_adapters.append(persister)
+        else:
+            # TODO: wrap in one
+            class persisterWrapper(PostRunStepHook):
+                def post_run_step(
+                    self,
+                    app_id: str,
+                    partition_key: str,
+                    sequence_id: int,
+                    state: "State",
+                    action: "Action",
+                    result: Optional[Dict[str, Any]],
+                    exception: Exception,
+                    **future_kwargs: Any,
+                ):
+                    if exception is None:
+                        persister.save(partition_key, app_id, sequence_id, action.name, state)
+
+            self.lifecycle_adapters.append(persisterWrapper())
         return self
 
     def build(self) -> Application:
@@ -1159,6 +1253,21 @@ class ApplicationBuilder:
         all_actions = set(actions_by_name.keys())
         _validate_transitions(self.transitions, all_actions)
         _validate_start(self.start, all_actions)
+        _validate_app_id(self.app_id)
+
+        loaded_sequence_id = None
+        if self.persister:
+            # load state from persister
+            load_result = self.persister.load(self.partition_key, self.app_id, self.sequence_id)
+            if load_result is None:
+                self.state = self.state.update(**self.default_state)
+            else:
+                last_position, self.state, loaded_sequence_id = load_result
+                if self.resume_at_next_action:
+                    self.state = self.state.update(**{PRIOR_STEP: last_position})
+
+        if self.sequence_id is None:
+            self.sequence_id = loaded_sequence_id if loaded_sequence_id else 0
         return Application(
             actions=self.actions,
             transitions=[
@@ -1171,5 +1280,8 @@ class ApplicationBuilder:
             ],
             state=self.state,
             initial_step=self.start,
+            id=self.app_id,
+            partition_key=self.partition_key,
+            sequence_id=self.sequence_id,
             adapter_set=LifecycleAdapterSet(*self.lifecycle_adapters),
         )
