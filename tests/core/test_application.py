@@ -118,10 +118,10 @@ class ActionTracker(PreRunStepHook, PostRunStepHook):
         self.post_called = []
 
     def pre_run_step(self, action: Action, **future_kwargs):
-        self.pre_called.append(action.name)
+        self.pre_called.append((action.name, future_kwargs))
 
     def post_run_step(self, action: Action, **future_kwargs):
-        self.post_called.append(action.name)
+        self.post_called.append((action.name, future_kwargs))
 
 
 class ActionTrackerAsync(PreRunStepHookAsync, PostRunStepHookAsync):
@@ -131,11 +131,11 @@ class ActionTrackerAsync(PreRunStepHookAsync, PostRunStepHookAsync):
 
     async def pre_run_step(self, *, action: Action, **future_kwargs):
         await asyncio.sleep(0.0001)
-        self.pre_called.append(action.name)
+        self.pre_called.append((action.name, future_kwargs))
 
     async def post_run_step(self, *, action: Action, **future_kwargs):
         await asyncio.sleep(0.0001)
-        self.post_called.append(action.name)
+        self.post_called.append((action.name, future_kwargs))
 
 
 async def _counter_update_async(state: State, additional_increment: int = 0) -> dict:
@@ -463,6 +463,9 @@ def test_app_step():
         transitions=[Transition(counter_action, counter_action, default)],
         state=State({}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     assert app.sequence_id == 0
     action, result, state = app.step()
@@ -480,6 +483,9 @@ def test_app_step_with_inputs():
         transitions=[Transition(counter_action, counter_action, default)],
         state=State({"count": 0, "tracker": []}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, result, state = app.step(inputs={"additional_increment": 1})
     assert action.name == "counter"
@@ -495,6 +501,9 @@ def test_app_step_with_inputs_missing():
         transitions=[Transition(counter_action, counter_action, default)],
         state=State({"count": 0, "tracker": []}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     with pytest.raises(ValueError, match="missing required inputs"):
         app.step(inputs={})
@@ -508,6 +517,9 @@ def test_app_step_broken(caplog):
         transitions=[Transition(broken_action, broken_action, default)],
         state=State({}),
         initial_step="broken_action_unique_name",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     with caplog.at_level(logging.ERROR):  # it should say the name, that's the only contract for now
         with pytest.raises(BrokenStepException):
@@ -519,7 +531,13 @@ def test_app_step_done():
     """Tests that when we cannot run a step, we return None"""
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        actions=[counter_action], transitions=[], state=State({}), initial_step="counter"
+        actions=[counter_action],
+        transitions=[],
+        state=State({}),
+        initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     app.step()
     assert app.step() is None
@@ -533,6 +551,9 @@ async def test_app_astep():
         transitions=[Transition(counter_action, counter_action, default)],
         state=State({}),
         initial_step="counter_async",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     assert app.sequence_id == 0
     action, result, state = await app.astep()
@@ -550,6 +571,9 @@ async def test_app_astep_with_inputs():
         transitions=[Transition(counter_action, counter_action, default)],
         state=State({"count": 0, "tracker": []}),
         initial_step="counter_async",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, result, state = await app.astep(inputs={"additional_increment": 1})
     assert action.name == "counter_async"
@@ -565,6 +589,9 @@ async def test_app_astep_with_inputs_missing():
         transitions=[Transition(counter_action, counter_action, default)],
         state=State({"count": 0, "tracker": []}),
         initial_step="counter_async",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     with pytest.raises(ValueError, match="missing required inputs"):
         await app.astep(inputs={})
@@ -578,6 +605,9 @@ async def test_app_astep_broken(caplog):
         transitions=[Transition(broken_action, broken_action, default)],
         state=State({}),
         initial_step="broken_action_unique_name",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     with caplog.at_level(logging.ERROR):  # it should say the name, that's the only contract for now
         with pytest.raises(BrokenStepException):
@@ -589,7 +619,13 @@ async def test_app_astep_done():
     """Tests that when we cannot run a step, we return None"""
     counter_action = base_counter_action_async.with_name("counter_async")
     app = Application(
-        actions=[counter_action], transitions=[], state=State({}), initial_step="counter_async"
+        actions=[counter_action],
+        transitions=[],
+        state=State({}),
+        initial_step="counter_async",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     await app.astep()
     assert await app.astep() is None
@@ -603,6 +639,9 @@ def test_app_many_steps():
         transitions=[Transition(counter_action, counter_action, default)],
         state=State({}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, result = None, None
     for i in range(100):
@@ -618,6 +657,9 @@ async def test_app_many_a_steps():
         transitions=[Transition(counter_action, counter_action, default)],
         state=State({}),
         initial_step="counter_async",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, result = None, None
     for i in range(100):
@@ -637,6 +679,9 @@ def test_iterate():
         ],
         state=State({}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     res = []
     gen = app.iterate(halt_after=["result"])
@@ -672,6 +717,9 @@ def test_iterate_with_inputs():
         ],
         state=State({}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     gen = app.iterate(
         halt_after=["result"], inputs={"additional_increment": 10}
@@ -696,6 +744,9 @@ async def test_aiterate():
         ],
         state=State({}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     assert app.sequence_id == 0
     gen = app.aiterate(halt_after=["result"])
@@ -724,6 +775,9 @@ async def test_aiterate_halt_before():
         ],
         state=State({}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     gen = app.aiterate(halt_before=["result"])
     counter = 0
@@ -749,6 +803,9 @@ async def test_app_aiterate_with_inputs():
         ],
         state=State({}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     gen = app.aiterate(halt_after=["result"], inputs={"additional_increment": 10})
     async for action, result, state in gen:
@@ -769,6 +826,9 @@ def test_run():
         ],
         state=State({}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, result, state = app.run(halt_after=["result"])
     assert state["count"] == 10
@@ -786,6 +846,9 @@ def test_run_halt_before():
         ],
         state=State({}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, result, state = app.run(halt_before=["result"])
     assert state["count"] == 10
@@ -804,6 +867,9 @@ def test_run_with_inputs():
         ],
         state=State({}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, result, state = app.run(halt_after=["result"], inputs={"additional_increment": 10})
     assert action.name == "result"
@@ -821,6 +887,9 @@ async def test_arun():
         ],
         state=State({}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, result, state = await app.arun(halt_after=["result"])
     assert state["count"] == result["count"] == 10
@@ -838,6 +907,9 @@ async def test_arun_halt_before():
         ],
         state=State({}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, result, state = await app.arun(halt_before=["result"])
     assert state["count"] == 10
@@ -856,6 +928,9 @@ async def test_arun_with_inputs():
         ],
         state=State({}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, result, state = await app.arun(
         halt_after=["result"], inputs={"additional_increment": 10}
@@ -877,6 +952,9 @@ async def test_app_a_run_async_and_sync():
         ],
         state=State({}),
         initial_step="counter_sync",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, result, state = await app.arun(halt_after=["result"])
     assert state["count"] > 20
@@ -895,6 +973,9 @@ def test_stream_result_halt_after():
         state=State({"count": 0}),
         initial_step="counter",
         adapter_set=LifecycleAdapterSet(action_tracker),
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, streaming_container = app.stream_result(halt_after=["counter_2"])
     results = list(streaming_container)
@@ -904,8 +985,8 @@ def test_stream_result_halt_after():
     assert state["tracker"] == [1, 2]
     assert len(action_tracker.pre_called) == 2
     assert len(action_tracker.post_called) == 2
-    assert set(action_tracker.pre_called) == {"counter", "counter_2"}
-    assert set(action_tracker.post_called) == {"counter", "counter_2"}
+    assert set(dict(action_tracker.pre_called).keys()) == {"counter", "counter_2"}
+    assert set(dict(action_tracker.post_called).keys()) == {"counter", "counter_2"}
 
 
 def test_stream_result_halt_after_single_step():
@@ -920,6 +1001,9 @@ def test_stream_result_halt_after_single_step():
         state=State({"count": 0}),
         initial_step="counter",
         adapter_set=LifecycleAdapterSet(action_tracker),
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, streaming_container = app.stream_result(halt_after=["counter_2"])
     results = list(streaming_container)
@@ -929,8 +1013,8 @@ def test_stream_result_halt_after_single_step():
     assert state["tracker"] == [1, 2]
     assert len(action_tracker.pre_called) == 2
     assert len(action_tracker.post_called) == 2
-    assert set(action_tracker.pre_called) == {"counter", "counter_2"}
-    assert set(action_tracker.post_called) == {"counter", "counter_2"}
+    assert set(dict(action_tracker.pre_called).keys()) == {"counter", "counter_2"}
+    assert set(dict(action_tracker.post_called).keys()) == {"counter", "counter_2"}
 
 
 def test_stream_result_halt_after_run_through_final_streaming():
@@ -949,6 +1033,9 @@ def test_stream_result_halt_after_run_through_final_streaming():
         state=State({"count": 0}),
         initial_step="counter_non_streaming",
         adapter_set=LifecycleAdapterSet(action_tracker),
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, streaming_container = app.stream_result(halt_after=["counter_streaming"])
     results = list(streaming_container)
@@ -957,8 +1044,14 @@ def test_stream_result_halt_after_run_through_final_streaming():
     assert result["count"] == state["count"] == 11
     assert len(action_tracker.pre_called) == 11
     assert len(action_tracker.post_called) == 11
-    assert set(action_tracker.pre_called) == {"counter_streaming", "counter_non_streaming"}
-    assert set(action_tracker.post_called) == {"counter_streaming", "counter_non_streaming"}
+    assert set(dict(action_tracker.pre_called).keys()) == {
+        "counter_streaming",
+        "counter_non_streaming",
+    }
+    assert set(dict(action_tracker.post_called).keys()) == {
+        "counter_streaming",
+        "counter_non_streaming",
+    }
 
 
 def test_stream_result_halt_after_run_through_final_non_streaming():
@@ -975,6 +1068,9 @@ def test_stream_result_halt_after_run_through_final_non_streaming():
         state=State({"count": 0}),
         initial_step="counter_non_streaming",
         adapter_set=LifecycleAdapterSet(action_tracker),
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, streaming_container = app.stream_result(halt_after=["counter_final_non_streaming"])
     results = list(streaming_container)
@@ -983,11 +1079,11 @@ def test_stream_result_halt_after_run_through_final_non_streaming():
     assert result["count"] == state["count"] == 11
     assert len(action_tracker.pre_called) == 11
     assert len(action_tracker.post_called) == 11
-    assert set(action_tracker.pre_called) == {
+    assert set(dict(action_tracker.pre_called).keys()) == {
         "counter_non_streaming",
         "counter_final_non_streaming",
     }
-    assert set(action_tracker.post_called) == {
+    assert set(dict(action_tracker.post_called).keys()) == {
         "counter_non_streaming",
         "counter_final_non_streaming",
     }
@@ -1005,6 +1101,9 @@ def test_stream_result_halt_before():
         ],
         state=State({"count": 0}),
         initial_step="counter_non_streaming",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     action, streaming_container = app.stream_result(halt_after=[], halt_before=["counter_final"])
     results = list(streaming_container)
@@ -1022,6 +1121,9 @@ def test_app_set_state():
         transitions=[Transition(counter_action, counter_action, default)],
         state=State(),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     assert "counter" not in app.state  # initial value
     app.step()
@@ -1044,6 +1146,9 @@ def test_app_get_next_step():
         ],
         state=State(),
         initial_step="counter_1",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     # uninitialized -- counter_1
     assert app.get_next_action().name == "counter_1"
@@ -1149,10 +1254,31 @@ def test_application_run_step_hooks_sync():
         state=State({}),
         initial_step="counter",
         adapter_set=internal.LifecycleAdapterSet(tracker),
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     app.run(halt_after=["result"])
-    assert set(tracker.pre_called) == {"counter", "result"}
-    assert set(tracker.post_called) == {"counter", "result"}
+    assert set(dict(tracker.pre_called).keys()) == {"counter", "result"}
+    assert set(dict(tracker.post_called).keys()) == {"counter", "result"}
+    # assert sequence id is incremented
+    assert tracker.pre_called[0][1]["sequence_id"] == 1
+    assert tracker.post_called[0][1]["sequence_id"] == 1
+    assert set(tracker.pre_called[0][1].keys()) == {
+        "sequence_id",
+        "state",
+        "inputs",
+        "app_id",
+        "partition_key",
+    }
+    assert set(tracker.post_called[0][1].keys()) == {
+        "sequence_id",
+        "result",
+        "state",
+        "exception",
+        "app_id",
+        "partition_key",
+    }
     assert len(tracker.pre_called) == 11
     assert len(tracker.post_called) == 11
     # quick inclusion to ensure that the action is not called when we're done running
@@ -1172,10 +1298,31 @@ async def test_application_run_step_hooks_async():
         state=State({}),
         initial_step="counter",
         adapter_set=internal.LifecycleAdapterSet(tracker),
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     await app.arun(halt_after=["result"])
-    assert set(tracker.pre_called) == {"counter", "result"}
-    assert set(tracker.post_called) == {"counter", "result"}
+    assert set(dict(tracker.pre_called).keys()) == {"counter", "result"}
+    assert set(dict(tracker.post_called).keys()) == {"counter", "result"}
+    # assert sequence id is incremented
+    assert tracker.pre_called[0][1]["sequence_id"] == 1
+    assert tracker.post_called[0][1]["sequence_id"] == 1
+    assert set(tracker.pre_called[0][1].keys()) == {
+        "sequence_id",
+        "state",
+        "inputs",
+        "app_id",
+        "partition_key",
+    }
+    assert set(tracker.post_called[0][1].keys()) == {
+        "sequence_id",
+        "result",
+        "state",
+        "exception",
+        "app_id",
+        "partition_key",
+    }
     assert len(tracker.pre_called) == 11
     assert len(tracker.post_called) == 11
 
@@ -1192,10 +1339,46 @@ async def test_application_run_step_runs_hooks():
         state=State({}),
         initial_step="counter",
         adapter_set=internal.LifecycleAdapterSet(*hooks),
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     await app.astep()
     assert len(hooks[0].pre_called) == 1
     assert len(hooks[0].post_called) == 1
+    # assert sequence id is incremented
+    assert hooks[0].pre_called[0][1]["sequence_id"] == 1
+    assert hooks[0].post_called[0][1]["sequence_id"] == 1
+    assert set(hooks[0].pre_called[0][1].keys()) == {
+        "sequence_id",
+        "state",
+        "inputs",
+        "app_id",
+        "partition_key",
+    }
+    assert set(hooks[1].pre_called[0][1].keys()) == {
+        "sequence_id",
+        "state",
+        "inputs",
+        "app_id",
+        "partition_key",
+    }
+    assert set(hooks[0].post_called[0][1].keys()) == {
+        "sequence_id",
+        "result",
+        "state",
+        "exception",
+        "app_id",
+        "partition_key",
+    }
+    assert set(hooks[1].post_called[0][1].keys()) == {
+        "sequence_id",
+        "result",
+        "state",
+        "exception",
+        "app_id",
+        "partition_key",
+    }
     assert len(hooks[1].pre_called) == 1
     assert len(hooks[1].post_called) == 1
 
@@ -1222,6 +1405,9 @@ def test_application_post_application_create_hook():
         state=State({}),
         initial_step="counter",
         adapter_set=internal.LifecycleAdapterSet(tracker),
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     assert "state" in tracker.called_args
     assert "application_graph" in tracker.called_args
@@ -1239,6 +1425,9 @@ async def test_application_gives_graph():
         ],
         state=State({}),
         initial_step="counter",
+        partition_key="test",
+        id="test-123",
+        sequence_id=0,
     )
     graph = app.graph
     assert len(graph.actions) == 2
