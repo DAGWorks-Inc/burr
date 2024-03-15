@@ -161,5 +161,9 @@ cython_debug/
 #
 _build
 
-# Symlink gnerated in build
+# Symlink generated in build
 burr/tracking/server/build
+# pycharm files we don't want to attach
+.idea
+# added by macOS
+.DS_store
