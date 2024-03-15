@@ -1,3 +1,5 @@
+import copy
+import os
 from typing import List, Optional, Tuple
 
 import dag
@@ -23,6 +25,12 @@ def process_prompt(state: State, prompt: str) -> Tuple[dict, State]:
     return result, state.wipe(keep=["prompt", "chat_history"]).append(
         chat_history=result["chat_item"]
     ).update(prompt=prompt)
+
+
+@action(reads=[], writes=["has_openai_key"])
+def check_openai_key(state: State) -> Tuple[dict, State]:
+    result = {"has_openai_key": "OPENAI_API_KEY" in os.environ}
+    return result, state.update(**result)
 
 
 @action(reads=["prompt"], writes=["safe"])
@@ -77,7 +85,7 @@ def prompt_for_more(state: State) -> Tuple[dict, State]:
 def chat_response(
     state: State, prepend_prompt: str, display_type: str = "text", model: str = "gpt-3.5-turbo"
 ) -> Tuple[dict, State]:
-    chat_history = state["chat_history"].copy()
+    chat_history = copy.deepcopy(state["chat_history"])
     chat_history[-1]["content"] = f"{prepend_prompt}: {chat_history[-1]['content']}"
     chat_history_api_format = [
         {
@@ -98,6 +106,7 @@ def chat_response(
 
 @action(reads=["prompt", "chat_history", "mode"], writes=["response"])
 def image_response(state: State, model: str = "dall-e-2") -> Tuple[dict, State]:
+    """Generates an image response to the prompt. Optional save function to save the image to a URL."""
     client = _get_openai_client()
     result = client.images.generate(
         model=model, prompt=state["prompt"], size="1024x1024", quality="standard", n=1
@@ -107,14 +116,25 @@ def image_response(state: State, model: str = "dall-e-2") -> Tuple[dict, State]:
     return result, state.update(**result)
 
 
-@action(reads=["response", "safe", "mode"], writes=["chat_history"])
+@action(reads=["response", "mode", "safe", "has_openai_key"], writes=["chat_history"])
 def response(state: State) -> Tuple[dict, State]:
-    if not state["safe"]:
+    if not state["has_openai_key"]:
+        result = {
+            "chat_item": {
+                "role": "assistant",
+                "content": "You have not set an API key for [OpenAI](https://www.openai.com). Do this "
+                "by setting the environment variable `OPENAI_API_KEY` to your key. "
+                "You can get a key at [OpenAI](https://platform.openai.com). "
+                "You can still look at chat history/examples.",
+                "type": "error",
+            }
+        }
+    elif not state["safe"]:
         result = {
             "chat_item": {
                 "role": "assistant",
                 "content": "I'm sorry, I can't respond to that.",
-                "type": "text",
+                "type": "error",
             }
         }
     else:
@@ -122,20 +142,19 @@ def response(state: State) -> Tuple[dict, State]:
     return result, state.append(chat_history=result["chat_item"])
 
 
-# TODO -- add in error handling
-# @action(reads=["error"], writes=["chat_history"])
-# def error(state: State) -> Tuple[dict, State]:
-#     result = {"chat_record": {"role": "assistant", "content": str(state["error"]), "type": "error"}}
-#     return result, state.append(chat_history=result["chat_record"])
-
-
-def base_application(hooks: List[LifecycleAdapter], app_id: str, storage_dir: str):
+def base_application(
+    hooks: List[LifecycleAdapter],
+    app_id: str,
+    storage_dir: str,
+    project_id: str,
+):
     if hooks is None:
         hooks = []
     return (
         ApplicationBuilder()
         .with_actions(
             prompt=process_prompt,
+            check_openai_key=check_openai_key,
             check_safety=check_safety,
             decide_mode=choose_mode,
             generate_image=image_response,
@@ -151,7 +170,9 @@ def base_application(hooks: List[LifecycleAdapter], app_id: str, storage_dir: st
         .with_entrypoint("prompt")
         .with_state(chat_history=[])
         .with_transitions(
-            ("prompt", "check_safety", default),
+            ("prompt", "check_openai_key", default),
+            ("check_openai_key", "check_safety", when(has_openai_key=True)),
+            ("check_openai_key", "response", default),
             ("check_safety", "decide_mode", when(safe=True)),
             ("check_safety", "response", default),
             ("decide_mode", "generate_image", when(mode="generate_image")),
@@ -165,13 +186,15 @@ def base_application(hooks: List[LifecycleAdapter], app_id: str, storage_dir: st
             ("response", "prompt", default),
         )
         .with_hooks(*hooks)
-        .with_tracker(project="demo:chatbot", params={"storage_dir": storage_dir})
+        .with_tracker("local", project=project_id, params={"storage_dir": storage_dir})
         .with_identifiers(app_id=app_id)
         .build()
     )
 
 
-def hamilton_application(hooks: List[LifecycleAdapter], app_id: str, storage_dir: str):
+def hamilton_application(
+    hooks: List[LifecycleAdapter], app_id: str, storage_dir: str, project_id: str
+):
     dr = driver.Driver({"provider": "openai"}, dag)  # TODO -- add modules
     Hamilton.set_driver(dr)
     application = (
@@ -232,8 +255,8 @@ def hamilton_application(hooks: List[LifecycleAdapter], app_id: str, storage_dir
             ("response", "prompt", default),
         )
         .with_hooks(*hooks)
-        .with_tracker(project="demo:chatbot", params={"storage_dir": storage_dir})
         .with_identifiers(app_id=app_id)
+        .with_tracker("local", project=project_id, params={"storage_dir": storage_dir})
         .build()
     )
     return application
@@ -242,12 +265,13 @@ def hamilton_application(hooks: List[LifecycleAdapter], app_id: str, storage_dir
 def application(
     use_hamilton: bool,
     app_id: Optional[str] = None,
+    project_id: str = "demo:chatbot",
     storage_dir: Optional[str] = "~/.burr",
     hooks: Optional[List[LifecycleAdapter]] = None,
 ) -> Application:
     if use_hamilton:
-        return hamilton_application(hooks, app_id, storage_dir)
-    return base_application(hooks, app_id, storage_dir)
+        return hamilton_application(hooks, app_id, storage_dir, project_id=project_id)
+    return base_application(hooks, app_id, storage_dir, project_id=project_id)
 
 
 if __name__ == "__main__":
