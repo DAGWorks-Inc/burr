@@ -147,7 +147,7 @@ def main(app_instance_id: str = None):
         )
         .with_entrypoint(entry_point)
         .with_hooks(PrintStepHook())
-        .with_tracker(project_name)
+        .with_tracker(project=project_name)
         .build()
     )
     app.visualize(

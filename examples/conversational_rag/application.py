@@ -95,7 +95,7 @@ def application(
         )
         .with_entrypoint("human_converse")
         .with_tracker(
-            "demo:conversational-rag", params={"app_id": app_id, "storage_dir": storage_dir}
+            project="demo:conversational-rag", params={"app_id": app_id, "storage_dir": storage_dir}
         )
         .with_hooks(*hooks if hooks else [])
         .build()
