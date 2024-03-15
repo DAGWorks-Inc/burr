@@ -89,27 +89,52 @@ class LocalTrackingClient(
         return os.path.join(os.path.expanduser(storage_dir), project)
 
     @classmethod
+    def app_log_exists(
+        cls,
+        project: str,
+        app_id: str,
+        storage_dir: str = DEFAULT_STORAGE_DIR,
+    ) -> bool:
+        """Function to check if state exists for a given project and app_id.
+
+        :param project: the name of the project
+        :param app_id: the application instance id
+        :param storage_dir: the storage directory.
+        :return: True if state exists, False otherwise.
+        """
+        path = os.path.join(cls.get_storage_path(project, storage_dir), app_id, cls.LOG_FILENAME)
+        if not os.path.exists(path):
+            return False
+        lines = open(path, "r").readlines()
+        if len(lines) == 0:
+            return False
+        return True
+
+    @classmethod
     def load_state(
         cls,
         project: str,
         app_id: str,
-        sequence_no: int = -1,
+        sequence_id: int = -1,
         storage_dir: str = DEFAULT_STORAGE_DIR,
     ) -> tuple[dict, str]:
         """Function to load state from what the tracking client got.
 
         It defaults to loading the last state, but you can supply a sequence number.
 
-        We will make loading state more ergonomic, but at this time this is what you get.
+        This is a temporary solution -- not particularly ergonomic, and makes assumptions (particularly that
+        all logging is in order), which is fine for now. We will be improving this and making it a first-class
+        citizen.
+
 
         :param project: the name of the project
         :param app_id: the application instance id
-        :param sequence_no: the sequence number of the state to load. Defaults to last index (i.e. -1).
+        :param sequence_id: the sequence number of the state to load. Defaults to last index (i.e. -1).
         :param storage_dir: the storage directory.
         :return: the state as a dictionary, and the entry point as a string.
         """
-        if sequence_no is None:
-            sequence_no = -1  # get the last one
+        if sequence_id is None:
+            sequence_id = -1  # get the last one
         path = os.path.join(cls.get_storage_path(project, storage_dir), app_id, cls.LOG_FILENAME)
         if not os.path.exists(path):
             raise ValueError(f"No logs found for {project}/{app_id} under {storage_dir}")
@@ -120,15 +145,15 @@ class LocalTrackingClient(
         # filter to only end_entry
         json_lines = [js_line for js_line in json_lines if js_line["type"] == "end_entry"]
         try:
-            line = json_lines[sequence_no]
+            line = json_lines[sequence_id]
         except IndexError:
-            raise ValueError(f"Sequence number {sequence_no} not found for {project}/{app_id}.")
+            raise ValueError(f"Sequence number {sequence_id} not found for {project}/{app_id}.")
         # check sequence number matches if non-negative; will break if either is None.
         line_seq = int(line["sequence_id"])
-        if -1 < sequence_no != line_seq:
+        if -1 < sequence_id != line_seq:
             logger.warning(
                 f"Sequence number mismatch. For {project}/{app_id}: "
-                f"actual:{line_seq} != expected:{sequence_no}"
+                f"actual:{line_seq} != expected:{sequence_id}"
             )
         # get the prior state
         prior_state = line["state"]
@@ -141,6 +166,7 @@ class LocalTrackingClient(
                 to_delete.append(key)
         for key in to_delete:
             del prior_state[key]
+        prior_state["__SEQUENCE_ID"] = line_seq  # add the sequence id back
         return prior_state, entry_point
 
     def _ensure_dir_structure(self, app_id: str):
