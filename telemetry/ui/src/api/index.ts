@@ -13,6 +13,7 @@ export type { ApplicationModel } from './models/ApplicationModel';
 export type { ApplicationSummary } from './models/ApplicationSummary';
 export type { BeginEntryModel } from './models/BeginEntryModel';
 export type { BeginSpanModel } from './models/BeginSpanModel';
+export { ChatItem } from './models/ChatItem';
 export type { EndEntryModel } from './models/EndEntryModel';
 export type { EndSpanModel } from './models/EndSpanModel';
 export type { HTTPValidationError } from './models/HTTPValidationError';

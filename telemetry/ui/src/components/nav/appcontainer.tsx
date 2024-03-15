@@ -11,59 +11,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { ListBulletIcon } from '@heroicons/react/20/solid';
 import { BreadCrumb } from './breadcrumb';
+import { Link } from 'react-router-dom';
+import { classNames } from '../../utils/tailwind';
 
-// TODO -- enable this when we have examples
-const DISPLAY_CHILDREN = false;
-/**
- * Hardcoded sidebars, most of these are just external links.
- * It looks nice though.
- */
-const navigation = [
-  {
-    name: 'Projects',
-    href: '/projects',
-    icon: Square2StackIcon,
-    current: true,
-    linkType: 'internal'
-  },
-  {
-    name: 'Examples',
-    href: 'https://github.com/DAGWorks-Inc/burr/tree/main/examples',
-    icon: ListBulletIcon,
-    current: false,
-    linkType: 'external',
-    children: [
-      { name: 'counter', href: '#', current: false },
-      { name: 'chatbot', href: '#', current: false },
-      { name: 'cowsay', href: '#', current: false }
-    ]
-  },
-  {
-    name: 'Develop',
-    href: 'https://github.com/dagworks-inc/burr',
-    icon: ComputerDesktopIcon,
-    current: false,
-    linkType: 'external'
-  },
-  {
-    name: 'Documentation',
-    href: 'https://burr.dagworks.io',
-    icon: QuestionMarkCircleIcon,
-    current: false,
-    linkType: 'external'
-  },
-  {
-    name: 'Get Help',
-    href: 'https://join.slack.com/t/hamilton-opensource/shared_invite/zt-1bjs72asx-wcUTgH7q7QX1igiQ5bbdcg',
-    icon: ChatBubbleLeftEllipsisIcon,
-    current: false,
-    linkType: 'external'
-  }
-];
-
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(' ');
-}
 /**
  * Toggles the sidebar open and closed.
  */
@@ -94,6 +44,56 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
   const [smallSidebarOpen, setSmallSidebarOpen] = useState(false);
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+  const navigation = [
+    {
+      name: 'Projects',
+      href: '/projects',
+      icon: Square2StackIcon,
+      linkType: 'internal'
+    },
+    process.env.REACT_APP_EXAMPLE_DISPLAY === 'run'
+      ? {
+          name: 'Demos',
+          href: '/demos',
+          icon: ListBulletIcon,
+          linkType: 'internal',
+          children: [
+            { name: 'counter', href: '/demos/counter', current: false, linkType: 'internal' },
+            { name: 'chatbot', href: '/demos/chatbot', current: false, linkType: 'internal' }
+          ]
+        }
+      : {
+          name: 'Examples',
+          href: 'https://github.com/DAGWorks-Inc/burr/tree/main/examples',
+          icon: ListBulletIcon,
+          linkType: 'external'
+        },
+    {
+      name: 'Develop',
+      href: 'https://github.com/dagworks-inc/burr',
+      icon: ComputerDesktopIcon,
+      linkType: 'external'
+    },
+    {
+      name: 'Documentation',
+      href: 'https://burr.dagworks.io',
+      icon: QuestionMarkCircleIcon,
+      linkType: 'external'
+    },
+    {
+      name: 'Get Help',
+      href: 'https://join.slack.com/t/hamilton-opensource/shared_invite/zt-1bjs72asx-wcUTgH7q7QX1igiQ5bbdcg',
+      icon: ChatBubbleLeftEllipsisIcon,
+      linkType: 'external'
+    }
+  ];
+
+  const isCurrent = (href: string, linkType: string) => {
+    if (linkType === 'external') {
+      return false;
+    }
+    return window.location.pathname.startsWith(href);
   };
 
   return (
@@ -155,12 +155,14 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
                           <ul role="list" className="-mx-2 space-y-1">
                             {navigation.map((item) => (
                               <li key={item.name}>
-                                <a
-                                  href={item.href}
-                                  target={item.linkType === 'external' ? '_blank' : undefined}
-                                  rel="noopener noreferrer"
+                                <Link
+                                  to={item.href}
+                                  // target={item.linkType === 'external' ? '_blank' : undefined}
+                                  // rel={
+                                  //   item.linkType === 'external' ? 'noopener noreferrer' : undefined
+                                  // }
                                   className={classNames(
-                                    item.current && item.linkType === 'internal'
+                                    isCurrent(item.href, item.linkType)
                                       ? 'bg-gray-50 text-dwdarkblue'
                                       : item.linkType === 'external'
                                         ? 'text-gray-700 hover:text-dwdarkblue'
@@ -170,7 +172,7 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
                                 >
                                   <item.icon
                                     className={classNames(
-                                      item.current
+                                      isCurrent(item.href, item.linkType)
                                         ? 'text-dwdarkblue'
                                         : 'text-gray-400 group-hover:text-dwdarkblue',
                                       'h-6 w-6 shrink-0'
@@ -178,7 +180,7 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
                                     aria-hidden="true"
                                   />
                                   {item.name}
-                                </a>
+                                </Link>
                               </li>
                             ))}
                           </ul>
@@ -209,11 +211,13 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
                   <ul role="list" className="-mx-2 space-y-1">
                     {navigation.map((item) => (
                       <li key={item.name}>
-                        {!item.children || !DISPLAY_CHILDREN ? (
-                          <a
-                            href={item.href}
+                        {!item?.children ? (
+                          <Link
+                            to={item.href}
                             className={classNames(
-                              item.current ? 'bg-gray-50' : 'hover:bg-gray-50',
+                              isCurrent(item.href, item.linkType)
+                                ? 'bg-gray-50'
+                                : 'hover:bg-gray-50',
                               'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold text-gray-700'
                             )}
                           >
@@ -222,14 +226,16 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
                               aria-hidden="true"
                             />
                             {item.name}
-                          </a>
+                          </Link>
                         ) : (
                           <Disclosure as="div">
                             {({ open }) => (
                               <>
                                 <Disclosure.Button
                                   className={classNames(
-                                    item.current ? 'bg-gray-50' : 'hover:bg-gray-50',
+                                    isCurrent(item.href, item.linkType)
+                                      ? 'bg-gray-50'
+                                      : 'hover:bg-gray-50',
                                     'flex items-center w-full text-left rounded-md p-2 gap-x-3 text-sm leading-6 font-semibold text-gray-700'
                                   )}
                                 >
@@ -249,17 +255,17 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
                                 <Disclosure.Panel as="ul" className="mt-1 px-2">
                                   {item.children.map((subItem) => (
                                     <li key={subItem.name}>
-                                      {/* 44px */}
-                                      <Disclosure.Button
-                                        as="a"
-                                        href={subItem.href}
+                                      <Link
+                                        to={subItem.href}
                                         className={classNames(
-                                          subItem.current ? 'bg-gray-50' : 'hover:bg-gray-50',
+                                          isCurrent(subItem.href, subItem.linkType)
+                                            ? 'bg-gray-50'
+                                            : 'hover:bg-gray-50',
                                           'block rounded-md py-2 pr-2 pl-9 text-sm leading-6 text-gray-700'
                                         )}
                                       >
                                         {subItem.name}
-                                      </Disclosure.Button>
+                                      </Link>
                                     </li>
                                   ))}
                                 </Disclosure.Panel>
