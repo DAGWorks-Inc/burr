@@ -64,6 +64,7 @@ tracking-server = [
   "aiofiles",
   "requests",
   "jinja2",
+  "openai", # temporary for the demo, we will likely remove
 ]
 
 tracking = [

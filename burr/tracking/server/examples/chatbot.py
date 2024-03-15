@@ -6,9 +6,8 @@ from fastapi import FastAPI
 from starlette.requests import Request
 
 from burr.core import Application, State
+from burr.examples.gpt import application as chat_application
 from burr.tracking import LocalTrackingClient
-
-from examples.gpt import application as chat_application
 
 
 class ChatItem(pydantic.BaseModel):
