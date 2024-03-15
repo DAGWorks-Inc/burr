@@ -748,7 +748,7 @@ class Application:
             raise ValueError(
                 f"Cannot stream result -- no next action found! Prior action was: {self._state[PRIOR_STEP]}"
             )
-
+        self._increment_sequence_id()  # TODO: is this in the right place?
         if next_action.name not in halt_after:
             # fast forward until we get to the action
             next_action, results, state = self.run(
@@ -842,7 +842,6 @@ class Application:
                 sequence_id=self.sequence_id,
                 exception=e,
             )
-            self._increment_sequence_id()
             raise
         return next_action, StreamingResultContainer(
             generator, self._state, process_result, callback
@@ -1236,7 +1235,7 @@ class ApplicationBuilder:
             if persister not in self.lifecycle_adapters:
                 self.lifecycle_adapters.append(persister)
         else:
-            # TODO: wrap in one
+            # TODO: pull this out more formally
             class persisterWrapper(PostRunStepHook):
                 def post_run_step(
                     self,
@@ -1250,7 +1249,13 @@ class ApplicationBuilder:
                     **future_kwargs: Any,
                 ):
                     if exception is None:
-                        persister.save(partition_key, app_id, sequence_id, action.name, state)
+                        persister.save(
+                            partition_key, app_id, sequence_id, action.name, state, "completed"
+                        )
+                    else:
+                        persister.save(
+                            partition_key, app_id, sequence_id, action.name, state, "failed"
+                        )
 
             self.lifecycle_adapters.append(persisterWrapper())
         return self
@@ -1259,13 +1264,14 @@ class ApplicationBuilder:
     def build(self) -> Application:
         """Builds the application.
 
+        This function is a bit messy as we iron out the exact logic and rigor we want around things.
+
         :return: The application object
         """
         _validate_actions(self.actions)
         actions_by_name = {action.name: action for action in self.actions}
         all_actions = set(actions_by_name.keys())
         _validate_transitions(self.transitions, all_actions)
-        _validate_start(self.start, all_actions)
         _validate_app_id(self.app_id)
 
         loaded_sequence_id = None
@@ -1275,9 +1281,21 @@ class ApplicationBuilder:
             if load_result is None:
                 self.state = self.state.update(**self.default_state)
             else:
-                last_position, self.state, loaded_sequence_id = load_result
+                last_position = load_result["position"]
+                self.state = load_result["state"]
+                loaded_sequence_id = load_result["sequence_id"]
+                status = load_result["status"]
                 if self.resume_at_next_action:
-                    self.state = self.state.update(**{PRIOR_STEP: last_position})
+                    if status == "completed":
+                        self.state = self.state.update(**{PRIOR_STEP: last_position})
+                    else:
+                        # if failed we just start at that node
+                        self.start = last_position
+                        self.state = self.state.wipe(delete=[PRIOR_STEP])
+                else:
+                    # self.start is already set to the default. We don't need to do anything.
+                    pass
+        _validate_start(self.start, all_actions)
 
         if self.sequence_id is None:
             self.sequence_id = loaded_sequence_id if loaded_sequence_id else 0

@@ -4,7 +4,7 @@ import dataclasses
 import json
 import logging
 import sqlite3
-from typing import Any, Dict, Iterator, Mapping, Optional, Tuple
+from typing import Any, Dict, Iterator, Literal, Mapping, Optional, TypedDict
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +121,7 @@ class DeleteField(StateDelta):
     def apply_mutate(self, inputs: dict):
         for key in self.keys:
             inputs.pop(key, None)
+        print(inputs)
 
 
 class State(Mapping):
@@ -200,6 +201,16 @@ class State(Mapping):
         return self.get_all().__repr__()  # quick hack
 
 
+class PersistenceDict(TypedDict):
+    partition_key: str
+    app_id: str
+    sequence_id: int
+    position: str
+    state: State
+    created_at: str
+    status: str
+
+
 class BasicStatePersistence(abc.ABC):
     """Basic Interface for state persistence.
 
@@ -218,7 +229,7 @@ class BasicStatePersistence(abc.ABC):
     @abc.abstractmethod
     def load(
         self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None
-    ) -> Optional[Tuple[str, State, int]]:
+    ) -> Optional[PersistenceDict]:
         """Loads the state for a given app_id
 
         :param partition_key: the partition key. Note this could be None, but it's up to the persistor to whether
@@ -238,6 +249,7 @@ class BasicStatePersistence(abc.ABC):
         sequence_id: int,
         position: str,
         state: State,
+        status: Literal["completed", "failed"],
     ):
         """Saves the state for a given app_id, sequence_id, position
 
@@ -251,6 +263,7 @@ class BasicStatePersistence(abc.ABC):
         :param sequence_id:
         :param position:
         :param state:
+        :param status:
         """
         pass
 
@@ -280,9 +293,10 @@ class SQLLitePersistence(BasicStatePersistence):
                 app_id TEXT NOT NULL,
                 sequence_id INTEGER NOT NULL,
                 position TEXT NOT NULL,
+                status TEXT NOT NULL,
                 state TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (partition_key, app_id, sequence_id, position)
+                PRIMARY KEY (partition_key, app_id, sequence_id, position, state)
             )"""
         )
         cursor.execute(
@@ -313,7 +327,7 @@ class SQLLitePersistence(BasicStatePersistence):
 
     def load(
         self, partition_key: str, app_id: str, sequence_id: int = None
-    ) -> Optional[Tuple[str, State, int]]:
+    ) -> Optional[PersistenceDict]:
         """Loads state for a given partition id.
 
         Depending on the parameters, this will return the last thing written, the last thing written for a given app_id,
@@ -330,21 +344,21 @@ class SQLLitePersistence(BasicStatePersistence):
         if app_id is None:
             # get latest for all app_ids
             cursor.execute(
-                f"SELECT position, state, sequence_id, app_id, created_at FROM {self.table_name} "
+                f"SELECT position, state, sequence_id, app_id, created_at, status FROM {self.table_name} "
                 f"WHERE partition_key = ? "
                 f"ORDER BY CREATED_AT DESC LIMIT 1",
                 (partition_key,),
             )
         elif sequence_id is None:
             cursor.execute(
-                f"SELECT position, state, sequence_id, created_at FROM {self.table_name} "
+                f"SELECT position, state, sequence_id, app_id, created_at, status FROM {self.table_name} "
                 f"WHERE partition_key = ? AND app_id = ? "
                 f"ORDER BY sequence_id DESC LIMIT 1",
                 (partition_key, app_id),
             )
         else:
             cursor.execute(
-                f"SELECT position, state, seqeuence_id, created_at FROM {self.table_name} "
+                f"SELECT position, state, seqeuence_id, app_id, created_at, status FROM {self.table_name} "
                 f"WHERE partition_key = ? AND app_id = ? AND sequence_id = ?",
                 (partition_key, app_id, sequence_id),
             )
@@ -353,9 +367,25 @@ class SQLLitePersistence(BasicStatePersistence):
         if row is None:
             return None
         _state = State(json.loads(row[1])["_state"])
-        return row[0], _state, row[2]
+        return {
+            "partition_key": partition_key,
+            "app_id": row[3],
+            "sequence_id": row[2],
+            "position": row[0],
+            "state": _state,
+            "created_at": row[4],
+            "status": row[5],
+        }
 
-    def save(self, partition_key: str, app_id: str, sequence_id: int, position: str, state: State):
+    def save(
+        self,
+        partition_key: str,
+        app_id: str,
+        sequence_id: int,
+        position: str,
+        state: State,
+        status: Literal["completed", "failed"],
+    ):
         """
         Saves the state for a given app_id, sequence_id, and position.
 
@@ -369,18 +399,26 @@ class SQLLitePersistence(BasicStatePersistence):
         :param sequence_id: The state corresponding to a specific point in time.
         :param position: The position in the sequence of states.
         :param state: The state to be saved, an instance of the State class.
+        :param status: The status of this state, either "completed" or "failed". If "failed" the state is what it was
+            before the action was applied.
         :return: None
         """
         logger.debug(
-            "saving %s, %s, %s, %s, %s", partition_key, app_id, sequence_id, position, state
+            "saving %s, %s, %s, %s, %s, %s",
+            partition_key,
+            app_id,
+            sequence_id,
+            position,
+            state,
+            status,
         )
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         json_state = json.dumps(state.__dict__)
         cursor.execute(
-            f"INSERT INTO {self.table_name} (partition_key, app_id, sequence_id, position, state) "
-            f"VALUES (?, ?, ?, ?, ?)",
-            (partition_key, app_id, sequence_id, position, json_state),
+            f"INSERT INTO {self.table_name} (partition_key, app_id, sequence_id, position, state, status) "
+            f"VALUES (?, ?, ?, ?, ?, ?)",
+            (partition_key, app_id, sequence_id, position, json_state, status),
         )
         conn.commit()
         conn.close()
