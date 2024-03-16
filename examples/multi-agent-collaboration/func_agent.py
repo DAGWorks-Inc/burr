@@ -92,9 +92,11 @@ def base_system_prompt(tool_names: list[str], system_message: str) -> str:
         " Use the provided tools to progress towards answering the question."
         " If you are unable to fully answer, that's OK, another assistant with different tools "
         " will help where you left off. Execute what you can to make progress.\n\n"
-        " If you or any of the other assistants have the final answer or deliverable,"
-        " prefix your response with FINAL ANSWER so the team knows to stop.\n\n"
-        f" You have access to the following tools: {tool_names}.\n{system_message}"
+        "If you or any of the other assistants have the final answer or deliverable,"
+        " prefix your response with 'FINAL ANSWER' so the team knows to stop.\n\n"
+        f"You have access to the following tools: {tool_names}.\n{system_message}\n\n"
+        "Remember to prefix your response with 'FINAL ANSWER' if you or another assistant "
+        "thinks the task is complete; assume the user can visualize the result."
     )
 
 
@@ -135,12 +137,11 @@ def llm_function_response(
     message_history: list[dict],
     tool_function_specs: list[dict],
     llm_client: openai.OpenAI,
-) -> object:
+) -> openai.types.chat.chat_completion.ChatCompletion:
     """Creates the function response from the LLM model for the given prompt & functions.
 
-    :param base_system_prompt:
+    :param message_history:
     :param tool_function_specs:
-    :param user_query:
     :param llm_client:
     :return:
     """
@@ -150,16 +151,18 @@ def llm_function_response(
         tools=tool_function_specs,
         tool_choice="auto",
     )
-    response_message = response.choices[0].message
-    return response_message
+    return response
     # tool_calls = response_message.tool_calls
     # return response.choices[0].message.content
 
 
-def llm_function_message(llm_function_response: object) -> dict:
-    if llm_function_response.tool_calls:
+def llm_function_message(
+    llm_function_response: openai.types.chat.chat_completion.ChatCompletion,
+) -> dict:
+    response_message = llm_function_response.choices[0].message
+    if response_message.tool_calls:
         return {
-            "role": llm_function_response.role,
+            "role": response_message.role,
             "content": None,
             "tool_calls": [
                 {
@@ -167,22 +170,25 @@ def llm_function_message(llm_function_response: object) -> dict:
                     "type": "function",
                     "function": {"name": t.function.name, "arguments": t.function.arguments},
                 }
-                for t in llm_function_response.tool_calls
+                for t in response_message.tool_calls
             ],
         }
     return {
         "role": "assistant",
-        "content": llm_function_response.content,
+        "content": response_message.content,
     }
 
 
-def parsed_tool_calls(llm_function_response: object) -> list[dict]:
+def parsed_tool_calls(
+    llm_function_response: openai.types.chat.chat_completion.ChatCompletion,
+) -> list[dict]:
     """Parses the tool calls from the LLM response message.
 
     :param llm_function_response: The response from the LLM model.
     :return: The parsed tool calls.
     """
-    tool_calls = llm_function_response.tool_calls
+    response_message = llm_function_response.choices[0].message
+    tool_calls = response_message.tool_calls
     parsed_calls = []
     if tool_calls:
         for tool_call in tool_calls:
