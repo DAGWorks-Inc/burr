@@ -1,7 +1,8 @@
 import json
+from typing import Any, Dict, Optional
 
 import func_agent
-from hamilton import driver
+from hamilton import driver, lifecycle
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_experimental.utilities import PythonREPL
 
@@ -9,9 +10,57 @@ from burr import core
 from burr.core import Action, ApplicationBuilder, State, action, default
 from burr.lifecycle import PostRunStepHook
 from burr.tracking import client as burr_tclient
+from burr.visibility import ActionSpanTracer, TracerFactory
 
-# Initialize some things needed for tools.
-tool_dag = driver.Builder().with_modules(func_agent).build()
+
+class SimpleTracer(lifecycle.NodeExecutionHook):
+    """Simple Hamilton Tracer"""
+
+    def __init__(self, tracer: TracerFactory):
+        self._tracer: TracerFactory = tracer
+        self.active_spans = {}
+
+    def run_before_node_execution(
+        self,
+        *,
+        node_name: str,
+        node_tags: Dict[str, Any],
+        node_kwargs: Dict[str, Any],
+        node_return_type: type,
+        task_id: Optional[str],
+        run_id: str,
+        node_input_types: Dict[str, Any],
+        **future_kwargs: Any,
+    ):
+        context_manager: ActionSpanTracer = self._tracer(node_name)
+        context_manager.__enter__()
+        self.active_spans[node_name] = context_manager
+
+    def run_after_node_execution(
+        self,
+        *,
+        node_name: str,
+        node_tags: Dict[str, Any],
+        node_kwargs: Dict[str, Any],
+        node_return_type: type,
+        result: Any,
+        error: Optional[Exception],
+        success: bool,
+        task_id: Optional[str],
+        run_id: str,
+        **future_kwargs: Any,
+    ):
+        context_manager = self.active_spans.pop(node_name)
+        context_manager.__exit__(None, None, None)
+
+
+def initialize_tool_dag(agent_name: str, tracer: TracerFactory) -> driver.Driver:
+    tracer = SimpleTracer(tracer)
+    # Initialize some things needed for tools.
+    tool_dag = driver.Builder().with_modules(func_agent).with_adapters(tracer).build()
+    return tool_dag
+
+
 repl = PythonREPL()
 
 
@@ -30,13 +79,14 @@ def python_repl(code: str) -> dict:
 
 
 @action(reads=["query", "messages"], writes=["messages", "next_hop"])
-def chart_generator(state: State) -> tuple[dict, State]:
+def chart_generator(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
     query = state["query"]
+    tool_dag = initialize_tool_dag("chart_generator", __tracer)
     result = tool_dag.execute(
         ["parsed_tool_calls", "llm_function_message"],
         inputs={
             "tools": [python_repl],
-            "system_message": "Any charts you display will be visible by the user.",
+            "system_message": "Any charts you display will be visible by the user. When done say 'FINAL ANSWER'.",
             "user_query": query,
             "messages": state["messages"],
         },
@@ -54,13 +104,14 @@ tavily_tool = TavilySearchResults(max_results=5)
 
 
 @action(reads=["query", "messages"], writes=["messages", "next_hop"])
-def researcher(state: State) -> tuple[dict, State]:
+def researcher(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
     query = state["query"]
+    tool_dag = initialize_tool_dag("researcher", __tracer)
     result = tool_dag.execute(
         ["parsed_tool_calls", "llm_function_message"],
         inputs={
             "tools": [tavily_tool],
-            "system_message": "You should provide accurate data for the chart generator to use.",
+            "system_message": "You should provide accurate data for the chart generator to use. When done say 'FINAL ANSWER'.",
             "user_query": query,
             "messages": state["messages"],
         },
@@ -134,21 +185,23 @@ def default_state_and_entry_point() -> tuple[dict, str]:
         "messages": [],
         "query": "Fetch the UK's GDP over the past 5 years,"
         " then draw a line graph of it."
-        " Once you code it up, finish.",
+        " Once the python code has been written and the graph drawn, the task is complete.",
         "sender": "",
         "parsed_tool_calls": [],
     }, "researcher"
 
 
-def main(app_instance_id: str = None):
+def main(app_instance_id: str = None, sequence_number: int = -1):
     project_name = "demo:hamilton-multi-agent-v1"
     if app_instance_id:
         state, entry_point = burr_tclient.LocalTrackingClient.load_state(
-            project_name, app_instance_id
+            project_name, app_instance_id, sequence_no=sequence_number
         )
     else:
         state, entry_point = default_state_and_entry_point()
-
+    # look up app_id for particular user
+    # if None -- then proceed with defaults
+    # else load from state, and set entry point
     app = (
         ApplicationBuilder()
         .with_state(**state)
@@ -190,8 +243,12 @@ def main(app_instance_id: str = None):
 if __name__ == "__main__":
     # Add an app_id to restart from last sequence in that state
     # e.g. fine the ID in the UI and then put it in here "app_f0e4a918-b49c-4ee1-9d2b-30c15104c51c"
-    _app_id = None  # "app_fb52ca3b-9198-4e5a-9ee0-9c07df1d7edd"
-    main(_app_id)
+    # _app_id = None  # "app_4ed5b3b3-0f38-4b37-aed7-559d506174c7"
+    _app_id = "app_4ed5b3b3-0f38-4b37-aed7-559d506174c7"
+    # _sequence_no = None  # 23
+    _sequence_no = 23
+    main(None, None)
+    # main(_app_id, _sequence_no)
 
     # some test code
     # tavily_tool = TavilySearchResults(max_results=5)

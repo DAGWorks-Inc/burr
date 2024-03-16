@@ -1,8 +1,11 @@
 import json
-from typing import Annotated
+from typing import Annotated, Any, Optional
+from uuid import UUID
 
 from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import FunctionMessage, HumanMessage
+from langchain_core.outputs import LLMResult
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.tools import tool
 from langchain_core.utils.function_calling import convert_to_openai_function
@@ -14,12 +17,51 @@ from burr import core
 from burr.core import Action, State, action, default, expr
 from burr.lifecycle import PostRunStepHook
 from burr.tracking import client as burr_tclient
+from burr.visibility import ActionSpanTracer, TracerFactory
 
 tavily_tool = TavilySearchResults(max_results=5)
 
 # Warning: This executes code locally, which can be unsafe when not sandboxed
 
 repl = PythonREPL()
+
+
+class LangChainTracer(BaseCallbackHandler):
+    def __init__(self, tracer: TracerFactory):
+        self._tracer: TracerFactory = tracer
+        self.active_spans = {}
+
+    def on_llm_start(self, serialized: dict[str, Any], prompts: list[str], **kwargs: Any) -> Any:
+        """Run when LLM starts running."""
+        # print("LLM STARTED")
+        # print(prompts)
+        # print(serialized)
+        # print(kwargs)
+        model_name = kwargs["invocation_params"]["model_name"]
+        run_id = kwargs["run_id"]
+        name = (model_name + "_" + str(run_id))[:30]
+        context_manager: ActionSpanTracer = self._tracer(name)
+        context_manager.__enter__()
+        self.active_spans[name] = context_manager
+
+    def on_llm_end(
+        self,
+        response: LLMResult,
+        *,
+        run_id: UUID,
+        parent_run_id: Optional[UUID] = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Run when LLM ends running."""
+        # print("LLM ENDED")
+        # print(response)
+        # print(run_id)
+        # print(parent_run_id)
+        # print(kwargs)
+        model_name = response.llm_output["model_name"]
+        name = (model_name + "_" + str(run_id))[:30]
+        context_manager = self.active_spans.pop(name)
+        context_manager.__exit__(None, None, None)
 
 
 def create_agent(llm, tools, system_message: str):
@@ -58,8 +100,9 @@ def python_repl(code: Annotated[str, "The python code to execute to generate you
 
 
 # Helper function to create a node for a given agent
-def _agent_node(messages: list, sender: str, agent, name: str) -> dict:
-    result = agent.invoke({"messages": messages, "sender": sender})
+def _agent_node(messages: list, sender: str, agent, name: str, tracer: TracerFactory) -> dict:
+    tracer = LangChainTracer(tracer)
+    result = agent.invoke({"messages": messages, "sender": sender}, config={"callbacks": [tracer]})
     # We convert the agent output into a format that is suitable to append to the global state
     if isinstance(result, FunctionMessage):
         pass
@@ -88,15 +131,17 @@ chart_agent = create_agent(
 
 
 @action(reads=["messages", "sender"], writes=["messages", "sender"])
-def research_node(state: State) -> tuple[dict, State]:
+def research_node(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
     # Research agent and node
-    result = _agent_node(state["messages"], state["sender"], research_agent, "Researcher")
+    result = _agent_node(state["messages"], state["sender"], research_agent, "Researcher", __tracer)
     return result, state.append(messages=result["messages"]).update(sender="Researcher")
 
 
 @action(reads=["messages", "sender"], writes=["messages", "sender"])
-def chart_node(state: State) -> tuple[dict, State]:
-    result = _agent_node(state["messages"], state["sender"], chart_agent, "Chart Generator")
+def chart_node(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
+    result = _agent_node(
+        state["messages"], state["sender"], chart_agent, "Chart Generator", __tracer
+    )
     return result, state.append(messages=result["messages"]).update(sender="Chart Generator")
 
 
