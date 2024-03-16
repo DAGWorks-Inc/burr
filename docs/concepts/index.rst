@@ -15,6 +15,7 @@ Overview of the concepts -- read these to get a mental model for how Burr works.
     transitions
     hooks
     tracking
+    state-persistence
     streaming-actions
     additional-visibility
     planned-capabilities

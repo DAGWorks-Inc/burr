@@ -41,6 +41,6 @@ If you're used to thinking about version control, this is a bit like a commit/ch
 
 Reloading Prior State
 ---------------------
-Note, if state is serializeable, it means that if stored, it can be reloaded. This is useful for
-reloading state from a previous run (for debugging or as part of the application), or for storing state in a database.
-We are building more capabilties here, for now for debugging purposes, see the :ref:`tracking <trackingclientref>` section.
+Note, if state is serializable, it means that if stored, it can be reloaded. This is useful for
+reloading state from a previous invocation (for debugging or as part of the application), or for storing state in a database.
+We have capabilities here, see the :ref:`state-persistence <state-persistence>` section.
