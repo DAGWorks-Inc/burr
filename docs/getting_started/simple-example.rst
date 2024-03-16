@@ -55,7 +55,7 @@ Next, let's put together our application. To do this, we'll use an ``Application
             ("count", "count", expr("counter < 10")), # Keep counting if the counter is less than 10
             ("count", "done", default) # Otherwise, we're done
         ).with_entrypoint("count") # we have to start somewhere
-        .with_tracker("my_first_app")
+        .with_tracker(project="my_first_app")
         .build()
     )
 
@@ -124,7 +124,7 @@ If you want to copy/paste, you can open up the following code block and add to a
                     ("count", "count", expr("counter < 10")),  # Keep counting if the counter is less than 10
                     ("count", "done", default)  # Otherwise, we're done
                 ).with_entrypoint("count")  # we have to start somewhere
-                .with_tracker("my_first_app")
+                .with_tracker(project="my_first_app")
                 .build()
             )
             app.visualize("./graph", format="png", include_conditions=True, include_state=True)
