@@ -18,7 +18,7 @@ from typing import (
     cast,
 )
 
-from burr import visibility
+from burr import telemetry, visibility
 from burr.core.action import (
     Action,
     Condition,
@@ -255,6 +255,8 @@ class Application:
             )
         }
 
+    # @telemetry.capture_function_usage # todo -- capture usage when we break this up into one that isn't called internally
+    # This will be doable when we move sequence ID to the beginning of the function https://github.com/DAGWorks-Inc/burr/pull/73
     def step(self, inputs: Optional[Dict[str, Any]] = None) -> Optional[Tuple[Action, dict, State]]:
         """Performs a single step, advancing the state machine along.
         This returns a tuple of the action that was run, the result of running
@@ -358,6 +360,8 @@ class Application:
             )
         return processed_inputs
 
+    # @telemetry.capture_function_usage
+    # ditto with step()
     async def astep(self, inputs: Dict[str, Any] = None) -> Optional[Tuple[Action, dict, State]]:
         """Asynchronous version of step.
 
@@ -492,6 +496,7 @@ class Application:
         )
         return prior_action, result, self._state
 
+    @telemetry.capture_function_usage
     def iterate(
         self,
         *,
@@ -528,6 +533,7 @@ class Application:
                 break
         return self._return_value_iterate(halt_before, halt_after, prior_action, result)
 
+    @telemetry.capture_function_usage
     async def aiterate(
         self,
         *,
@@ -557,6 +563,7 @@ class Application:
             if self._should_halt_iterate(halt_before, halt_after, prior_action):
                 break
 
+    @telemetry.capture_function_usage
     def run(
         self,
         *,
@@ -580,6 +587,7 @@ class Application:
             except StopIteration as e:
                 return e.value
 
+    @telemetry.capture_function_usage
     async def arun(
         self,
         *,
@@ -615,6 +623,7 @@ class Application:
                 f"Actions found: {[action.name for action in self._actions]}"
             )
 
+    @telemetry.capture_function_usage
     def stream_result(
         self,
         halt_after: list[str],
@@ -830,6 +839,7 @@ class Application:
             generator, self._state, process_result, callback
         )
 
+    @telemetry.capture_function_usage
     async def astream_result(
         self,
         halt_after: list[str],
@@ -842,6 +852,7 @@ class Application:
             " for details. Please comment or vote to get it implemented quickly!"
         )
 
+    @telemetry.capture_function_usage
     def visualize(
         self,
         output_file_path: Optional[str],
@@ -1149,6 +1160,7 @@ class ApplicationBuilder:
             raise ValueError(f"Tracker {tracker} not supported")
         return self
 
+    @telemetry.capture_function_usage
     def build(self) -> Application:
         """Builds the application.
 
