@@ -8,6 +8,7 @@ import webbrowser
 from contextlib import contextmanager
 from importlib.resources import files
 
+from burr import telemetry
 from burr.integrations.base import require_plugin
 
 try:
@@ -20,6 +21,12 @@ except ImportError as e:
         ["click", "requests", "loguru"],
         "start",
     )
+
+
+# TODO -- add this as a general callback to the CLI
+def _telemetry_if_enabled(event: str):
+    if telemetry.is_telemetry_enabled():
+        telemetry.create_and_send_cli_event(event)
 
 
 def _command(command: str, capture_output: bool) -> str:
@@ -95,6 +102,7 @@ def build_ui():
 @click.option("--no-open", is_flag=True, help="Run the server without opening it")
 @click.option("--no-copy-demo_data", is_flag=True, help="Don't copy demo data over.")
 def run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: bool):
+    _telemetry_if_enabled("run_server")
     # TODO: Implement server running logic here
     # Example: Start a web server, configure ports, etc.
     logger.info(f"Starting server on port {port}")
@@ -127,6 +135,7 @@ def run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: bool
 @click.option("--prod", is_flag=True, help="Publish to pypi (rather than test pypi)")
 @click.option("--no-wipe-dist", is_flag=True, help="Wipe the dist/ directory before building")
 def build_and_publish(prod: bool, no_wipe_dist: bool):
+    _telemetry_if_enabled("build_and_publish")
     git_root = _get_git_root()
     with cd(git_root):
         logger.info("Building UI -- this may take a bit...")
@@ -143,6 +152,7 @@ def build_and_publish(prod: bool, no_wipe_dist: bool):
 
 @cli.command(help="generate demo data for the UI")
 def generate_demo_data():
+    _telemetry_if_enabled("generate_demo_data")
     git_root = _get_git_root()
     # We need to add the examples directory to the path so we have all the imports
     # The GPT-one relies on a local import
