@@ -86,6 +86,14 @@ class ApplicationModel(IdentifyingModel):
         )
 
 
+class ApplicationMetadataModel(IdentifyingModel):
+    """Pydantic model that represents metadata for an application.
+    We will want to add tags here when we have them."""
+
+    partition_key: Optional[str]
+    type: str = "application_metadata"
+
+
 INPUT_FILTERLIST = {"__tracer"}
 
 

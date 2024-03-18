@@ -3,10 +3,10 @@
 /* tslint:disable */
 /* eslint-disable */
 export type ApplicationSummary = {
-    app_id: string;
-    first_written: string;
-    last_written: string;
-    num_steps: number;
-    tags: Record<string, string>;
+  app_id: string;
+  partition_key: string | null;
+  first_written: string;
+  last_written: string;
+  num_steps: number;
+  tags: Record<string, string>;
 };
-

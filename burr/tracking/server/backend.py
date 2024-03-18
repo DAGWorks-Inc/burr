@@ -7,6 +7,7 @@ import aiofiles
 import aiofiles.os as aiofilesos
 import fastapi
 
+from burr.tracking.common import models
 from burr.tracking.common.models import BeginEntryModel, BeginSpanModel, EndEntryModel, EndSpanModel
 from burr.tracking.server import schema
 from burr.tracking.server.schema import ApplicationLogs, ApplicationSummary
@@ -119,11 +120,20 @@ class LocalBackend(BackendBase):
                 # skip hidden files/directories
                 continue
             full_path = os.path.join(project_filepath, entry)
+            metadata_path = os.path.join(full_path, "metadata.json")
             log_path = os.path.join(full_path, "log.jsonl")
             if os.path.isdir(full_path):
+                if os.path.exists(metadata_path):
+                    async with aiofiles.open(metadata_path) as f:
+                        metadata = models.ApplicationMetadataModel.parse_obj(
+                            json.loads(await f.read())
+                        )
+                else:
+                    metadata = models.ApplicationMetadataModel()  # backwards compatibility
                 out.append(
                     schema.ApplicationSummary(
                         app_id=entry,
+                        partition_key=metadata.partition_key,
                         first_written=await aiofilesos.path.getctime(full_path),
                         last_written=await aiofilesos.path.getmtime(full_path),
                         num_steps=await self.get_max_sequence_id(log_path),

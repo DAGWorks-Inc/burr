@@ -87,12 +87,13 @@ def generate_chatbot_data(data_dir: str, use_traces: bool):
 
 def generate_counter_data(data_dir: str = "~/.burr"):
     counts = [1, 10, 100, 50, 42]
-    for count in counts:
+    for i, count in enumerate(counts):
         app = counter_application.application(
             count_up_to=count,
             app_id=f"count-to-{count}",
             storage_dir=data_dir,
             hooks=[ProgressHook()],
+            partition_key=f"user_{i}",
         )
         app.run(halt_after=["result"])
 
