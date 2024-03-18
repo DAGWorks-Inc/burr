@@ -32,6 +32,7 @@ from burr.core.application import (
     _validate_start,
     _validate_transitions,
 )
+from burr.core.persistence import DevNullPersister
 from burr.lifecycle import (
     PostRunStepHook,
     PostRunStepHookAsync,
@@ -1430,3 +1431,13 @@ async def test_application_gives_graph():
     assert len(graph.actions) == 2
     assert len(graph.transitions) == 2
     assert graph.entrypoint.name == "counter"
+
+
+def test_application_builder_initialize_does_not_allow_state_setting():
+    with pytest.raises(ValueError, match="Cannot call initialize_from"):
+        ApplicationBuilder().with_entrypoint("foo").with_state(**{"foo": "bar"}).initialize_from(
+            DevNullPersister(),
+            resume_at_next_action=True,
+            default_state={},
+            default_entrypoint="foo",
+        )
