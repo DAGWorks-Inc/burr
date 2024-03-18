@@ -131,7 +131,7 @@ class PostApplicationCreateHook(abc.ABC):
         self,
         *,
         app_id: str,
-        partition_key: str,
+        partition_key: Optional[str],
         state: "State",
         application_graph: "ApplicationGraph",
         **future_kwargs: Any,
@@ -139,6 +139,8 @@ class PostApplicationCreateHook(abc.ABC):
         """Runs after an "application" object is instantiated. This is run by the Application, in its constructor,
         as the last step.
 
+        :param app_id: Application ID
+        :param partition_key: Partition key of application
         :param state: Current state of the application
         :param application_graph: Application graph of the application, representing the state machine
         :param future_kwargs: Future keyword arguments for backwards compatibility

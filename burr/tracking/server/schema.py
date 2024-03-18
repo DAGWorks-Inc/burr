@@ -23,6 +23,7 @@ class Project(pydantic.BaseModel):
 
 class ApplicationSummary(pydantic.BaseModel):
     app_id: str
+    partition_key: Optional[str]
     first_written: datetime.datetime
     last_written: datetime.datetime
     num_steps: int
