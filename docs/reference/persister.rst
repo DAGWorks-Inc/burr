@@ -2,20 +2,43 @@
 State Persistence
 =================
 
-This is an interface one should implement to provide state persistence for your
-application.
+Burr provides a set of tools to make loading and saving state easy. These are functions
+that will be used by lifecycle hooks to save and load state.
 
-.. autoclass:: burr.core.state.BasicStatePersistence
+If you want to implement your own state persister (to bridge it with a database), you should implement
+the ``BaseStatePersister`` interface.
+
+.. autoclass:: burr.core.persistence.BaseStatePersister
+   :members:
+   :show-inheritance:
+   :inherited-members:
+
+   .. automethod:: __init__
+
+Internally, this interface combines the following two interfaces:
+
+.. autoclass:: burr.core.persistence.BaseStateLoader
    :members:
 
    .. automethod:: __init__
+
+.. autoclass:: burr.core.persistence.BaseStateSaver
+    :members:
+    :show-inheritance:
+    :inherited-members:
+
+    .. automethod:: __init__
 
 
 Supported Implementations
 =========================
 
+Currently we support the following, although we highly recommend you contribute your own! We will be adding more shortly.
 
-.. autoclass:: burr.core.state.SQLLitePersistence
+.. autoclass:: burr.core.persistence.SQLLitePersister
    :members:
 
    .. automethod:: __init__
+
+Note that the :py:class:`LocalTrackingClient <burr.tracking.client.LocalTrackingClient>` leverages the :py:class:`BaseStateLoader <burr.core.persistence.BaseStateLoader>` to allow loading state,
+although it uses different mechanisms to save state (as it tracks more than just state).
