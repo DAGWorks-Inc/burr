@@ -4,8 +4,6 @@ Burr
 
 Welcome to Burr's documentation, the state machine for managing complex data/LLM projects.
 
-TODO: VIDEO.
-
 You'll find this documentation separated into three sections.
 
 - If you don't know where to start, go to :ref:`getting started <gettingstarted>`.
