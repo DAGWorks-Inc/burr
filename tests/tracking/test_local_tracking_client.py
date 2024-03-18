@@ -37,9 +37,8 @@ def sample_application(project_name: str, log_dir: str, app_id: str, broken: boo
             ("counter", "result", default),
         )
         .with_entrypoint("counter")
-        .with_tracker(
-            project=project_name, tracker="local", params={"storage_dir": log_dir, "app_id": app_id}
-        )
+        .with_tracker(project=project_name, tracker="local", params={"storage_dir": log_dir})
+        .with_identifiers(app_id=app_id)
         .build()
     )
 
