@@ -165,7 +165,8 @@ def base_application(hooks: List[LifecycleAdapter], app_id: str, storage_dir: st
             ("response", "prompt", default),
         )
         .with_hooks(*hooks)
-        .with_tracker(project="demo:chatbot", params={"app_id": app_id, "storage_dir": storage_dir})
+        .with_tracker(project="demo:chatbot", params={"storage_dir": storage_dir})
+        .with_identifiers(app_id=app_id)
         .build()
     )
 
@@ -231,7 +232,8 @@ def hamilton_application(hooks: List[LifecycleAdapter], app_id: str, storage_dir
             ("response", "prompt", default),
         )
         .with_hooks(*hooks)
-        .with_tracker(project="demo:chatbot", params={"app_id": app_id, "storage_dir": storage_dir})
+        .with_tracker(project="demo:chatbot", params={"storage_dir": storage_dir})
+        .with_identifiers(app_id=app_id)
         .build()
     )
     return application

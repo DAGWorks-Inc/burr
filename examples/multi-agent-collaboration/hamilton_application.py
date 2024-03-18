@@ -2,7 +2,8 @@ import json
 from typing import Any, Dict, Optional
 
 import func_agent
-from hamilton import driver, lifecycle
+from hamilton import driver
+from hamilton import lifecycle as h_lifecycle
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_experimental.utilities import PythonREPL
 
@@ -13,7 +14,7 @@ from burr.tracking import client as burr_tclient
 from burr.visibility import ActionSpanTracer, TracerFactory
 
 
-class SimpleTracer(lifecycle.NodeExecutionHook):
+class SimpleTracer(h_lifecycle.NodeExecutionHook):
     """Simple Hamilton Tracer"""
 
     def __init__(self, tracer: TracerFactory):

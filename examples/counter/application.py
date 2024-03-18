@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 import burr.core
 from burr.core import Application, Result, State, default, expr
 from burr.core.action import action
-from burr.core.state import SQLLitePersistence
+from burr.core.state import SQLLitePersister
 from burr.lifecycle import LifecycleAdapter
 
 logger = logging.getLogger(__name__)
@@ -13,9 +13,6 @@ logger = logging.getLogger(__name__)
 @action(reads=["counter"], writes=["counter"])
 def counter(state: State) -> Tuple[dict, State]:
     result = {"counter": state["counter"] + 1}
-    # import random
-    # if random.random() < 0.5:
-    #     raise ValueError("random error")
     print(f"counted to {result['counter']}")
     return result, state.update(**result)
 
@@ -27,7 +24,7 @@ def application(
     storage_dir: Optional[str] = "~/.burr",
     hooks: Optional[List[LifecycleAdapter]] = None,
 ) -> Application:
-    persister = SQLLitePersistence("demos.db", "counter")
+    persister = SQLLitePersister("demos.db", "counter")
     persister.initialize()
     logger.info(
         f"{partition_key} has these prior invocations: {persister.list_app_ids(partition_key)}"
@@ -44,7 +41,7 @@ def application(
             persister,
             resume_at_next_action=True,
             default_state={"counter": 0},
-            default_entry_point="counter",
+            default_entrypoint="counter",
         )
         .with_state_persister(persister)
         .with_tracker(project="demo:counter", params={"storage_dir": storage_dir})
