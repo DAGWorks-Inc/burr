@@ -1100,7 +1100,7 @@ def _validate_actions(actions: Optional[List[Action]]):
 
 class ApplicationBuilder:
     def __init__(self):
-        self.state: State = State()
+        self.state: Optional[State] = None
         self.transitions: Optional[List[Tuple[str, str, Condition]]] = None
         self.actions: Optional[List[Action]] = None
         self.start: Optional[str] = None
@@ -1109,8 +1109,8 @@ class ApplicationBuilder:
         self.partition_key: Optional[str] = None
         self.sequence_id: Optional[int] = None
         self.initializer = None
-        self.use_entrypoint_from_save_state: bool = None
-        self.default_state: dict = None
+        self.use_entrypoint_from_save_state: Optional[bool] = None
+        self.default_state: Optional[dict] = None
 
     def with_identifiers(
             self, app_id: str = None, partition_key: str = None, sequence_id: int = None
@@ -1369,6 +1369,8 @@ class ApplicationBuilder:
         all_actions = set(actions_by_name.keys())
         _validate_transitions(self.transitions, all_actions)
         _validate_app_id(self.app_id)
+        if self.state is None:
+            self.state = State()
 
         if self.initializer:
             # sets state, sequence_id, and maybe start

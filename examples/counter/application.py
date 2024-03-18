@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 import burr.core
 from burr.core import Application, Result, State, default, expr
 from burr.core.action import action
-from burr.core.state import SQLLitePersister
+from burr.core.persistence import SQLLitePersister
 from burr.lifecycle import LifecycleAdapter
 
 logger = logging.getLogger(__name__)
