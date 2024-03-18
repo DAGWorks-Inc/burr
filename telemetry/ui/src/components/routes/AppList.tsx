@@ -44,6 +44,7 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
     <Table>
       <TableHead>
         <TableRow>
+          <TableHeader>Partition Key</TableHeader>
           <TableHeader>ID</TableHeader>
           <TableHeader>First Seen</TableHeader>
           <TableHeader>Last Run</TableHeader>
@@ -64,6 +65,7 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
             className="hover:bg-gray-50 cursor-pointer"
             href={`/project/${props.projectId}/${app.app_id}`}
           >
+            <TableCell className="text-gray-600 font-sans">{app.partition_key}</TableCell>
             <TableCell className="font-semibold text-gray-700">{app.app_id}</TableCell>
             <TableCell>
               <DateTimeDisplay date={app.first_written} mode="long" />

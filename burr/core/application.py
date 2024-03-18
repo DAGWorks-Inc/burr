@@ -259,6 +259,7 @@ class Application:
             state=self._state,
             application_graph=self._graph,
             app_id=self._uid,
+            partition_key=self._partition_key,
         )
         # TODO -- consider adding global inputs + global input factories to the builder
         self.dependency_factory = {
