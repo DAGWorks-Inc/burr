@@ -3,11 +3,10 @@ import json
 import logging
 import os
 import traceback
-import uuid
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Optional
 
 from burr.core import Action, ApplicationGraph, State
-from burr.core.state import BasicStatePersistence, PersistenceDict
+from burr.core.persistence import BaseStateLoader, PersistedStateData
 from burr.integrations.base import require_plugin
 from burr.lifecycle import (
     PostApplicationCreateHook,
@@ -49,7 +48,7 @@ class LocalTrackingClient(
     PostRunStepHook,
     PreStartSpanHook,
     PostEndSpanHook,
-    BasicStatePersistence,
+    BaseStateLoader,
 ):
     """Tracker to track locally -- goes along with the Burr UI. Writes
     down the following:
@@ -65,7 +64,6 @@ class LocalTrackingClient(
         self,
         project: str,
         storage_dir: str = DEFAULT_STORAGE_DIR,
-        app_id: Optional[str] = None,
     ):
         """Instantiates a local tracking client. This will create the following directories, if they don't exist:
         #. The base directory (defaults to ~/.burr)
@@ -80,13 +78,9 @@ class LocalTrackingClient(
         :param app_id: Unique application ID. If not provided, a random one will be generated. If this already exists,
             it will use that one/append to the files in that one.
         """
-        if app_id is None:
-            app_id = f"app_{str(uuid.uuid4())}"
-        storage_dir = LocalTrackingClient.get_storage_path(project, storage_dir)
-        self.app_id = app_id
-        self.storage_dir = storage_dir
-        self._ensure_dir_structure()
-        self.f = open(os.path.join(self.storage_dir, self.app_id, self.LOG_FILENAME), "a")
+
+        self.f = None
+        self.storage_dir = LocalTrackingClient.get_storage_path(project, storage_dir)
 
     @classmethod
     def get_storage_path(cls, project, storage_dir):
@@ -147,19 +141,26 @@ class LocalTrackingClient(
             del prior_state[key]
         return prior_state, entry_point
 
-    def _ensure_dir_structure(self):
+    def _ensure_dir_structure(self, app_id: str):
         if not os.path.exists(self.storage_dir):
             logger.info(f"Creating storage directory: {self.storage_dir}")
             os.makedirs(self.storage_dir)
-        application_path = os.path.join(self.storage_dir, self.app_id)
+        application_path = os.path.join(self.storage_dir, app_id)
         if not os.path.exists(application_path):
             logger.info(f"Creating application directory: {application_path}")
             os.makedirs(application_path)
 
     def post_application_create(
-        self, *, state: "State", application_graph: "ApplicationGraph", **future_kwargs: Any
+        self,
+        *,
+        app_id: str,
+        state: "State",
+        application_graph: "ApplicationGraph",
+        **future_kwargs: Any,
     ):
-        path = os.path.join(self.storage_dir, self.app_id, self.GRAPH_FILENAME)
+        self._ensure_dir_structure(app_id)
+        self.f = open(os.path.join(self.storage_dir, app_id, self.LOG_FILENAME), "a")
+        path = os.path.join(self.storage_dir, app_id, self.GRAPH_FILENAME)
         if os.path.exists(path):
             logger.info(f"Graph already exists at {path}. Not overwriting.")
             return
@@ -242,11 +243,8 @@ class LocalTrackingClient(
         self._append_write_line(end_span_model)
 
     def __del__(self):
-        self.f.close()
-
-    def initialize(self):
-        # not needed because this one does things in the constructor
-        pass
+        if self.f is not None:
+            self.f.close()
 
     def list_app_ids(self, partition_key: str) -> list[str]:
         # TODO:
@@ -254,19 +252,7 @@ class LocalTrackingClient(
 
     def load(
         self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None
-    ) -> Optional[PersistenceDict]:
-        # TODO:
-        pass
-
-    def save(
-        self,
-        partition_key: Optional[str],
-        app_id: str,
-        sequence_id: int,
-        position: str,
-        state: State,
-        status: Literal["completed", "failed"],
-    ):
+    ) -> Optional[PersistedStateData]:
         # TODO:
         pass
 

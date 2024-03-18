@@ -20,6 +20,7 @@ from typing import (
 )
 
 from burr import visibility
+from burr.core import persistence
 from burr.core.action import (
     Action,
     Condition,
@@ -32,14 +33,8 @@ from burr.core.action import (
     create_action,
     default,
 )
-from burr.core.state import BasicStatePersistence, State
-from burr.lifecycle import (
-    PostApplicationCreateHook,
-    PostEndSpanHook,
-    PostRunStepHook,
-    PreRunStepHook,
-    PreStartSpanHook,
-)
+from burr.core.persistence import BaseStateLoader, BaseStateSaver
+from burr.core.state import State
 from burr.lifecycle.base import LifecycleAdapter
 from burr.lifecycle.internal import LifecycleAdapterSet
 
@@ -243,14 +238,13 @@ class Application:
         transitions: List[Transition],
         state: State,
         initial_step: str,
-        partition_key: str,
-        id: str,
-        sequence_id: int,
+        partition_key: Optional[str],
+        uid: str,
+        sequence_id: Optional[int],
         adapter_set: Optional[LifecycleAdapterSet] = None,
     ):
         self._partition_key = partition_key
-        self._id = id
-        self._sequence_id = sequence_id
+        self._uid = uid
         self._action_map = {action.name: action for action in actions}
         self._adjacency_map = Application._create_adjacency_map(transitions)
         self._transitions = transitions
@@ -260,7 +254,10 @@ class Application:
         self._adapter_set = adapter_set if adapter_set is not None else LifecycleAdapterSet()
         self._graph = self._create_graph()
         self._adapter_set.call_all_lifecycle_hooks_sync(
-            "post_application_create", state=self._state, application_graph=self._graph
+            "post_application_create",
+            state=self._state,
+            application_graph=self._graph,
+            app_id=self._uid,
         )
         # TODO -- consider adding global inputs + global input factories to the builder
         self.dependency_factory = {
@@ -268,6 +265,8 @@ class Application:
                 visibility.tracing.TracerFactory, lifecycle_adapters=self._adapter_set
             )
         }
+        if sequence_id is not None:
+            self._set_sequence_id(sequence_id)
 
     def step(self, inputs: Optional[Dict[str, Any]] = None) -> Optional[Tuple[Action, dict, State]]:
         """Performs a single step, advancing the state machine along.
@@ -306,7 +305,7 @@ class Application:
                 state=self._state,
                 inputs=inputs,
                 sequence_id=self.sequence_id,
-                app_id=self._id,
+                app_id=self._uid,
                 partition_key=self._partition_key,
             )
         exc = None
@@ -329,7 +328,7 @@ class Application:
             if _run_hooks:
                 self._adapter_set.call_all_lifecycle_hooks_sync(
                     "post_run_step",
-                    app_id=self._id,
+                    app_id=self._uid,
                     partition_key=self._partition_key,
                     action=next_action,
                     state=new_state,
@@ -397,7 +396,7 @@ class Application:
             state=self._state,
             inputs=inputs,
             sequence_id=self.sequence_id,
-            app_id=self._id,
+            app_id=self._uid,
             partition_key=self._partition_key,
         )
         exc = None
@@ -434,7 +433,7 @@ class Application:
                 result=result,
                 sequence_id=self.sequence_id,
                 exception=exc,
-                app_id=self._id,
+                app_id=self._uid,
                 partition_key=self._partition_key,
             )
 
@@ -746,12 +745,12 @@ class Application:
         )
 
         self._validate_streaming_inputs(halt_after)
+        self._increment_sequence_id()
         next_action = self.get_next_action()
         if next_action is None:
             raise ValueError(
                 f"Cannot stream result -- no next action found! Prior action was: {self._state[PRIOR_STEP]}"
             )
-        self._increment_sequence_id()  # TODO: is this in the right place?
         if next_action.name not in halt_after:
             # fast forward until we get to the action
             next_action, results, state = self.run(
@@ -770,7 +769,6 @@ class Application:
                     sequence_id=self.sequence_id,
                     exception=None,
                 )
-                self._increment_sequence_id()
                 return next_action, StreamingResultContainer.pass_through(
                     results=results, final_state=state
                 )
@@ -805,7 +803,6 @@ class Application:
                     exception=exc,
                 )
                 # we want to increment regardless of failure
-                self._increment_sequence_id()
 
             if not next_action.streaming:
                 # In this case we are halting at a non-streaming condition
@@ -819,7 +816,6 @@ class Application:
                     sequence_id=self.sequence_id,
                     exception=None,
                 )
-                self._increment_sequence_id()
                 return action, StreamingResultContainer.pass_through(
                     results=result, final_state=state
                 )
@@ -994,24 +990,43 @@ class Application:
     @property
     def sequence_id(self) -> Optional[int]:
         """gives the sequence ID of the current (next) action.
-        This is incremented after every step is taken -- meaning that incremeneting
-        it is the very last action that is done. Any logging, etc... will use the current
+        This is incremented prior to every step. Any logging, etc... will use the current
         step's sequence ID
 
-        :return:
+        :return: The sequence ID of the current (next) action
         """
-        return self._sequence_id
+        return self._state.get(SEQUENCE_ID)
 
     def _increment_sequence_id(self):
-        self._sequence_id = self._sequence_id + 1
-        self._state = self._state.update(**{SEQUENCE_ID: self.sequence_id})
+        if SEQUENCE_ID not in self._state:
+            self._state = self._state.update(**{SEQUENCE_ID: 0})
+        else:
+            self._state = self._state.update(**{SEQUENCE_ID: self.sequence_id + 1})
+
+    def _set_sequence_id(self, sequence_id: int):
+        self._state = self._state.update(**{SEQUENCE_ID: sequence_id})
 
     @property
-    def id(self) -> str:
-        return self._id
+    def uid(self) -> str:
+        """Unique ID for the application. This must be unique across *all* applications in a search space.
+        This is used by persistence/tracking to ensure that applications have meanings.
+
+        Every application has this -- if not assigned, it will be randomly generated.
+
+        :return: The unique ID for the application
+        """
+        return self._uid
 
     @property
-    def partition_key(self) -> str:
+    def partition_key(self) -> Optional[str]:
+        """Partition key for the application. This is designed to add semantic meaning to
+        the application, and be leveraged by persistence systems to select/find applications.
+
+        Note this is optional -- if it is not included, you will need to use a persister that
+        supports a null partition key.
+
+        :return: The partition key, None if not set
+        """
         return self._partition_key
 
 
@@ -1079,15 +1094,24 @@ class ApplicationBuilder:
         self.start: Optional[str] = None
         self.lifecycle_adapters: List[LifecycleAdapter] = list()
         self.app_id: str = str(uuid.uuid4())
-        self.partition_key: str = None
-        self.sequence_id: int = 0
-        self.persister = None
+        self.partition_key: Optional[str] = None
+        self.sequence_id: Optional[int] = None
+        self.initializer = None
         self.use_entrypoint_from_save_state: bool = None
         self.default_state: dict = None
 
     def with_identifiers(
         self, app_id: str = None, partition_key: str = None, sequence_id: int = None
     ) -> "ApplicationBuilder":
+        """Assigns various identifiers to the application. This is used for tracking, persistence, etc...
+
+        :param app_id: Application ID -- this will be assigned to a uuid if not set.
+        :param partition_key: Partition key -- this is used for disambiguating groups of applications. For instance, a unique user ID, etc...
+            This is coupled to persistence, and is used to query for/select application runs.
+        :param sequence_id: Sequence ID that we want this to start at. If you're using ``.initialize``, this will be set. Otherwise this is
+            solely for resetting/starting at a specified position.
+        :return: The application builder for future chaining.
+        """
         if app_id is not None:
             self.app_id = app_id
         if partition_key is not None:
@@ -1105,6 +1129,12 @@ class ApplicationBuilder:
         :param kwargs: Key-value pairs to set in the state
         :return: The application builder for future chaining.
         """
+        if self.initializer is not None:
+            raise ValueError(
+                "You cannot set state if you are loading state"
+                "the .initialize_from() API. Either allow the persister to set the "
+                "state, or set the state manually."
+            )
         if self.state is not None:
             self.state = self.state.update(**kwargs)
         else:
@@ -1119,6 +1149,12 @@ class ApplicationBuilder:
         :return: The application builder for future chaining.
         """
         # TODO -- validate only called once
+        if self.start is not None:
+            raise ValueError(
+                "You cannot set the entrypoint if you are loading a persister using "
+                "the .initialize_from() API. Either allow the persister to set the "
+                "entrypoint/provide a default, or set the entrypoint + state manually."
+            )
         self.start = action
         return self
 
@@ -1182,62 +1218,85 @@ class ApplicationBuilder:
 
     def with_tracker(
         self,
-        tracker: Union[Literal["local"], object] = "local",
+        tracker: Union[
+            Literal["local"], LifecycleAdapter
+        ] = "local",  # TODO -- tighten type-check for tracker. For now it has the lifecycle adapter
         project: str = "default",
         params: Dict[str, Any] = None,
     ):
         """Adds a "tracker" to the application. The tracker specifies
         a project name (used for disambiguating groups of tracers), and plugs into the
-        Burr UI. Currently the only supported tracker is local, which takes in the params
-        `storage_dir` and `app_id`, which have automatic defaults.
+        Burr UI. This can either be:
+
+        1. A string (the only supported one right now is "local"), and a set of parameters for a set of supported trackers.
+        2. A lifecycle adapter object that does tracking (up to you how to implement it).
+
+        (1) internally creates a :py:class:`LocalTrackingClient <burr.tracking.client.LocalTrackingClient>` object, and adds it to the lifecycle adapters.
+        (2) adds the lifecycle adapter to the lifecycle adapters.
 
         :param tracker: Tracker to use. ``local`` creates one, else pass one in.
-        :param project: Project name -- used if the tracker is local.
-        :param params: Parameters to pass to the tracker if it's local.
+        :param project: Project name -- used if the tracker is string-specified (local).
+        :param params: Parameters to pass to the tracker if it's string-specified (local).
         :return: The application builder for future chaining.
         """
-        if params is None:
-            params = {}
         # if it's a lifecycle adapter, just add it
-        if isinstance(
-            tracker,
-            (
-                PostRunStepHook,
-                PreRunStepHook,
-                PostApplicationCreateHook,
-                PostEndSpanHook,
-                PreStartSpanHook,
-            ),
-        ):
-            self.lifecycle_adapters.append(tracker)
-        elif tracker == "local":
-            from burr.tracking.client import LocalTrackingClient
+        if isinstance(tracker, str):
+            if params is None:
+                params = {}
+            if tracker == "local":
+                from burr.tracking.client import LocalTrackingClient
 
-            kwargs = {"project": project, "app_id": self.app_id}
-            kwargs.update(params)
-            self.lifecycle_adapters.append(LocalTrackingClient(**kwargs))
+                kwargs = {"project": project}
+                kwargs.update(params)
+                self.lifecycle_adapters.append(LocalTrackingClient(**kwargs))
+            else:
+                raise ValueError(f"Tracker {tracker}:{project} not supported")
         else:
-            raise ValueError(f"Tracker {tracker}:{project} not supported")
+            self.lifecycle_adapters.append(tracker)
+            if params is not None:
+                raise ValueError(
+                    "Params are not supported for object-specified trackers, these are already initialized!"
+                )
         return self
 
     def initialize_from(
         self,
-        persister: BasicStatePersistence,
+        initializer: BaseStateLoader,
         resume_at_next_action: bool,
         default_state: dict,
-        default_entry_point: str,
+        default_entrypoint: str,
     ) -> "ApplicationBuilder":
-        self.persister = persister
+        """Initializes the application we will build from some prior state object.
+        Note that you can *either* call this or use `with_state` and `with_entrypoint` -- this also assigns application ID,
+        partition key, and sequence ID.
+
+        :param initializer: The persister object to use for initialization. Likely the same one called with ``with_state_persister``.
+        :param resume_at_next_action: Whether to resume at the next action, or default to the ``default_entrypoint``
+        :param default_state: The default state to use if it does not exist. This is a dictionary.
+        :param default_entrypoint: The default entry point to use if it does not exist or you elect not to resume_at_next_action.
+        :return: The application builder for future chaining.
+        """
+        if self.start is not None or self.state is not None:
+            raise ValueError(
+                "Cannot call initialize_from if you have already set state or an entrypoint! "
+                "You can either use the initializer *or* set the state and entrypoint manually."
+            )
+        self.initializer = initializer
         self.resume_at_next_action = resume_at_next_action
         self.default_state = default_state
-        self.start = default_entry_point
+        self.start = default_entrypoint
         return self
 
     def with_state_persister(
-        self, persister: BasicStatePersistence, on_every: str = "step"
+        self, persister: Union[BaseStateSaver, LifecycleAdapter], on_every: str = "step"
     ) -> "ApplicationBuilder":
         """Adds a state persister to the application. This is a way to persist state out to a database, file, etc...
-        at the specified interval.
+        at the specified interval. This is one of two options:
+
+        1. [normal mode] A BaseStateSaver object -- this is a utility class that makes it easy to save/load
+        2. [power-user-mode] A lifecycle adapter -- this is a custom class that you use to save state.
+
+        The framework will wrap the BaseStateSaver object in a PersisterHook, which is a post-run.
 
         :param persister: The persister to add
         :param on_every: The interval to persist state. Currently only "step" is supported.
@@ -1245,34 +1304,10 @@ class ApplicationBuilder:
         """
         if on_every != "step":
             raise ValueError(f"on_every {on_every} not supported")
-        # stick persister into a post_step_hook if it doesn't implement it already.
-        if hasattr(persister, "post_step_hook"):
-            if persister not in self.lifecycle_adapters:
-                self.lifecycle_adapters.append(persister)
+        if not isinstance(persister, persistence.BaseStateSaver):
+            self.lifecycle_adapters.append(persister)
         else:
-            # TODO: pull this out more formally
-            class persisterWrapper(PostRunStepHook):
-                def post_run_step(
-                    self,
-                    app_id: str,
-                    partition_key: str,
-                    sequence_id: int,
-                    state: "State",
-                    action: "Action",
-                    result: Optional[Dict[str, Any]],
-                    exception: Exception,
-                    **future_kwargs: Any,
-                ):
-                    if exception is None:
-                        persister.save(
-                            partition_key, app_id, sequence_id, action.name, state, "completed"
-                        )
-                    else:
-                        persister.save(
-                            partition_key, app_id, sequence_id, action.name, state, "failed"
-                        )
-
-            self.lifecycle_adapters.append(persisterWrapper())
+            self.lifecycle_adapters.append(persistence.PersisterHook(persister))
         return self
 
     def _load_from_persister(self):
@@ -1285,11 +1320,11 @@ class ApplicationBuilder:
 
         """
         # load state from persister
-        load_result = self.persister.load(self.partition_key, self.app_id, self.sequence_id)
+        load_result = self.initializer.load(self.partition_key, self.app_id, self.sequence_id)
         if load_result is None:
             # there was nothing to load -- use default state
             self.state = self.state.update(**self.default_state)
-            self.sequence_id = 0
+            self.sequence_id = None  # has to start at None
         else:
             # there was something
             last_position = load_result["position"]
@@ -1322,7 +1357,7 @@ class ApplicationBuilder:
         _validate_transitions(self.transitions, all_actions)
         _validate_app_id(self.app_id)
 
-        if self.persister:
+        if self.initializer:
             # sets state, sequence_id, and maybe start
             self._load_from_persister()
         _validate_start(self.start, all_actions)
@@ -1339,7 +1374,7 @@ class ApplicationBuilder:
             ],
             state=self.state,
             initial_step=self.start,
-            id=self.app_id,
+            uid=self.app_id,
             partition_key=self.partition_key,
             sequence_id=self.sequence_id,
             adapter_set=LifecycleAdapterSet(*self.lifecycle_adapters),
