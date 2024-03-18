@@ -166,7 +166,7 @@ def llm_function_message(
             "content": None,
             "tool_calls": [
                 {
-                    "id": t.id,
+                    "id": t.uid,
                     "type": "function",
                     "function": {"name": t.function.name, "arguments": t.function.arguments},
                 }
@@ -193,7 +193,7 @@ def parsed_tool_calls(
     if tool_calls:
         for tool_call in tool_calls:
             func_call = {
-                "id": tool_call.id,
+                "id": tool_call.uid,
                 "function_name": tool_call.function.name,
                 "function_args": tool_call.function.arguments,
             }

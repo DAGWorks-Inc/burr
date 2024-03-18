@@ -169,7 +169,8 @@ def application(hooks: List[LifecycleAdapter], app_id: Optional[str] = None):
             ),
         )
         .with_hooks(*hooks)
-        .with_tracker(project="demo:chatbot_streaming", params={"app_id": app_id})
+        .with_tracker(project="demo:chatbot_streaming")
+        .with_identifiers(app_id=app_id)
         .build()
     )
 
