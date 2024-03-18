@@ -112,6 +112,29 @@ class PersisterHook(PostRunStepHook):
             self.persister.save(partition_key, app_id, sequence_id, action.name, state, "failed")
 
 
+class DevNullPersister(BaseStatePersister):
+    """Does nothing, do not use this. This is for testing only."""
+
+    def load(
+        self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None
+    ) -> Optional[PersistedStateData]:
+        return None
+
+    def list_app_ids(self, partition_key: str) -> list[str]:
+        return []
+
+    def save(
+        self,
+        partition_key: Optional[str],
+        app_id: str,
+        sequence_id: int,
+        position: str,
+        state: State,
+        status: Literal["completed", "failed"],
+    ):
+        return
+
+
 class SQLLitePersister(BaseStatePersister):
     """Class for SQLLite persistence of state. This is a simple implementation."""
 
