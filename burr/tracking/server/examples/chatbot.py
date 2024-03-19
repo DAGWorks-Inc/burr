@@ -5,9 +5,8 @@ import pydantic
 from fastapi import FastAPI
 from starlette.requests import Request
 
-from burr.core import Application, State
+from burr.core import Application
 from burr.examples.gpt import application as chat_application
-from burr.tracking import LocalTrackingClient
 
 
 class ChatItem(pydantic.BaseModel):
@@ -18,12 +17,7 @@ class ChatItem(pydantic.BaseModel):
 
 @functools.lru_cache(maxsize=128)
 def _get_application(project_id: str, app_id: str) -> Application:
-    app = chat_application.application(use_hamilton=False, app_id=app_id, project_id="demo:chatbot")
-    if LocalTrackingClient.app_log_exists(project_id, app_id):
-        state, _ = LocalTrackingClient.load_state(project_id, app_id)  # TODO -- handle entrypoint
-        app.update_state(
-            State(state)
-        )  # TODO -- handle the entrypoint -- this will always reset to prompt
+    app = chat_application.application(use_hamilton=False, app_id=app_id, project_id=project_id)
     return app
 
 
