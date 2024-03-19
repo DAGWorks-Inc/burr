@@ -83,6 +83,7 @@ class LocalTrackingClient(
 
         self.f = None
         self.storage_dir = LocalTrackingClient.get_storage_path(project, storage_dir)
+        self.project_id = project
 
     @classmethod
     def get_storage_path(cls, project, storage_dir):
@@ -118,7 +119,9 @@ class LocalTrackingClient(
         sequence_id: int = -1,
         storage_dir: str = DEFAULT_STORAGE_DIR,
     ) -> tuple[dict, str]:
-        """Function to load state from what the tracking client got.
+        """THis is deprecated and will be removed when we migrate over demos. Do not use! Instead use
+        the persistence API :py:class:`initialize_from <burr.core.application.ApplicationBuilder.initialize_from>`
+        to load state.
 
         It defaults to loading the last state, but you can supply a sequence number.
 
@@ -293,7 +296,55 @@ class LocalTrackingClient(
         self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None
     ) -> Optional[PersistedStateData]:
         # TODO:
-        pass
+        if app_id is None:
+            return  # no application ID
+        if sequence_id is None:
+            sequence_id = -1  # get the last one
+        path = os.path.join(self.storage_dir, app_id, self.LOG_FILENAME)
+        if not os.path.exists(path):
+            raise ValueError(
+                f"No logs found for {self.project_id}/{app_id} under {self.storage_dir}"
+            )
+        with open(path, "r") as f:
+            json_lines = f.readlines()
+        # load as JSON
+        json_lines = [json.loads(js_line) for js_line in json_lines]
+        # filter to only end_entry
+        json_lines = [js_line for js_line in json_lines if js_line["type"] == "end_entry"]
+        try:
+            line = json_lines[sequence_id]
+        except IndexError:
+            raise ValueError(
+                f"Sequence number {sequence_id} not found for {self.project_id}/{app_id}."
+            )
+        # check sequence number matches if non-negative; will break if either is None.
+        line_seq = int(line["sequence_id"])
+        if -1 < sequence_id != line_seq:
+            logger.warning(
+                f"Sequence number mismatch. For {self.project_id}/{app_id}: "
+                f"actual:{line_seq} != expected:{sequence_id}"
+            )
+        # get the prior state
+        prior_state = line["state"]
+        position = line["action"]
+        # delete internally stuff. We can't loop over the keys and delete them in the same loop
+        to_delete = []
+        for key in prior_state.keys():
+            # remove any internal "__" state
+            if key.startswith("__"):
+                to_delete.append(key)
+        for key in to_delete:
+            del prior_state[key]
+        prior_state["__SEQUENCE_ID"] = line_seq  # add the sequence id back
+        return {
+            "partition_key": partition_key,
+            "app_id": app_id,
+            "sequence_id": line_seq,
+            "position": position,
+            "state": State(prior_state),
+            "created_at": datetime.datetime.fromtimestamp(os.path.getctime(path)).isoformat(),
+            "status": "success" if line["exception"] is None else "failed",
+        }
 
 
 # TODO -- implement async version

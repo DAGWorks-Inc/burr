@@ -9,6 +9,7 @@ from burr.core import Application, ApplicationBuilder, State, default, when
 from burr.core.action import action
 from burr.integrations.hamilton import Hamilton, append_state, from_state, update_state
 from burr.lifecycle import LifecycleAdapter
+from burr.tracking import LocalTrackingClient
 
 MODES = {
     "answer_question": "text",
@@ -149,6 +150,9 @@ def base_application(
 ):
     if hooks is None:
         hooks = []
+    # we're initializing above so we can load from this as well
+    # we could also use `with_tracker("local", project=project_id, params={"storage_dir": storage_dir})`
+    tracker = LocalTrackingClient(project=project_id, storage_dir=storage_dir)
     return (
         ApplicationBuilder()
         .with_actions(
@@ -166,8 +170,6 @@ def base_application(
             prompt_for_more=prompt_for_more,
             response=response,
         )
-        .with_entrypoint("prompt")
-        .with_state(chat_history=[])
         .with_transitions(
             ("prompt", "check_openai_key", default),
             ("check_openai_key", "check_safety", when(has_openai_key=True)),
@@ -184,8 +186,15 @@ def base_application(
             ),
             ("response", "prompt", default),
         )
+        # initializes from the tracking log if it does not already exist
+        .initialize_from(
+            tracker,
+            resume_at_next_action=False,  # always resume from entrypoint in the case of failure
+            default_state={"chat_history": []},
+            default_entrypoint="prompt",
+        )
         .with_hooks(*hooks)
-        .with_tracker("local", project=project_id, params={"storage_dir": storage_dir})
+        .with_tracker(tracker)
         .with_identifiers(app_id=app_id)
         .build()
     )
