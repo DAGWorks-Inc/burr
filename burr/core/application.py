@@ -240,6 +240,7 @@ class Application:
         uid: str,
         sequence_id: Optional[int],
         adapter_set: Optional[LifecycleAdapterSet] = None,
+        builder: Optional["ApplicationBuilder"] = None,
     ):
         self._partition_key = partition_key
         self._uid = uid
@@ -266,6 +267,7 @@ class Application:
         }
         if sequence_id is not None:
             self._set_sequence_id(sequence_id)
+        self._builder = builder
 
     # @telemetry.capture_function_usage # todo -- capture usage when we break this up into one that isn't called internally
     # This will be doable when we move sequence ID to the beginning of the function https://github.com/DAGWorks-Inc/burr/pull/73
@@ -1039,6 +1041,15 @@ class Application:
         """
         return self._partition_key
 
+    @property
+    def builder(self) -> Optional["ApplicationBuilder"]:
+        """Returns the application builder that was used to build this application.
+        Note that this asusmes the application was built using the builder. Otherwise,
+
+        :return: The application builder
+        """
+        return self._builder
+
 
 def _assert_set(value: Optional[Any], field: str, method: str):
     if value is None:
@@ -1369,7 +1380,6 @@ class ApplicationBuilder:
         _validate_app_id(self.app_id)
         if self.state is None:
             self.state = State()
-
         if self.initializer:
             # sets state, sequence_id, and maybe start
             self._load_from_persister()
@@ -1391,4 +1401,5 @@ class ApplicationBuilder:
             partition_key=self.partition_key,
             sequence_id=self.sequence_id,
             adapter_set=LifecycleAdapterSet(*self.lifecycle_adapters),
+            builder=self,
         )
