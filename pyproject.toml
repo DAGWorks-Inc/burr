@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "burr"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
     "sf-hamilton>=1.47.0"
 ]
