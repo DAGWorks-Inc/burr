@@ -30,6 +30,19 @@ including tooling to build a UI in streamlit and watch your state machine execut
 
 ![Burr at work](./chatbot.gif)
 
+## Comparison against common frameworks
+
+While Burr is attempting something (somewhat) unique, there are a variety of tools that occupy similar spaces:
+
+| Criteria                                  | Burr | Langgraph | temporal | Langchain | Superagent | Hamilton |
+|-------------------------------------------|:---:|:----------:|:--------:|:---------:|:----------:|:--------:|
+| Explicitly models a state machine         | ✅  |      ✅    |    ✅    |     ❌    |     ❌     |   ❌     |
+| Framework-agnostic                        | ✅  |      ❌    |    ✅    |     ✅    |     ❌     |   ✅     |
+| Asynchronous event-based orchestration    | ❌  |      ❌    |    ✅    |     ❌    |     ❌     |   ❌     |
+| Built for core web-service logic          | ✅  |      ✅    |    ❌    |     ✅    |     ✅     |   ✅     |
+| Open-source user-interface for monitoring | ✅  |      ❌    |    ❌    |     ❌    |     ❌     |   ❌     |
+| Works with non-LLM use-cases              | ✅  |      ❌    |    ❌    |     ❌    |     ❌     |   ✅     |
+
 ## Why the name Burr?
 
 Burr is named after [Aaron Burr](https://en.wikipedia.org/wiki/Aaron_Burr), founding father, third VP of the United States, and murderer/arch-nemesis of [Alexander Hamilton](https://en.wikipedia.org/wiki/Alexander_Hamilton).
