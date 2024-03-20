@@ -19,7 +19,7 @@ jobs:
           pip install -e ".[documentation]"
       - name: Sphinx build
         run: |
-          sphinx-build docs _build
+          sphinx-build docs -b dirhtml _build
           echo "burr.dagworks.io" > _build/CNAME # keep the cname file which this clobbers -- todo, unhardcode
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
