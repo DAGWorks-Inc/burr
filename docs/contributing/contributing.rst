@@ -6,9 +6,9 @@ Please read the `code of conduct <https://github.com/dagworks-inc/burr/tree/main
 prior to contributing. Then follow these guidelines:
 
 #. Create a fork of the repository.
-#. Ensure all tests pass
-#. Make a PR to the main repository
-#. Ping one of the maintainers to review your PR (best way to reach us is via the `slack community <https://join.slack.com/t/hamilton-opensource/shared_invite/zt-1bjs72asx-wcUTgH7q7QX1igiQ5bbdcg>`_)
+#. Ensure all tests pass.
+#. Make a PR to the main repository.
+#. Ping one of the maintainers to review your PR.
 
 -----------------------
 Contribution guidelines
