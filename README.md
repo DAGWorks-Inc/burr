@@ -56,7 +56,7 @@ including tooling to build a UI in streamlit and watch your state machine execut
 
 ## 🏗 Start Building
 
-See the documentation for [getting started](https://burr.dagworks.io/getting_started/simple-example.html), and follow the example.
+See the documentation for [getting started](https://burr.dagworks.io/getting_started/simple-example), and follow the example.
 Then read through some of the concepts and write your own application!
 
 ## 📃 Comparison against common frameworks
@@ -85,7 +85,7 @@ but realized that it has a wide array of applications and decided to release it 
 While Burr is stable and well-tested, we have quite a few tools/features on our roadmap!
 
 1. Testing & eval curation. Curating data with annotations and being able to export these annotations to create unit & integration tests.
-2. Various efficiency/usability improvements for the core library (see [planned capabilities](https://burr.dagworks.io/concepts/planned-capabilities.html) for more details). This includes:
+2. Various efficiency/usability improvements for the core library (see [planned capabilities](https://burr.dagworks.io/concepts/planned-capabilities/) for more details). This includes:
    1. Fully typed state with validation
    2. First-class support for retries + exception management
    3. More integration with popular frameworks (LCEL, LLamaIndex, Hamilton, etc...)
