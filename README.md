@@ -5,7 +5,7 @@ Burr includes a UI that can track/monitor those decisions in real time.
 
 Link to [documentation](https://burr.dagworks.io/). Quick video intro [here](https://www.loom.com/share/8a92474bb7574d6eb4cd25c21913adf2).
 
-## Quick start
+## 🏃Quick start
 
 Install from `pypi`:
 
@@ -21,7 +21,7 @@ burr
 This will open up a demo -- to chat it requires the `OPENAI_API_KEY` environment variable to be set,
 but you can still see how it works if you don't have one.
 
-## How does Burr work?
+## 🔩 How does Burr work?
 
 With Burr you express your application as a state machine (i.e. a graph/flowchart).
 You can (and should!) use it for anything where managing state can be hard. Hint: managing state is always hard!
@@ -36,7 +36,7 @@ Burr includes:
 
 ![Burr at work](./chatbot.gif)
 
-## What can you do with Burr?
+## 💻️ What can you do with Burr?
 
 Burr can be used to power a variety of applications, including:
 
@@ -54,12 +54,12 @@ Burr will _not_ tell you how to build your models, how to query APIs, or how to 
 in a way that scales with your needs and makes following the logic of your system easy. Burr comes out of the box with a host of integrations
 including tooling to build a UI in streamlit and watch your state machine execute.
 
-## Start with Building
+## 🏗 Start Building
 
 See the documentation for [getting started](https://burr.dagworks.io/getting_started/simple-example.html), and follow the example.
 Then read through some of the concepts and write your own application!
 
-## Comparison against common frameworks
+## 📃 Comparison against common frameworks
 
 While Burr is attempting something (somewhat) unique, there are a variety of tools that occupy similar spaces:
 
@@ -72,7 +72,7 @@ While Burr is attempting something (somewhat) unique, there are a variety of too
 | Open-source user-interface for monitoring | ✅  |      ❌    |    ❌    |     ❌    |     ❌     |   ❌     |
 | Works with non-LLM use-cases              | ✅  |      ❌    |    ❌    |     ❌    |     ❌     |   ✅     |
 
-## Why the name Burr?
+## 🌯 Why the name Burr?
 
 Burr is named after [Aaron Burr](https://en.wikipedia.org/wiki/Aaron_Burr), founding father, third VP of the United States, and murderer/arch-nemesis of [Alexander Hamilton](https://en.wikipedia.org/wiki/Alexander_Hamilton).
 What's the connection with Hamilton? This is [DAGWorks](www.dagworks.io)' second open-source library release after the [Hamilton library](https://github.com/dagworks-inc/hamilton)
@@ -80,7 +80,7 @@ We imagine a world in which Burr and Hamilton lived in harmony and saw through t
 built Burr as a _harness_ to handle state between executions of Hamilton DAGs (because DAGs don't have cycles),
 but realized that it has a wide array of applications and decided to release it more broadly.
 
-## Roadmap
+## 🛣 Roadmap
 
 While Burr is stable and well-tested, we have quite a few tools/features on our roadmap!
 
@@ -96,11 +96,11 @@ While Burr is stable and well-tested, we have quite a few tools/features on our 
 If you want to avoid self-hosting the above solutions we're building Burr Cloud. To let us know you're interested
  sign up [here](https://forms.gle/w9u2QKcPrztApRedA) for the waitlist to get access.
 
-## Contributing
+## 🤲 Contributing
 
 We welcome contributors! To get started on developing, see the [developer-facing docs](https://burr.dagworks.io/contributing).
 
-## Contributors
+## 👪 Contributors
 - [Elijah ben Izzy](https://github.com/elijahbenizzy)
 - [Stefan Krawczyk](https://github.com/skrawcz)
 - [Joseph Booth](https://github.com/jombooth)
