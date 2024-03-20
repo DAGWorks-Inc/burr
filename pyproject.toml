@@ -114,6 +114,7 @@ Repository = "https://github.com/dagworks-inc/burr"
 
 [project.scripts]
 burr = "burr.cli.__main__:cli_run_server"
+burr-demo = "burr.cli.__main__:cli_demo_server"
 burr-admin-server = "burr.cli.__main__:cli_run_server"
 burr-admin-publish = "burr.cli.__main__:cli_build_and_publish"
 burr-admin-build-ui = "burr.cli.__main__:cli_build_ui"

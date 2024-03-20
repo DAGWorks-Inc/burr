@@ -96,12 +96,7 @@ def build_ui():
         _build_ui()
 
 
-@cli.command()
-@click.option("--port", default=7241, help="Port to run the server on")
-@click.option("--dev-mode", is_flag=True, help="Run the server in development mode")
-@click.option("--no-open", is_flag=True, help="Run the server without opening it")
-@click.option("--no-copy-demo_data", is_flag=True, help="Don't copy demo data over.")
-def run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: bool):
+def _run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: bool, initial_page=""):
     _telemetry_if_enabled("run_server")
     # TODO: Implement server running logic here
     # Example: Start a web server, configure ports, etc.
@@ -122,13 +117,28 @@ def run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: bool
         thread = threading.Thread(
             target=open_when_ready,
             kwargs={
-                "open_url": (open_url := f"http://localhost:{port}"),
+                "open_url": (open_url := f"http://localhost:{port}/{initial_page}"),
                 "check_url": f"{open_url}/ready",
             },
             daemon=True,
         )
         thread.start()
     _command(cmd, capture_output=False)
+
+
+@cli.command()
+@click.option("--port", default=7241, help="Port to run the server on")
+@click.option("--dev-mode", is_flag=True, help="Run the server in development mode")
+@click.option("--no-open", is_flag=True, help="Run the server without opening it")
+@click.option("--no-copy-demo_data", is_flag=True, help="Don't copy demo data over.")
+def run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: bool):
+    _run_server(port, dev_mode, no_open, no_copy_demo_data)
+
+
+@cli.command()
+@click.option("--port", default=7241, help="Port to run the server on")
+def demo_server(port: int):
+    _run_server(port, True, False, False, "demos/chatbot")
 
 
 @cli.command(help="Publishes the package to a repository")
