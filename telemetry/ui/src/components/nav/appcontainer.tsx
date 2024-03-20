@@ -83,7 +83,7 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
     },
     {
       name: 'Get Help',
-      href: 'https://join.slack.com/t/hamilton-opensource/shared_invite/zt-1bjs72asx-wcUTgH7q7QX1igiQ5bbdcg',
+      href: 'https://github.com/DAGWorks-Inc/burr/discussions',
       icon: ChatBubbleLeftEllipsisIcon,
       linkType: 'external'
     }

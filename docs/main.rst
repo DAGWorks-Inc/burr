@@ -12,5 +12,6 @@ You'll find this documentation separated into three sections.
 
 We also ask that you:
 
-- Join the `Hamilton slack <https://join.slack.com/t/hamilton-opensource/shared_invite/zt-1bjs72asx-wcUTgH7q7QX1igiQ5bbdcg>`_ (currently we're combining the help-channel for the two products)
+- Report any bugs, issues, or feature requests via `GitHub Issues <https://github.com/DAGWorks-Inc/burr/issues>`_ or
+`GitHub Discussions <https://github.com/DAGWorks-Inc/burr/discussions>`_.
 - Give us a star on `GitHub <https://github.com/dagworks-inc/burr>`_ if you like the project!
