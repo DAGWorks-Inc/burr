@@ -37,6 +37,10 @@ graphviz = [
   "graphviz"
 ]
 
+postgresql = [
+  "psycopg2-binary"
+]
+
 tests = [
   "pytest",
   "pytest-asyncio",
@@ -48,7 +52,8 @@ documentation = [
   "myst-parser",
   "furo",
   "sphinx-sitemap",
-  "sphinx-toolbox"
+  "sphinx-toolbox",
+  "psychopg2-binary",
 ]
 
 tracking-client = [
