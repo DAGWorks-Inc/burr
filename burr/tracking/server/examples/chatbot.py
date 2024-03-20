@@ -44,7 +44,7 @@ async def create_new_application(request: Request, project_id: str, app_id: str)
     """Quick helper to create a new application. Just returns true, you'll want to fetch afterwards.
     In a better chatbot you'd want to either have the frontend store this and create on demand or return
     the actual application model"""
-    # side-effect is to create the application
+    # side-effect creates the logging so it exists
     chat_application.application(use_hamilton=False, app_id=app_id, project_id=project_id)
     return app_id  # just return it for now
 
