@@ -302,11 +302,11 @@ class LocalTrackingClient(
             sequence_id = -1  # get the last one
         path = os.path.join(self.storage_dir, app_id, self.LOG_FILENAME)
         if not os.path.exists(path):
-            raise ValueError(
-                f"No logs found for {self.project_id}/{app_id} under {self.storage_dir}"
-            )
+            return None
         with open(path, "r") as f:
             json_lines = f.readlines()
+        if len(json_lines) == 0:
+            return None  # in this case we have not logged anything yet
         # load as JSON
         json_lines = [json.loads(js_line) for js_line in json_lines]
         # filter to only end_entry
