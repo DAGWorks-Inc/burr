@@ -42,10 +42,15 @@ html_theme_options = {
     },
 }
 
-html_baseurl = "https://burr.dagworks.io/en/latest/"  # TODO -- update this
 
 exclude_patterns = ["README-internal.md"]
 
 autodoc_typehints_format = "short"
 python_maximum_signature_line_length = 100
 python_use_unqualified_type_names = True
+
+# -- for sitemap extension
+html_baseurl = "https://burr.dagworks.io/"  # TODO -- update this
+html_extra_path = ["robots.txt"]
+sitemap_locales = [None]
+sitemap_url_scheme = "{link}"
