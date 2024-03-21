@@ -113,6 +113,16 @@ def _state_update(state_to_modify: State, modified_state: State) -> State:
     return state_to_modify.merge(modified_state).wipe(delete=deleted_keys_filtered)
 
 
+def _validate_reducer_writes(reducer: Reducer, state: State, name: str) -> None:
+    required_writes = reducer.writes
+    missing_writes = set(reducer.writes) - state.keys()
+    if len(missing_writes) > 0:
+        raise ValueError(
+            f"State is missing write keys after running: {name}. Missing keys are: {missing_writes}. "
+            f"Has writes: {required_writes}"
+        )
+
+
 def _run_reducer(reducer: Reducer, state: State, result: dict, name: str) -> State:
     """Runs the reducer, returning the new state. Note this restricts the
     keys in the state to only those that the function writes.
@@ -132,6 +142,7 @@ def _run_reducer(reducer: Reducer, state: State, result: dict, name: str) -> Sta
             f"Action {name} attempted to write to keys {extra_keys} "
             f"that it did not declare. It declared: ({reducer.writes})!"
         )
+    _validate_reducer_writes(reducer, new_state, name)
     return _state_update(state, new_state)
 
 
@@ -184,6 +195,7 @@ def _run_single_step_action(
     action.validate_inputs(inputs)
     result, new_state = action.run_and_update(state, **inputs)
     out = result, _state_update(state, new_state)
+    _validate_reducer_writes(action, new_state, action.name)
     return out
 
 
@@ -192,7 +204,9 @@ def _run_single_step_streaming_action(
 ) -> Generator[dict, None, Tuple[dict, State]]:
     action.validate_inputs(inputs)
     generator = action.stream_run_and_update(state, **inputs)
-    return (yield from generator)
+    result, state = yield from generator
+    _validate_reducer_writes(action, state, action.name)
+    return result, state
 
 
 def _run_multi_step_streaming_action(
@@ -212,6 +226,7 @@ async def _arun_single_step_action(
     state_to_use = state
     action.validate_inputs(inputs)
     result, new_state = await action.run_and_update(state_to_use, **inputs)
+    _validate_reducer_writes(action, new_state, action.name)
     return result, _state_update(state, new_state)
 
 

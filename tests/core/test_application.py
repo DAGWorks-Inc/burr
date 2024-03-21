@@ -1,4 +1,5 @@
 import asyncio
+import collections
 import logging
 from typing import Awaitable, Callable, Generator, Tuple
 
@@ -8,6 +9,7 @@ from burr.core import State
 from burr.core.action import (
     Action,
     Condition,
+    Reducer,
     Result,
     SingleStepAction,
     SingleStepStreamingAction,
@@ -253,6 +255,107 @@ async def test__arun_function_with_inputs():
     assert result == {"count": 2}
 
 
+def test_run_reducer_errors_missing_writes():
+    class BrokenReducer(Reducer):
+        def update(self, result: dict, state: State) -> State:
+            return state.update(present_value=1)
+
+        @property
+        def writes(self) -> list[str]:
+            return ["missing_value", "present_value"]
+
+    reducer = BrokenReducer()
+    state = State()
+    with pytest.raises(ValueError, match="missing_value"):
+        _run_reducer(reducer, state, {}, "broken_reducer")
+
+
+def test_run_single_step_action_errors_missing_writes():
+    class BrokenAction(SingleStepAction):
+        @property
+        def reads(self) -> list[str]:
+            return []
+
+        def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
+            return {"present_value": 1}, state.update(present_value=1)
+
+        @property
+        def writes(self) -> list[str]:
+            return ["missing_value", "present_value"]
+
+    action = BrokenAction()
+    state = State()
+    with pytest.raises(ValueError, match="missing_value"):
+        _run_single_step_action(action, state, inputs={})
+
+
+async def test_arun_single_step_action_errors_missing_writes():
+    class BrokenAction(SingleStepAction):
+        @property
+        def reads(self) -> list[str]:
+            return []
+
+        async def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
+            await asyncio.sleep(0.0001)  # just so we can make this *truly* async
+            return {"present_value": 1}, state.update(present_value=1)
+
+        @property
+        def writes(self) -> list[str]:
+            return ["missing_value", "present_value"]
+
+    action = BrokenAction()
+    state = State()
+    with pytest.raises(ValueError, match="missing_value"):
+        await _arun_single_step_action(action, state, inputs={})
+
+
+def test_run_single_step_streaming_action_errors_missing_write():
+    class BrokenAction(SingleStepStreamingAction):
+        def stream_run_and_update(
+            self, state: State, **run_kwargs
+        ) -> Generator[dict, None, Tuple[dict, State]]:
+            yield {}
+            return {"present_value": 1}, state.update(present_value=1)
+
+        @property
+        def reads(self) -> list[str]:
+            return []
+
+        @property
+        def writes(self) -> list[str]:
+            return ["missing_value", "present_value"]
+
+    action = BrokenAction()
+    state = State()
+    with pytest.raises(ValueError, match="missing_value"):
+        gen = _run_single_step_streaming_action(action, state, inputs={})
+        collections.deque(gen, maxlen=0)  # exhaust the generator
+
+
+def test_run_multi_step_streaming_action_errors_missing_write():
+    class BrokenAction(StreamingAction):
+        def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, dict]:
+            yield {}
+            return {"present_value": 1}
+
+        def update(self, result: dict, state: State) -> State:
+            return state.update(present_value=1)
+
+        @property
+        def reads(self) -> list[str]:
+            return []
+
+        @property
+        def writes(self) -> list[str]:
+            return ["missing_value", "present_value"]
+
+    action = BrokenAction()
+    state = State()
+    with pytest.raises(ValueError, match="missing_value"):
+        gen = _run_multi_step_streaming_action(action, state, inputs={})
+        collections.deque(gen, maxlen=0)  # exhaust the generator
+
+
 class SingleStepCounter(SingleStepAction):
     def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
         result = {"count": state["count"] + 1 + sum([0] + list(run_kwargs.values()))}
@@ -398,11 +501,11 @@ class SingleStepActionWithDeletion(SingleStepAction):
 
     @property
     def reads(self) -> list[str]:
-        return ["to_delete"]
+        return []
 
     @property
     def writes(self) -> list[str]:
-        return ["to_delete"]
+        return []
 
 
 def test__run_single_step_action_deletes_state():
