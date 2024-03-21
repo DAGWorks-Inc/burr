@@ -44,6 +44,10 @@ postgresql = [
   "psycopg2-binary"
 ]
 
+redis = [
+  "redis"
+]
+
 tests = [
   "pytest",
   "pytest-asyncio",

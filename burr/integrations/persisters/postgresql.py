@@ -160,7 +160,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         row = cursor.fetchone()
         if row is None:
             return None
-        _state = state.State(row[1]["_state"])
+        _state = state.State(row[1])
         return {
             "partition_key": partition_key,
             "app_id": row[3],
@@ -208,7 +208,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
             status,
         )
         cursor = self.connection.cursor()
-        json_state = json.dumps(state.__dict__)
+        json_state = json.dumps(state.get_all())
         cursor.execute(
             f"INSERT INTO {self.table_name} (partition_key, app_id, sequence_id, position, state, status) "
             "VALUES (%s, %s, %s, %s, %s, %s)",

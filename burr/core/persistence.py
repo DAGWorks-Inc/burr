@@ -229,7 +229,7 @@ class SQLLitePersister(BaseStatePersister):
         row = cursor.fetchone()
         if row is None:
             return None
-        _state = State(json.loads(row[1])["_state"])
+        _state = State(json.loads(row[1]))
         return {
             "partition_key": partition_key,
             "app_id": row[3],
@@ -277,7 +277,7 @@ class SQLLitePersister(BaseStatePersister):
             status,
         )
         cursor = self.connection.cursor()
-        json_state = json.dumps(state.__dict__)
+        json_state = json.dumps(state.get_all())
         cursor.execute(
             f"INSERT INTO {self.table_name} (partition_key, app_id, sequence_id, position, state, status) "
             f"VALUES (?, ?, ?, ?, ?, ?)",

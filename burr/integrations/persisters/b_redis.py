@@ -60,7 +60,7 @@ class RedisPersister(persistence.BaseStatePersister):
         data = self.connection.hgetall(key)
         if not data:
             return None
-        _state = state.State(json.loads(data[b"state"].decode())["_state"])
+        _state = state.State(json.loads(data[b"state"].decode()))
         return {
             "partition_key": partition_key,
             "app_id": app_id,
@@ -100,7 +100,7 @@ class RedisPersister(persistence.BaseStatePersister):
         key = self.create_key(app_id, partition_key, sequence_id)
         if self.connection.exists(key):
             raise ValueError(f"partition_key:app_id:sequence_id[{key}] already exists.")
-        json_state = json.dumps(state.__dict__)
+        json_state = json.dumps(state.get_all())
         self.connection.hset(
             key,
             mapping={
@@ -124,6 +124,6 @@ if __name__ == "__main__":
     persister = RedisPersister("localhost", 6379, 0)
 
     persister.initialize()
-    persister.save("pk", "app_id", 1, "pos", state.State({"a": 1, "b": 2}), "completed")
+    persister.save("pk", "app_id", 2, "pos", state.State({"a": 1, "b": 2}), "completed")
     print(persister.list_app_ids("pk"))
     print(persister.load("pk", "app_id"))
