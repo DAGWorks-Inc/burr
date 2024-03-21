@@ -47,5 +47,11 @@ Currently we support the following, although we highly recommend you contribute 
    .. automethod:: __init__
 
 
+.. autoclass:: burr.integrations.persisters.b_redis.RedisPersister
+   :members:
+
+   .. automethod:: __init__
+
+
 Note that the :py:class:`LocalTrackingClient <burr.tracking.client.LocalTrackingClient>` leverages the :py:class:`BaseStateLoader <burr.core.persistence.BaseStateLoader>` to allow loading state,
 although it uses different mechanisms to save state (as it tracks more than just state).
