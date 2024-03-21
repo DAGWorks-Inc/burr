@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import traceback
-from typing import Any, Dict, LiteralString, Optional
+from typing import Any, Dict, Optional
 
 from burr.core import Action, ApplicationGraph, State
 from burr.core.persistence import BaseStateLoader, PersistedStateData
@@ -84,7 +84,7 @@ class LocalTrackingClient(
         self.project_id = project
 
     @classmethod
-    def get_storage_path(cls, project, storage_dir) -> LiteralString:
+    def get_storage_path(cls, project, storage_dir) -> str:
         return os.path.join(os.path.expanduser(storage_dir), project)
 
     @classmethod
