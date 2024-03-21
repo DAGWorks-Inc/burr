@@ -3,31 +3,39 @@ Next Steps
 =================
 
 You've written your own burr application in a few lines of code. Nice work! Let's look at some less trivial examples.
-Note you'll need the repository cloned to run these -- you can also explore the results without running them in the UI -- it is pre
-populated with sample runs.
-
-----------
-More demos
-----------
-
-Streamlit chatbot ``demo:chatbot``
-------------------------------------
-
-You'll need the env variable ``OPENAI_API_KEY`` set to your api key for this to work.
-
-We recommend you keep the app (terminal or streamlit) open in one window while
-watching the tracker in the other window. You'll see some interesting things!
+All of the following are pre-populated in the UI under ``projects/``. You can start the UI by running:
 
 .. code-block:: bash
 
-    cd examples/gpt
-    pip install -r requirements.txt
-    streamlit run streamlit_app.py
+    burr
+
+In-app chatbot ``demo:chatbot``
+------------------------------------
+
+You'll need the env variable ``OPENAI_API_KEY`` set to your api key for this to work. If you don't
+have one, you'll still be able to run it and explore, you just won't be able to chat.
+
+If you haven't already:
+
+.. code-block:: bash
+
+    pip install burr[start]
+
+Then:
+
+.. code-block:: bash
+
+    burr-demo
+
+If you've run ``burr`` and have it open on port 7241, just navigate to `demos/chatbot <http://localhost:7241/demos/chatbot>`_.
+For the next examples you'll need the repository cloned:
+
+.. code-block:: bash
+
+    git clone https://github.com/dagworks-inc/burr && cd burr
 
 Simple Counter ``demo:counter``
 -------------------------------
-
-This is just a single terminal command:
 
 .. code-block:: bash
 
