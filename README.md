@@ -3,7 +3,7 @@
 Burr makes it easy to develop applications that make decisions based on state (chatbots, agents, simulations, etc...) from simple python building blocks.
 Burr includes a UI that can track/monitor those decisions in real time.
 
-Link to [documentation](https://burr.dagworks.io/). Quick video intro [here](https://www.loom.com/share/8a92474bb7574d6eb4cd25c21913adf2).
+Link to [documentation](https://burr.dagworks.io/). Quick video intro [here](https://www.loom.com/share/a10f163428b942fea55db1a84b1140d8?sid=1512863b-f533-4a42-a2f3-95b13deb07c9).
 
 ## 🏃Quick start
 
