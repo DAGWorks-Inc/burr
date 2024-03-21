@@ -5,9 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "burr"
 version = "0.9.0"
-dependencies = [
-    "sf-hamilton>=1.47.0"
-]
+dependencies = [] # yes, there are none
 requires-python = ">=3.9"
 authors = [
   {name = "Elijah ben Izzy", email = "elijah@dagworks.io"},
@@ -30,7 +28,12 @@ classifiers = [
 streamlit = [
   "streamlit",
   "graphviz",
-  "matplotlib"
+  "matplotlib",
+  "sf-hamilton"
+]
+
+hamilton = [
+  "sf-hamilton"
 ]
 
 graphviz = [
@@ -44,6 +47,7 @@ postgresql = [
 tests = [
   "pytest",
   "pytest-asyncio",
+  "burr[hamilton]"
 ]
 
 documentation = [
@@ -79,7 +83,7 @@ tracking = [
 ]
 
 learn = [
-  "burr[tracking,streamlit,graphviz]"
+  "burr[tracking,streamlit,graphviz,hamilton]"
 ]
 
 start = [

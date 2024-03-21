@@ -1,2 +1,3 @@
+burr[hamilton]
 burr[streamlit]
 openai

@@ -1,7 +1,16 @@
 import dataclasses
 from typing import Any, Dict, Literal, Tuple, Union
 
-from hamilton.driver import Driver
+from burr.integrations.base import require_plugin
+
+try:
+    from hamilton.driver import Driver
+except ImportError as e:
+    require_plugin(
+        e,
+        ["sf-hamilton"],
+        "hamilton",
+    )
 
 from burr.core import Action, State
 
