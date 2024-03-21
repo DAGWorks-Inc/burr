@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import traceback
-from typing import Any, Dict, Optional
+from typing import Any, Dict, LiteralString, Optional
 
 from burr.core import Action, ApplicationGraph, State
 from burr.core.persistence import BaseStateLoader, PersistedStateData
@@ -77,8 +77,6 @@ class LocalTrackingClient(
 
         :param project: Project name -- if this already exists it will be used, otherwise it will be created.
         :param storage_dir: Storage directory
-        :param app_id: Unique application ID. If not provided, a random one will be generated. If this already exists,
-            it will use that one/append to the files in that one.
         """
 
         self.f = None
@@ -86,7 +84,7 @@ class LocalTrackingClient(
         self.project_id = project
 
     @classmethod
-    def get_storage_path(cls, project, storage_dir):
+    def get_storage_path(cls, project, storage_dir) -> LiteralString:
         return os.path.join(os.path.expanduser(storage_dir), project)
 
     @classmethod
@@ -288,12 +286,12 @@ class LocalTrackingClient(
         if self.f is not None:
             self.f.close()
 
-    def list_app_ids(self, partition_key: str) -> list[str]:
+    def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
         # TODO:
         return []
 
     def load(
-        self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None
+        self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None, **kwargs
     ) -> Optional[PersistedStateData]:
         # TODO:
         if app_id is None:

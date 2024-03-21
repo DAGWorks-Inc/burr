@@ -25,7 +25,7 @@ class BaseStateLoader(abc.ABC):
 
     @abc.abstractmethod
     def load(
-        self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None
+        self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None, **kwargs
     ) -> Optional[PersistedStateData]:
         """Loads the state for a given app_id
 
@@ -39,7 +39,7 @@ class BaseStateLoader(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def list_app_ids(self, partition_key: str) -> list[str]:
+    def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
         """Returns list of app IDs for a given primary key"""
         pass
 
@@ -62,6 +62,7 @@ class BaseStateSaver(abc.ABC):
         position: str,
         state: State,
         status: Literal["completed", "failed"],
+        **kwargs,
     ):
         """Saves the state for a given app_id, sequence_id, position
 
@@ -116,11 +117,11 @@ class DevNullPersister(BaseStatePersister):
     """Does nothing, do not use this. This is for testing only."""
 
     def load(
-        self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None
+        self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None, **kwargs
     ) -> Optional[PersistedStateData]:
         return None
 
-    def list_app_ids(self, partition_key: str) -> list[str]:
+    def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
         return []
 
     def save(
@@ -131,6 +132,7 @@ class DevNullPersister(BaseStatePersister):
         position: str,
         state: State,
         status: Literal["completed", "failed"],
+        **kwargs,
     ):
         return
 
@@ -177,7 +179,7 @@ class SQLLitePersister(BaseStatePersister):
         # Usage
         self.create_table_if_not_exists(self.table_name)
 
-    def list_app_ids(self, partition_key: str) -> list[str]:
+    def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
         cursor = self.connection.cursor()
         cursor.execute(
             f"SELECT DISTINCT app_id FROM {self.table_name} "
@@ -189,7 +191,7 @@ class SQLLitePersister(BaseStatePersister):
         return app_ids
 
     def load(
-        self, partition_key: str, app_id: str, sequence_id: int = None
+        self, partition_key: str, app_id: str, sequence_id: int = None, **kwargs
     ) -> Optional[PersistedStateData]:
         """Loads state for a given partition id.
 
@@ -246,6 +248,7 @@ class SQLLitePersister(BaseStatePersister):
         position: str,
         state: State,
         status: Literal["completed", "failed"],
+        **kwargs,
     ):
         """
         Saves the state for a given app_id, sequence_id, and position.
