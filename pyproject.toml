@@ -53,7 +53,7 @@ documentation = [
   "furo",
   "sphinx-sitemap",
   "sphinx-toolbox",
-  "psychopg2-binary",
+  "psycopg2-binary",
 ]
 
 tracking-client = [
