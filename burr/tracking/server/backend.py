@@ -96,7 +96,7 @@ class LocalBackend(BackendBase):
                 )
         return out
 
-    async def get_max_sequence_id(self, file_path: str) -> int:
+    async def get_number_of_steps(self, file_path: str) -> int:
         """Quick tool to get the latest sequence ID from a log file.
         This is not efficient and should be replaced."""
         count = 0
@@ -105,7 +105,8 @@ class LocalBackend(BackendBase):
                 line_data = json.loads(line)
                 if "sequence_id" in line_data:
                     # Just return the latest for now
-                    return line_data["sequence_id"]
+                    # We add one as it is the count, not the index
+                    return line_data["sequence_id"] + 1
         return count
 
     async def list_apps(
@@ -136,7 +137,7 @@ class LocalBackend(BackendBase):
                         partition_key=metadata.partition_key,
                         first_written=await aiofilesos.path.getctime(full_path),
                         last_written=await aiofilesos.path.getmtime(full_path),
-                        num_steps=await self.get_max_sequence_id(log_path),
+                        num_steps=await self.get_number_of_steps(log_path),
                         tags={},
                     )
                 )
