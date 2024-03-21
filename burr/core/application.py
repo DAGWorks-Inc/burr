@@ -54,7 +54,15 @@ PRIOR_STEP = "__PRIOR_STEP"
 SEQUENCE_ID = "__SEQUENCE_ID"
 
 
-def _run_function(function: Function, state: State, inputs: Dict[str, Any]) -> dict:
+def _validate_result(result: dict, name: str) -> None:
+    if not isinstance(result, dict):
+        raise ValueError(
+            f"Action {name} returned a non-dict result: {result}. "
+            f"All results must be dictionaries."
+        )
+
+
+def _run_function(function: Function, state: State, inputs: Dict[str, Any], name: str) -> dict:
     """Runs a function, returning the result of running the function.
     Note this restricts the keys in the state to only those that the
     function reads.
@@ -66,21 +74,27 @@ def _run_function(function: Function, state: State, inputs: Dict[str, Any]) -> d
     """
     if function.is_async():
         raise ValueError(
-            f"Cannot run async: {function} "
+            f"Cannot run async: {name} "
             "in non-async context. Use astep()/aiterate()/arun() "
             "instead...)"
         )
     state_to_use = state.subset(*function.reads)
     function.validate_inputs(inputs)
-    return function.run(state_to_use, **inputs)
+    result = function.run(state_to_use, **inputs)
+    _validate_result(result, name)
+    return result
 
 
-async def _arun_function(function: Function, state: State, inputs: Dict[str, Any]) -> dict:
+async def _arun_function(
+    function: Function, state: State, inputs: Dict[str, Any], name: str
+) -> dict:
     """Runs a function, returning the result of running the function.
     Async version of the above."""
     state_to_use = state.subset(*function.reads)
     function.validate_inputs(inputs)
-    return await function.run(state_to_use, **inputs)
+    result = await function.run(state_to_use, **inputs)
+    _validate_result(result, name)
+    return result
 
 
 def _state_update(state_to_modify: State, modified_state: State) -> State:
@@ -194,7 +208,9 @@ def _run_single_step_action(
     # TODO -- guard all reads/writes with a subset of the state
     action.validate_inputs(inputs)
     result, new_state = action.run_and_update(state, **inputs)
+    _validate_result(result, action.name)
     out = result, _state_update(state, new_state)
+    _validate_result(result, action.name)
     _validate_reducer_writes(action, new_state, action.name)
     return out
 
@@ -205,6 +221,7 @@ def _run_single_step_streaming_action(
     action.validate_inputs(inputs)
     generator = action.stream_run_and_update(state, **inputs)
     result, state = yield from generator
+    _validate_result(result, action.name)
     _validate_reducer_writes(action, state, action.name)
     return result, state
 
@@ -215,6 +232,7 @@ def _run_multi_step_streaming_action(
     action.validate_inputs(inputs)
     generator = action.stream_run(state, **inputs)
     result = yield from generator
+    _validate_result(result, action.name)
     new_state = _run_reducer(action, state, result, action.name)
     return result, _state_update(state, new_state)
 
@@ -226,6 +244,7 @@ async def _arun_single_step_action(
     state_to_use = state
     action.validate_inputs(inputs)
     result, new_state = await action.run_and_update(state_to_use, **inputs)
+    _validate_result(result, action.name)
     _validate_reducer_writes(action, new_state, action.name)
     return result, _state_update(state, new_state)
 
@@ -333,7 +352,7 @@ class Application:
             if next_action.single_step:
                 result, new_state = _run_single_step_action(next_action, self._state, inputs)
             else:
-                result = _run_function(next_action, self._state, inputs)
+                result = _run_function(next_action, self._state, inputs, name=next_action.name)
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
 
             new_state = self._update_internal_state_value(new_state, next_action)
@@ -437,7 +456,9 @@ class Application:
                     next_action, self._state, inputs=inputs
                 )
             else:
-                result = await _arun_function(next_action, self._state, inputs=inputs)
+                result = await _arun_function(
+                    next_action, self._state, inputs=inputs, name=next_action.name
+                )
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
             new_state = self._update_internal_state_value(new_state, next_action)
             self._set_state(new_state)

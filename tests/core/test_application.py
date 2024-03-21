@@ -187,11 +187,32 @@ base_broken_action_async = PassedInActionAsync(
 )
 
 
+async def incorrect(x):
+    return "not a dict"
+
+
+base_action_incorrect_result_type = PassedInAction(
+    reads=[],
+    writes=[],
+    fn=lambda x: "not a dict",
+    update_fn=lambda result, state: state,
+    inputs=[],
+)
+
+base_action_incorrect_result_type_async = PassedInActionAsync(
+    reads=[],
+    writes=[],
+    fn=incorrect,
+    update_fn=lambda result, state: state,
+    inputs=[],
+)
+
+
 def test__run_function():
     """Tests that we can run a function"""
     action = base_counter_action
     state = State({})
-    result = _run_function(action, state, inputs={})
+    result = _run_function(action, state, inputs={}, name=action.name)
     assert result == {"count": 1}
 
 
@@ -199,7 +220,7 @@ def test__run_function_with_inputs():
     """Tests that we can run a function"""
     action = base_counter_action_with_inputs
     state = State({})
-    result = _run_function(action, state, inputs={"additional_increment": 1})
+    result = _run_function(action, state, inputs={"additional_increment": 1}, name=action.name)
     assert result == {"count": 2}
 
 
@@ -208,7 +229,15 @@ def test__run_function_cant_run_async():
     action = base_counter_action_async
     state = State({})
     with pytest.raises(ValueError, match="async"):
-        _run_function(action, state, inputs={})
+        _run_function(action, state, inputs={}, name=action.name)
+
+
+def test__run_function_incorrect_result_type():
+    """Tests that we can run an async function"""
+    action = base_action_incorrect_result_type
+    state = State({})
+    with pytest.raises(ValueError, match="returned a non-dict"):
+        _run_function(action, state, inputs={}, name=action.name)
 
 
 def test__run_reducer_modifies_state():
@@ -243,15 +272,25 @@ async def test__arun_function():
     """Tests that we can run an async function"""
     action = base_counter_action_async
     state = State({})
-    result = await _arun_function(action, state, inputs={})
+    result = await _arun_function(action, state, inputs={}, name=action.name)
     assert result == {"count": 1}
+
+
+async def test__arun_function_incorrect_result_type():
+    """Tests that we can run an async function"""
+    action = base_action_incorrect_result_type_async
+    state = State({})
+    with pytest.raises(ValueError, match="returned a non-dict"):
+        await _arun_function(action, state, inputs={}, name=action.name)
 
 
 async def test__arun_function_with_inputs():
     """Tests that we can run an async function"""
     action = base_counter_action_with_inputs_async
     state = State({})
-    result = await _arun_function(action, state, inputs={"additional_increment": 1})
+    result = await _arun_function(
+        action, state, inputs={"additional_increment": 1}, name=action.name
+    )
     assert result == {"count": 2}
 
 
@@ -376,6 +415,24 @@ class SingleStepCounterWithInputs(SingleStepCounter):
         return ["additional_increment"]
 
 
+class SingleStepActionIncorrectResultType(SingleStepAction):
+    def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
+        return "not a dict", state
+
+    @property
+    def reads(self) -> list[str]:
+        return []
+
+    @property
+    def writes(self) -> list[str]:
+        return []
+
+
+class SingleStepActionIncorrectResultTypeAsync(SingleStepActionIncorrectResultType):
+    async def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
+        return "not a dict", state
+
+
 class SingleStepCounterAsync(SingleStepCounter):
     async def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
         await asyncio.sleep(0.0001)  # just so we can make this *truly* async
@@ -438,6 +495,39 @@ class SingleStepStreamingCounter(SingleStepStreamingAction):
         return ["count", "tracker"]
 
 
+class StreamingActionIncorrectResultType(StreamingAction):
+    def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, dict]:
+        yield {}
+        return "not a dict"
+
+    @property
+    def reads(self) -> list[str]:
+        return []
+
+    @property
+    def writes(self) -> list[str]:
+        return []
+
+    def update(self, result: dict, state: State) -> State:
+        return state
+
+
+class StreamingSingleStepActionIncorrectResultType(SingleStepStreamingAction):
+    def stream_run_and_update(
+        self, state: State, **run_kwargs
+    ) -> Generator[dict, None, Tuple[dict, State]]:
+        yield {}
+        return "not a dict", state
+
+    @property
+    def reads(self) -> list[str]:
+        return []
+
+    @property
+    def writes(self) -> list[str]:
+        return []
+
+
 base_single_step_counter = SingleStepCounter()
 base_single_step_counter_async = SingleStepCounterAsync()
 base_single_step_counter_with_inputs = SingleStepCounterWithInputs()
@@ -445,6 +535,9 @@ base_single_step_counter_with_inputs_async = SingleStepCounterWithInputsAsync()
 
 base_streaming_counter = StreamingCounter()
 base_streaming_single_step_counter = SingleStepStreamingCounter()
+
+base_single_step_action_incorrect_result_type = SingleStepActionIncorrectResultType()
+base_single_step_action_incorrect_result_type_async = SingleStepActionIncorrectResultTypeAsync()
 
 
 def test__run_single_step_action():
@@ -456,6 +549,20 @@ def test__run_single_step_action():
     result, state = _run_single_step_action(action, state, inputs={})
     assert result == {"count": 2}
     assert state.subset("count", "tracker").get_all() == {"count": 2, "tracker": [1, 2]}
+
+
+def test__run_single_step_action_incorrect_result_type():
+    action = base_single_step_action_incorrect_result_type.with_name("counter")
+    state = State({"count": 0, "tracker": []})
+    with pytest.raises(ValueError, match="returned a non-dict"):
+        _run_single_step_action(action, state, inputs={})
+
+
+async def test__arun_single_step_action_incorrect_result_type():
+    action = base_single_step_action_incorrect_result_type_async.with_name("counter")
+    state = State({"count": 0, "tracker": []})
+    with pytest.raises(ValueError, match="returned a non-dict"):
+        await _arun_single_step_action(action, state, inputs={})
 
 
 def test__run_single_step_action_with_inputs():
@@ -529,6 +636,22 @@ def test__run_multistep_streaming_action():
         result, state = e.value
         assert result == {"count": 1}
         assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+
+
+def test__run_streaming_action_incorrect_result_type():
+    action = StreamingActionIncorrectResultType()
+    state = State()
+    with pytest.raises(ValueError, match="returned a non-dict"):
+        gen = _run_multi_step_streaming_action(action, state, inputs={})
+        collections.deque(gen, maxlen=0)  # exhaust the generator
+
+
+def test__run_single_step_streaming_action_incorrect_result_type():
+    action = StreamingSingleStepActionIncorrectResultType()
+    state = State()
+    with pytest.raises(ValueError, match="returned a non-dict"):
+        gen = _run_single_step_streaming_action(action, state, inputs={})
+        collections.deque(gen, maxlen=0)  # exhaust the generator
 
 
 def test__run_single_step_streaming_action():
