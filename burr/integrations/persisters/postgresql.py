@@ -109,9 +109,8 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         """Creates the table"""
         self.create_table(self.table_name)
 
-    # The rest of the methods (list_app_ids, load, save, __del__) remain the same as in the SQLLitePersister class
-
-    def list_app_ids(self, partition_key: str) -> list[str]:
+    def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
+        """Lists the app_ids for a given partition_key."""
         cursor = self.connection.cursor()
         cursor.execute(
             f"SELECT DISTINCT app_id, created_at FROM {self.table_name} "
@@ -123,7 +122,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         return app_ids
 
     def load(
-        self, partition_key: str, app_id: str, sequence_id: int = None
+        self, partition_key: str, app_id: str, sequence_id: int = None, **kwargs
     ) -> Optional[persistence.PersistedStateData]:
         """Loads state for a given partition id.
 
@@ -180,6 +179,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         position: str,
         state: state.State,
         status: Literal["completed", "failed"],
+        **kwargs,
     ):
         """
         Saves the state for a given app_id, sequence_id, and position.
