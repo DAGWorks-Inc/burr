@@ -1,10 +1,9 @@
+from burr.integrations import base
+
 try:
     import psycopg2
-except ImportError:
-    raise ImportError(
-        "Missing plugin PostgreSQL! To use the PostgreSQL plugin, you must install the following libraries: psycopg2. "
-        "You can install this with burr[postgresql] or pip install psycopg2 (replace with your package manager of choice)."
-    )
+except ImportError as e:
+    base.require_plugin(e, ["psycopg2"], "postgresql")
 
 import json
 import logging
@@ -89,11 +88,11 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         cursor.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {table_name} (
-                partition_key varchar(72) NOT NULL,
-                app_id varchar(72) NOT NULL,
+                partition_key TEXT NOT NULL,
+                app_id TEXT NOT NULL,
                 sequence_id INTEGER NOT NULL,
-                position varchar(72) NOT NULL,
-                status varchar(36) NOT NULL,
+                position TEXT NOT NULL,
+                status TEXT NOT NULL,
                 state JSONB NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (partition_key, app_id, sequence_id, position, state)
@@ -224,11 +223,11 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
 
 if __name__ == "__main__":
     # test the PostgreSQLPersister class
-    p = PostgreSQLPersister.from_values(
+    persister = PostgreSQLPersister.from_values(
         "postgres", "postgres", "my_password", "localhost", 54320, table_name="burr_state"
     )
 
-    p.initialize()
-    p.save("pk", "app_id", 1, "pos", state.State({"a": 1, "b": 2}), "completed")
-    print(p.list_app_ids("pk"))
-    print(p.load("pk", "app_id"))
+    persister.initialize()
+    persister.save("pk", "app_id", 1, "pos", state.State({"a": 1, "b": 2}), "completed")
+    print(persister.list_app_ids("pk"))
+    print(persister.load("pk", "app_id"))
