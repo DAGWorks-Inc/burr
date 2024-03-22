@@ -2,9 +2,11 @@
 Burr
 ==============
 
-Welcome to Burr's documentation, the state machine for managing complex data/LLM projects.
+Welcome to Burr's documentation.
 
-Here's a quick video that says "what Burr is" in < 2 minutes:
+For a quick overview, watch the following video (<2 minutes). If you prefer long-form,
+see the `original launch post <https://blog.dagworks.io/p/burr-develop-stateful-ai-applications>`_.
+
 
 .. raw:: html
 
