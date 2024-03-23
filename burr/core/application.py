@@ -375,6 +375,10 @@ class Application:
                 )
         return next_action, result, new_state
 
+    def reset_to_entrypoint(self) -> None:
+        """Resets the state machine to the entrypoint action."""
+        self._set_state(self._state.wipe(delete=[PRIOR_STEP]))
+
     def _update_internal_state_value(self, new_state: State, next_action: Action) -> State:
         """Updates the internal state values of the new state."""
         new_state = new_state.update(
@@ -1396,10 +1400,13 @@ class ApplicationBuilder:
                 else:
                     # else we failed we just start at that node
                     self.start = last_position
-                    self.state = self.state.wipe(delete=[PRIOR_STEP])
+                    self.reset_to_entrypoint()
             else:
                 # self.start is already set to the default. We don't need to do anything.
                 pass
+
+    def reset_to_entrypoint(self):
+        self.state = self.state.wipe(delete=[PRIOR_STEP])
 
     @telemetry.capture_function_usage
     def build(self) -> Application:
