@@ -10,6 +10,10 @@ ML training, simulations, etc...) feel free to jump into the deep end and start 
 We will go over enough of the concepts to help you understand the code, but there is a much more in-depth set of
 explanations in the :ref:`concepts <concepts>` section.
 
+🤔 For an alternative example to get started with, you can also check out
+`this video walkthrough <https://www.youtube.com/watch?v=rEZ4oDN0GdU>`_
+using `this notebook <https://github.com/DAGWorks-Inc/burr/blob/main/examples/blog_post/blog.ipynb>`_.
+
 ------------------
 Build a Counter
 ------------------
