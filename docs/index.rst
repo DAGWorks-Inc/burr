@@ -17,6 +17,12 @@
 
 .. toctree::
    :hidden:
+   :caption: Community
+
+   Discord Server <https://discord.gg/6Zy2DwP4f3>
+
+.. toctree::
+   :hidden:
    :maxdepth: 2
    :caption: Reference:
 

@@ -4,9 +4,15 @@ Burr
 
 Welcome to Burr's documentation.
 
-For a quick overview, watch the following video (<2 minutes). If you prefer long-form,
-see the `original launch post <https://blog.dagworks.io/p/burr-develop-stateful-ai-applications>`_.
+For an overview of Burr, watch `this video walkthrough <https://www.youtube.com/watch?v=rEZ4oDN0GdU>`_ of building a simple
+Burr application (using `this notebook <https://github.com/DAGWorks-Inc/burr/blob/main/examples/blog_post/blog.ipynb>`_),
+or read `our blog post <https://blog.dagworks.io/p/burr-develop-stateful-ai-applications?r=2cg5z1&utm_campaign=post&utm_medium=web>`_:
 
+.. raw:: html
+
+   <div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe width="800" height="455" src="https://www.youtube.com/embed/rEZ4oDN0GdU?si=6RvExhQVsAyNd8Ts" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+
+For a quicker overview, watch the following video (<2 minutes).
 
 .. raw:: html
 
