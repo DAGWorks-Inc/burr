@@ -12,5 +12,6 @@ Examples of more complex/powerful use-cases of Burr. Download/copy these to adap
 .. toctree::
     simple
     chatbot
+    agents
     ml_training
     simulation

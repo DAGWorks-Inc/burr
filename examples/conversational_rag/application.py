@@ -8,6 +8,7 @@ from burr.core import Action, Application, ApplicationBuilder, State, default, e
 from burr.core.action import action
 from burr.lifecycle import LifecycleAdapter, PostRunStepHook, PreRunStepHook
 
+# create the pipeline
 conversational_rag = dataflows.import_module("conversational_rag")
 conversational_rag_driver = (
     driver.Builder()
@@ -15,6 +16,11 @@ conversational_rag_driver = (
     .with_modules(conversational_rag)
     .build()
 )
+
+
+def bootstrap_vector_db(rag_driver: driver.Driver, input_texts: List[str]) -> object:
+    """Bootstrap the vector database with some input texts."""
+    return rag_driver.execute(["vector_store"], inputs={"input_texts": input_texts})["vector_store"]
 
 
 class PrintStepHook(PostRunStepHook, PreRunStepHook):
@@ -27,23 +33,27 @@ class PrintStepHook(PostRunStepHook, PreRunStepHook):
             print("⏳Processing input from user...")
 
     def post_run_step(self, *, state: "State", action: Action, result: dict, **future_kwargs):
+        if action.name == "human_converse":
+            print("🎙💬", result["question"], "\n")
         if action.name == "ai_converse":
-            print("💬", result["conversational_rag_response"], "\n")
+            print("🤖💬", result["conversational_rag_response"], "\n")
 
 
 @action(
-    reads=["input_texts", "question", "chat_history"],
+    reads=["question", "chat_history"],
     writes=["chat_history"],
 )
-def ai_converse(state: State) -> Tuple[dict, State]:
-    """AI conversing step. This calls out to an API on the Hamilton hub (hub.dagworks.io)
-    to do basic RAG"""
+def ai_converse(state: State, vector_store: object) -> Tuple[dict, State]:
+    """AI conversing step. Uses Hamilton to execute the conversational pipeline."""
     result = conversational_rag_driver.execute(
         ["conversational_rag_response"],
         inputs={
-            "input_texts": state["input_texts"],
             "question": state["question"],
             "chat_history": state["chat_history"],
+        },
+        # we use overrides here because we want to pass in the vector store
+        overrides={
+            "vector_store": vector_store,
         },
     )
     new_history = f"AI: {result['conversational_rag_response']}"
@@ -55,7 +65,7 @@ def ai_converse(state: State) -> Tuple[dict, State]:
     writes=["question", "chat_history"],
 )
 def human_converse(state: State, user_question: str) -> Tuple[dict, State]:
-    """Human converse step -- this simply massages the state to be the right shape"""
+    """Human converse step -- make sure we get input, and store it as state."""
     state = state.update(question=user_question).append(chat_history=f"Human: {user_question}")
     return {"question": user_question}, state
 
@@ -65,26 +75,29 @@ def application(
     storage_dir: Optional[str] = "~/.burr",
     hooks: Optional[List[LifecycleAdapter]] = None,
 ) -> Application:
+    # our initial knowledge base
+    input_text = [
+        "harrison worked at kensho",
+        "stefan worked at Stitch Fix",
+        "stefan likes tacos",
+        "elijah worked at TwoSigma",
+        "elijah likes mango",
+        "stefan used to work at IBM",
+        "elijah likes to go biking",
+        "stefan likes to bake sourdough",
+    ]
+    vector_store = bootstrap_vector_db(conversational_rag_driver, input_text)
     app = (
         ApplicationBuilder()
         .with_state(
             **{
-                "input_texts": [
-                    "harrison worked at kensho",
-                    "stefan worked at Stitch Fix",
-                    "stefan likes tacos",
-                    "elijah worked at TwoSigma",
-                    "elijah likes mango",
-                    "stefan used to work at IBM",
-                    "elijah likes to go biking",
-                    "stefan likes to bake sourdough",
-                ],
                 "question": "",
                 "chat_history": [],
             }
         )
         .with_actions(
-            ai_converse=ai_converse,
+            # bind the vector store to the AI conversational step
+            ai_converse=ai_converse.bind(vector_store=vector_store),
             human_converse=human_converse,
             terminal=burr.core.Result("chat_history"),
         )
