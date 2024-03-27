@@ -34,7 +34,8 @@ python application.py
 You'll then have a text terminal where you can interact. Type exit to stop.
 
 # Video Walkthrough via Notebook
-Watch the video walkthrough in the notebook (1.5x+ speed recommended):
-<div>
-<iframe width="800" height="455" src="https://www.youtube.com/embed/t54DCiOH270?si=QpPNs7m2t0L0V8Va" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-</div>
+Watch the video walkthrough with the notebook (1.5x+ speed recommended):
+
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=t54DCiOH270" target="_blank">
+ <img src="http://img.youtube.com/vi/t54DCiOH270/hqdefault.jpg" alt="Watch the video" border="10" />
+</a>
