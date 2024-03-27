@@ -912,13 +912,13 @@ class Application:
     @telemetry.capture_function_usage
     def visualize(
         self,
-        output_file_path: Optional[str],
+        output_file_path: Optional[str] = None,
         include_conditions: bool = False,
         include_state: bool = False,
         view: bool = False,
         engine: Literal["graphviz"] = "graphviz",
         **engine_kwargs: Any,
-    ):
+    ) -> Optional["graphviz.Digraph"]:  # noqa: F821
         """Visualizes the application graph using graphviz. This will render the graph.
 
         :param output_file_path: The path to save this to, None if you don't want to save. Do not pass an extension
@@ -976,7 +976,8 @@ class Application:
                 label=condition.name if include_conditions and condition is not default else None,
                 style="dashed" if transition.condition is not default else "solid",
             )
-        digraph.render(output_file_path, view=view)
+        if output_file_path:
+            digraph.render(output_file_path, view=view)
         return digraph
 
     @staticmethod
