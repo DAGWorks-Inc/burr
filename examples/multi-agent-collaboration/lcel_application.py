@@ -1,3 +1,10 @@
+"""
+Langchain version of the multi-agent collaboration example.
+
+This also adds a tracer to the Langchain calls to trace the execution of the nodes
+within the Action so that they also show up in the Burr UI. This is a
+very simple tracer, it could easily be extended to include more information.
+"""
 import json
 from typing import Annotated, Any, Optional
 from uuid import UUID
@@ -27,16 +34,14 @@ repl = PythonREPL()
 
 
 class LangChainTracer(BaseCallbackHandler):
+    """Example tracer to plug into Burr's tracing capture."""
+
     def __init__(self, tracer: TracerFactory):
         self._tracer: TracerFactory = tracer
         self.active_spans = {}
 
     def on_llm_start(self, serialized: dict[str, Any], prompts: list[str], **kwargs: Any) -> Any:
         """Run when LLM starts running."""
-        # print("LLM STARTED")
-        # print(prompts)
-        # print(serialized)
-        # print(kwargs)
         model_name = kwargs["invocation_params"]["model_name"]
         run_id = kwargs["run_id"]
         name = (model_name + "_" + str(run_id))[:30]
@@ -53,11 +58,6 @@ class LangChainTracer(BaseCallbackHandler):
         **kwargs: Any,
     ) -> Any:
         """Run when LLM ends running."""
-        # print("LLM ENDED")
-        # print(response)
-        # print(run_id)
-        # print(parent_run_id)
-        # print(kwargs)
         model_name = response.llm_output["model_name"]
         name = (model_name + "_" + str(run_id))[:30]
         context_manager = self.active_spans.pop(name)
@@ -101,6 +101,7 @@ def python_repl(code: Annotated[str, "The python code to execute to generate you
 
 # Helper function to create a node for a given agent
 def _agent_node(messages: list, sender: str, agent, name: str, tracer: TracerFactory) -> dict:
+    """Helper function to create a node for a given agent."""
     tracer = LangChainTracer(tracer)
     result = agent.invoke({"messages": messages, "sender": sender}, config={"callbacks": [tracer]})
     # We convert the agent output into a format that is suitable to append to the global state
@@ -139,6 +140,7 @@ def research_node(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
 
 @action(reads=["messages", "sender"], writes=["messages", "sender"])
 def chart_node(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
+    # Chart agent and node
     result = _agent_node(
         state["messages"], state["sender"], chart_agent, "Chart Generator", __tracer
     )
@@ -206,12 +208,20 @@ def default_state_and_entry_point() -> tuple[dict, str]:
 
 
 def main(app_instance_id: str = None):
+    """Main function to run the multi-agent collaboration example.
+
+    Pass in an app_instance_id to restart from a previous run.
+    """
     project_name = "demo:hamilton-multi-agent"
     if app_instance_id:
-        initial_state, entry_point = burr_tclient.LocalTrackingClient.load_state(
-            project_name, app_instance_id
-        )
-        # TODO: rehydrate langchain objects from JSON
+        tracker = burr_tclient.LocalTrackingClient(project_name)
+        persisted_state = tracker.load("demo", app_id=app_instance_id, sequence_no=None)
+        if not persisted_state:
+            print(f"Warning: No persisted state found for app_id {app_instance_id}.")
+            initial_state, entry_point = default_state_and_entry_point()
+        else:
+            initial_state = persisted_state["state"]
+            entry_point = persisted_state["position"]
     else:
         initial_state, entry_point = default_state_and_entry_point()
     app = (

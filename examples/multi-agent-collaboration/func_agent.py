@@ -1,3 +1,8 @@
+"""
+Hamilton module that defines the pipeline for
+hitting an LLM model and asking it what to do.
+"""
+
 import inspect
 import json
 from typing import Callable
@@ -11,18 +16,29 @@ def llm_client() -> openai.OpenAI:
 
 
 def tool_names(tool_function_specs: list[dict]) -> list[str]:
+    """Get the names of the tools from the tool function specs."""
     return [tool["function"]["name"] for tool in tool_function_specs]
 
 
 def _langchain_tool_spec(tool: Callable) -> dict:
+    """Converts a tool to a langchain tool spec."""
     t = convert_to_openai_function(tool)
     # print(t)
     return t
 
 
 def _tool_function_spec(tool: Callable) -> dict:
+    """Converts a python function into a specification for function calling.
+
+    This is a little hacky. But it works.
+
+    It takes a function, introspects it, and returns a spec.
+
+    :param tool:
+    :return:
+    """
     # TODO: maybe just get people to wrap any external tool in a function
-    # to make it clear WTF is going on.
+    # to make it clear what is going on.
     if hasattr(tool, "name") and hasattr(tool, "description") and hasattr(tool, "args_schema"):
         return {"type": "function", "function": _langchain_tool_spec(tool)}
     func_sig = inspect.signature(tool)
@@ -83,10 +99,12 @@ def _tool_function_spec(tool: Callable) -> dict:
 
 
 def tool_function_specs(tools: list[Callable]) -> list[dict]:
+    """Converts a list of tools into a list of tool function specs."""
     return [_tool_function_spec(tool) for tool in tools]
 
 
 def base_system_prompt(tool_names: list[str], system_message: str) -> str:
+    """Creates the base system prompt for the pipeline."""
     return (
         "You are a helpful AI assistant, collaborating with other assistants."
         " Use the provided tools to progress towards answering the question."
@@ -118,6 +136,13 @@ def get_current_weather(location: str, unit: str = "fahrenheit") -> str:
 
 
 def message_history(base_system_prompt: str, user_query: str, messages: list[dict]) -> list[dict]:
+    """Creates the message history for the LLM model.
+
+    :param base_system_prompt:
+    :param user_query:
+    :param messages:
+    :return:
+    """
     base = [
         {"role": "system", "content": base_system_prompt},
         {"role": "user", "content": user_query},
@@ -152,13 +177,12 @@ def llm_function_response(
         tool_choice="auto",
     )
     return response
-    # tool_calls = response_message.tool_calls
-    # return response.choices[0].message.content
 
 
 def llm_function_message(
     llm_function_response: openai.types.chat.chat_completion.ChatCompletion,
 ) -> dict:
+    """Parses the LLM response message. Does extra parsing for tool invocations."""
     response_message = llm_function_response.choices[0].message
     if response_message.tool_calls:
         return {
@@ -166,7 +190,7 @@ def llm_function_message(
             "content": None,
             "tool_calls": [
                 {
-                    "id": t.uid,
+                    "id": t.id,
                     "type": "function",
                     "function": {"name": t.function.name, "arguments": t.function.arguments},
                 }
@@ -193,7 +217,7 @@ def parsed_tool_calls(
     if tool_calls:
         for tool_call in tool_calls:
             func_call = {
-                "id": tool_call.uid,
+                "id": tool_call.id,
                 "function_name": tool_call.function.name,
                 "function_args": tool_call.function.arguments,
             }
@@ -244,6 +268,7 @@ def executed_tool_calls(
 
 
 if __name__ == "__main__":
+    # some code to test a few things.
     jspec = _tool_function_spec(get_current_weather)
     import pprint
 
