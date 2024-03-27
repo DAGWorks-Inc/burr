@@ -1,3 +1,9 @@
+"""
+Hamilton version of the multi-agent collaboration example.
+
+This also adds a tracer to the Hamilton DAG to trace the execution of the nodes
+within the Action so that they also show up in the Burr UI.
+"""
 import json
 from typing import Any, Dict, Optional
 
@@ -15,7 +21,7 @@ from burr.visibility import ActionSpanTracer, TracerFactory
 
 
 class SimpleTracer(h_lifecycle.NodeExecutionHook):
-    """Simple Hamilton Tracer"""
+    """Simple Hamilton Tracer that plugs into Burr's tracing capture."""
 
     def __init__(self, tracer: TracerFactory):
         self._tracer: TracerFactory = tracer
@@ -56,6 +62,7 @@ class SimpleTracer(h_lifecycle.NodeExecutionHook):
 
 
 def initialize_tool_dag(agent_name: str, tracer: TracerFactory) -> driver.Driver:
+    """Initialize the tool DAG with the tracer."""
     tracer = SimpleTracer(tracer)
     # Initialize some things needed for tools.
     tool_dag = driver.Builder().with_modules(func_agent).with_adapters(tracer).build()
@@ -79,8 +86,14 @@ def python_repl(code: str) -> dict:
     return {"status": "success", "code": f"```python\n{code}\n```", "Stdout": result}
 
 
-@action(reads=["query", "messages"], writes=["messages", "next_hop"])
+@action(reads=["query", "messages"], writes=["messages"])
 def chart_generator(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
+    """The chart generator action.
+
+    :param state: state of the application
+    :param __tracer: burr tracer that gets injected.
+    :return:
+    """
     query = state["query"]
     tool_dag = initialize_tool_dag("chart_generator", __tracer)
     result = tool_dag.execute(
@@ -104,8 +117,14 @@ def chart_generator(state: State, __tracer: TracerFactory) -> tuple[dict, State]
 tavily_tool = TavilySearchResults(max_results=5)
 
 
-@action(reads=["query", "messages"], writes=["messages", "next_hop"])
+@action(reads=["query", "messages"], writes=["messages"])
 def researcher(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
+    """The researcher action.
+
+    :param state: state of the application
+    :param __tracer: the burr tracer that gets injected.
+    :return:
+    """
     query = state["query"]
     tool_dag = initialize_tool_dag("researcher", __tracer)
     result = tool_dag.execute(
@@ -130,9 +149,7 @@ tools = [tavily_tool, python_repl]
 
 @action(reads=["messages", "parsed_tool_calls"], writes=["messages", "parsed_tool_calls"])
 def tool_node(state: State) -> tuple[dict, State]:
-    """This runs tools in the graph
-
-    It takes in an agent action and calls that tool and returns the result."""
+    """Given a tool call, execute it and return the result."""
     new_messages = []
     parsed_tool_calls = state["parsed_tool_calls"]
 
@@ -147,11 +164,11 @@ def tool_node(state: State) -> tuple[dict, State]:
             if name == tool_name:
                 tool_found = True
                 kwargs = json.loads(tool_args)
+                # Execute the tool!
                 if hasattr(tool, "_run"):
                     result = tool._run(**kwargs)
                 else:
                     result = tool(**kwargs)
-                # str_result = str(result)
                 new_messages.append(
                     {
                         "tool_call_id": tool_call["id"],
@@ -176,12 +193,15 @@ def terminal_step(state: State) -> tuple[dict, State]:
 
 
 class PrintStepHook(PostRunStepHook):
+    """Prints the action and state after each step."""
+
     def post_run_step(self, *, state: "State", action: "Action", **future_kwargs):
         print("action=====\n", action)
         print("state======\n", state)
 
 
 def default_state_and_entry_point() -> tuple[dict, str]:
+    """Returns the default state and entry point for the application."""
     return {
         "messages": [],
         "query": "Fetch the UK's GDP over the past 5 years,"
@@ -192,12 +212,18 @@ def default_state_and_entry_point() -> tuple[dict, str]:
     }, "researcher"
 
 
-def main(app_instance_id: str = None, sequence_number: int = -1):
+def main(app_instance_id: str = None, sequence_number: int = None):
+    """Main function to run the application."""
     project_name = "demo:hamilton-multi-agent-v1"
     if app_instance_id:
-        state, entry_point = burr_tclient.LocalTrackingClient.load_state(
-            project_name, app_instance_id, sequence_no=sequence_number
-        )
+        tracker = burr_tclient.LocalTrackingClient(project_name)
+        persisted_state = tracker.load("demo", app_id=app_instance_id, sequence_no=sequence_number)
+        if not persisted_state:
+            print(f"Warning: No persisted state found for app_id {app_instance_id}.")
+            state, entry_point = default_state_and_entry_point()
+        else:
+            state = persisted_state["state"]
+            entry_point = persisted_state["position"]
     else:
         state, entry_point = default_state_and_entry_point()
     # look up app_id for particular user
@@ -230,6 +256,7 @@ def main(app_instance_id: str = None, sequence_number: int = -1):
             ("tool_node", "researcher", core.expr("sender == 'researcher'")),
             ("tool_node", "chart_generator", core.expr("sender == 'chart_generator'")),
         )
+        .with_identifiers(partition_key="demo")
         .with_entrypoint(entry_point)
         .with_hooks(PrintStepHook())
         .with_tracker(project=project_name)
@@ -244,12 +271,12 @@ def main(app_instance_id: str = None, sequence_number: int = -1):
 if __name__ == "__main__":
     # Add an app_id to restart from last sequence in that state
     # e.g. fine the ID in the UI and then put it in here "app_f0e4a918-b49c-4ee1-9d2b-30c15104c51c"
-    # _app_id = None  # "app_4ed5b3b3-0f38-4b37-aed7-559d506174c7"
-    _app_id = "app_4ed5b3b3-0f38-4b37-aed7-559d506174c7"
+    _app_id = None  # "app_4ed5b3b3-0f38-4b37-aed7-559d506174c7"
+    _app_id = "8458dc58-7b6c-430b-9ab3-23450774f883"
     # _sequence_no = None  # 23
-    _sequence_no = 23
-    main(None, None)
-    # main(_app_id, _sequence_no)
+    _sequence_no = 5
+    # main(None, None)
+    main(_app_id, _sequence_no)
 
     # some test code
     # tavily_tool = TavilySearchResults(max_results=5)

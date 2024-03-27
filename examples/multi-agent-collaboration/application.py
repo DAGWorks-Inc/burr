@@ -10,7 +10,9 @@ from burr.lifecycle import PostRunStepHook
 from burr.tracking import client as burr_tclient
 
 # Initialize some things needed for tools.
+# see func_agent.py for the code for this pipeline
 tool_dag = driver.Builder().with_modules(func_agent).build()
+# Will run code provided by the LLM.
 repl = PythonREPL()
 
 
@@ -30,7 +32,14 @@ def python_repl(code: str) -> dict:
 
 @action(reads=["query", "messages"], writes=["messages", "next_hop"])
 def chart_generator(state: State) -> tuple[dict, State]:
+    """
+    Generates a chart based on the provided query and updates the state.
+
+    :param state: The current state of the application.
+    :return: A tuple containing the result of the tool execution and the updated state.
+    """
     query = state["query"]
+    # see func_agent.py for the code for this pipeline
     result = tool_dag.execute(
         ["executed_tool_calls", "parsed_tool_calls", "llm_function_message"],
         inputs={
@@ -63,7 +72,14 @@ tavily_tool = TavilySearchResults(max_results=5)
 
 @action(reads=["query", "messages"], writes=["messages", "next_hop"])
 def researcher(state: State) -> tuple[dict, State]:
+    """
+    Performs research based on the provided query and updates the state.
+
+    :param state: The current state of the application.
+    :return: A tuple containing the result of the tool execution and the updated state.
+    """
     query = state["query"]
+    # see func_agent.py for the code for this pipeline
     result = tool_dag.execute(
         ["executed_tool_calls", "parsed_tool_calls", "llm_function_message"],
         inputs={
@@ -92,16 +108,20 @@ def researcher(state: State) -> tuple[dict, State]:
 
 @action(reads=[], writes=[])
 def terminal_step(state: State) -> tuple[dict, State]:
+    """One can express a terminal action like this."""
     return {}, state
 
 
 class PrintStepHook(PostRunStepHook):
+    """Example of a post run step hook that prints the state and action."""
+
     def post_run_step(self, *, state: "State", action: "Action", **future_kwargs):
         print("action=====\n", action)
         print("state======\n", state)
 
 
 def default_state_and_entry_point() -> tuple[dict, str]:
+    """Default state and entry point for the application."""
     return {
         "messages": [],
         "query": "Fetch the UK's GDP over the past 5 years,"
@@ -112,6 +132,11 @@ def default_state_and_entry_point() -> tuple[dict, str]:
 
 
 def main(app_instance_id: str = None):
+    """
+    Builds the application and runs it.
+
+    :param app_instance_id: The ID of the application instance to load the state from.
+    """
     project_name = "demo:hamilton-multi-agent"
     if app_instance_id:
         state, entry_point = burr_tclient.LocalTrackingClient.load_state(
@@ -138,12 +163,12 @@ def main(app_instance_id: str = None):
                 "researcher",
                 "terminal",
                 core.expr("next_hop == 'complete'"),
-            ),  # core.expr("'FINAL ANSWER' in messages[-1]['content']")),
+            ),
             (
                 "chart_generator",
                 "terminal",
                 core.expr("next_hop == 'complete'"),
-            ),  # core.expr("'FINAL ANSWER' in messages[-1]['content']")),
+            ),
         )
         .with_entrypoint(entry_point)
         .with_hooks(PrintStepHook())
@@ -157,8 +182,13 @@ def main(app_instance_id: str = None):
 
 
 if __name__ == "__main__":
-    # Add an app_id to restart from last sequence in that state
-    # e.g. fine the ID in the UI and then put it in here "app_4d1618d2-79d1-4d89-8e3f-70c216c71e63"
+    """
+    The entry point of the application.
+
+    If an app_id is provided, the application will restart from the last
+    sequence in that state.
+    E.g. fine the ID in the UI and then put it in here "app_4d1618d2-79d1-4d89-8e3f-70c216c71e63"
+    """
     _app_id = None
     main(_app_id)
 
