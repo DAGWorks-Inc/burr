@@ -8,7 +8,7 @@ The set up of this example is that you have:
 
 1. Some initial "documents" i.e. knowledge.
 2. We bootstrap a vector store with these documents.
-3. We then have a pipeline that uses a vector store for a RAG query. This example uses a [pre-made conversational RAG pipeline](https://hub.dagworks.io/docs/DAGWorks/conversational_rag/); the prompt isn't hidden under layers of abstraction. 
+3. We then have a pipeline that uses a vector store for a RAG query. This example uses a [pre-made conversational RAG pipeline](https://hub.dagworks.io/docs/DAGWorks/conversational_rag/); the prompt isn't hidden under layers of abstraction.
 4. We hook everything together with Burr that will manage the state
 of the conversation and asking for user inputs.
 
