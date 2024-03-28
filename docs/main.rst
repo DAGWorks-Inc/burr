@@ -4,9 +4,9 @@ Burr
 
 Welcome to Burr's documentation.
 
-For an overview of Burr, watch `this video walkthrough <https://www.youtube.com/watch?v=rEZ4oDN0GdU>`_ of building a simple
-Burr application (using `this notebook <https://github.com/DAGWorks-Inc/burr/blob/main/examples/blog_post/blog.ipynb>`_),
-or read `our blog post <https://blog.dagworks.io/p/burr-develop-stateful-ai-applications?r=2cg5z1&utm_campaign=post&utm_medium=web>`_:
+For a quick overview of Burr, watch `this walkthrough <https://www.loom.com/share/a10f163428b942fea55db1a84b1140d8?sid=1512863b-f533-4a42-a2f3-95b13deb07c9>`_
+or read `our blog post <https://blog.dagworks.io/p/burr-develop-stateful-ai-applications?r=2cg5z1&utm_campaign=post&utm_medium=web>`_. The following video is
+a longer demo of building a simple chatbot application with Burr using `this notebook <https://github.com/DAGWorks-Inc/burr/blob/main/examples/blog_post/blog.ipynb>`_:
 
 .. raw:: html
 
