@@ -17,13 +17,26 @@ Install from `pypi`:
 pip install "burr[start]"
 ```
 
-Then run the server:
+Then run the UI server:
 
 ```bash
 burr
 ```
-This will open up a demo -- to chat it requires the `OPENAI_API_KEY` environment variable to be set,
-but you can still see how it works if you don't have one.
+This will open up Burr's telemetry UI. It comes loaded with some default data so you can click around.
+It also has a demo chat application to help demonstrate what the UI captures enabling you too see things changing in
+real-time. Hit the "Demos" side bar on the left and select `chatbot`. To chat it requires the `OPENAI_API_KEY`
+environment variable to be set, but you can still see how it works if you don't have an API key set.
+
+Next, start coding / running examples:
+
+```bash
+git clone https://github.com/dagworks-inc/burr && cd burr/examples/counter
+python application.py
+```
+You'll see the counter example running in the terminal, along with the trace being tracked in the UI.
+See if you can find it.
+
+For more details see the [getting started guide](https://burr.dagworks.io/getting_started/simple-example/).
 
 ## 🔩 How does Burr work?
 
