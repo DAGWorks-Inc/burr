@@ -9,8 +9,8 @@ All of the following are pre-populated in the UI under ``projects/``. You can st
 
     burr
 
-In-app chatbot ``demo:chatbot``
-------------------------------------
+Telemetry UI chatbot demo ``demo:chatbot``
+------------------------------------------
 
 You'll need the env variable ``OPENAI_API_KEY`` set to your api key for this to work. If you don't
 have one, you'll still be able to run it and explore, you just won't be able to chat.
@@ -28,12 +28,17 @@ Then:
     burr-demo
 
 If you've run ``burr`` and have it open on port 7241, just navigate to `demos/chatbot <http://localhost:7241/demos/chatbot>`_.
+
+Repository Examples
+-------------------
+
 For the next examples you'll need the repository cloned:
 
 .. code-block:: bash
 
     git clone https://github.com/dagworks-inc/burr && cd burr
 
+-------------------------------
 Simple Counter ``demo:counter``
 -------------------------------
 
@@ -42,6 +47,7 @@ Simple Counter ``demo:counter``
     cd examples/counter
     python application.py
 
+-------------------------------------------
 Interactive RAG ``demo:conversational-rag``
 -------------------------------------------
 
@@ -53,7 +59,7 @@ This is a toy interactive RAG example. You'll ask questions in the terminal abou
     pip install -r requirements.txt
     python application.py
 
-----------------------
+
 Understanding Concepts
 ----------------------
 
