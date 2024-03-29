@@ -22,6 +22,17 @@ Please:
 #. Ensure all new features have tests
 #. Add documentation for new features
 
+Examples
+--------
+
+All examples must have the following files:
+1. A ``README.md`` file that describes the example -- this should follow the pattern of the others
+2. A ``requirements.txt`` file that lists the dependencies for the example
+3. An ``application.py`` file whose mainline runs a simple version of the example + generates the DAG to
+4. A ``statemachine.png`` file that shows the DAG for the example
+3. A `notebook.ipynb` file that uses the example in a
+
+The ``notebook.ipynb`` can import stuff from the ``application.py``, or redefine it as an example.
 
 ---------------
 Developer notes

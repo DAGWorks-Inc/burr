@@ -37,3 +37,16 @@ jobs:
       - name: Run tests
         run: |
           python -m pytest tests
+
+  validate-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+      - name: Install dependencies
+        run: |
+          python -m pip install -e ".[tests]"
+      - name: Validate examples
+        working-directory: ./examples
+        run: |
+          python -m pytest validate_examples.py
