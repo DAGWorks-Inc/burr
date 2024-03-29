@@ -1,2 +1,0 @@
-burr[streamlit,graphviz]
-cowsay

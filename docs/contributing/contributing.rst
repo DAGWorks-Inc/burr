@@ -32,7 +32,8 @@ All examples must have the following files:
 4. A ``statemachine.png`` file that shows the DAG for the example
 3. A `notebook.ipynb` file that uses the example in a
 
-The ``notebook.ipynb`` can import stuff from the ``application.py``, or redefine it as an example.
+The ``notebook.ipynb`` can import stuff from the ``application.py``, or redefine it as an example. If you have something
+that does not fit this, or is a prototype but you want to push it in, you can fit in under the ``half-baked`` directory.
 
 ---------------
 Developer notes
