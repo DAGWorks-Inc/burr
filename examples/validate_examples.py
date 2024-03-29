@@ -12,16 +12,16 @@ REQUIRED_FILES = [
     "__init__.py",  # included as we want them all to be importable
 ]
 
-
 FILTERLIST = ["half-baked", "ml-training"]
+
 
 def should_validate(directory: str) -> bool:
     """Return True if the given directory is an example directory."""
     return (
-        os.path.isdir(os.path.join(EXAMPLES_DIR, directory))
-        and not directory.startswith(".")
-        and not directory.startswith("_")
-        and directory not in FILTERLIST
+            os.path.isdir(os.path.join(EXAMPLES_DIR, directory))
+            and not directory.startswith(".")
+            and not directory.startswith("_")
+            and directory not in FILTERLIST
     )
 
 
