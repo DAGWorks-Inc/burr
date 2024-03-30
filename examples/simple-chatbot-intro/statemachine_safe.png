@@ -1,0 +1,14 @@
+digraph {
+	graph [compound=false concentrate=false rankdir=TB ranksep=0.4]
+	human_input [label=human_input shape=box style=rounded]
+	input__prompt [label="input: prompt" shape=oval style=dashed]
+	input__prompt -> human_input
+	ai_response [label=ai_response shape=box style=rounded]
+	safety_check [label=safety_check shape=box style=rounded]
+	unsafe_response [label=unsafe_response shape=box style=rounded]
+	human_input -> safety_check [style=solid]
+	safety_check -> unsafe_response [label="safe=False" style=dashed]
+	safety_check -> ai_response [label="safe=True" style=dashed]
+	unsafe_response -> human_input [style=solid]
+	ai_response -> human_input [style=solid]
+}
