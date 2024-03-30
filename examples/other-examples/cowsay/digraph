@@ -1,0 +1,10 @@
+digraph {
+	graph [compound=false concentrate=false rankdir=TB ranksep=0.4]
+	say_nothing [label=say_nothing shape=box style=rounded]
+	say_hello [label=say_hello shape=box style=rounded]
+	cow_should_speak [label=cow_should_speak shape=box style=rounded]
+	cow_should_speak -> say_hello [label=cow_should_speak style=dashed]
+	say_hello -> cow_should_speak [style=solid]
+	cow_should_speak -> say_nothing [label="not cow_should_speak" style=dashed]
+	say_nothing -> cow_should_speak [style=solid]
+}
