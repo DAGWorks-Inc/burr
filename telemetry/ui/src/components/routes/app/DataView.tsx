@@ -1,3 +1,4 @@
+import React from 'react';
 import { Step } from '../../../api';
 import JsonView from '@uiw/react-json-view';
 import { Button } from '../../common/button';
@@ -22,6 +23,7 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
   const resultData = stepToExamine?.step_end_log?.result;
   const inputs = stepToExamine?.step_start_log?.inputs;
   const error = props.currentStep?.step_end_log?.exception;
+  const [viewRawData, setViewRawData] = useState<'raw' | 'render'>('render');
 
   return (
     <div className="h-full pl-3 pt-2 flex flex-col gap-2">
@@ -29,13 +31,29 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
         <h1 className="text-2xl text-gray-600 font-semibold">State</h1>
         <div className="flex flex-row justify-end gap-2 pr-2">
           {stateData !== undefined && (
-            <StateButton
-              label="after"
-              selected={whichState === 'after'}
-              setSelected={() => {
-                setWhichState('after');
-              }}
-            />
+            <>
+              <StateButton
+                label="raw"
+                selected={viewRawData === 'raw'}
+                setSelected={() => {
+                  setViewRawData('raw');
+                }}
+              />
+              <StateButton
+                label="render"
+                selected={viewRawData === 'render'}
+                setSelected={() => {
+                  setViewRawData('render');
+                }}
+              />
+              <StateButton
+                label="after"
+                selected={whichState === 'after'}
+                setSelected={() => {
+                  setWhichState('after');
+                }}
+              />
+            </>
           )}
 
           {
@@ -50,7 +68,11 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
         </div>
       </div>
 
-      {stateData !== undefined && (
+      {stateData !== undefined && viewRawData === 'render' && (
+        // <JsonView value={stateData} collapsed={2} enableClipboard={false} />
+        <FormRenderer data={stateData} />
+      )}
+      {stateData !== undefined && viewRawData === 'raw' && (
         <JsonView value={stateData} collapsed={2} enableClipboard={false} />
       )}
       {error && (
@@ -74,3 +96,36 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
     </div>
   );
 };
+
+interface FormRendererProps {
+  data: Record<string, string | number | boolean | object>;
+}
+const FormRenderer: React.FC<FormRendererProps> = ({ data }) => {
+  const renderField = (value: string | number | boolean | object, key: string) => {
+    if (typeof value === 'string') {
+      return (
+        <div key={key} className="border">
+          <label className="border">{key}</label>
+          <br />
+          <pre>{value}</pre>
+        </div>
+      );
+    } else {
+      return (
+        <div key={key} className="border">
+          <label className="border">{key}</label>
+          <br />
+          <span>{value.toString()}</span>
+        </div>
+      );
+    }
+  };
+
+  const renderFields = () => {
+    return Object.entries(data).map(([key, value]) => renderField(value, key));
+  };
+
+  return <div>{renderFields()}</div>;
+};
+
+export default FormRenderer;
