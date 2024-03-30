@@ -107,7 +107,12 @@ const FormRenderer: React.FC<FormRendererProps> = ({ data }) => {
         <div key={key} className="border">
           <label className="border">{key}</label>
           <br />
-          <pre>{value}</pre>
+          <pre
+            className=""
+            style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', maxWidth: '1000px' }}
+          >
+            {value}
+          </pre>
         </div>
       );
     } else {
