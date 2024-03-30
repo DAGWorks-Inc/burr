@@ -30,7 +30,7 @@ environment variable to be set, but you can still see how it works if you don't 
 Next, start coding / running examples:
 
 ```bash
-git clone https://github.com/dagworks-inc/burr && cd burr/examples/counter
+git clone https://github.com/dagworks-inc/burr && cd burr/examples/hello-world-counter
 python application.py
 ```
 You'll see the counter example running in the terminal, along with the trace being tracked in the UI.
