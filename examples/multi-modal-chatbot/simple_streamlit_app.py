@@ -22,7 +22,7 @@ def render_chat_message(chat_item: dict):
 def initialize_app() -> burr.core.Application:
     if "burr_app" not in st.session_state:
         st.session_state.burr_app = chatbot_application.application(
-            use_hamilton=False, app_id=f"chat:{str(uuid.uuid4())[0:6]}"
+            app_id=f"chat:{str(uuid.uuid4())[0:6]}"
         )
     return st.session_state.burr_app
 
