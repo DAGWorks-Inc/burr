@@ -1,4 +1,5 @@
 import functools
+import importlib
 from typing import List, Literal
 
 import pydantic
@@ -6,7 +7,10 @@ from fastapi import FastAPI
 from starlette.requests import Request
 
 from burr.core import Application
-from burr.examples.gpt import application as chat_application
+
+chat_application = importlib.import_module(
+    "burr.examples.multi-modal-chatbot.application"
+)  # noqa: F401
 
 
 class ChatItem(pydantic.BaseModel):
@@ -17,7 +21,7 @@ class ChatItem(pydantic.BaseModel):
 
 @functools.lru_cache(maxsize=128)
 def _get_application(project_id: str, app_id: str) -> Application:
-    app = chat_application.application(use_hamilton=False, app_id=app_id, project_id=project_id)
+    app = chat_application.application(app_id=app_id, project_id=project_id)
     return app
 
 
@@ -45,7 +49,7 @@ async def create_new_application(request: Request, project_id: str, app_id: str)
     In a better chatbot you'd want to either have the frontend store this and create on demand or return
     the actual application model"""
     # side-effect creates the logging so it exists
-    chat_application.application(use_hamilton=False, app_id=app_id, project_id=project_id)
+    chat_application.application(app_id=app_id, project_id=project_id)
     return app_id  # just return it for now
 
 
