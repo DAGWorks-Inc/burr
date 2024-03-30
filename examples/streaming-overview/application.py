@@ -1,10 +1,9 @@
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import openai
 
 from burr.core import ApplicationBuilder, State, default, when
 from burr.core.action import action, streaming_action
-from burr.lifecycle import LifecycleAdapter
 
 MODES = {
     "answer_question": "text",
@@ -128,9 +127,7 @@ def image_response(state: State, model: str = "dall-e-2") -> Tuple[dict, State]:
     return result, state.update(**result).append(chat_history=result["response"])
 
 
-def application(hooks: List[LifecycleAdapter], app_id: Optional[str] = None):
-    if hooks is None:
-        hooks = []
+def application(app_id: Optional[str] = None):
     return (
         ApplicationBuilder()
         .with_actions(
@@ -168,7 +165,6 @@ def application(hooks: List[LifecycleAdapter], app_id: Optional[str] = None):
                 "prompt",
             ),
         )
-        .with_hooks(*hooks)
         .with_tracker(project="demo:chatbot_streaming")
         .with_identifiers(app_id=app_id)
         .build()
@@ -185,4 +181,6 @@ TERMINAL_ACTIONS = [
 ]
 if __name__ == "__main__":
     app = application(hooks=[])
-    app.visualize(output_file_path="digraph", include_conditions=False, view=True, format="png")
+    app.visualize(
+        output_file_path="statemachine", include_conditions=False, view=True, format="png"
+    )

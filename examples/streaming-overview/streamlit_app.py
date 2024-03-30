@@ -28,7 +28,7 @@ def render_streaming_chat_message(stream: StreamingResultContainer):
 def initialize_app() -> burr.core.Application:
     if "burr_app" not in st.session_state:
         st.session_state.burr_app = chatbot_application.application(
-            app_id=f"chat_streaming:{str(uuid.uuid4())[0:6]}", hooks=[]
+            app_id=f"chat_streaming:{str(uuid.uuid4())[0:6]}"
         )
     return st.session_state.burr_app
 
@@ -51,12 +51,6 @@ def main():
             render_streaming_chat_message(streaming_container)
         else:
             render_chat_message(streaming_container.get()[0]["response"])
-
-        # for action, result, state in app.iterate(
-        #     inputs={"prompt": prompt}, halt_after=["response"]
-        # ):
-        #     if action.name in ["prompt", "response"]:
-        #         render_chat_message(result["chat_item"])
 
 
 if __name__ == "__main__":
