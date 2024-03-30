@@ -5,8 +5,8 @@ This example resembles the example from following [cookbook](https://github.com/
 There are three implementations:
 
 1. `hamilton_application.py` -- this uses [Hamilton](https://github.com/dagworks-inc/hamilton) inside the actions.
-2. `lecl_application.py` -- this uses LangChain's LCEL inside the actions.
-3. `application.py` -- this tries to simplify the graph to have tool calling happen inside the actions.
+2. `lcel_application.py` -- this uses LangChain's LCEL inside the actions.
+3. `application.py` -- this simplifies the graph to have tool calling happen inside the actions.
 
 # `hamilton_application.py` vs `lecl_application.py`:
 

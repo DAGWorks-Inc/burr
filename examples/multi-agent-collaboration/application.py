@@ -1,3 +1,5 @@
+from typing import Optional
+
 import func_agent
 from hamilton import driver
 from langchain_community.tools.tavily_search import TavilySearchResults
@@ -131,13 +133,9 @@ def default_state_and_entry_point() -> tuple[dict, str]:
     }, "researcher"
 
 
-def main(app_instance_id: str = None):
-    """
-    Builds the application and runs it.
-
-    :param app_instance_id: The ID of the application instance to load the state from.
-    """
+def application(app_instance_id: Optional[str] = None):
     project_name = "demo:hamilton-multi-agent"
+    # TODO -- use the new persistence API
     if app_instance_id:
         state, entry_point = burr_tclient.LocalTrackingClient.load_state(
             project_name,
@@ -145,7 +143,6 @@ def main(app_instance_id: str = None):
         )
     else:
         state, entry_point = default_state_and_entry_point()
-
     app = (
         ApplicationBuilder()
         .with_state(**state)
@@ -175,10 +172,7 @@ def main(app_instance_id: str = None):
         .with_tracker(project=project_name)
         .build()
     )
-    app.visualize(
-        output_file_path="hamilton-multi-agent", include_conditions=True, view=True, format="png"
-    )
-    app.run(halt_after=["terminal"])
+    return app
 
 
 if __name__ == "__main__":
@@ -189,8 +183,9 @@ if __name__ == "__main__":
     sequence in that state.
     E.g. fine the ID in the UI and then put it in here "app_4d1618d2-79d1-4d89-8e3f-70c216c71e63"
     """
-    _app_id = None
-    main(_app_id)
+    app = application(app_instance_id=None)
+    app.visualize(output_file_path="statemachine", include_conditions=True, view=True, format="png")
+    app.run(halt_after=["terminal"])
 
     # some test code
     # tavily_tool = TavilySearchResults(max_results=5)
