@@ -1,12 +1,11 @@
 import json
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 from openai import Client
 
 import burr.core
 from burr.core import Application, State, default, when
 from burr.core.action import action
-from burr.lifecycle import LifecycleAdapter
 
 RESTRICTIONS = """You're a small corgi with short legs. You can't jump high,
  you can't run fast, you can't perform feats of athleticism in general
@@ -107,7 +106,6 @@ def win(state: State) -> Tuple[dict, State]:
 def application(
     app_id: Optional[str] = None,
     storage_dir: Optional[str] = "~/.burr",
-    hooks: Optional[List[LifecycleAdapter]] = None,
 ) -> Application:
     return (
         burr.core.ApplicationBuilder()
