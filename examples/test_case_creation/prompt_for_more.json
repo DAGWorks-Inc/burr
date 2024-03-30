@@ -1,0 +1,19 @@
+[
+  {
+    "action": "prompt_for_more",
+    "name": "demo-test",
+    "input_state": {
+      "prompt": "",
+      "chat_history": []
+    },
+    "expected_state": {
+      "prompt": "",
+      "chat_history": [],
+      "response": {
+        "content": "None of the response modes I support apply to your question. Please clarify?",
+        "type": "text",
+        "role": "assistant"
+      }
+    }
+  }
+]
