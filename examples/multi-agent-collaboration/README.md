@@ -53,7 +53,7 @@ Application run:
 
 or
 ```bash
-python lecl_application.py
+python lcel_application.py
 ```
 Application run:
 ![lcel image](lcel-multi-agent.png)

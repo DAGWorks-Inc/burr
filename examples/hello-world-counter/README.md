@@ -22,4 +22,4 @@ streamlit run streamlit_app.py
 
 This will open a chrome window and print out the URL. The state machine this encapsulates takes the following form:
 
-![State Machine](digraph.png)
+![State Machine](statemachine.png)

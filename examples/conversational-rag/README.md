@@ -33,6 +33,9 @@ python application.py
 
 You'll then have a text terminal where you can interact. Type exit to stop.
 
+# Application That's Defined:
+![Application Image](statemachine.png)
+
 # Video Walkthrough via Notebook
 Watch the video walkthrough with the notebook (1.5x+ speed recommended):
 
