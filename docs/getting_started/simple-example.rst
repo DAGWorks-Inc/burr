@@ -12,7 +12,7 @@ explanations in the :ref:`concepts <concepts>` section.
 
 🤔 For an alternative example to get started with, you can also check out
 `this video walkthrough <https://www.youtube.com/watch?v=rEZ4oDN0GdU>`_
-using `this notebook <https://github.com/DAGWorks-Inc/burr/blob/main/examples/blog_post/blog.ipynb>`_.
+using `this notebook <https://github.com/DAGWorks-Inc/burr/blob/main/examples/conversational-rag/notebook.ipynb>`_.
 
 ------------------
 Build a Counter

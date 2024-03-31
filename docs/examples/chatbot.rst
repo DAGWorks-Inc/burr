@@ -8,12 +8,12 @@ perfect use case for using Burr.
 GPT-like chatbot
 ----------------
 
-See `github repository example <https://github.com/DAGWorks-Inc/burr/tree/main/examples/gpt>`_.
+See `github repository example <https://github.com/DAGWorks-Inc/burr/tree/main/examples/multi-modal-chatbot>`_.
 
 
 Conversational RAG chatbot
 --------------------------
-See `github example <https://github.com/DAGWorks-Inc/burr/tree/main/examples/conversational_rag>`_.
+See `github example <https://github.com/DAGWorks-Inc/burr/tree/main/examples/conversational-rag>`_.
 
 Accompanying video walkthrough:
 
