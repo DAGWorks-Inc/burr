@@ -44,7 +44,7 @@ Simple Counter ``demo:counter``
 
 .. code-block:: bash
 
-    cd examples/counter
+    cd examples/hello-world-counter
     python application.py
 
 -------------------------------------------
@@ -55,7 +55,7 @@ This is a toy interactive RAG example. You'll ask questions in the terminal abou
 
 .. code-block:: bash
 
-    cd examples/conversational_rag
+    cd examples/conversational-rag
     pip install -r requirements.txt
     python application.py
 

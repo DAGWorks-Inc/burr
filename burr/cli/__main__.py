@@ -166,7 +166,7 @@ def generate_demo_data():
     git_root = _get_git_root()
     # We need to add the examples directory to the path so we have all the imports
     # The GPT-one relies on a local import
-    sys.path.extend([git_root, f"{git_root}/examples/gpt"])
+    sys.path.extend([git_root, f"{git_root}/examples/multi-modal-chatbot"])
     from burr.cli.demo_data import generate_all
 
     with cd(git_root):
