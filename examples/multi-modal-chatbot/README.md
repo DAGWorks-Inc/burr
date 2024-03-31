@@ -17,7 +17,7 @@ worry about putting in a DAG. As examples get more complex, we anticipate that H
 
 The state machine this encapsulates takes the following form:
 
-![State Machine](digraph.png)
+![State Machine](statemachine.png)
 
 Note that it is currently wired up to handle errors in the state machine, but the actions do not respect that yet. Coming soon.
 
@@ -25,21 +25,28 @@ We have three files:
 
 - [application.py](application.py) -- This contains a mainline to generate the graph portrayal.
 - [requirements.txt](requirements.txt) -- Just the requirements. All this needs is Burr/Streamlit/openai
-- [streamlit_app.py](streamlit_app.py) -- This contains a simple Streamlit app to interact with the cow
-- [application_with_traces.py](application_with_traces.py) -- This showcases how to use the tracing feature.
+- [simple_streamlit_app.py](simple_streamlit_app.py) -- This contains a more sophisticated Streamlit app to interact with.
+- [streamlit_app.py](streamlit_app.py) -- This contains a simple Streamlit app to interact with that is more
+sophisticated than the simple version. It contains a more sophisticated UI that also visualizes the Burr application.
 You must have your `OPENAI_API_KEY` set in your environment. You can do this by running.
-
-To run on streamlit, you can launch the app:
-
-```bash
-streamlit run streamlit_app.py
-```
-
-This has the state machihne displayed as well as a quick debugging/demo. You should be using the UI,
-however, as it is more powerful and responsive. You can run the simple app with:
 
 ```bash
 streamlit run simple_streamlit_app.py & burr
 ```
 
-This will open up both a streamlit app and a server at the same time.
+This will open up both a streamlit app and a server at the same time. Interact with the app, and see
+interactions in the Burr UI.
+
+
+Alternatively, run the more sophisticated streamlit app:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+This streamlit app renders the statemachine as well as exposing the burr application showing you
+can build a more sophisticated UI around the Burr application.
+
+
+## Tracing
+To see a tracing example see this [example](../tracing-and-spans).
