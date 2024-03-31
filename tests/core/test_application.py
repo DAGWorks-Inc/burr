@@ -1,7 +1,7 @@
 import asyncio
 import collections
 import logging
-from typing import Awaitable, Callable, Generator, Tuple
+from typing import Any, Awaitable, Callable, Dict, Generator, Tuple
 
 import pytest
 
@@ -14,6 +14,7 @@ from burr.core.action import (
     SingleStepAction,
     SingleStepStreamingAction,
     StreamingAction,
+    action,
     default,
     expr,
 )
@@ -978,9 +979,9 @@ async def test_aiterate():
     counter = 0
     # Note that we use an async-for loop cause the API is different, this doesn't
     # return anything (async generators are not allowed to).
-    async for action, result, state in gen:
-        print("si", app.sequence_id, action.name, state)
-        if action.name == "counter":
+    async for action_, result, state in gen:
+        print("si", app.sequence_id, action_.name, state)
+        if action_.name == "counter":
             assert state["count"] == result["count"] == counter + 1
             counter = result["count"]
         else:
@@ -1007,8 +1008,8 @@ async def test_aiterate_halt_before():
     counter = 0
     # Note that we use an async-for loop cause the API is different, this doesn't
     # return anything (async generators are not allowed to).
-    async for action, result, state in gen:
-        if action.name == "counter":
+    async for action_, result, state in gen:
+        if action_.name == "counter":
             assert state["count"] == counter + 1
             counter = result["count"]
         else:
@@ -1032,8 +1033,8 @@ async def test_app_aiterate_with_inputs():
         sequence_id=0,
     )
     gen = app.aiterate(halt_after=["result"], inputs={"additional_increment": 10})
-    async for action, result, state in gen:
-        if action.name == "counter":
+    async for action_, result, state in gen:
+        if action_.name == "counter":
             assert result["count"] == state["count"] == 11
         else:
             assert state["count"] == result["count"] == 11
@@ -1095,8 +1096,8 @@ def test_run_with_inputs():
         uid="test-123",
         sequence_id=0,
     )
-    action, result, state = app.run(halt_after=["result"], inputs={"additional_increment": 10})
-    assert action.name == "result"
+    action_, result, state = app.run(halt_after=["result"], inputs={"additional_increment": 10})
+    assert action_.name == "result"
     assert state["count"] == result["count"] == 11
 
 
@@ -1115,9 +1116,9 @@ async def test_arun():
         uid="test-123",
         sequence_id=0,
     )
-    action, result, state = await app.arun(halt_after=["result"])
+    action_, result, state = await app.arun(halt_after=["result"])
     assert state["count"] == result["count"] == 10
-    assert action.name == "result"
+    assert action_.name == "result"
 
 
 async def test_arun_halt_before():
@@ -1135,10 +1136,10 @@ async def test_arun_halt_before():
         uid="test-123",
         sequence_id=0,
     )
-    action, result, state = await app.arun(halt_before=["result"])
+    action_, result, state = await app.arun(halt_before=["result"])
     assert state["count"] == 10
     assert result is None
-    assert action.name == "result"
+    assert action_.name == "result"
 
 
 async def test_arun_with_inputs():
@@ -1156,11 +1157,11 @@ async def test_arun_with_inputs():
         uid="test-123",
         sequence_id=0,
     )
-    action, result, state = await app.arun(
+    action_, result, state = await app.arun(
         halt_after=["result"], inputs={"additional_increment": 10}
     )
     assert state["count"] == result["count"] == 11
-    assert action.name == "result"
+    assert action_.name == "result"
 
 
 async def test_app_a_run_async_and_sync():
@@ -1180,7 +1181,7 @@ async def test_app_a_run_async_and_sync():
         uid="test-123",
         sequence_id=0,
     )
-    action, result, state = await app.arun(halt_after=["result"])
+    action_, result, state = await app.arun(halt_after=["result"])
     assert state["count"] > 20
     assert result["count"] > 20
 
@@ -1201,7 +1202,7 @@ def test_stream_result_halt_after():
         uid="test-123",
         sequence_id=0,
     )
-    action, streaming_container = app.stream_result(halt_after=["counter_2"])
+    action_, streaming_container = app.stream_result(halt_after=["counter_2"])
     results = list(streaming_container)
     assert len(results) == 10
     result, state = streaming_container.get()
@@ -1229,7 +1230,7 @@ def test_stream_result_halt_after_single_step():
         uid="test-123",
         sequence_id=0,
     )
-    action, streaming_container = app.stream_result(halt_after=["counter_2"])
+    action_, streaming_container = app.stream_result(halt_after=["counter_2"])
     results = list(streaming_container)
     assert len(results) == 10
     result, state = streaming_container.get()
@@ -1261,7 +1262,7 @@ def test_stream_result_halt_after_run_through_final_streaming():
         uid="test-123",
         sequence_id=0,
     )
-    action, streaming_container = app.stream_result(halt_after=["counter_streaming"])
+    action_, streaming_container = app.stream_result(halt_after=["counter_streaming"])
     results = list(streaming_container)
     assert len(results) == 10
     result, state = streaming_container.get()
@@ -1667,3 +1668,23 @@ def test_application_builder_initialize_does_not_allow_state_setting():
             default_state={},
             default_entrypoint="foo",
         )
+
+
+def test_application_builder_assigns_correct_actions_with_dual_api():
+    counter_action = base_counter_action.with_name("counter")
+    result_action = Result("count")
+
+    @action(reads=[], writes=[])
+    def test_action(state: State) -> Tuple[State, Dict[str, Any]]:
+        return state, {}
+
+    app = (
+        ApplicationBuilder()
+        .with_state(count=0)
+        .with_actions(counter_action, test_action, result=result_action)
+        .with_transitions()
+        .with_entrypoint("counter")
+        .build()
+    )
+    graph = app.graph
+    assert {a.name for a in graph.actions} == {"counter", "result", "test_action"}

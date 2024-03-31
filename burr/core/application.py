@@ -1,6 +1,7 @@
 import collections
 import dataclasses
 import functools
+import inspect
 import logging
 import pprint
 import uuid
@@ -1220,16 +1221,31 @@ class ApplicationBuilder:
         self.start = action
         return self
 
-    def with_actions(self, **actions: Union[Action, Callable]) -> "ApplicationBuilder":
+    def with_actions(
+        self, *action_list: Union[Action, Callable], **action_dict: Union[Action, Callable]
+    ) -> "ApplicationBuilder":
         """Adds an action to the application. The actions are granted names (using the with_name)
-        method post-adding, using the kw argument. Thus, this is the only supported way to add actions.
+        method post-adding, using the kw argument. If it already has a name (or you wish to use the function name, raw, and
+        it is a function-based-action), then you can use the *args* parameter. This is the only supported way to add actions.
 
-        :param actions: Actions to add, keyed by name
+        :param action_list: Actions to add -- these must have a name or be function-based (in which case we will use the function-name)
+        :param action_dict: Actions to add, keyed by name
         :return: The application builder for future chaining.
         """
         if self.actions is None:
             self.actions = []
-        for key, value in actions.items():
+        for action_value in action_list:
+            if inspect.isfunction(action_value):
+                self.actions.append(create_action(action_value, action_value.__name__))
+            elif isinstance(action_value, Action):
+                if not action_value.name:
+                    raise ValueError(
+                        f"Action: {action_value} must have a name set. "
+                        "If you hit this, you should probably be using the "
+                        "**kwargs parameter (or call with_name(your_name) on the action)."
+                    )
+                self.actions.append(action_value)
+        for key, value in action_dict.items():
             self.actions.append(create_action(value, key))
         return self
 
