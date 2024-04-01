@@ -18,6 +18,12 @@ except ImportError as e:
         "tracking",
     )
 
+try:
+    # try to import to serialize Langchain messages
+    from langchain_core import messages as lc_messages
+except ImportError:
+    lc_messages = None
+
 
 class IdentifyingModel(pydantic.BaseModel):
     type: str
@@ -120,7 +126,9 @@ def _serialize_object(d: object) -> Union[dict, list, object]:
         return [_serialize_object(x) for x in d]
     elif isinstance(d, dict):
         return {k: _serialize_object(v) for k, v in d.items()}
-    elif hasattr(d, "model_dump"):
+    elif lc_messages is not None and isinstance(d, lc_messages.BaseMessage):
+        return lc_messages.message_to_dict(d)
+    elif hasattr(d, "model_dump"):  # generic pydantic object
         return d.model_dump()
     elif hasattr(d, "to_json"):
         return d.to_json()

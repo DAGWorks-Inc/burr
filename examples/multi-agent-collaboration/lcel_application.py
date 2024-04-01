@@ -212,7 +212,7 @@ def main(app_instance_id: str = None):
 
     Pass in an app_instance_id to restart from a previous run.
     """
-    project_name = "demo:hamilton-multi-agent"
+    project_name = "demo:lcel-multi-agent"
     if app_instance_id:
         tracker = burr_tclient.LocalTrackingClient(project_name)
         persisted_state = tracker.load("demo", app_id=app_instance_id, sequence_no=None)
@@ -221,6 +221,12 @@ def main(app_instance_id: str = None):
             initial_state, entry_point = default_state_and_entry_point()
         else:
             initial_state = persisted_state["state"]
+            # for now we need to manually deserialize LangChain messages into LangChain Objects
+            from langchain_core import messages
+
+            initial_state = initial_state.update(
+                messages=messages.messages_from_dict(persisted_state["state"]["messages"])
+            )
             entry_point = persisted_state["position"]
     else:
         initial_state, entry_point = default_state_and_entry_point()
@@ -245,7 +251,7 @@ def main(app_instance_id: str = None):
         )
         .with_entrypoint(entry_point)
         .with_hooks(PrintStepHook())
-        .with_tracker(project="demo:lcel-multi-agent")
+        .with_tracker(project=project_name)
         .build()
     )
     app.visualize(
