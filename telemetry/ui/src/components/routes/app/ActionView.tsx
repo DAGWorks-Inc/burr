@@ -39,7 +39,7 @@ export const ActionView = (props: { currentAction: ActionModel | undefined }) =>
   const name = props.currentAction.name;
 
   return (
-    <div className="h-full w-full pl-3 pt-2 gap-2 flex flex-col">
+    <div className="h-full w-full pl-1 pt-2 gap-2 flex flex-col">
       <h1 className="text-2xl text-gray-600 font-semibold">{name}</h1>
       <ChipGroup
         chips={reads}
