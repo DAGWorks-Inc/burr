@@ -33,10 +33,10 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
   const [viewRawData, setViewRawData] = useState<'raw' | 'render'>('render');
 
   return (
-    <div className="pl-0 flex flex-col gap-2 hide-scrollbar">
+    <div className="pl-1 flex flex-col gap-2 hide-scrollbar">
       <div className="flex flex-row justify-between sticky top-0 z-20 bg-white">
-        <h1 className="text-2xl text-gray-600 font-semibold pt-0">State</h1>
-        <div className="flex flex-row justify-end gap-2 pr-2 ">
+        <h1 className="text-2xl text-gray-600 font-semibold pt-2">State</h1>
+        <div className="flex flex-row justify-end gap-2 pr-2">
           <SwitchField>
             <Switch
               name="test"
