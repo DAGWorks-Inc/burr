@@ -8,7 +8,6 @@ import ReactFlow, {
   EdgeProps,
   Handle,
   MarkerType,
-  MiniMap,
   Position,
   ReactFlowProvider,
   getBezierPath,
@@ -304,20 +303,20 @@ export const _Graph = (props: {
         currentAction: props.currentAction
       }}
     >
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        edgesUpdatable={false}
-        nodesDraggable={false}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        fitView
-        maxZoom={100}
-        minZoom={0.1}
-      />
-
-      <MiniMap pannable className="pr-10" />
-      <Controls position="bottom-right" />
+      <div className="h-full w-full relative">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          edgesUpdatable={false}
+          nodesDraggable={false}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          fitView
+          maxZoom={100}
+          minZoom={0.1}
+        />
+        <Controls position="bottom-right" className=" relative" />
+      </div>
     </NodeStateProvider.Provider>
   );
 };
