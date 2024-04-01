@@ -21,6 +21,18 @@ real-world behavior of your application -- Burr can make this process easier.
 6. Iterate on the test case until it is robust and representative of the real-world behavior of your application.
 7. Profit.
 
+For step (5) above, this is the corresponding command:
+```bash
+%%sh
+burr-test-case create  \
+  --project-name "SOME_NAME" \
+  --partition-key "SOME_KEY" \
+  --app-id "SOME_ID" \
+  --sequence-id 0 \
+  --target-file-name /tmp/test-case.json
+```
+See [the notebook](./notebook.ipynb) for example usage.
+
 ## Testing Actions
 In `test_application.py` you'll find examples tests for a simple action
 that is found in `application.py`.
