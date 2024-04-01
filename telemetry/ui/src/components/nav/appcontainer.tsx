@@ -7,7 +7,8 @@ import {
   XMarkIcon,
   ChatBubbleLeftEllipsisIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { ListBulletIcon } from '@heroicons/react/20/solid';
 import { BreadCrumb } from './breadcrumb';
@@ -244,9 +245,9 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
                                     aria-hidden="true"
                                   />
                                   {item.name}
-                                  <ChevronRightIcon
+                                  <ChevronDownIcon
                                     className={classNames(
-                                      open ? 'rotate-90 text-gray-500' : 'text-gray-400',
+                                      open ? 'rotate-180 text-gray-500' : 'text-gray-400',
                                       'ml-auto h-5 w-5 shrink-0'
                                     )}
                                     aria-hidden="true"
