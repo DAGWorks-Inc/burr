@@ -200,7 +200,9 @@ def test_case():
 
 
 PYTEST_TEMPLATE = """import pytest
-# TODO: import the action you're testing
+from burr.testing import pytest_generate_tests  # noqa: F401
+# TODO: import action you're testing, i.e. import {ACTION_NAME}.
+
 @pytest.mark.file_name("{FILE_NAME}")
 def test_{ACTION_NAME}(input_state, expected_state):
     \"\"\"Function for testing the action\"\"\"
@@ -230,7 +232,7 @@ def create_test_case(
 ):
     """Create a test case from a persisted state.
 
-    Prints a pytest test case to the console assuming you have a `pytest_generate_tests` function set up.
+    Prints a pytest test case to the console.
 
     See examples/test-case-creation/test_application.py for details.
     """
@@ -266,9 +268,7 @@ def create_test_case(
     else:
         logger.info(json.dumps(tc_json, indent=2))
     # print out python test to add
-    print(
-        "\nAdd the following to your test file assuming you've got `pytest_generate_tests` set up:\n"
-    )
+    print("\nAdd the following to your test file:\n")
     print(PYTEST_TEMPLATE.format(FILE_NAME=target_file_name, ACTION_NAME=data["position"]))
 
 
