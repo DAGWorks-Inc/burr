@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import subprocess
@@ -9,6 +10,7 @@ from contextlib import contextmanager
 from importlib.resources import files
 
 from burr import telemetry
+from burr.core.persistence import PersistedStateData
 from burr.integrations.base import require_plugin
 
 try:
@@ -175,10 +177,109 @@ def generate_demo_data():
         generate_all("burr/tracking/server/demo_data")
 
 
+def _transform_state_to_test_case(state: dict, action_name: str, test_name: str) -> dict:
+    """Helper function to transform a state into a test case.
+
+    :param state:
+    :param action_name:
+    :param test_name:
+    :return:
+    """
+    return {
+        "action": action_name,
+        "name": test_name,
+        "input_state": state,
+        "expected_state": {"TODO:": "fill this in"},
+    }
+
+
+@click.group()
+def test_case():
+    """Test case related commands."""
+    pass
+
+
+PYTEST_TEMPLATE = """import pytest
+# TODO: import the action you're testing
+@pytest.mark.file_name("{FILE_NAME}")
+def test_{ACTION_NAME}(input_state, expected_state):
+    \"\"\"Function for testing the action\"\"\"
+    input_state = state.State(input_state)
+    expected_state = state.State(expected_state)
+    _, output_state = {ACTION_NAME}(input_state)  # exercise the action
+    assert output_state == expected_state
+"""
+
+
+@click.command()
+@click.option("--project-name", required=True, help="Name of the project")
+@click.option("--partition-key", required=True, help="Partition key to look at")
+@click.option("--app-id", required=True, help="App ID to pull from.")
+@click.option("--sequence-id", required=True, help="Sequence ID to pull.")
+@click.option(
+    "--target-file-name",
+    required=False,
+    help="What file to write the data to. Else print to console.",
+)
+def create_test_case(
+    project_name: str,
+    partition_key: str,
+    app_id: str,
+    sequence_id: str,
+    target_file_name: str = None,
+):
+    """Create a test case from a persisted state.
+
+    Prints a pytest test case to the console assuming you have a `pytest_generate_tests` function set up.
+
+    See examples/test-case-creation/test_application.py for details.
+    """
+    # TODO: make this handle instantiating/using a persister other than local tracker
+    from burr.tracking.client import LocalTrackingClient
+
+    local_tracker = LocalTrackingClient(project=project_name)
+    data: PersistedStateData = local_tracker.load(
+        partition_key=partition_key, app_id=app_id, sequence_id=int(sequence_id)
+    )
+    if not data:
+        print(f"No data found for {app_id} in {project_name} with sequence {sequence_id}")
+        return
+    state_dict = data["state"].get_all()
+    print("Found data for action: ", data["position"])
+    # test case json
+    tc_json = _transform_state_to_test_case(
+        state_dict, data["position"], f"{data['position']}_{app_id[:8] + '_' + str(sequence_id)}"
+    )
+
+    if target_file_name:
+        # if it already exists, load it up and append to it
+        if os.path.exists(target_file_name):
+            with open(target_file_name, "r") as f:
+                # assumes it's a list of test cases
+                current_testcases = json.load(f)
+            current_testcases.append(tc_json)
+        else:
+            current_testcases = [tc_json]
+        print(f"\nWriting data to file {target_file_name}")
+        with open(target_file_name, "w") as f:
+            json.dump(current_testcases, f, indent=2)
+    else:
+        logger.info(json.dumps(tc_json, indent=2))
+    # print out python test to add
+    print(
+        "\nAdd the following to your test file assuming you've got `pytest_generate_tests` set up:\n"
+    )
+    print(PYTEST_TEMPLATE.format(FILE_NAME=target_file_name, ACTION_NAME=data["position"]))
+
+
+test_case.add_command(create_test_case, name="create")
+cli.add_command(test_case)
+
 # quick trick to expose every subcommand as a variable
 # will create a command called `cli_{command}` for every command we have
 for key, command in cli.commands.items():
     globals()[f'cli_{key.replace("-", "_")}'] = command
+
 
 if __name__ == "__main__":
     cli()
