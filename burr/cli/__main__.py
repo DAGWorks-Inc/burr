@@ -232,8 +232,12 @@ def create_test_case(
 ):
     """Create a test case from a persisted state.
 
-    Prints a pytest test case to the console.
+    Does two things:
 
+    1. Pulls data specified and saves it/prints to console.
+    2. Prints a pytest test case to the console for you to cut and paste.
+
+    See examples/test-case-creation/notebook.ipynb for example usage.
     See examples/test-case-creation/test_application.py for details.
     """
     # TODO: make this handle instantiating/using a persister other than local tracker
