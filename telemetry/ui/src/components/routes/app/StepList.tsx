@@ -138,11 +138,9 @@ const ActionTableRow = (props: {
       setCurrentSelectedIndex={props.setCurrentSelectedIndex}
     >
       <TableCell className="text-gray-500 w-12 max-w-12 min-w-12">{sequenceID}</TableCell>
+      <TableCell className="truncate w-48 min-w-48">{props.step.step_start_log.action}</TableCell>
       {!props.minimized && (
         <>
-          <TableCell className="truncate w-48 min-w-48">
-            {props.step.step_start_log.action}
-          </TableCell>
           <TableCell>
             <div className="flex flex-row justify-end">
               <DateTimeDisplay date={props.step.step_start_log.start_time} mode={'short'} />
@@ -393,9 +391,10 @@ export const StepList = (props: {
               )}
             </div>
           </TableHeader>
+          <TableHeader>Action</TableHeader>
+
           {!props.minimized && (
             <>
-              <TableHeader>Action</TableHeader>
               <TableHeader>
                 <span className="flex justify-end">Ran</span>
               </TableHeader>

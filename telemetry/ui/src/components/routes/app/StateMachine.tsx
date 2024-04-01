@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { ApplicationModel, Step } from '../../../api';
 import { Tabs } from '../../common/tabs';
-import { GraphView } from './GraphView';
 import { DataView } from './DataView';
 import { ActionView } from './ActionView';
+import { GraphView } from './GraphView';
 
 export const AppStateView = (props: {
   steps: Step[];
@@ -11,8 +11,10 @@ export const AppStateView = (props: {
   highlightedActions: Step[] | undefined;
   hoverAction: Step | undefined;
   currentSequenceID: number | undefined;
+  displayGraphAsTab: boolean; // for sideways view
 }) => {
-  const [currentTab, setCurrentTab] = useState('graph');
+  const defaultTab = props.displayGraphAsTab ? 'graph' : 'data';
+  const [currentTab, setCurrentTab] = useState(defaultTab);
   const currentStep = props.steps.find(
     (step) => step.step_start_log.sequence_id === props.currentSequenceID
   );
@@ -23,15 +25,21 @@ export const AppStateView = (props: {
   const actionModel = props.stateMachine.actions.find(
     (action) => action.name === currentStep?.step_start_log.action
   );
-  const tabs = [{ id: 'graph', displayName: 'Graph' }];
-  if (currentStep) {
-    tabs.push({ id: 'data', displayName: 'Data' });
-    tabs.push({ id: 'action', displayName: 'Action' });
+  const tabs = [
+    { id: 'data', displayName: 'Data' },
+    { id: 'action', displayName: 'Action' }
+  ];
+  if (props.displayGraphAsTab) {
+    tabs.push({ id: 'graph', displayName: 'Graph' });
   }
   return (
     <>
       <Tabs tabs={tabs} currentTab={currentTab} setCurrentTab={setCurrentTab} />
       <div className="px-4 h-full w-full hide-scrollbar overflow-y-auto">
+        {currentTab === 'data' && currentStep && (
+          <DataView currentStep={currentStep} priorStep={priorStep} />
+        )}
+        {currentTab === 'action' && currentStep && <ActionView currentAction={actionModel} />}
         {currentTab === 'graph' && (
           <GraphView
             stateMachine={props.stateMachine}
@@ -40,8 +48,6 @@ export const AppStateView = (props: {
             hoverAction={props.hoverAction}
           />
         )}
-        {currentTab === 'data' && <DataView currentStep={currentStep} priorStep={priorStep} />}
-        {currentTab === 'action' && <ActionView currentAction={actionModel} />}
       </div>
     </>
   );

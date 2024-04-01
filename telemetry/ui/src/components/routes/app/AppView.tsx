@@ -7,6 +7,7 @@ import { TwoColumnLayout, TwoRowLayout } from '../../common/layout';
 import { AppStateView } from './StateMachine';
 import { useEffect, useState } from 'react';
 import { Status } from '../../../utils';
+import { GraphView } from './GraphView';
 
 /**
  * Gives a list of prior actions. Note they're currently sorted in order from
@@ -184,23 +185,43 @@ export const AppView = (props: {
     return timeB - timeA;
   });
   const Layout = props.orientation === 'stacked_horizontal' ? TwoColumnLayout : TwoRowLayout;
+  const currentStep = stepsSorted.find(
+    (step) => step.step_start_log.sequence_id === currentActionIndex
+  );
+  const hoverAction = hoverSequenceID
+    ? stepsSorted.find((step) => step.step_start_log.sequence_id === hoverSequenceID)
+    : undefined;
   return (
     <Layout
       mode={minimizedTable ? 'first-minimal' : 'half'}
       firstItem={
-        <div className="overflow-y-scroll hide-scrollbar h-full w-full">
-          <StepList
-            steps={stepsSorted}
-            currentHoverIndex={hoverSequenceID}
-            setCurrentHoverIndex={setHoverSequenceID}
-            currentSelectedIndex={currentActionIndex}
-            setCurrentSelectedIndex={setCurrentActionIndex}
-            numPriorIndices={NUM_PREVIOUS_ACTIONS}
-            autoRefresh={autoRefresh}
-            setAutoRefresh={setAutoRefresh}
-            minimized={minimizedTable}
-            setMinimized={setMinimizedTable}
-          />
+        <div className="w-full h-full flex flex-col">
+          <div
+            className={`overflow-y-scroll hide-scrollbar  w-full ${props.orientation === 'stacked_vertical' ? 'h-full' : 'h-1/2'}`}
+          >
+            <StepList
+              steps={stepsSorted}
+              currentHoverIndex={hoverSequenceID}
+              setCurrentHoverIndex={setHoverSequenceID}
+              currentSelectedIndex={currentActionIndex}
+              setCurrentSelectedIndex={setCurrentActionIndex}
+              numPriorIndices={NUM_PREVIOUS_ACTIONS}
+              autoRefresh={autoRefresh}
+              setAutoRefresh={setAutoRefresh}
+              minimized={minimizedTable}
+              setMinimized={setMinimizedTable}
+            />
+          </div>
+          {props.orientation === 'stacked_horizontal' && (
+            <div className="h-1/2 w-[full]">
+              <GraphView
+                stateMachine={data.application}
+                currentAction={currentStep}
+                highlightedActions={previousActions}
+                hoverAction={hoverAction}
+              />
+            </div>
+          )}
         </div>
       }
       secondItem={
@@ -208,12 +229,9 @@ export const AppView = (props: {
           steps={stepsSorted}
           stateMachine={data.application}
           highlightedActions={previousActions}
-          hoverAction={
-            hoverSequenceID
-              ? stepsSorted.find((step) => step.step_start_log.sequence_id === hoverSequenceID)
-              : undefined
-          }
+          hoverAction={hoverAction}
           currentSequenceID={currentActionIndex}
+          displayGraphAsTab={props.orientation === 'stacked_vertical'} // in this case we want the graph as a tab
         />
       }
     />
