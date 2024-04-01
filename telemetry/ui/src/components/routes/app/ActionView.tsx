@@ -11,13 +11,14 @@ import { base16AteliersulphurpoolLight } from 'react-syntax-highlighter/dist/esm
  */
 export const CodeView = (props: { code: string }) => {
   return (
-    <div className="h-full w-full pt-2 gap-2 flex flex-col max-w-full">
+    <div className="h-full w-full pt-2 gap-2 flex flex-col max-w-full overflow-y-auto">
       <SyntaxHighlighter
         language="python"
-        className="bg-dwdarkblue/100"
+        className="bg-dwdarkblue/100 hide-scrollbar"
         wrapLines={true}
         wrapLongLines={true}
-        style={base16AteliersulphurpoolLight}>
+        style={base16AteliersulphurpoolLight}
+      >
         {props.code}
       </SyntaxHighlighter>
     </div>

@@ -31,7 +31,7 @@ export const AppStateView = (props: {
   return (
     <>
       <Tabs tabs={tabs} currentTab={currentTab} setCurrentTab={setCurrentTab} />
-      <div className="px-10 h-full w-full overflow-y-auto">
+      <div className="px-4 h-full w-full hide-scrollbar overflow-y-auto">
         {currentTab === 'graph' && (
           <GraphView
             stateMachine={props.stateMachine}
