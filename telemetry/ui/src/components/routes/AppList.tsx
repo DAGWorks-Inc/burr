@@ -79,7 +79,7 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
             </TableCell>
             <TableCell>{app.num_steps}</TableCell>
             <TableCell>
-              <Button color="white" href={`/project/${props.projectId}/${app.app_id}`}>
+              <Button color="white" className={'cursor-pointer'}>
                 Steps
               </Button>
             </TableCell>
