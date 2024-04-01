@@ -17,7 +17,7 @@ real-world behavior of your application -- Burr can make this process easier.
 2. Run your Burr application with tracking/persistence.
 3. Find a trace that you want to create a test case for.
 4. Note the partition_key, app_id, and sequence_id of the trace.
-5. Create a test case using the `burr create-test-case` command passing the partition_key, app_id, and sequence_id as arguments.
+5. Create a test case using the `burr-test-case create` command passing the project name, partition_key, app_id, and sequence_id as arguments.
 6. Iterate on the test case until it is robust and representative of the real-world behavior of your application.
 7. Profit.
 

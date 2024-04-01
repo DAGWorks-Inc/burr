@@ -1,3 +1,4 @@
+"""This file is truncated to just the relevant parts for the example."""
 from typing import Tuple
 
 import openai
@@ -5,7 +6,7 @@ import openai
 from burr.core import State
 from burr.core.action import action
 
-#  This file is truncated to just the relevant parts for the example.
+# Reminder: This file is truncated to just the relevant parts for the example.
 
 MODES = {
     "answer_question": "text",
@@ -57,4 +58,4 @@ def prompt_for_more(state: State) -> Tuple[dict, State]:
     return result, state.update(**result)
 
 
-# This file is truncated to just the relevant parts for the example.
+# Reminder: this file is truncated to just the relevant parts for the example.
