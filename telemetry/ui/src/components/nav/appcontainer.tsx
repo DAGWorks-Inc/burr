@@ -53,23 +53,22 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
       icon: Square2StackIcon,
       linkType: 'internal'
     },
-    process.env.REACT_APP_EXAMPLE_DISPLAY === 'run'
-      ? {
-          name: 'Demos',
-          href: '/demos',
-          icon: ListBulletIcon,
-          linkType: 'internal',
-          children: [
-            { name: 'counter', href: '/demos/counter', current: false, linkType: 'internal' },
-            { name: 'chatbot', href: '/demos/chatbot', current: false, linkType: 'internal' }
-          ]
-        }
-      : {
-          name: 'Examples',
-          href: 'https://github.com/DAGWorks-Inc/burr/tree/main/examples',
-          icon: ListBulletIcon,
-          linkType: 'external'
-        },
+    {
+      name: 'Demos',
+      href: '/demos',
+      icon: ListBulletIcon,
+      linkType: 'internal',
+      children: [
+        // { name: 'counter', href: '/demos/counter', current: false, linkType: 'internal' },
+        { name: 'chatbot', href: '/demos/chatbot', current: false, linkType: 'internal' }
+      ]
+    },
+    {
+      name: 'Examples',
+      href: 'https://github.com/DAGWorks-Inc/burr/tree/main/examples',
+      icon: ListBulletIcon,
+      linkType: 'external'
+    },
     {
       name: 'Develop',
       href: 'https://github.com/dagworks-inc/burr',
