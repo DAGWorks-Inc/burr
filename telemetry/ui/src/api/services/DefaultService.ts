@@ -94,7 +94,8 @@ export class DefaultService {
   }
   /**
    * Chat Response
-   * Chat response endpoint.
+   * Chat response endpoint. User passes in a prompt and the system returns the
+   * full chat history, so its easier to render.
    *
    * :param project_id: Project ID to run
    * :param app_id: Application ID to run
@@ -106,19 +107,17 @@ export class DefaultService {
    * @returns ChatItem Successful Response
    * @throws ApiError
    */
-  public static chatResponseApiV0ChatbotProjectIdAppIdResponsePost(
+  public static chatResponseApiV0ChatbotResponseProjectIdAppIdPost(
     projectId: string,
     appId: string,
     prompt: string
   ): CancelablePromise<Array<ChatItem>> {
     return __request(OpenAPI, {
       method: 'POST',
-      url: '/api/v0/chatbot/{project_id}/{app_id}/response',
-      path: {
-        project_id: projectId,
-        app_id: appId
-      },
+      url: '/api/v0/chatbot/response/{{project_id}}/{{app_id}}',
       query: {
+        project_id: projectId,
+        app_id: appId,
         prompt: prompt
       },
       errors: {
@@ -128,18 +127,23 @@ export class DefaultService {
   }
   /**
    * Chat History
+   * Endpoint to get chat history. Gets the application and returns the chat history from state.
+   *
+   * :param project_id: Project ID
+   * :param app_id: App ID.
+   * :return: The list of chat items in the state
    * @param projectId
    * @param appId
    * @returns ChatItem Successful Response
    * @throws ApiError
    */
-  public static chatHistoryApiV0ChatbotProjectIdAppIdHistoryGet(
+  public static chatHistoryApiV0ChatbotResponseProjectIdAppIdGet(
     projectId: string,
     appId: string
   ): CancelablePromise<Array<ChatItem>> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/api/v0/chatbot/{project_id}/{app_id}/history',
+      url: '/api/v0/chatbot/response/{project_id}/{app_id}',
       path: {
         project_id: projectId,
         app_id: appId
@@ -151,21 +155,24 @@ export class DefaultService {
   }
   /**
    * Create New Application
-   * Quick helper to create a new application. Just returns true, you'll want to fetch afterwards.
-   * In a better chatbot you'd want to either have the frontend store this and create on demand or return
-   * the actual application model
+   * Endpoint to create a new application -- used by the FE when
+   * the user types in a new App ID
+   *
+   * :param project_id: Project ID
+   * :param app_id: App ID
+   * :return: The app ID
    * @param projectId
    * @param appId
    * @returns string Successful Response
    * @throws ApiError
    */
-  public static createNewApplicationApiV0ChatbotProjectIdAppIdCreatePost(
+  public static createNewApplicationApiV0ChatbotCreateProjectIdAppIdPost(
     projectId: string,
     appId: string
   ): CancelablePromise<string> {
     return __request(OpenAPI, {
       method: 'POST',
-      url: '/api/v0/chatbot/{project_id}/{app_id}/create',
+      url: '/api/v0/chatbot/create/{project_id}/{app_id}',
       path: {
         project_id: projectId,
         app_id: appId

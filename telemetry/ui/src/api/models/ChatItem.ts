@@ -2,6 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+/**
+ * Pydantic model for a chat item. This is used to render the chat history.
+ */
 export type ChatItem = {
   content: string;
   type: ChatItem.type;
