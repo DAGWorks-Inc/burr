@@ -87,7 +87,9 @@ def _build_ui():
     cmd = "npm run build --prefix telemetry/ui"
     _command(cmd, capture_output=False)
     # create a symlink so we can get packages inside it...
-    cmd = "ln -s telemetry/ui/build burr/tracking/server/build"
+    cmd = "rm -rf burr/tracking/server/build"
+    _command(cmd, capture_output=False)
+    cmd = "cp -R telemetry/ui/build burr/tracking/server/build"
     _command(cmd, capture_output=False)
 
 
