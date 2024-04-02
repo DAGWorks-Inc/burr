@@ -209,7 +209,13 @@ def test_{ACTION_NAME}(input_state, expected_state):
     input_state = state.State(input_state)
     expected_state = state.State(expected_state)
     _, output_state = {ACTION_NAME}(input_state)  # exercise the action
+    # TODO: choose appropriate way to evaluate the output
+    # e.g. exact match, fuzzy match, LLM grade, etc.
+    # this is exact match here on all values in state
     assert output_state == expected_state
+    # e.g.
+    # assert 'some value' in output_state["response"]["content"]
+    # assert llm_evaluator(..., ...) == "Y"
 """
 
 
