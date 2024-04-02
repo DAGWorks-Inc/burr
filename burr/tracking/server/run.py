@@ -3,7 +3,7 @@ from importlib.resources import files
 from typing import Sequence
 
 from burr.integrations.base import require_plugin
-from burr.tracking.server.examples import chatbot
+from burr.tracking.server.examples import chatbot, email_assistant
 
 try:
     import uvicorn
@@ -79,6 +79,8 @@ async def ready() -> bool:
 
 # Examples -- todo -- put them behind `if` statements
 app.include_router(chatbot.router, prefix="/api/v0/chatbot")
+app.include_router(email_assistant.router, prefix="/api/v0/email_assistant")
+# email_assistant.register(app, "/api/v0/email_assistant")
 
 
 if SERVE_STATIC:

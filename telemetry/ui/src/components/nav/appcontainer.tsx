@@ -75,21 +75,28 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
       linkType: 'internal'
     },
     {
-      name: 'Demos',
-      href: '/demos',
-      icon: ListBulletIcon,
-      linkType: 'internal',
-      children: [
-        // { name: 'counter', href: '/demos/counter', current: false, linkType: 'internal' },
-        { name: 'chatbot', href: '/demos/chatbot', current: false, linkType: 'internal' }
-      ]
-    },
-    {
       name: 'Examples',
       href: 'https://github.com/DAGWorks-Inc/burr/tree/main/examples',
       icon: FolderIcon,
       linkType: 'external'
     },
+    {
+      name: 'Demos',
+      href: '/demos',
+      icon: ListBulletIcon,
+      linkType: 'internal',
+      children: [
+        { name: 'counter', href: '/demos/counter', current: false, linkType: 'internal' },
+        { name: 'chatbot', href: '/demos/chatbot', current: false, linkType: 'internal' },
+        {
+          name: 'email-assistant',
+          href: '/demos/email-assistant',
+          current: false,
+          linkType: 'internal'
+        }
+      ]
+    },
+
     {
       name: 'Develop',
       href: 'https://github.com/dagworks-inc/burr',
@@ -184,10 +191,6 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
                               <li key={item.name}>
                                 <Link
                                   to={item.href}
-                                  // target={item.linkType === 'external' ? '_blank' : undefined}
-                                  // rel={
-                                  //   item.linkType === 'external' ? 'noopener noreferrer' : undefined
-                                  // }
                                   className={classNames(
                                     isCurrent(item.href, item.linkType)
                                       ? 'bg-gray-50 text-dwdarkblue'
