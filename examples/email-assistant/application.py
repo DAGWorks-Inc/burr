@@ -53,7 +53,7 @@ def determine_clarifications(state: State) -> Tuple[dict, State]:
         ],
     )
     content = result.choices[0].message.content
-    all_questions = content.split("\n") if content else ""
+    all_questions = content.split("\n") if content else []
     return {"clarification_questions": all_questions}, state.update(
         clarification_questions=all_questions
     )
@@ -62,7 +62,7 @@ def determine_clarifications(state: State) -> Tuple[dict, State]:
 @action(reads=["clarification_questions"], writes=["clarification_answers"])
 def clarify_instructions(state: State, clarification_inputs: list[str]) -> Tuple[dict, State]:
     """Clarifies the response instructions if needed."""
-    clarification_answers = dict(zip(state["clarification_questions"], clarification_inputs))
+    clarification_answers = list(clarification_inputs)
     return {"clarification_answers": clarification_answers}, state.update(
         clarification_answers=clarification_answers
     )
@@ -73,6 +73,7 @@ def clarify_instructions(state: State, clarification_inputs: list[str]) -> Tuple
         "incoming_email",
         "response_instructions",
         "clarification_answers",
+        "clarification_questions",
         "draft_history",
         "feedback",
     ],
@@ -86,7 +87,12 @@ def formulate_draft(state: State) -> Tuple[dict, State]:
     client = _get_openai_client()
     # TODO -- use instructor to get a pydantic model
     clarification_answers_formatted_q_a = "\n".join(
-        [f"Q: {q}\nA: {a}" for q, a in state["clarification_answers"].items()]
+        [
+            f"Q: {q}\nA: {a}"
+            for q, a in zip(
+                state["clarification_questions"], state.get("clarification_answers", [])
+            )
+        ]
     )
     instructions = [
         f"The email you are to respond to is: {incoming_email}.",
@@ -120,11 +126,11 @@ def formulate_draft(state: State) -> Tuple[dict, State]:
     )
 
 
-@action(reads=[], writes=["feedback"])
+@action(reads=[], writes=["feedback", "feedback_history"])
 def process_feedback(state: State, feedback: str) -> Tuple[dict, State]:
     """Processes feedback from user and updates state with the feedback."""
     result = {"feedback": feedback}
-    return result, state.update(**result)
+    return result, state.update(feedback=feedback).append(feedback_history=feedback)
 
 
 @action(reads=["current_draft", "feedback"], writes=["final_draft"])
