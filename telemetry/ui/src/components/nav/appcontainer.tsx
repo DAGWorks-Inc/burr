@@ -14,6 +14,26 @@ import { ListBulletIcon } from '@heroicons/react/20/solid';
 import { BreadCrumb } from './breadcrumb';
 import { Link } from 'react-router-dom';
 import { classNames } from '../../utils/tailwind';
+import React from 'react';
+
+// Define your GitHub logo SVG as a React component
+const GithubLogo = () => (
+  <svg
+    style={{ width: 20 }}
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 22 22"
+    stroke="currentColor"
+  >
+    {/* SVG path for GitHub logo */}
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={0.5}
+      d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.09.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.6-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.004.07 1.532 1.03 1.532 1.03.892 1.529 2.341 1.088 2.91.833.091-.646.349-1.086.635-1.337-2.22-.25-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.03-2.682-.103-.251-.447-1.265.098-2.634 0 0 .84-.27 2.75 1.02A9.564 9.564 0 0112 7.07c.85.004 1.705.115 2.502.337 1.909-1.29 2.747-1.02 2.747-1.02.547 1.37.203 2.383.1 2.634.64.698 1.028 1.59 1.028 2.682 0 3.842-2.337 4.687-4.565 4.932.359.31.678.92.678 1.852 0 1.335-.012 2.415-.012 2.741 0 .267.18.576.688.479C19.137 20.164 22 16.416 22 12c0-5.523-4.477-10-10-10z"
+    />
+  </svg>
+);
 
 /**
  * Toggles the sidebar open and closed.
@@ -82,8 +102,14 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
       linkType: 'external'
     },
     {
-      name: 'Get Help',
+      name: 'GitHub Discussions',
       href: 'https://github.com/DAGWorks-Inc/burr/discussions',
+      icon: GithubLogo,
+      linkType: 'external'
+    },
+    {
+      name: 'Get Help on Discord',
+      href: 'https://discord.gg/emUEvxTb4D',
       icon: ChatBubbleLeftEllipsisIcon,
       linkType: 'external'
     }
