@@ -78,7 +78,7 @@ async def ready() -> bool:
 
 
 # Examples -- todo -- put them behind `if` statements
-chatbot.register(app, "/api/v0/chatbot")
+app.include_router(chatbot.router, prefix="/api/v0/chatbot")
 
 
 if SERVE_STATIC:

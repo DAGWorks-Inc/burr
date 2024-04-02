@@ -115,7 +115,7 @@ export const Chatbot = (props: { projectId: string; appId: string | undefined })
     // TODO -- handle errors
     ['chat', props.projectId, props.appId],
     () =>
-      DefaultService.chatHistoryApiV0ChatbotProjectIdAppIdHistoryGet(
+      DefaultService.chatHistoryApiV0ChatbotResponseProjectIdAppIdGet(
         props.projectId,
         props.appId || '' // TODO -- find a cleaner way of doing a skip-token like thing here
       ),
@@ -134,7 +134,7 @@ export const Chatbot = (props: { projectId: string; appId: string | undefined })
 
   const mutation = useMutation(
     (message: string) => {
-      return DefaultService.chatResponseApiV0ChatbotProjectIdAppIdResponsePost(
+      return DefaultService.chatResponseApiV0ChatbotResponseProjectIdAppIdPost(
         props.projectId,
         props.appId || '',
         message
