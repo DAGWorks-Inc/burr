@@ -193,7 +193,7 @@ export const Chatbot = (props: { projectId: string; appId: string | undefined })
               sendPrompt();
             }
           }}
-          disabled={isChatWaiting}
+          disabled={isChatWaiting || props.appId === undefined}
         />
         <Button
           className="w-min cursor-pointer h-full"
