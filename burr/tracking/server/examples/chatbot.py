@@ -11,15 +11,15 @@ from burr.core import Application
 We manage an application, write to it with post endpoints, and read with
 get/ endpoints.
 
-This demonstrates how
+This demonstrates how you can build interactive web applications with Burr!
 """
-# We're doing dynamic import cause this lives within examples/
+# We're doing dynamic import cause this lives within examples/ (and that module has dashes)
 # navigate to the examples directory to read more about this!
 chat_application = importlib.import_module(
     "burr.examples.multi-modal-chatbot.application"
 )  # noqa: F401
 
-# the app is commented out as we dynamically register it
+# the app is commented out as we include the router.
 # app = FastAPI()
 
 router = APIRouter()
@@ -82,13 +82,5 @@ async def create_new_application(project_id: str, app_id: str) -> str:
     return app_id  # just return it for now
 
 
-# def register(app: FastAPI, api_prefix: str):
-#     app.post(
-#         f"{api_prefix}/{{project_id}}/{{app_id}}/response",
-#         response_model=List[ChatItem])(chat_response)
-#     app.get(f"{api_prefix}/{{project_id}}/{{app_id}}/history", response_model=List[ChatItem])(
-#         chat_history
-#     )
-#     app.post(f"{api_prefix}/{{project_id}}/{{app_id}}/create", response_model=str)(
-#         create_new_application
-#     )
+# comment this back in fro a standalone chatbot API
+# app.include_router(router, prefix="/api/v0/chatbot")
