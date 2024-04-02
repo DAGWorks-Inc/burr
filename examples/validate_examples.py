@@ -12,7 +12,14 @@ REQUIRED_FILES = [
     "__init__.py",  # included as we want them all to be importable
 ]
 
-FILTERLIST = ["other-examples", "ml-training", "simulation", "multi-agent-collaboration"]
+FILTERLIST = [
+    "other-examples",
+    # todo -- remove the following once we've fleshed them out
+    "ml-training",
+    "simulation",
+    "multi-agent-collaboration",
+    "web-server",
+]
 
 
 def should_validate(directory: str) -> bool:
