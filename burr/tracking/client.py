@@ -341,7 +341,7 @@ class LocalTrackingClient(
             "position": position,
             "state": State(prior_state),
             "created_at": datetime.datetime.fromtimestamp(os.path.getctime(path)).isoformat(),
-            "status": "success" if line["exception"] is None else "failed",
+            "status": "completed" if line["exception"] is None else "failed",
         }
 
 
