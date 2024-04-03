@@ -202,6 +202,7 @@ def test_case():
 
 
 PYTEST_TEMPLATE = """import pytest
+from burr.core import state
 from burr.testing import pytest_generate_tests  # noqa: F401
 # TODO: import action you're testing, i.e. import {ACTION_NAME}.
 
