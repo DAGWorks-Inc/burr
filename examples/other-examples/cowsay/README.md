@@ -7,6 +7,9 @@ We have three files:
 - [application.py](application.py) -- This contains a mainline to run the cowsay app as well as a function to export the app (for later use)
 - [requirements.txt](requirements.txt) -- Just the requirements. All this needs is Burr/Streamlit/cowsay
 - [streamlit_app.py](streamlit_app.py) -- This contains a simple Streamlit app to interact with the cow
+- [notebook.ipynb](notebook.ipynb) -- A notebook that helps show things. <a target="_blank" href="https://colab.research.google.com/github/dagworks-inc/burr/blob/main/examples/other-examples/cowsay/notebook.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
 
 To run just the application, you can run:
 

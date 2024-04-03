@@ -46,6 +46,10 @@ See [the notebook](./notebook.ipynb) for example usage.
 In `test_application.py` you'll find examples tests for a simple action
 that is found in `application.py`.
 
+## Notebook
+The notebook also shows how things work. <a target="_blank" href="https://colab.research.google.com/github/dagworks-inc/burr/blob/main/examples/test-case-creation/notebook.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
 
 ## Future Work
 We see many more improvements here:

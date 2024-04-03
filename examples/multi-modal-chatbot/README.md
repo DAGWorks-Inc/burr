@@ -21,11 +21,14 @@ The state machine this encapsulates takes the following form:
 
 Note that it is currently wired up to handle errors in the state machine, but the actions do not respect that yet. Coming soon.
 
-We have three files:
+We have a few files:
 
 - [application.py](application.py) -- This contains a mainline to generate the graph portrayal.
 - [requirements.txt](requirements.txt) -- Just the requirements. All this needs is Burr/Streamlit/openai
 - [simple_streamlit_app.py](simple_streamlit_app.py) -- This contains a more sophisticated Streamlit app to interact with.
+- [notebook.ipynb](notebook.ipynb) -- A notebook that helps exercise things. <a target="_blank" href="https://colab.research.google.com/github/dagworks-inc/burr/blob/main/examples/multi-modal-chatbot/notebook.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
 - [streamlit_app.py](streamlit_app.py) -- This contains a simple Streamlit app to interact with that is more
 sophisticated than the simple version. It contains a more sophisticated UI that also visualizes the Burr application.
 You must have your `OPENAI_API_KEY` set in your environment. You can do this by running.

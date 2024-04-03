@@ -28,3 +28,7 @@ This simulates an interactive web app. The notebook is the best way to get start
 Note we will be adding two things to this demo:
 1. An integration with the burr web app
 2. a standalone server example with a walkthrough
+
+Open the notebook <a target="_blank" href="https://colab.research.google.com/github/dagworks-inc/burr/blob/main/examples/email-assistant/notebook.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
