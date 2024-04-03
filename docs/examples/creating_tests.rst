@@ -16,6 +16,15 @@ is what we're showing you how to do here.
 
 Test Case Creation Example
 --------------------------
+Video walkthrough:
+
+.. raw:: html
+
+    <div>
+      <iframe width="800" height="455" src="https://www.youtube.com/embed/9U_CMsh0VBI?si=Z-powULn_RO2-2pB" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    </div>
+
+
 Steps:
 
 1. You have built some part of your Burr application.
