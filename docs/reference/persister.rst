@@ -33,6 +33,8 @@ Internally, this interface combines the following two interfaces:
 Supported Implementations
 =========================
 
+.. _persistersref:
+
 Currently we support the following, although we highly recommend you contribute your own! We will be adding more shortly.
 
 .. autoclass:: burr.core.persistence.SQLLitePersister
