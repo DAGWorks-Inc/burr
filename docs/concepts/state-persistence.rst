@@ -81,7 +81,7 @@ you can leave out ``initialize`` or ``with_state_persister`` respectively.
 
 Supported Persistence Backends
 ______________________________
-We currently have only implemented the :py:class:`SQLLitePersister <burr.core.persistence.SQLLitePersister>` for state persistence.
+See :ref:`available persisters here <persistersref>`.
 Note that the tracker also allows reloading from a file, but this is not recommended for production use.
 
 
