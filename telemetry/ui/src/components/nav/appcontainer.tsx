@@ -8,7 +8,8 @@ import {
   ChatBubbleLeftEllipsisIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  FolderIcon
 } from '@heroicons/react/24/outline';
 import { ListBulletIcon } from '@heroicons/react/20/solid';
 import { BreadCrumb } from './breadcrumb';
@@ -86,7 +87,7 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
     {
       name: 'Examples',
       href: 'https://github.com/DAGWorks-Inc/burr/tree/main/examples',
-      icon: ListBulletIcon,
+      icon: FolderIcon,
       linkType: 'external'
     },
     {
