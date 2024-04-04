@@ -1,7 +1,7 @@
 """
-This is a stubb out example of a machine learning training pipeline using Burr where you
+This is a sketch of an example of a machine learning training pipeline using Burr where you
 want to do something dynamic like train a model for a variable number of iterations and then
-pick the best model from each of the iterations based on some validation metric.
+pick the best model from each of the iterations based on some validation metric. E.g. hyperparameter search.
 
 You could adjust this example to continue training a model until you reach a certain validation metric,
 or hit a max number of iterations (or epochs), etc.
