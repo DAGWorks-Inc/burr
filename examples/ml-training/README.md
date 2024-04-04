@@ -42,4 +42,6 @@ but that task executor does not need to be complicated (all it needs to do is ru
 
 Similar to epoch training, hyperparameter training can be modeled as a state machine. The system makes a decision about what
 to look for next based on the prior results. Furthermore, one can model a step that handles multiple jobs, keeping them alive/
-launching new ones as they compleete (based on state).
+launching new ones as they complete (based on state).
+
+For a sketch of the latter see [application.py](./application.py) & ![diagram](./statemachine.png).
