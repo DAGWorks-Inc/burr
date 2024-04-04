@@ -209,4 +209,6 @@ def application(
 
 if __name__ == "__main__":
     app = application()
-    app.visualize(output_file_path="digraph", include_conditions=False, view=True, format="png")
+    app.visualize(
+        output_file_path="statemachine", include_conditions=False, view=True, format="png"
+    )
