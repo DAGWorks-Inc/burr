@@ -63,6 +63,7 @@ documentation = [
   "sphinx-toolbox",
   "psycopg2-binary",
   "redis",
+  "sphinxcontrib-googleanalytics"
 ]
 
 tracking-client = [
