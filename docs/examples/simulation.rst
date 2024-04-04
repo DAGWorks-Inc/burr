@@ -5,4 +5,4 @@ Simulation
 Simulations require state to be maintained across time steps. Burr provides a simple way for you to construct,
 manage, and introspect the state of your simulation.
 
-This is still a WIP -- come back soon, or `contribute your own example <https://github.com/DAGWorks-Inc/burr/issues/new>`_!
+For more information/contribution options, see the placeholder in the `repository <https://github.com/DAGWorks-Inc/burr/tree/main/examples/simulation>`_.
