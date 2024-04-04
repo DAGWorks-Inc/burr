@@ -7,4 +7,4 @@ to gaussian processes, `burr` is a simple way to implement robust, failure-resis
 track of hyperparameters and metrics and feeding these into a decision function to determine where to look next.
 ``burr``'s state machine can help you write and manage that process.
 
-Read more/contribute at `the placeholder issue on the repository <https://github.com/DAGWorks-Inc/burr/tree/main/examples/ml-training>`_
+For more information/contribution options, see the placeholder/example sketch in the `repository <https://github.com/DAGWorks-Inc/burr/tree/main/examples/ml-training>`_.
