@@ -57,6 +57,8 @@ class EmailAssistantState(pydantic.BaseModel):
 
 @functools.lru_cache(maxsize=128)
 def _get_application(project_id: str, app_id: str) -> Application:
+    """Utility to get the application. Depending on
+    your use-case you might want to reload from state every time (or consider cache invalidation)"""
     app = email_assistant_application.application(app_id=app_id, project=project_id)
     return app
 
