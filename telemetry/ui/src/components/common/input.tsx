@@ -1,13 +1,15 @@
-import { Input as HeadlessInput, type InputProps as HeadlessInputProps } from '@headlessui/react'
-import { clsx } from 'clsx'
-import { forwardRef } from 'react'
+import { Input as HeadlessInput, type InputProps as HeadlessInputProps } from '@headlessui/react';
+import { clsx } from 'clsx';
+import { forwardRef } from 'react';
 
-const dateTypes = ['date', 'datetime-local', 'month', 'time', 'week']
-type DateType = (typeof dateTypes)[number]
+const dateTypes = ['date', 'datetime-local', 'month', 'time', 'week'];
+type DateType = (typeof dateTypes)[number];
 
 export const Input = forwardRef<
   HTMLInputElement,
-  { type?: 'email' | 'number' | 'password' | 'search' | 'tel' | 'text' | 'url' | DateType } & HeadlessInputProps
+  {
+    type?: 'email' | 'number' | 'password' | 'search' | 'tel' | 'text' | 'url' | DateType;
+  } & HeadlessInputProps
 >(function Input({ className, ...props }, ref) {
   return (
     <span
@@ -31,7 +33,7 @@ export const Input = forwardRef<
         'has-[[data-disabled]]:opacity-50 before:has-[[data-disabled]]:bg-zinc-950/5 before:has-[[data-disabled]]:shadow-none',
 
         // Invalid state
-        'before:has-[[data-invalid]]:shadow-red-500/10',
+        'before:has-[[data-invalid]]:shadow-red-500/10'
       ])}
     >
       <HeadlessInput
@@ -51,7 +53,7 @@ export const Input = forwardRef<
               '[&::-webkit-datetime-edit-minute-field]:p-0',
               '[&::-webkit-datetime-edit-second-field]:p-0',
               '[&::-webkit-datetime-edit-millisecond-field]:p-0',
-              '[&::-webkit-datetime-edit-meridiem-field]:p-0',
+              '[&::-webkit-datetime-edit-meridiem-field]:p-0'
             ],
 
           // Basic layout
@@ -73,10 +75,10 @@ export const Input = forwardRef<
           'data-[invalid]:border-red-500 data-[invalid]:data-[hover]:border-red-500 data-[invalid]:dark:border-red-500 data-[invalid]:data-[hover]:dark:border-red-500',
 
           // Disabled state
-          'data-[disabled]:border-zinc-950/20 dark:data-[hover]:data-[disabled]:border-white/15 data-[disabled]:dark:border-white/15 data-[disabled]:dark:bg-white/[2.5%]',
+          'data-[disabled]:border-zinc-950/20 dark:data-[hover]:data-[disabled]:border-white/15 data-[disabled]:dark:border-white/15 data-[disabled]:dark:bg-white/[2.5%]'
         ])}
         {...props}
       />
     </span>
-  )
-})
+  );
+});

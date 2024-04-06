@@ -64,6 +64,7 @@ def _get_application(project_id: str, app_id: str) -> Application:
 
 
 def _run_through(project_id: str, app_id: [str], inputs: Dict[str, Any]) -> EmailAssistantState:
+    """This advances the state machine, moving through to the next 'halting' point"""
     if app_id == "create_new":  # quick hack to allow for null
         app_id = None
     email_assistant_app = _get_application(project_id, app_id)
@@ -88,6 +89,13 @@ def create_new_application(project_id: str, app_id: str) -> str:
 
 @router.post("/create/{project_id}/{app_id}")
 def initialize_draft(project_id: str, app_id: str, draft_data: DraftInit) -> EmailAssistantState:
+    """Endpoint to initialize the draft with the email and instructions
+
+    :param project_id: ID of the project (used by telemetry tracking/storage)
+    :param app_id: ID of the application (used to reference the app)
+    :param draft_data: Data to initialize the draft
+    :return: The state of the application after initialization
+    """
     return _run_through(
         project_id,
         app_id,
@@ -106,6 +114,13 @@ class QuestionAnswers(pydantic.BaseModel):
 def answer_questions(
     project_id: str, app_id: str, question_answers: QuestionAnswers
 ) -> EmailAssistantState:
+    """Endpoint to answer questions the LLM provides
+
+    :param project_id: ID of the project (used by telemetry tracking/storage)
+    :param app_id: ID of the application (used to reference the app)
+    :param question_answers: Answers to the questions
+    :return: The state of the application after answering the questions
+    """
     return _run_through(project_id, app_id, dict(clarification_inputs=question_answers.answers))
 
 
@@ -115,11 +130,24 @@ class Feedback(pydantic.BaseModel):
 
 @router.post("/provide_feedback/{project_id}/{app_id}")
 def provide_feedback(project_id: str, app_id: str, feedback: Feedback) -> EmailAssistantState:
+    """Endpoint to provide feedback to the LLM
+
+    :param project_id: ID of the project (used by telemetry tracking/storage)
+    :param app_id: ID of the application (used to reference the app)
+    :param feedback: Feedback to provide to the LLM
+    :return: The state of the application after providing feedback
+    """
     return _run_through(project_id, app_id, dict(feedback=feedback.feedback))
 
 
 @router.get("/state/{project_id}/{app_id}")
 def get_state(project_id: str, app_id: str) -> EmailAssistantState:
+    """Get the current state of the application
+
+    :param project_id: ID of the project (used by telemetry tracking/storage)
+    :param app_id:  ID of the application (used to reference the app)
+    :return: The state of the application
+    """
     email_assistant_app = _get_application(project_id, app_id)
     return EmailAssistantState.from_app(email_assistant_app)
 
