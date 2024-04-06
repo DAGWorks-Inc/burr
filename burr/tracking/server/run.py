@@ -1,9 +1,9 @@
+import importlib
 import os
 from importlib.resources import files
 from typing import Sequence
 
 from burr.integrations.base import require_plugin
-from burr.tracking.server.examples import chatbot, email_assistant
 
 try:
     import uvicorn
@@ -14,6 +14,11 @@ try:
     from burr.tracking.server import backend as backend_module
     from burr.tracking.server import schema
     from burr.tracking.server.schema import ApplicationLogs
+
+    # dynamic importing due to the dashes (which make reading the examples on github easier)
+    email_assistant = importlib.import_module("burr.examples.email-assistant.server")
+    chatbot = importlib.import_module("burr.examples.multi-modal-chatbot.server")
+
 except ImportError as e:
     require_plugin(
         e,
