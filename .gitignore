@@ -167,3 +167,7 @@ burr/tracking/server/build
 .idea
 # added by macOS
 .DS_store
+
+# statemachine images
+examples/*/statemachine
+examples/*/*/statemachine
