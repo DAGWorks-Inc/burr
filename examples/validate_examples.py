@@ -19,6 +19,7 @@ FILTERLIST = [
     "simulation",
     "multi-agent-collaboration",
     "web-server",
+    "integrations",
 ]
 
 
