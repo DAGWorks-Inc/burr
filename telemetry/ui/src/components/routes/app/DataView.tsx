@@ -35,7 +35,7 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
   return (
     <div className="pl-1 flex flex-col gap-2 hide-scrollbar">
       <div className="flex flex-row justify-between sticky top-0 z-20 bg-white">
-        <h1 className="text-2xl text-black-1000 font-semibold pt-2">State</h1>
+        <h1 className="text-2xl text-gray-900 font-semibold pt-2">State</h1>
         <div className="flex flex-row justify-end gap-2 pr-2">
           <SwitchField>
             <Switch
@@ -73,19 +73,19 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
       <StateView stateData={stateData} viewRawData={viewRawData} />
       {error && (
         <>
-          <h1 className="text-2xl text-black-1000 font-semibold">Error</h1>
+          <h1 className="text-2xl text-gray-900 font-semibold">Error</h1>
           <ErrorView error={error} />
         </>
       )}
       {resultData && Object.keys(resultData).length > 0 && (
         <>
-          <h1 className="text-2xl text-black-1000 font-semibold sticky top-8 bg-white">Result</h1>
+          <h1 className="text-2xl text-gray-900 font-semibold sticky top-8 bg-white">Result</h1>
           <ResultView resultData={resultData} viewRawData={viewRawData} />
         </>
       )}
       {inputs && Object.keys(inputs).length > 0 && (
         <>
-          <h1 className="text-2xl text-black-1000 font-semibold sticky top-8 bg-white">Input</h1>
+          <h1 className="text-2xl text-gray-900 font-semibold sticky top-8 bg-white">Input</h1>
           <InputsView inputs={inputs || {}} />
         </>
       )}
@@ -149,7 +149,7 @@ const Header = (props: {
 
   return (
     <div className="flex flex-row gap-1 z-10 pb-2 items-center">
-      <h1 className="text-lg text-black-900 font-semibold text-under">{props.name}</h1>
+      <h1 className="text-lg text-gray-900 font-semibold text-under">{props.name}</h1>
       <MinimizeMaximizeIcon
         className={classNames(
           'text-gray-500',
