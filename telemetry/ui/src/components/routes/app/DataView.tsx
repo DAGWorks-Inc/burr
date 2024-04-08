@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Step } from '../../../api';
 import JsonView from '@uiw/react-json-view';
 import { Button } from '../../common/button';
 import { Switch, SwitchField } from '../../common/switch';
 import { Label } from '../../common/fieldset';
 import { classNames } from '../../../utils/tailwind';
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid';
+import { ChevronDownIcon, ChevronUpIcon, MinusIcon, PlusIcon } from '@heroicons/react/20/solid';
 
 const StateButton = (props: { label: string; selected: boolean; setSelected: () => void }) => {
   const color = props.selected ? 'zinc' : 'light';
@@ -23,6 +23,33 @@ export const ErrorView = (props: { error: string }) => {
     </>
   );
 };
+/**
+ * Section header that allows for exapnsion/contraction of all subcomponents
+ */
+const SectionHeaderWithExpand = (props: {
+  name: string;
+  defaultExpanded?: boolean;
+  setDefaultExpanded?: (expanded: boolean) => void;
+}) => {
+  const MinimizeMaximizeIcon = props.defaultExpanded ? MinusIcon : PlusIcon;
+  return (
+    <div className="flex flex-row items-center gap-1">
+      <MinimizeMaximizeIcon
+        className={classNames(
+          'text-gray-500',
+          'h-5 w-5 rounded-md hover:cursor-pointer hover:scale-105'
+        )}
+        aria-hidden="true"
+        onClick={() => {
+          if (props.setDefaultExpanded) {
+            props.setDefaultExpanded(!props.defaultExpanded);
+          }
+        }}
+      />
+      <h1 className="text-2xl text-gray-900 font-semibold">{props.name}</h1>
+    </div>
+  );
+};
 export const DataView = (props: { currentStep: Step | undefined; priorStep: Step | undefined }) => {
   const [whichState, setWhichState] = useState<'after' | 'before'>('after');
   const stepToExamine = whichState === 'after' ? props.currentStep : props.priorStep;
@@ -32,10 +59,19 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
   const error = props.currentStep?.step_end_log?.exception;
   const [viewRawData, setViewRawData] = useState<'raw' | 'render'>('render');
 
+  const [allStateExpanded, setAllStateExpanded] = useState(true);
+  const [allResultExpanded, setAllResultExpanded] = useState(true);
+  const [allInputExpanded, setAllInputExpanded] = useState(true);
+
   return (
     <div className="pl-1 flex flex-col gap-2 hide-scrollbar">
       <div className="flex flex-row justify-between sticky top-0 z-20 bg-white">
-        <h1 className="text-2xl text-gray-900 font-semibold pt-2">State</h1>
+        {/* <h1 className="text-2xl text-gray-900 font-semibold pt-2">State</h1> */}
+        <SectionHeaderWithExpand
+          name="State"
+          defaultExpanded={allStateExpanded}
+          setDefaultExpanded={setAllStateExpanded}
+        />
         <div className="flex flex-row justify-end gap-2 pr-2">
           <SwitchField>
             <Switch
@@ -70,7 +106,7 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
         </div>
       </div>
 
-      <StateView stateData={stateData} viewRawData={viewRawData} />
+      <StateView stateData={stateData} viewRawData={viewRawData} isExpanded={allStateExpanded} />
       {error && (
         <>
           <h1 className="text-2xl text-gray-900 font-semibold">Error</h1>
@@ -79,14 +115,27 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
       )}
       {resultData && Object.keys(resultData).length > 0 && (
         <>
-          <h1 className="text-2xl text-gray-900 font-semibold sticky top-8 bg-white">Result</h1>
-          <ResultView resultData={resultData} viewRawData={viewRawData} />
+          <SectionHeaderWithExpand
+            name="Result"
+            defaultExpanded={allResultExpanded}
+            setDefaultExpanded={setAllResultExpanded}
+          />
+          <ResultView
+            resultData={resultData}
+            viewRawData={viewRawData}
+            isExpanded={allResultExpanded}
+          />
         </>
       )}
       {inputs && Object.keys(inputs).length > 0 && (
         <>
-          <h1 className="text-2xl text-gray-900 font-semibold sticky top-8 bg-white">Input</h1>
-          <InputsView inputs={inputs || {}} />
+          <SectionHeaderWithExpand
+            name="Inputs"
+            defaultExpanded={allInputExpanded}
+            setDefaultExpanded={setAllInputExpanded}
+          />
+          <InputsView inputs={inputs} isExpanded={allInputExpanded} viewRawData={viewRawData} />
+          {/* <FormRenderer data={inputs as DataType} isDefaultExpanded={allInputExpanded} /> */}
         </>
       )}
     </div>
@@ -96,12 +145,15 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
 export const StateView = (props: {
   stateData: DataType | undefined;
   viewRawData: 'render' | 'raw';
+  isExpanded: boolean;
 }) => {
-  const { stateData, viewRawData } = props;
+  const { stateData, viewRawData, isExpanded } = props;
   return (
     <>
-      {stateData !== undefined && viewRawData === 'render' && <FormRenderer data={stateData} />}
-      {stateData !== undefined && viewRawData === 'raw' && (
+      {stateData !== undefined && viewRawData === 'render' && (
+        <FormRenderer data={stateData} isDefaultExpanded={isExpanded} />
+      )}
+      {isExpanded && stateData !== undefined && viewRawData === 'raw' && (
         <JsonView value={stateData} collapsed={2} enableClipboard={false} />
       )}
     </>
@@ -111,16 +163,17 @@ export const StateView = (props: {
 export const ResultView = (props: {
   resultData: DataType | undefined;
   viewRawData: 'render' | 'raw';
+  isExpanded: boolean;
 }) => {
-  const { resultData, viewRawData } = props;
+  const { resultData, viewRawData, isExpanded } = props;
   return (
     <>
       {resultData && viewRawData === 'render' && (
         <>
-          <FormRenderer data={resultData} />
+          <FormRenderer data={resultData} isDefaultExpanded={isExpanded} />
         </>
       )}
-      {resultData && viewRawData === 'raw' && (
+      {isExpanded && resultData && viewRawData === 'raw' && (
         <>
           <JsonView value={resultData} collapsed={2} enableClipboard={false} />
         </>
@@ -129,16 +182,30 @@ export const ResultView = (props: {
   );
 };
 
-export const InputsView = (props: { inputs: object }) => {
-  const { inputs } = props;
-  return <FormRenderer data={inputs as DataType} />;
+export const InputsView = (props: {
+  inputs: object;
+  isExpanded: boolean;
+  viewRawData: 'render' | 'raw';
+}) => {
+  const { inputs, viewRawData, isExpanded } = props;
+  return (
+    <>
+      {inputs && viewRawData === 'render' ? (
+        <>
+          <FormRenderer data={inputs as DataType} isDefaultExpanded={isExpanded} />
+        </>
+      ) : (
+        (isExpanded && inputs && viewRawData) === 'raw' && (
+          <>
+            <JsonView value={inputs} collapsed={2} enableClipboard={false} />
+          </>
+        )
+      )}
+    </>
+  );
 };
 
 type DataType = Record<string, string | number | boolean | object>;
-
-interface FormRendererProps {
-  data: Record<string, string | number | boolean | object>;
-}
 
 const Header = (props: {
   name: string;
@@ -153,7 +220,7 @@ const Header = (props: {
       <MinimizeMaximizeIcon
         className={classNames(
           'text-gray-500',
-          'h-7 w-7 hover:bg-gray-50 rounded-md hover:cursor-pointer hover:scale-105'
+          'h-6 w-6 hover:bg-gray-50 rounded-md hover:cursor-pointer hover:scale-105'
         )}
         aria-hidden="true"
         onClick={() => {
@@ -167,8 +234,12 @@ const RenderedField = (props: {
   value: string | number | boolean | object;
   keyName: string;
   level: number;
+  defaultExpanded: boolean;
 }) => {
   const [isExpanded, setExpanded] = useState(true);
+  useEffect(() => {
+    setExpanded(props.defaultExpanded);
+  }, [props.defaultExpanded]);
   // TODO: have max level depth.
   const { value, keyName: key, level } = props;
   const bodyClassNames =
@@ -199,6 +270,7 @@ const RenderedField = (props: {
                       value={v}
                       keyName={key + '[' + i.toString() + ']'}
                       level={level + 1}
+                      defaultExpanded={props.defaultExpanded}
                     />
                   </div>
                 );
@@ -214,7 +286,12 @@ const RenderedField = (props: {
                 Object.entries(value).map(([k, v]) => {
                   return (
                     <div key={key + '-' + k} className={bodyClassNames}>
-                      <RenderedField value={v} keyName={k} level={level + 1} />
+                      <RenderedField
+                        value={v}
+                        keyName={k}
+                        level={level + 1}
+                        defaultExpanded={props.defaultExpanded}
+                      />
                     </div>
                   );
                 })
@@ -234,13 +311,26 @@ const RenderedField = (props: {
   );
 };
 
+interface FormRendererProps {
+  data: Record<string, string | number | boolean | object>;
+  isDefaultExpanded: boolean;
+}
+
 // This component is used to render the form data in a structured way
-const FormRenderer: React.FC<FormRendererProps> = ({ data }) => {
+const FormRenderer: React.FC<FormRendererProps> = ({ data, isDefaultExpanded: isExpanded }) => {
   if (data !== null) {
     return (
       <>
         {Object.entries(data).map(([key, value]) => {
-          return <RenderedField keyName={key} value={value} level={0} key={key} />;
+          return (
+            <RenderedField
+              keyName={key}
+              value={value}
+              level={0}
+              key={key}
+              defaultExpanded={isExpanded}
+            />
+          );
         })}
       </>
     );
