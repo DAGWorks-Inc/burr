@@ -30,23 +30,26 @@ const SectionHeaderWithExpand = (props: {
   name: string;
   defaultExpanded?: boolean;
   setDefaultExpanded?: (expanded: boolean) => void;
+  enableExpansion: boolean;
 }) => {
   const MinimizeMaximizeIcon = props.defaultExpanded ? MinusIcon : PlusIcon;
   return (
     <div className="flex flex-row items-center gap-1">
-      <MinimizeMaximizeIcon
-        className={classNames(
-          'text-gray-500',
-          'h-5 w-5 rounded-md hover:cursor-pointer hover:scale-105'
-        )}
-        aria-hidden="true"
-        onClick={() => {
-          if (props.setDefaultExpanded) {
-            props.setDefaultExpanded(!props.defaultExpanded);
-          }
-        }}
-      />
       <h1 className="text-2xl text-gray-900 font-semibold">{props.name}</h1>
+      {props.enableExpansion && (
+        <MinimizeMaximizeIcon
+          className={classNames(
+            'text-gray-500',
+            'h-5 w-5 rounded-md hover:cursor-pointer hover:scale-105'
+          )}
+          aria-hidden="true"
+          onClick={() => {
+            if (props.setDefaultExpanded) {
+              props.setDefaultExpanded(!props.defaultExpanded);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -71,6 +74,7 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
           name="State"
           defaultExpanded={allStateExpanded}
           setDefaultExpanded={setAllStateExpanded}
+          enableExpansion={viewRawData === 'render'}
         />
         <div className="flex flex-row justify-end gap-2 pr-2">
           <SwitchField>
@@ -119,6 +123,7 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
             name="Result"
             defaultExpanded={allResultExpanded}
             setDefaultExpanded={setAllResultExpanded}
+            enableExpansion={viewRawData === 'render'}
           />
           <ResultView
             resultData={resultData}
@@ -133,6 +138,7 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
             name="Inputs"
             defaultExpanded={allInputExpanded}
             setDefaultExpanded={setAllInputExpanded}
+            enableExpansion={viewRawData === 'render'}
           />
           <InputsView inputs={inputs} isExpanded={allInputExpanded} viewRawData={viewRawData} />
           {/* <FormRenderer data={inputs as DataType} isDefaultExpanded={allInputExpanded} /> */}
@@ -153,7 +159,7 @@ export const StateView = (props: {
       {stateData !== undefined && viewRawData === 'render' && (
         <FormRenderer data={stateData} isDefaultExpanded={isExpanded} />
       )}
-      {isExpanded && stateData !== undefined && viewRawData === 'raw' && (
+      {stateData !== undefined && viewRawData === 'raw' && (
         <JsonView value={stateData} collapsed={2} enableClipboard={false} />
       )}
     </>
@@ -173,7 +179,7 @@ export const ResultView = (props: {
           <FormRenderer data={resultData} isDefaultExpanded={isExpanded} />
         </>
       )}
-      {isExpanded && resultData && viewRawData === 'raw' && (
+      {resultData && viewRawData === 'raw' && (
         <>
           <JsonView value={resultData} collapsed={2} enableClipboard={false} />
         </>
@@ -195,7 +201,7 @@ export const InputsView = (props: {
           <FormRenderer data={inputs as DataType} isDefaultExpanded={isExpanded} />
         </>
       ) : (
-        (isExpanded && inputs && viewRawData) === 'raw' && (
+        (inputs && viewRawData) === 'raw' && (
           <>
             <JsonView value={inputs} collapsed={2} enableClipboard={false} />
           </>
@@ -239,7 +245,7 @@ const RenderedField = (props: {
   const [isExpanded, setExpanded] = useState(true);
   useEffect(() => {
     setExpanded(props.defaultExpanded);
-  }, [props.defaultExpanded]);
+  }, [props.defaultExpanded, props.value, props.keyName]);
   // TODO: have max level depth.
   const { value, keyName: key, level } = props;
   const bodyClassNames =
