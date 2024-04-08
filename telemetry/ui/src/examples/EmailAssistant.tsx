@@ -390,7 +390,10 @@ export const EmailAssistantAppSelector = (props: {
   );
   const createAndUpdateMutation = useMutation(
     (app_id: string) =>
-      DefaultService.createNewApplicationApiV0ChatbotCreateProjectIdAppIdPost(projectId, app_id),
+      DefaultService.createNewApplicationApiV0EmailAssistantCreateNewProjectIdAppIdPost(
+        projectId,
+        app_id
+      ),
     {
       onSuccess: (appID) => {
         refetch().then((data) => {
