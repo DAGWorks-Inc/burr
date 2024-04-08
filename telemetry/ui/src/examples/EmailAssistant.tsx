@@ -186,6 +186,10 @@ export const SubmitFeedbackView = (props: {
 export const EmailAssistant = (props: { projectId: string; appId: string | undefined }) => {
   // starts off as null
   const [emailAssistantState, setEmailAssistantState] = useState<EmailAssistantState | null>(null);
+  const { data: validationData, isLoading: isValidationLoading } = useQuery(
+    ['valid', props.projectId, props.appId],
+    DefaultService.validateEnvironmentApiV0EmailAssistantValidateProjectIdAppIdGet
+  );
 
   useEffect(() => {
     if (props.appId !== undefined) {
@@ -265,10 +269,11 @@ export const EmailAssistant = (props: { projectId: string; appId: string | undef
     submitAnswersMutation.isLoading ||
     submitFeedbackMutation.isLoading;
 
-  if (isLoading) {
+  if (isLoading || isValidationLoading) {
     return <Loading />;
   }
-  const displayInstructions = emailAssistantState === null;
+  const displayValidationError = validationData !== null;
+  const displayInstructions = emailAssistantState === null && !displayValidationError;
   const displayInitialDraft = emailAssistantState !== null;
   const displaySubmitAnswers =
     displayInitialDraft && emailAssistantState.next_step !== 'process_input';
@@ -288,6 +293,9 @@ export const EmailAssistant = (props: { projectId: string; appId: string | undef
           <p className="text-lg font-normal text-gray-500">
             Please click &apos;create new&apos; on the right to get started!
           </p>
+        )}
+        {displayValidationError && (
+          <p className="text-lg font-normal text-dwred">{validationData}</p>
         )}
         {displayInitialDraft && (
           <InitialDraftView
