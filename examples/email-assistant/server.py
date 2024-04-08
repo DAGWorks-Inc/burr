@@ -1,4 +1,9 @@
 import functools
+
+"""
+This module contains the FastAPI code that interacts with the Burr application.
+"""
+
 import importlib
 import os
 from typing import Any, Dict, List, Literal, Optional

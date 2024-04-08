@@ -1,9 +1,9 @@
 # Running Burr in a web server
 
 Burr is meant to run interactive apps. This means running it as part of a web-service that
-responds to requests, maanges state, and documents its capabilities. The interactive nature of Burr
+responds to requests, manages state, and documents its capabilities. The interactive nature of Burr
 (moving in/out of programmatic control) means we want to think carefully about how to expose
-our burr applications to the web.
+our Burr applications to the web.
 
 In this tutorial we will use the [email assistant example](../email-assistant) as a walk-through.
 Our goal is to expose the email assistant in a web-server that a UI can easily be built on top of.
@@ -183,8 +183,9 @@ in which the state is out of sync. To solve this, you can either:
 
 1. Use a locking method (either in the database) to ensure that only one server is running a given application at any point
 2. Use sticky sessions/sharding to ensure that a given user always hits the same server
+3. Handle forking/resolution of state at the persistence layer with a custom implementation
 
-Or possibly both.
+Or possibly some combination of the above.
 
 #### Async
 
@@ -205,7 +206,7 @@ While Burr does not operate at the data access layer, this can be easily handles
 Any authentication system will tell you the user ID, which you can look in your DB to determine access
 to your partition key.
 
-## Wrapup
+## Wrap-up
 
 In this tutorial we showed how to integrate Burr into a web-server. We used FastAPI and Pydantic
 to create a simple but powerful API that allows users to interact with the email assistant, leveraging
