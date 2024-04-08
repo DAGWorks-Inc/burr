@@ -1404,6 +1404,14 @@ class ApplicationBuilder:
             self.state = self.state.update(**self.default_state)
             self.sequence_id = None  # has to start at None
         else:
+            if load_result["state"] is None:
+                raise ValueError(
+                    f"Error: {self.initializer.__class__.__name__} returned {load_result} for "
+                    f"partition_key:{self.partition_key}, app_id:{self.app_id}, "
+                    f"sequence_id:{self.sequence_id}, "
+                    f"but state was None! This is not allowed. Please return None in this case, or double "
+                    f"check that persisted state can never be a None value."
+                )
             # there was something
             last_position = load_result["position"]
             self.state = load_result["state"]

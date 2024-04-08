@@ -1,7 +1,7 @@
 import asyncio
 import collections
 import logging
-from typing import Any, Awaitable, Callable, Dict, Generator, Tuple
+from typing import Any, Awaitable, Callable, Dict, Generator, Literal, Optional, Tuple
 
 import pytest
 
@@ -35,7 +35,7 @@ from burr.core.application import (
     _validate_start,
     _validate_transitions,
 )
-from burr.core.persistence import DevNullPersister
+from burr.core.persistence import BaseStatePersister, DevNullPersister, PersistedStateData
 from burr.lifecycle import (
     PostRunStepHook,
     PostRunStepHookAsync,
@@ -1667,6 +1667,57 @@ def test_application_builder_initialize_does_not_allow_state_setting():
             resume_at_next_action=True,
             default_state={},
             default_entrypoint="foo",
+        )
+
+
+class BrokenPersister(BaseStatePersister):
+    """Broken persistor."""
+
+    def load(
+        self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None, **kwargs
+    ) -> Optional[PersistedStateData]:
+        return dict(
+            partition_key="key",
+            app_id="id",
+            sequence_id=0,
+            position="foo",
+            state=None,
+            created_at="",
+            status="completed",
+        )
+
+    def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
+        return []
+
+    def save(
+        self,
+        partition_key: Optional[str],
+        app_id: str,
+        sequence_id: int,
+        position: str,
+        state: State,
+        status: Literal["completed", "failed"],
+        **kwargs,
+    ):
+        return
+
+
+def test_application_builder_initialize_raises_on_broken_persistor():
+    """Persisters should return None when there is no state to be loaded and the default used."""
+    with pytest.raises(ValueError, match="but state was None"):
+        counter_action = base_counter_action.with_name("counter")
+        result_action = Result("count").with_name("result")
+        (
+            ApplicationBuilder()
+            .with_actions(counter_action, result_action)
+            .with_transitions(("counter", "result", default))
+            .initialize_from(
+                BrokenPersister(),
+                resume_at_next_action=True,
+                default_state={},
+                default_entrypoint="foo",
+            )
+            .build()
         )
 
 
