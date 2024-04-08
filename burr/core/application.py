@@ -1058,6 +1058,8 @@ class Application:
             self._state = self._state.update(**{SEQUENCE_ID: self.sequence_id + 1})
 
     def _set_sequence_id(self, sequence_id: int):
+        if self._state is None:
+            self._state = State() #ideally we copy the default state
         self._state = self._state.update(**{SEQUENCE_ID: sequence_id})
 
     @property
