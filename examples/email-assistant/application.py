@@ -1,4 +1,5 @@
 import functools
+import os
 from typing import Tuple
 
 import openai
@@ -19,6 +20,12 @@ def process_input(
 ) -> Tuple[dict, State]:
     """Processes input from user and updates state with the input."""
     result = {"incoming_email": email_to_respond, "response_instructions": response_instructions}
+    return result, state.update(**result)
+
+
+@action(reads=[], writes=["has_openai_key"])
+def check_openai_key(state: State) -> Tuple[dict, State]:
+    result = {"has_openai_key": "OPENAI_API_KEY" in os.environ}
     return result, state.update(**result)
 
 

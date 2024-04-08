@@ -1,5 +1,6 @@
 import functools
 import importlib
+import os
 from typing import Any, Dict, List, Literal, Optional
 
 import pydantic
@@ -150,6 +151,19 @@ def get_state(project_id: str, app_id: str) -> EmailAssistantState:
     """
     email_assistant_app = _get_application(project_id, app_id)
     return EmailAssistantState.from_app(email_assistant_app)
+
+
+@router.get("/validate/{project_id}/{app_id}")
+def validate_environment() -> Optional[str]:
+    """Validate the environment"""
+    if "OPENAI_API_KEY" in os.environ:
+        return
+    return (
+        "You have not set an API key for [OpenAI](https://www.openai.com). Do this "
+        "by setting the environment variable `OPENAI_API_KEY` to your key. "
+        "You can get a key at https://platform.openai.com. "
+        "You can still look at chat history/examples."
+    )
 
 
 if __name__ == "__main__":

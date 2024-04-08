@@ -187,7 +187,36 @@ export class DefaultService {
     });
   }
   /**
+   * Create New Application
+   * @param projectId
+   * @param appId
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static createNewApplicationApiV0EmailAssistantCreateNewProjectIdAppIdPost(
+    projectId: string,
+    appId: string
+  ): CancelablePromise<string> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v0/email_assistant/create_new/{project_id}/{app_id}',
+      path: {
+        project_id: projectId,
+        app_id: appId
+      },
+      errors: {
+        422: `Validation Error`
+      }
+    });
+  }
+  /**
    * Initialize Draft
+   * Endpoint to initialize the draft with the email and instructions
+   *
+   * :param project_id: ID of the project (used by telemetry tracking/storage)
+   * :param app_id: ID of the application (used to reference the app)
+   * :param draft_data: Data to initialize the draft
+   * :return: The state of the application after initialization
    * @param projectId
    * @param appId
    * @param requestBody
@@ -215,6 +244,12 @@ export class DefaultService {
   }
   /**
    * Answer Questions
+   * Endpoint to answer questions the LLM provides
+   *
+   * :param project_id: ID of the project (used by telemetry tracking/storage)
+   * :param app_id: ID of the application (used to reference the app)
+   * :param question_answers: Answers to the questions
+   * :return: The state of the application after answering the questions
    * @param projectId
    * @param appId
    * @param requestBody
@@ -242,6 +277,12 @@ export class DefaultService {
   }
   /**
    * Provide Feedback
+   * Endpoint to provide feedback to the LLM
+   *
+   * :param project_id: ID of the project (used by telemetry tracking/storage)
+   * :param app_id: ID of the application (used to reference the app)
+   * :param feedback: Feedback to provide to the LLM
+   * :return: The state of the application after providing feedback
    * @param projectId
    * @param appId
    * @param requestBody
@@ -269,6 +310,11 @@ export class DefaultService {
   }
   /**
    * Get State
+   * Get the current state of the application
+   *
+   * :param project_id: ID of the project (used by telemetry tracking/storage)
+   * :param app_id:  ID of the application (used to reference the app)
+   * :return: The state of the application
    * @param projectId
    * @param appId
    * @returns EmailAssistantState Successful Response
@@ -288,6 +334,20 @@ export class DefaultService {
       errors: {
         422: `Validation Error`
       }
+    });
+  }
+  /**
+   * Validate Environment
+   * Validate the environment
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static validateEnvironmentApiV0EmailAssistantValidateProjectIdAppIdGet(): CancelablePromise<
+    string | null
+  > {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v0/email_assistant/validate/{project_id}/{app_id}'
     });
   }
   /**
