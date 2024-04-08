@@ -290,6 +290,10 @@ const RenderedField = (props: {
                 <span>NULL</span>
               ) : (
                 Object.entries(value).map(([k, v]) => {
+                  if (v instanceof Array && v.length > 0 && typeof v[0] === 'number') {
+                    // we want to display arrays of numbers as a single string.
+                    v = v.toString();
+                  }
                   return (
                     <div key={key + '-' + k} className={bodyClassNames}>
                       <RenderedField
@@ -328,6 +332,10 @@ const FormRenderer: React.FC<FormRendererProps> = ({ data, isDefaultExpanded: is
     return (
       <>
         {Object.entries(data).map(([key, value]) => {
+          if (value instanceof Array && value.length > 0 && typeof value[0] === 'number') {
+            // we want to display arrays of numbers as a single string.
+            value = value.toString();
+          }
           return (
             <RenderedField
               keyName={key}
