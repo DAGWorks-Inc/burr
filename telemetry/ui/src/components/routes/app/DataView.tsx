@@ -257,7 +257,13 @@ const RenderedField = (props: {
     <>
       <Header name={key} isExpanded={isExpanded} setExpanded={setExpanded} />
       {isExpanded &&
-        (typeof value === 'string' ? (
+        (props.value instanceof Array &&
+        props.value.length > 0 &&
+        typeof props.value[0] === 'number' ? (
+          <div key={key + '-' + String(level)}>
+            <JsonView value={{ values: value }} enableClipboard={false} collapsed={1} />
+          </div>
+        ) : typeof value === 'string' ? (
           <div key={key + '-' + String(level)}>
             <pre
               className={bodyClassNames}
@@ -290,10 +296,10 @@ const RenderedField = (props: {
                 <span>NULL</span>
               ) : (
                 Object.entries(value).map(([k, v]) => {
-                  if (v instanceof Array && v.length > 0 && typeof v[0] === 'number') {
-                    // we want to display arrays of numbers as a single string.
-                    v = v.toString();
-                  }
+                  // if (v instanceof Array && v.length > 0 && typeof v[0] === 'number') {
+                  //   // we want to display arrays of numbers as a single string.
+                  //   v = v.toString();
+                  // }
                   return (
                     <div key={key + '-' + k} className={bodyClassNames}>
                       <RenderedField
@@ -332,10 +338,6 @@ const FormRenderer: React.FC<FormRendererProps> = ({ data, isDefaultExpanded: is
     return (
       <>
         {Object.entries(data).map(([key, value]) => {
-          if (value instanceof Array && value.length > 0 && typeof value[0] === 'number') {
-            // we want to display arrays of numbers as a single string.
-            value = value.toString();
-          }
           return (
             <RenderedField
               keyName={key}
