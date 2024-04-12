@@ -261,7 +261,7 @@ const RenderedField = (props: {
         props.value.length > 0 &&
         typeof props.value[0] === 'number' ? (
           <div key={key + '-' + String(level)}>
-            <JsonView value={{ values: value }} enableClipboard={false} collapsed={1} />
+            <JsonView value={props.value} enableClipboard={false} collapsed={1} />
           </div>
         ) : typeof value === 'string' ? (
           <div key={key + '-' + String(level)}>
