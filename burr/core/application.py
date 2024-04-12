@@ -410,9 +410,20 @@ class Application:
                 )
                 missing_inputs.remove(required_input)
         if len(missing_inputs) > 0:
+            missing_inputs_dict = {key: "FILL ME IN" for key in missing_inputs}
+            missing_inputs_dict.update({key: "..." for key in inputs.keys()})
+            addendum = (
+                "\nPlease double check the values passed to the keyword argument `inputs` to however you're running "
+                "the burr application.\n"
+                "e.g.\n"
+                f"   app.run( # or app.step, app.iterate, app.astep, etc.\n"
+                f"       halt_..., # your halt logic\n"
+                f"       inputs={missing_inputs_dict}  # <-- this is what you need to adjust\n"
+                f"   )"
+            )
             raise ValueError(
                 f"Action {action.name} is missing required inputs: {missing_inputs}. "
-                f"Has inputs: {processed_inputs}"
+                f"Has inputs: {processed_inputs}. " + addendum
             )
         return processed_inputs
 

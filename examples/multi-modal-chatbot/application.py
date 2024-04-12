@@ -212,3 +212,4 @@ if __name__ == "__main__":
     app.visualize(
         output_file_path="statemachine", include_conditions=False, view=True, format="png"
     )
+    app.run(halt_after=["response"])
