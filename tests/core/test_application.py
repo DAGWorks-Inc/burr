@@ -1101,6 +1101,31 @@ def test_run_with_inputs():
     assert state["count"] == result["count"] == 11
 
 
+def test_run_with_inputs_multiple_actions():
+    """Tests that inputs aren't popped off and are passed through to multiple actions."""
+    result_action = Result("count").with_name("result")
+    counter_action1 = base_counter_action_with_inputs.with_name("counter1")
+    counter_action2 = base_counter_action_with_inputs.with_name("counter2")
+    app = Application(
+        actions=[counter_action1, counter_action2, result_action],
+        transitions=[
+            Transition(counter_action1, counter_action1, Condition.expr("count < 10")),
+            Transition(counter_action1, counter_action2, Condition.expr("count >= 10")),
+            Transition(counter_action2, counter_action2, Condition.expr("count < 20")),
+            Transition(counter_action2, result_action, default),
+        ],
+        state=State({}),
+        initial_step="counter1",
+        partition_key="test",
+        uid="test-123",
+        sequence_id=0,
+    )
+    action_, result, state = app.run(halt_after=["result"], inputs={"additional_increment": 8})
+    assert action_.name == "result"
+    assert state["count"] == result["count"] == 27
+    assert state["__SEQUENCE_ID"] == 4
+
+
 async def test_arun():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_async.with_name("counter")
@@ -1162,6 +1187,32 @@ async def test_arun_with_inputs():
     )
     assert state["count"] == result["count"] == 11
     assert action_.name == "result"
+
+
+async def test_arun_with_inputs_multiple_actions():
+    result_action = Result("count").with_name("result")
+    counter_action1 = base_counter_action_with_inputs_async.with_name("counter1")
+    counter_action2 = base_counter_action_with_inputs_async.with_name("counter2")
+    app = Application(
+        actions=[counter_action1, counter_action2, result_action],
+        transitions=[
+            Transition(counter_action1, counter_action1, Condition.expr("count < 10")),
+            Transition(counter_action1, counter_action2, Condition.expr("count >= 10")),
+            Transition(counter_action2, counter_action2, Condition.expr("count < 20")),
+            Transition(counter_action2, result_action, default),
+        ],
+        state=State({}),
+        initial_step="counter1",
+        partition_key="test",
+        uid="test-123",
+        sequence_id=0,
+    )
+    action_, result, state = await app.arun(
+        halt_after=["result"], inputs={"additional_increment": 8}
+    )
+    assert state["count"] == result["count"] == 27
+    assert action_.name == "result"
+    assert state["__SEQUENCE_ID"] == 4
 
 
 async def test_app_a_run_async_and_sync():

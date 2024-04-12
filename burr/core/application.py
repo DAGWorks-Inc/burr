@@ -335,13 +335,13 @@ class Application:
             return None
         if inputs is None:
             inputs = {}
-        inputs = self._process_inputs(inputs, next_action)
+        action_inputs = self._process_inputs(inputs, next_action)
         if _run_hooks:
             self._adapter_set.call_all_lifecycle_hooks_sync(
                 "pre_run_step",
                 action=next_action,
                 state=self._state,
-                inputs=inputs,
+                inputs=action_inputs,
                 sequence_id=self.sequence_id,
                 app_id=self._uid,
                 partition_key=self._partition_key,
@@ -351,9 +351,11 @@ class Application:
         new_state = self._state
         try:
             if next_action.single_step:
-                result, new_state = _run_single_step_action(next_action, self._state, inputs)
+                result, new_state = _run_single_step_action(next_action, self._state, action_inputs)
             else:
-                result = _run_function(next_action, self._state, inputs, name=next_action.name)
+                result = _run_function(
+                    next_action, self._state, action_inputs, name=next_action.name
+                )
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
 
             new_state = self._update_internal_state_value(new_state, next_action)
@@ -395,11 +397,12 @@ class Application:
         for key in list(inputs.keys()):
             if key in action.inputs:
                 processed_inputs[key] = inputs.pop(key)
-        if len(inputs) > 0:
-            raise ValueError(
+        if len(inputs) > 0 and logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
                 f"Keys {inputs.keys()} were passed in as inputs to action "
-                f"{action.name}, but not declared by the action as an input! "
-                f"Action needs: {action.inputs}"
+                f"{action.name}, but not declared by the action as an input. "
+                f"Action only needs: {action.inputs} so we're just letting you know "
+                f"some inputs are being skipped."
             )
         missing_inputs = set(action.inputs) - set(processed_inputs.keys())
         for required_input in list(missing_inputs):
@@ -444,12 +447,12 @@ class Application:
             return None
         if inputs is None:
             inputs = {}
-        inputs = self._process_inputs(inputs, next_action)
+        action_inputs = self._process_inputs(inputs, next_action)
         await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
             "pre_run_step",
             action=next_action,
             state=self._state,
-            inputs=inputs,
+            inputs=action_inputs,
             sequence_id=self.sequence_id,
             app_id=self._uid,
             partition_key=self._partition_key,
@@ -465,15 +468,15 @@ class Application:
                 # which this is supposed to be its OK).
                 # this delegates hooks to the synchronous version, so we'll call all of them as well
                 return self._step(
-                    inputs=inputs, _run_hooks=False
+                    inputs=action_inputs, _run_hooks=False
                 )  # Skip hooks as we already ran all of them/will run all of them in this function's finally
             if next_action.single_step:
                 result, new_state = await _arun_single_step_action(
-                    next_action, self._state, inputs=inputs
+                    next_action, self._state, inputs=action_inputs
                 )
             else:
                 result = await _arun_function(
-                    next_action, self._state, inputs=inputs, name=next_action.name
+                    next_action, self._state, inputs=action_inputs, name=next_action.name
                 )
                 new_state = _run_reducer(next_action, self._state, result, next_action.name)
             new_state = self._update_internal_state_value(new_state, next_action)
@@ -600,7 +603,6 @@ class Application:
         while self.has_next_action():
             # self.step will only return None if there is no next action, so we can rely on tuple unpacking
             prior_action, result, state = self.step(inputs=inputs)
-            inputs = {}  # only pass inputs in the first time
             yield prior_action, result, state
             if self._should_halt_iterate(halt_before, halt_after, prior_action):
                 break
@@ -631,7 +633,6 @@ class Application:
         while self.has_next_action():
             # self.step will only return None if there is no next action, so we can rely on tuple unpacking
             prior_action, result, state = await self.astep(inputs=inputs)
-            inputs = {}  # only pass inputs in the first time
             yield prior_action, result, state
             if self._should_halt_iterate(halt_before, halt_after, prior_action):
                 break
