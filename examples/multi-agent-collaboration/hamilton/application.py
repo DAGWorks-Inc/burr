@@ -19,9 +19,34 @@ from burr.lifecycle import PostRunStepHook
 from burr.tracking import client as burr_tclient
 from burr.visibility import ActionSpanTracer, TracerFactory
 
+# --- some set up for the tools ---
+
+repl = PythonREPL()
+tavily_tool = TavilySearchResults(max_results=5)
+
+
+def python_repl(code: str) -> dict:
+    """Use this to execute python code. If you want to see the output of a value,
+    you should print it out with `print(...)`. This is visible to the user.
+
+    :param code: string. The python code to execute.
+    :return: the output
+    """
+    try:
+        result = repl.run(code)
+    except BaseException as e:
+        return {"error": repr(e), "status": "error", "code": f"```python\n{code}\n```"}
+    return {"status": "success", "code": f"```python\n{code}\n```", "Stdout": result}
+
+
+# These are our tools that we will use in the application.
+tools = [tavily_tool, python_repl]
+
 
 class SimpleTracer(h_lifecycle.NodeExecutionHook):
-    """Simple Hamilton Tracer that plugs into Burr's tracing capture."""
+    """Simple Hamilton Tracer that plugs into Burr's tracing capture.
+    This will tell Burr about what Hamilton is doing internally.
+    """
 
     def __init__(self, tracer: TracerFactory):
         self._tracer: TracerFactory = tracer
@@ -61,29 +86,20 @@ class SimpleTracer(h_lifecycle.NodeExecutionHook):
         context_manager.__exit__(None, None, None)
 
 
-def initialize_tool_dag(agent_name: str, tracer: TracerFactory) -> driver.Driver:
-    """Initialize the tool DAG with the tracer."""
+def initialize_agent_dag(agent_name: str, tracer: TracerFactory) -> driver.Driver:
+    """Initialize the agent DAG with the tracer.
+
+    Right now there is no difference between the agents, but this is here for future use.
+    """
     tracer = SimpleTracer(tracer)
     # Initialize some things needed for tools.
-    tool_dag = driver.Builder().with_modules(func_agent).with_adapters(tracer).build()
-    return tool_dag
+    agent_dag = driver.Builder().with_modules(func_agent).with_adapters(tracer).build()
+    return agent_dag
 
 
-repl = PythonREPL()
+# --- End Tool Setup
 
-
-def python_repl(code: str) -> dict:
-    """Use this to execute python code. If you want to see the output of a value,
-    you should print it out with `print(...)`. This is visible to the user.
-
-    :param code: string. The python code to execute.
-    :return: the output
-    """
-    try:
-        result = repl.run(code)
-    except BaseException as e:
-        return {"error": repr(e), "status": "error", "code": f"```python\n{code}\n```"}
-    return {"status": "success", "code": f"```python\n{code}\n```", "Stdout": result}
+# --- Start defining Action
 
 
 @action(reads=["query", "messages"], writes=["messages"])
@@ -95,8 +111,8 @@ def chart_generator(state: State, __tracer: TracerFactory) -> tuple[dict, State]
     :return:
     """
     query = state["query"]
-    tool_dag = initialize_tool_dag("chart_generator", __tracer)
-    result = tool_dag.execute(
+    agent_dag = initialize_agent_dag("chart_generator", __tracer)
+    result = agent_dag.execute(
         ["parsed_tool_calls", "llm_function_message"],
         inputs={
             "tools": [python_repl],
@@ -114,9 +130,6 @@ def chart_generator(state: State, __tracer: TracerFactory) -> tuple[dict, State]
     return result, state
 
 
-tavily_tool = TavilySearchResults(max_results=5)
-
-
 @action(reads=["query", "messages"], writes=["messages"])
 def researcher(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
     """The researcher action.
@@ -126,8 +139,8 @@ def researcher(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
     :return:
     """
     query = state["query"]
-    tool_dag = initialize_tool_dag("researcher", __tracer)
-    result = tool_dag.execute(
+    agent_dag = initialize_agent_dag("researcher", __tracer)
+    result = agent_dag.execute(
         ["parsed_tool_calls", "llm_function_message"],
         inputs={
             "tools": [tavily_tool],
@@ -142,9 +155,6 @@ def researcher(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
     state = state.append(messages=new_message)
     state = state.update(sender="researcher")
     return result, state
-
-
-tools = [tavily_tool, python_repl]
 
 
 @action(reads=["messages", "parsed_tool_calls"], writes=["messages", "parsed_tool_calls"])
@@ -189,6 +199,7 @@ def tool_node(state: State) -> tuple[dict, State]:
 
 @action(reads=[], writes=[])
 def terminal_step(state: State) -> tuple[dict, State]:
+    """Terminal step we have here that does nothing, but it could"""
     return {}, state
 
 
@@ -200,32 +211,42 @@ class PrintStepHook(PostRunStepHook):
         print("state======\n", state)
 
 
-def default_state_and_entry_point() -> tuple[dict, str]:
+def default_state_and_entry_point(query: str = None) -> tuple[dict, str]:
     """Returns the default state and entry point for the application."""
+    if query is None:
+        query = (
+            "Fetch the UK's GDP over the past 5 years,"
+            " then draw a line graph of it."
+            " Once the python code has been written and the graph drawn, the task is complete."
+        )
     return {
         "messages": [],
-        "query": "Fetch the UK's GDP over the past 5 years,"
-        " then draw a line graph of it."
-        " Once the python code has been written and the graph drawn, the task is complete.",
+        "query": query,
         "sender": "",
         "parsed_tool_calls": [],
     }, "researcher"
 
 
-def main(app_instance_id: str = None, sequence_number: int = None):
-    """Main function to run the application."""
+def main(query: str = None, app_instance_id: str = None, sequence_number: int = None):
+    """Main function to run the application.
+
+    :param query: the query for the agents to run over.
+    :param app_instance_id: a prior app instance id to restart from.
+    :param sequence_number: a prior sequence number to restart from.
+    :return:
+    """
     project_name = "demo:hamilton-multi-agent-v1"
     if app_instance_id:
         tracker = burr_tclient.LocalTrackingClient(project_name)
         persisted_state = tracker.load("demo", app_id=app_instance_id, sequence_no=sequence_number)
         if not persisted_state:
             print(f"Warning: No persisted state found for app_id {app_instance_id}.")
-            state, entry_point = default_state_and_entry_point()
+            state, entry_point = default_state_and_entry_point(query)
         else:
             state = persisted_state["state"]
             entry_point = persisted_state["position"]
     else:
-        state, entry_point = default_state_and_entry_point()
+        state, entry_point = default_state_and_entry_point(query)
     # look up app_id for particular user
     # if None -- then proceed with defaults
     # else load from state, and set entry point

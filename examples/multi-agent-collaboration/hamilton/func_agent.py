@@ -118,23 +118,6 @@ def base_system_prompt(tool_names: list[str], system_message: str) -> str:
     )
 
 
-def get_current_weather(location: str, unit: str = "fahrenheit") -> str:
-    """Get the current weather in a given location
-
-    :param location: the location to get the weather for.
-    :param unit: the unit of temperature to return. Celsius or Fahrenheit.
-    :return: JSON string with the location and temperature, and unit.
-    """
-    if "tokyo" in location.lower():
-        return json.dumps({"location": "Tokyo", "temperature": "10", "unit": unit})
-    elif "san francisco" in location.lower():
-        return json.dumps({"location": "San Francisco", "temperature": "72", "unit": unit})
-    elif "paris" in location.lower():
-        return json.dumps({"location": "Paris", "temperature": "22", "unit": unit})
-    else:
-        return json.dumps({"location": location, "temperature": "unknown"})
-
-
 def message_history(base_system_prompt: str, user_query: str, messages: list[dict]) -> list[dict]:
     """Creates the message history for the LLM model.
 
@@ -267,9 +250,28 @@ def executed_tool_calls(
     return results
 
 
+def _get_current_weather(location: str, unit: str = "fahrenheit") -> str:
+    """Get the current weather in a given location
+
+    Dummy function to simulate a weather API call.
+
+    :param location: the location to get the weather for.
+    :param unit: the unit of temperature to return. Celsius or Fahrenheit.
+    :return: JSON string with the location and temperature, and unit.
+    """
+    if "tokyo" in location.lower():
+        return json.dumps({"location": "Tokyo", "temperature": "10", "unit": unit})
+    elif "san francisco" in location.lower():
+        return json.dumps({"location": "San Francisco", "temperature": "72", "unit": unit})
+    elif "paris" in location.lower():
+        return json.dumps({"location": "Paris", "temperature": "22", "unit": unit})
+    else:
+        return json.dumps({"location": location, "temperature": "unknown"})
+
+
 if __name__ == "__main__":
     # some code to test a few things.
-    jspec = _tool_function_spec(get_current_weather)
+    jspec = _tool_function_spec(_get_current_weather)
     import pprint
 
     pprint.pprint(jspec)
@@ -281,7 +283,7 @@ if __name__ == "__main__":
     result = dr.execute(
         ["executed_tool_calls"],
         inputs={
-            "tools": [get_current_weather],
+            "tools": [_get_current_weather],
             "system_message": "You are an accurate weather forecaster.",
             "user_query": "What is the weather in Tokyo, Japan? Use celsius.",
             "messages": [],
