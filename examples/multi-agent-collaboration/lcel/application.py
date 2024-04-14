@@ -26,13 +26,28 @@ from burr.lifecycle import PostRunStepHook
 from burr.tracking import client as burr_tclient
 from burr.visibility import ActionSpanTracer, TracerFactory
 
+# ---- Define the tools -----
 tavily_tool = TavilySearchResults(max_results=5)
-
-# Warning: This executes code locally, which can be unsafe when not sandboxed
-
 repl = PythonREPL()
 
 
+@tool
+def python_repl(code: Annotated[str, "The python code to execute to generate your chart."]):
+    """Use this to execute python code. If you want to see the output of a value,
+    you should print it out with `print(...)`. This is visible to the user."""
+    try:
+        # Warning: This executes code locally, which can be unsafe when not sandboxed
+        result = repl.run(code)
+    except BaseException as e:
+        return f"Failed to execute. Error: {repr(e)}"
+    return f"Succesfully executed:\n```python\n{code}\n```\nStdout: {result}"
+
+
+tools = [tavily_tool, python_repl]
+tool_executor = ToolExecutor(tools)
+
+
+# Define the tracer
 class LangChainTracer(BaseCallbackHandler):
     """Example tracer to plug into Burr's tracing capture."""
 
@@ -64,6 +79,7 @@ class LangChainTracer(BaseCallbackHandler):
         context_manager.__exit__(None, None, None)
 
 
+# Agents / actions
 def create_agent(llm, tools, system_message: str):
     """Helper function to create an agent with a system message and tools."""
     functions = [convert_to_openai_function(t) for t in tools]
@@ -88,20 +104,8 @@ def create_agent(llm, tools, system_message: str):
     return prompt | llm.bind_functions(functions)
 
 
-@tool
-def python_repl(code: Annotated[str, "The python code to execute to generate your chart."]):
-    """Use this to execute python code. If you want to see the output of a value,
-    you should print it out with `print(...)`. This is visible to the user."""
-    try:
-        result = repl.run(code)
-    except BaseException as e:
-        return f"Failed to execute. Error: {repr(e)}"
-    return f"Succesfully executed:\n```python\n{code}\n```\nStdout: {result}"
-
-
-# Helper function to create a node for a given agent
-def _agent_node(messages: list, sender: str, agent, name: str, tracer: TracerFactory) -> dict:
-    """Helper function to create a node for a given agent."""
+def _exercise_agent(messages: list, sender: str, agent, name: str, tracer: TracerFactory) -> dict:
+    """Helper function to exercise the agent code."""
     tracer = LangChainTracer(tracer)
     result = agent.invoke({"messages": messages, "sender": sender}, config={"callbacks": [tracer]})
     # We convert the agent output into a format that is suitable to append to the global state
@@ -117,7 +121,7 @@ def _agent_node(messages: list, sender: str, agent, name: str, tracer: TracerFac
     }
 
 
-# Objects for the agents
+# Define the actual agents via langchain
 llm = ChatOpenAI(model="gpt-4-1106-preview")
 research_agent = create_agent(
     llm,
@@ -134,21 +138,19 @@ chart_agent = create_agent(
 @action(reads=["messages", "sender"], writes=["messages", "sender"])
 def research_node(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
     # Research agent and node
-    result = _agent_node(state["messages"], state["sender"], research_agent, "Researcher", __tracer)
+    result = _exercise_agent(
+        state["messages"], state["sender"], research_agent, "Researcher", __tracer
+    )
     return result, state.append(messages=result["messages"]).update(sender="Researcher")
 
 
 @action(reads=["messages", "sender"], writes=["messages", "sender"])
 def chart_node(state: State, __tracer: TracerFactory) -> tuple[dict, State]:
     # Chart agent and node
-    result = _agent_node(
+    result = _exercise_agent(
         state["messages"], state["sender"], chart_agent, "Chart Generator", __tracer
     )
     return result, state.append(messages=result["messages"]).update(sender="Chart Generator")
-
-
-tools = [tavily_tool, python_repl]
-tool_executor = ToolExecutor(tools)
 
 
 @action(reads=["messages"], writes=["messages"])
@@ -182,6 +184,7 @@ def tool_node(state: State) -> tuple[dict, State]:
 
 @action(reads=[], writes=[])
 def terminal_step(state: State) -> tuple[dict, State]:
+    """Terminal step we have here that does nothing, but it could"""
     return {}, state
 
 
@@ -191,34 +194,40 @@ class PrintStepHook(PostRunStepHook):
         print("state======\n", state)
 
 
-def default_state_and_entry_point() -> tuple[dict, str]:
+def default_state_and_entry_point(query: str = None) -> tuple[dict, str]:
+    """Sets the default state & entry point
+    :param query: the query for the agents to work on.
+    :return:
+    """
+    if query is None:
+        query = (
+            "Fetch the UK's GDP over the past 5 years,"
+            " then draw a line graph of it."
+            " Once you code it up, finish."
+        )
     return (
         dict(
-            messages=[
-                HumanMessage(
-                    content="Fetch the UK's GDP over the past 5 years,"
-                    " then draw a line graph of it."
-                    " Once you code it up, finish."
-                )
-            ],
+            messages=[HumanMessage(content=query)],
             sender=None,
         ),
         "researcher",
     )
 
 
-def main(app_instance_id: str = None):
+def main(query: str = None, app_instance_id: str = None, sequence_id: int = None):
     """Main function to run the multi-agent collaboration example.
 
+    Pass in a query to start from a specific query.
     Pass in an app_instance_id to restart from a previous run.
+    Pass in an sequence_id to restart from a previous run and a specific position in it.
     """
     project_name = "demo:lcel-multi-agent"
     if app_instance_id:
         tracker = burr_tclient.LocalTrackingClient(project_name)
-        persisted_state = tracker.load("demo", app_id=app_instance_id, sequence_no=None)
+        persisted_state = tracker.load("demo", app_id=app_instance_id, sequence_no=sequence_id)
         if not persisted_state:
             print(f"Warning: No persisted state found for app_id {app_instance_id}.")
-            initial_state, entry_point = default_state_and_entry_point()
+            initial_state, entry_point = default_state_and_entry_point(query)
         else:
             initial_state = persisted_state["state"]
             # for now we need to manually deserialize LangChain messages into LangChain Objects
@@ -229,7 +238,7 @@ def main(app_instance_id: str = None):
             )
             entry_point = persisted_state["position"]
     else:
-        initial_state, entry_point = default_state_and_entry_point()
+        initial_state, entry_point = default_state_and_entry_point(query)
     app = (
         core.ApplicationBuilder()
         .with_state(**initial_state)
@@ -262,4 +271,7 @@ def main(app_instance_id: str = None):
 
 if __name__ == "__main__":
     main()
-    # main(SOME_APP_ID)  # use this to restart from a previous state
+    # main("Fetch the UK's GDP over the past 5 years,"
+    #                  " then draw a line graph of it."
+    #                  " Once you code it up, finish.")
+    # main(app_instance_id=SOME_APP_ID)  # use this to restart from a previous state
