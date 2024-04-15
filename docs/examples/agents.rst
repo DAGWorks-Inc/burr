@@ -18,7 +18,7 @@ One way to approach complicated tasks is through a "divide-and-conquer" approach
 each task or domain and route tasks to the correct "expert". This means that each agent can become a sequence of LLM
 calls that chooses how to use a specific "tool".
 
-The examples we link to below are inspired by the paper `AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation by Wu, et. al.<https://arxiv.org/abs/2308.08155>`_.
+The examples we link to below are inspired by the paper `AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Conversation by Wu, et. al. <https://arxiv.org/abs/2308.08155>`_.
 They can be found in `this part of our repository <https://github.com/DAGWorks-Inc/burr/tree/main/examples/multi-agent-collaboration>`_.
 
 We have two implementations that show case this. One uses LangChain's LCEL, the other uses Hamilton. From a Burr
