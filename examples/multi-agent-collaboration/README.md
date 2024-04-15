@@ -10,7 +10,7 @@ There are two implementations:
 # `hamilton/application.py` vs `lcel/application.py`:
 
 - They should be functionally equivalent, except that langchain uses deprecated
-openai tool constructs underneath, while Hamilton uses the non-deprecated function calling
+openai function constructs underneath, while Hamilton uses the non-deprecated tool calling
 constructs.
 - Compare the two examples to see the code. Burr however doesn't change.
 
