@@ -4,7 +4,7 @@ This example resembles the example found originally [here](https://github.com/la
 
 
 ## show me the prompts
-With Hamilton the prompts can be found in the moduel [`func_agent.py`](func_agent.py).
+With Hamilton the prompts can be found in the module [`func_agent.py`](func_agent.py).
 
 # Tracing
 You'll see that in `application.py` we
