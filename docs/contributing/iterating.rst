@@ -25,7 +25,7 @@ The tracking server is located inside the python package. To run the server, you
     BURR_SERVE_STATIC=false burr-admin-server --no-open --dev-mode
 
 This will start the server on port 7241. Note that this is just a python wrapper -- this also captures stdout.
-We will be fixing this, but ff you want to run it directly (which is best for debugging), you'll want to
+We will be fixing this, but if you want to run it directly (which is best for debugging), you'll want to
 run it with uvicorn:
 
 .. code-block:: bash
