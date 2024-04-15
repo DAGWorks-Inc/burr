@@ -16,3 +16,4 @@ Examples of more complex/powerful use-cases of Burr. Download/copy these to adap
     ml_training
     simulation
     creating_tests
+    web-server
