@@ -55,6 +55,14 @@ PRIOR_STEP = "__PRIOR_STEP"
 SEQUENCE_ID = "__SEQUENCE_ID"
 
 
+ERROR_MESSAGE = (
+    "-------------------------------------------------------------------\n"
+    "Oh no an error! Need help with Burr?\n"
+    "Join our discord and ask for help! https://discord.gg/4FxBMyzW5n\n"
+    "-------------------------------------------------------------------\n"
+)
+
+
 def _validate_result(result: dict, name: str) -> None:
     if not isinstance(result, dict):
         raise ValueError(
@@ -186,7 +194,8 @@ def _create_dict_string(kwargs: dict) -> str:
 
 def _format_error_message(action: Action, input_state: State, inputs: dict) -> str:
     """Formats the error string, given that we're inside an action"""
-    message = f"> Action: {action.name} encountered an error!"
+    message = ERROR_MESSAGE
+    message += f"> Action: `{action.name}` encountered an error!"
     padding = " " * (80 - len(message) - 1)
     message += padding + "<"
     message += "\n> State (at time of action):\n" + _create_dict_string(input_state.get_all())
@@ -693,7 +702,8 @@ class Application:
         # TODO -- implement this check elsewhere as well, break out into further utility functions
         if len(missing_actions) > 0:
             raise ValueError(
-                f"Actions {missing_actions} were passed in as halt_after conditions, but not found in the actions list! "
+                ERROR_MESSAGE
+                + f"Actions {missing_actions} were passed in as halt_after conditions, but not found in the actions list! "
                 f"Actions found: {[action.name for action in self._actions]}"
             )
 
@@ -1108,7 +1118,8 @@ class Application:
 def _assert_set(value: Optional[Any], field: str, method: str):
     if value is None:
         raise ValueError(
-            f"Must set {field} before building application! Do so with ApplicationBuilder.{method}"
+            ERROR_MESSAGE
+            + f"Must set `{field}` before building application! Do so with ApplicationBuilder.{method}"
         )
 
 
@@ -1120,19 +1131,19 @@ def _validate_transitions(
     for from_, to, condition in transitions:
         if from_ not in actions:
             raise ValueError(
-                f"Transition source: {from_} not found in actions! "
+                f"Transition source: `{from_}` not found in actions! "
                 f"Please add to actions using with_actions({from_}=...)"
             )
         if to not in actions:
             raise ValueError(
-                f"Transition target: {to} not found in actions! "
+                f"Transition target: `{to}` not found in actions! "
                 f"Please add to actions using with_actions({to}=...)"
             )
         if condition.name == "default":  # we have seen a default transition
             if from_ in exhausted:
                 raise ValueError(
-                    f"Transition {from_} -> {to} is redundant -- "
-                    f"a default transition has already been set for {from_}"
+                    f"Transition `{from_}` -> `{to}` is redundant -- "
+                    f"a default transition has already been set for `{from_}`"
                 )
             exhausted[from_] = True
     return True
@@ -1206,7 +1217,7 @@ class ApplicationBuilder:
         """
         if self.initializer is not None:
             raise ValueError(
-                "You cannot set state if you are loading state"
+                ERROR_MESSAGE + "You cannot set state if you are loading state"
                 "the .initialize_from() API. Either allow the persister to set the "
                 "state, or set the state manually."
             )
@@ -1226,7 +1237,8 @@ class ApplicationBuilder:
         # TODO -- validate only called once
         if self.start is not None:
             raise ValueError(
-                "You cannot set the entrypoint if you are loading a persister using "
+                ERROR_MESSAGE
+                + "You cannot set the entrypoint if you are loading a persister using "
                 "the .initialize_from() API. Either allow the persister to set the "
                 "entrypoint/provide a default, or set the entrypoint + state manually."
             )
@@ -1252,7 +1264,7 @@ class ApplicationBuilder:
             elif isinstance(action_value, Action):
                 if not action_value.name:
                     raise ValueError(
-                        f"Action: {action_value} must have a name set. "
+                        ERROR_MESSAGE + f"Action: {action_value} must have a name set. "
                         "If you hit this, you should probably be using the "
                         "**kwargs parameter (or call with_name(your_name) on the action)."
                     )
@@ -1368,7 +1380,8 @@ class ApplicationBuilder:
         """
         if self.start is not None or self.state is not None:
             raise ValueError(
-                "Cannot call initialize_from if you have already set state or an entrypoint! "
+                ERROR_MESSAGE
+                + "Cannot call initialize_from if you have already set state or an entrypoint! "
                 "You can either use the initializer *or* set the state and entrypoint manually."
             )
         self.initializer = initializer
@@ -1418,7 +1431,8 @@ class ApplicationBuilder:
         else:
             if load_result["state"] is None:
                 raise ValueError(
-                    f"Error: {self.initializer.__class__.__name__} returned {load_result} for "
+                    ERROR_MESSAGE
+                    + f"Error: {self.initializer.__class__.__name__} returned {load_result} for "
                     f"partition_key:{self.partition_key}, app_id:{self.app_id}, "
                     f"sequence_id:{self.sequence_id}, "
                     f"but state was None! This is not allowed. Please return None in this case, or double "
