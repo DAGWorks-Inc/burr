@@ -186,16 +186,18 @@ Actions can declare parameters that are not part of the state. Use this to:
 2. Provide inputs that are required as part of the application to function, e.g. human input, configuration, etc.
 
 For example using the function based API, consider the following action:
+
 .. code-block:: python
 
     @action(reads=["..."], writes=["..."])
     def my_action(state: State, client: Client, prompt: str) -> Tuple[dict, State]:
-        """`client` & `prompt` here are something we need to pass in."""
+        """client & `prompt` here are something we need to pass in."""
         context = client.get_data(state["..."])
         result = llm_call(prompt, context) # some LLM call...
         return result, state.update(**result)
 
 We need to pass in `client` and `prompt` somehow. Here are the ways to do that:
+
 .. code-block:: python
 
 
