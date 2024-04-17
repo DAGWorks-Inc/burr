@@ -2,6 +2,8 @@
 Chatbots
 ================
 
+.. _chatbots:
+
 Chat bots are a simple example where state influences the conversation. This is a
 perfect use case for using Burr.
 
