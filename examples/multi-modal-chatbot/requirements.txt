@@ -1,3 +1,2 @@
-burr[hamilton]
-burr[streamlit]
+burr[streamlit,start]
 openai

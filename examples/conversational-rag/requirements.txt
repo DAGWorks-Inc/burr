@@ -1,6 +1,6 @@
-burr
+burr[start]
 faiss-cpu
-hamilton
 langchain
 langchain-community
 langchain-openai
+sf-hamilton

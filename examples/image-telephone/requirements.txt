@@ -1,4 +1,4 @@
 burr
 openai
 requests
-sf-hamilton
+sf-hamilton[visualization]
