@@ -1,2 +1,2 @@
-burr[streamlit,graphviz]
+burr[streamlit,graphviz,start]
 cowsay
