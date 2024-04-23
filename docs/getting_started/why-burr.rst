@@ -8,43 +8,18 @@ An abstraction to make your life easier
 
 Why do you need a state machine for your applications? Won't the normal programming constructs suffice?
 
-Yes, until a point. Let's look at a chatbot as an example. Here's a simple design of something gpt-like:
+Yes, until a point. Let's take a look at what you need to build a production-level LLM application:
 
-#. Accept a prompt from the user
-#. Perform some simple checks/validations on that prompt (is it safe/within the terms of service)
-#. If (2) then decide the mode to which to respond to that prompt from a set of capabilities. Else responds accordingly:
-     *  Generate an image
-     *  Answer a question
-     *  Write some code
-     *  ...
-#. Query the appropriate model with the prompt, formatted as expected
-    * On failure, present an error message
-    * On success, present the response to the user
-#. Await a new prompt, GOTO (1)
+1. Tracing/telemetry -- LLMs can be chaotic, and you need visibility into what decisions it made and how long it took to make them.
+2. State persistence -- thinking about how to save/load your application is a whole other level of infrastructure you need to worry about.
+3. Visualization/debugging -- when developing you'll want to be able to view what it is doing/did + load up the data at any point
+4. Manage interaction between users/LLM -- pause for input in certain conditions
+5. Data gathering for evaluation + test generation
 
-Visually, we might have an implementation/spec that looks like this:
+You can always patch together various frameworks or build it all yourself, but at that point you're going to be spending a lot of time on tasks that
+are not related to the core value proposition of your software.
 
-.. image:: ../_static/demo_graph.png
-    :align: center
-
-
-While this involves multiple API calls, error-handling, etc... it is definitely possible to get a prototype
-that looks slick out without too much abstraction.
-
-Now, let's get this to production. We need to:
-
-#. Add monitoring to figure out if/why any of our API calls return strange results
-#. Understand the decisions made by the application -- E.G. why it chose certain modes, why it formatted a response correctly. This involves:
-    * Tracking all the prompts/responses
-    * Going back in time to examine the state of the application at a given point
-#. Debug it in a local mode, step-by-step, using the state we observed in production
-#. Add new capabilities to the application
-#. Monitor the performance of the application -- which steps/decisions are taking the longest?
-#. Monitor the cost of running the application -- how many tokens are we accepting from/delivering to the user.
-#. Save the state out to some external store so you can restart the conversation from where you left off
-
-And this is the tip of the iceberg -- chatbots (and all stateful applications) get really complicated, really quickly.
-
-Burr is designed to unlock the capabilities above and more -- decomposing your application into functions that manipulate state
-and transition, with hooks that allow you to customize any part of the application. It is a platform on top of which you can build any of the
-production requirements above, and comes with many of them out of the box!
+Burr was built with this all in mind. By modeling your application as a state machine of simple python constructs you can have the best of both worlds.
+Bring in whatever infrastructure/tooling you want and get all of the above. Burr is meant to start off as an extremely lightweight tool to
+make building LLM (+ a wide swath of other) applications easier. The value compounds as you leverage more of the ecosystems, plugins, and additional
+features it provides.
