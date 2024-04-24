@@ -9,6 +9,7 @@ along with a fully built server.
 
 .. code-block:: bash
 
-    pip install burr[start]
+    pip install "burr[start]"
 
-This will give you tools to visualize, track, and interact with the UI. Note, if you're using ``zsh``, you'll need to add quotes around the install target, (``pip install "burr[start]"``).
+This will give you tools to visualize, track, and interact with the UI. You can explore the UI (including some sample projects)
+simply by running the command ``burr``. Up next we'll write our own application and follow it in the UI.
