@@ -9,13 +9,13 @@ Overview of the concepts -- read these to get a mental model for how Burr works.
 .. toctree::
     :maxdepth: 2
 
-    state-machine
-    state
     actions
+    state
+    state-machine
     transitions
-    hooks
     tracking
     state-persistence
     streaming-actions
+    hooks
     additional-visibility
     planned-capabilities

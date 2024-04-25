@@ -4,6 +4,11 @@ Applications
 
 .. _applications:
 
+.. note::
+
+    Applications tie everything in Burr together. They specify which actions should be included,
+    how they connect (including conditional edges), and how to run.
+
 Applications form the core representation of the state machine. You build them with the ``ApplicationBuilder``.
 Here is the minimum that is required:
 
@@ -18,17 +23,14 @@ This is shown in the example from :ref:`getting started <simpleexample>`
     from burr.core import ApplicationBuilder, default, expr
     app = (
         ApplicationBuilder()
-        .with_state(counter=0) # initialize the count to zero
-        .with_actions(
-            count=count, # add the counter action with the name "counter"
-            done=done # add the printer action with the name "printer"
-        ).with_transitions(
-            ("count", "count", expr("counter < 10")), # Keep counting if the counter is less than 10
-            ("count", "done", default) # Otherwise, we're done
-        ).with_entrypoint("counter") # we have to start somewhere
+        .with_actions(human_input, ai_response)
+        .with_transitions(
+            ("human_input", "ai_response"),
+            ("ai_response", "human_input")
+        ).with_state(chat_history=[])
+        .with_entrypoint("human_input")
         .build()
     )
-
 
 -------
 Running
