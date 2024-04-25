@@ -4,6 +4,12 @@ Actions
 
 .. _actions:
 
+.. note::
+
+    Actions are the core building block of Burr. They read from state and write to state.
+    They can be synchronous and asynchonous, and have both a ``sync`` and ``async`` API.
+    There are both function and class-based APIs.
+
 
 Actions do the heavy-lifting in a workflow. They should contain all complex compute. You can define actions
 either through a class-based or function-based API. If actions implement ``async def run`` then will be run in an

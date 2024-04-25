@@ -4,6 +4,12 @@ Transitions
 
 .. _transitions:
 
+.. note::
+
+    While actions form the steps taken in an `application`, transitions decide which one to do next.
+    They make decisions based on state. You can use them to specify which model to call, whether a conversation is
+    over, or any other decision that needs to be made based on the current state.
+
 Transitions define explicitly how actions are connected and which action is available next for any given state.
 You can think of them as edges in a graph.
 

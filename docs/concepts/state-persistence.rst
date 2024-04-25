@@ -4,6 +4,13 @@ State Persistence
 
 .. _state-persistence:
 
+.. note::
+
+    Burr comes with a core set of APIs that enable state `persistence` -- the ability
+    to save and load state automatically from a database. This enables you to launch an application,
+    pause it, and restart where you left off. The API is customizable, and works with any database you want.
+
+
 The key to writing a real life ``burr`` application is state persistence. For example, say you're building a chat bot and you
 want to store the conversation history and then reload it when you restart. Or, you have a long running process/series of agents,
 and you want to store the state of the process after each action, and then reload it if it fails, etc....

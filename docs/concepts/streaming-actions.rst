@@ -4,6 +4,11 @@ Streaming Actions
 
 .. _streaming_actions:
 
+.. note::
+
+    Burr actions can stream results! This enables you to display results to the user as
+    tokens are streamed in.
+
 Actions can be implemented as streaming results. This enables a lower time-to-first-token and a more interactive
 interface in the case of AI applications or streaming in of metrics in a model-training application. Broadly,
 this is a tool to enable quicker user interaction in longer running actions that require user focus.
