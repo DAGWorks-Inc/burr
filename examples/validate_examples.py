@@ -20,6 +20,7 @@ FILTERLIST = [
     "multi-agent-collaboration",
     "web-server",
     "integrations",
+    "templates",
 ]
 
 
