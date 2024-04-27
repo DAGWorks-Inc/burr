@@ -52,9 +52,9 @@ can be used as a starting point for creating your own agents.
 We have the following templates:
 
 1. multi_modal_agent
-1. multi_agent_collaboration
-1. agent_supervisor
-1. hierarchical_agent_teams
+2. multi_agent_collaboration
+3. agent_supervisor
+4. hierarchical_agent_teams
 
 See the `templates` `directory under examples <https://github.com/DAGWorks-Inc/burr/tree/main/examples/templates>`_
 in our repository for the code.
