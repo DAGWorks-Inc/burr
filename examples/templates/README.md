@@ -5,7 +5,7 @@ Some bones of a Burr application to get you started.
 ## multi_modal_agent
 Simple example of a multi-modal agent that can switch between different modalities.
 
-![multi_modal_agent](muti_modal_agent.png))
+![multi_modal_agent](multi_modal_agent.png))
 
 ## multi_agent_collaboration
 Example of a multi-agent system where agents can collaborate to solve a task.
