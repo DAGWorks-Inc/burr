@@ -41,3 +41,20 @@ things like examples of `tracing` and `hooks`.
     <a target="_blank" href="https://colab.research.google.com/github/dagworks-inc/burr/blob/main/examples/multi-agent-collaboration/hamilton/notebook.ipynb">
         <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
     </a>
+
+
+Templates
+--------------------
+
+We have the bones of a few applications that can be used to create agents. These are not fully fleshed out, but they
+can be used as a starting point for creating your own agents.
+
+We have the following templates:
+
+1. multi_modal_agent
+1. multi_agent_collaboration
+1. agent_supervisor
+1. hierarchical_agent_teams
+
+See the `templates` `directory under examples <https://github.com/DAGWorks-Inc/burr/tree/main/examples/templates>`_
+in our repository for the code.
