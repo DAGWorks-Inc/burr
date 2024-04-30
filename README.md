@@ -82,7 +82,7 @@ While Burr is attempting something (somewhat) unique, there are a variety of too
 
 | Criteria                                  | Burr | Langgraph | temporal | Langchain | Superagent | Hamilton |
 |-------------------------------------------|:---:|:----------:|:--------:|:---------:|:----------:|:--------:|
-| Explicitly models a state machine         | ✅  |      ✅    |    ✅    |     ❌    |     ❌     |   ❌     |
+| Explicitly models a state machine         | ✅  |      ✅    |    ❌    |     ❌    |     ❌     |   ❌     |
 | Framework-agnostic                        | ✅  |      ❌    |    ✅    |     ✅    |     ❌     |   ✅     |
 | Asynchronous event-based orchestration    | ❌  |      ❌    |    ✅    |     ❌    |     ❌     |   ❌     |
 | Built for core web-service logic          | ✅  |      ✅    |    ❌    |     ✅    |     ✅     |   ✅     |
