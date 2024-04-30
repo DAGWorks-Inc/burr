@@ -131,3 +131,4 @@ Users who have contributed core functionality, integrations, or examples.
 Users who have contributed small docs fixes, design suggestions, and found bugs
 - [Thierry Jean](https://github.com/zilto)
 - [Luke Chadwick](https://github.com/vertis)
+- [Evans](https://github.com/sudoevans)
