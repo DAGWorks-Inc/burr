@@ -4,8 +4,9 @@
 Simple Example
 ==============
 
-Let's build going to build a basic chatbot using Burr. While Burr has a host of features related to state management and inspection,
-this basic tutorial is going to demonstrate two that are particularly relevant to LLM apps.
+Let's build a basic chatbot using Burr. 
+
+While Burr has a host of features related to state management and inspection, this basic tutorial is going to demonstrate two that are particularly relevant to LLM apps.
 
 1. Specifying user inputs
 2. Persisting state across multiple interactions
