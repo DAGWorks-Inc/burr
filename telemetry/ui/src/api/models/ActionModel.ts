@@ -6,10 +6,10 @@
  * Pydantic model that represents an action for storing/visualization in the UI
  */
 export type ActionModel = {
-    type?: string;
-    name: string;
-    reads: Array<string>;
-    writes: Array<string>;
-    code: string;
+  type?: string;
+  name: string;
+  reads: Array<string>;
+  writes: Array<string>;
+  code: string;
+  inputs?: Array<string>;
 };
-

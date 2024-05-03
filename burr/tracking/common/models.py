@@ -1,6 +1,6 @@
 import datetime
 import inspect
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import field_serializer
 
@@ -37,6 +37,7 @@ class ActionModel(IdentifyingModel):
     writes: list[str]
     code: str
     type: str = "action"
+    inputs: List[str] = pydantic.Field(default_factory=list)
 
     @staticmethod
     def from_action(action: Action) -> "ActionModel":
@@ -54,6 +55,7 @@ class ActionModel(IdentifyingModel):
             reads=list(action.reads),
             writes=list(action.writes),
             code=code,
+            inputs=action.inputs,
         )
 
 

@@ -32,10 +32,18 @@ const elkOptions = {
   'org.eclipse.elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP'
 };
 
-type NodeData = {
+type ActionNodeData = {
   action: ActionModel;
   label: string;
 };
+
+type InputNodeData = {
+  input: string;
+  label: string;
+};
+
+type NodeData = ActionNodeData | InputNodeData;
+
 type NodeType = {
   id: string;
   type: string;
@@ -70,19 +78,21 @@ const ActionNode = (props: { data: NodeData }) => {
     currentAction
   } = React.useContext(NodeStateProvider);
   const highlightedActions = [currentAction, ...(previousActions || [])].reverse();
+  const data = props.data as ActionNodeData;
+  const name = data.action.name;
   const indexOfAction = highlightedActions.findIndex(
-    (step) => step?.step_start_log.action === props.data.action.name
+    (step) => step?.step_start_log.action === data.action.name
   );
   const shouldHighlight = indexOfAction !== -1;
   const step = highlightedActions[indexOfAction];
-  const isCurrentAction = currentAction?.step_start_log.action === props.data.action.name;
+  const isCurrentAction = currentAction?.step_start_log.action === name;
   const bgColor =
     isCurrentAction && step !== undefined
       ? backgroundColorsForIndex(0, getActionStatus(step))
       : shouldHighlight
         ? 'bg-gray-100'
         : '';
-  const opacity = hoverAction?.step_start_log.action === props.data.action.name ? 'opacity-50' : '';
+  const opacity = hoverAction?.step_start_log.action === name ? 'opacity-50' : '';
   const additionalClasses = isCurrentAction
     ? 'border-dwlightblue/50 text-white border-2'
     : shouldHighlight
@@ -94,12 +104,24 @@ const ActionNode = (props: { data: NodeData }) => {
       <div
         className={`${bgColor} ${opacity} ${additionalClasses} text-xl font-sans p-4 rounded-md border`}
       >
-        {props.data.action.name}
+        {name}
       </div>
       <Handle type="source" position={Position.Bottom} id="a" />
     </>
   );
 };
+
+const InputNode = (props: { data: NodeData }) => {
+  return (
+    <>
+      <div className=" text-xl font-sans p-4 rounded-md  bg-white bg-opacity-0">
+        {props.data.label}
+      </div>
+      <Handle type="source" position={Position.Bottom} id="a" className="w-0" />
+    </>
+  );
+};
+// TODO -- separate out into different edge types
 export const ActionActionEdge = ({
   sourceX,
   sourceY,
@@ -224,25 +246,47 @@ const getLayoutedElements = (
 };
 
 const convertApplicationToGraph = (stateMachine: ApplicationModel): [NodeType[], EdgeType[]] => {
-  return [
-    stateMachine.actions.map((action) => ({
-      id: action.name,
-      type: 'action',
-      data: { action, label: action.name },
+  const inputUniqueID = (action: ActionModel, input: string) => `${action.name}:${input}`; // Currently they're distinct by name
+
+  const allActionNodes = stateMachine.actions.map((action) => ({
+    id: action.name,
+    type: 'action',
+    data: { action, label: action.name },
+    position: { x: 0, y: 0 }
+  }));
+  const allInputNodes = stateMachine.actions.flatMap((action) =>
+    (action.inputs || []).map((input) => ({
+      id: inputUniqueID(action, input),
+      type: 'externalInput',
+      data: { input, label: input },
       position: { x: 0, y: 0 }
-    })),
-    stateMachine.transitions.map((transition) => ({
-      id: `${transition.from_}-${transition.to}-${transition.condition}`,
-      source: transition.from_,
-      target: transition.to,
-      markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
-      data: { from: transition.from_, to: transition.to, condition: transition.condition }
     }))
+  );
+  const allInputTransitions = stateMachine.actions.flatMap((action) =>
+    (action.inputs || []).map((input) => ({
+      id: `${action.name}:${input}-${action.name}`,
+      source: inputUniqueID(action, input),
+      target: action.name,
+      markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+      data: { from: inputUniqueID(action, input), condition: input, to: action.name }
+    }))
+  );
+  const allTransitionEdges = stateMachine.transitions.map((transition) => ({
+    id: `${transition.from_}-${transition.to}`,
+    source: transition.from_,
+    target: transition.to,
+    markerEnd: { type: MarkerType.ArrowClosed, width: 20, height: 20 },
+    data: { from: transition.from_, to: transition.to, condition: transition.condition }
+  }));
+  return [
+    [...allActionNodes, ...allInputNodes],
+    [...allInputTransitions, ...allTransitionEdges]
   ];
 };
 
 const nodeTypes = {
-  action: ActionNode
+  action: ActionNode,
+  externalInput: InputNode // if this is "input" it is reserved...
 };
 
 const edgeTypes = {
