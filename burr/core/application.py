@@ -529,6 +529,17 @@ class Application:
             inputs = {}
         return halt_before, halt_after, inputs
 
+    def _validate_halt_conditions(self, halt_before: list[str], halt_after: list[str]) -> None:
+        """Utility function to validate halt conditions"""
+        missing_actions = set(halt_before + halt_after) - set(self._action_map.keys())
+        if len(missing_actions) > 0:
+            raise ValueError(
+                ERROR_MESSAGE
+                + f"Halt conditions {missing_actions} are not registered actions. Please ensure that they have been "
+                f"registered as actions in the application and that you've spelled them correctly!"
+                f"Valid actions are: {self._action_map.keys()}"
+            )
+
     def has_next_action(self) -> bool:
         """Returns whether or not there is a next action to run.
 
@@ -606,6 +617,7 @@ class Application:
         halt_before, halt_after, inputs = self._clean_iterate_params(
             halt_before, halt_after, inputs
         )
+        self._validate_halt_conditions(halt_before, halt_after)
 
         result = None
         prior_action: Optional[Action] = None
@@ -638,7 +650,7 @@ class Application:
         halt_before, halt_after, inputs = self._clean_iterate_params(
             halt_before, halt_after, inputs
         )
-
+        self._validate_halt_conditions(halt_before, halt_after)
         while self.has_next_action():
             # self.step will only return None if there is no next action, so we can rely on tuple unpacking
             prior_action, result, state = await self.astep(inputs=inputs)
@@ -691,21 +703,12 @@ class Application:
         halt_before, halt_after, inputs = self._clean_iterate_params(
             halt_before, halt_after, inputs
         )
+        self._validate_halt_conditions(halt_before, halt_after)
         async for prior_action, result, state in self.aiterate(
             halt_before=halt_before, halt_after=halt_after, inputs=inputs
         ):
             pass
         return self._return_value_iterate(halt_before, halt_after, prior_action, result)
-
-    def _validate_streaming_inputs(self, halt_after: list[str]):
-        missing_actions = set(halt_after) - set([action.name for action in self._actions])
-        # TODO -- implement this check elsewhere as well, break out into further utility functions
-        if len(missing_actions) > 0:
-            raise ValueError(
-                ERROR_MESSAGE
-                + f"Actions {missing_actions} were passed in as halt_after conditions, but not found in the actions list! "
-                f"Actions found: {[action.name for action in self._actions]}"
-            )
 
     @telemetry.capture_function_usage
     def stream_result(
@@ -816,8 +819,7 @@ class Application:
         halt_before, halt_after, inputs = self._clean_iterate_params(
             halt_before, halt_after, inputs
         )
-
-        self._validate_streaming_inputs(halt_after)
+        self._validate_halt_conditions(halt_before, halt_after)
         self._increment_sequence_id()
         next_action = self.get_next_action()
         if next_action is None:
