@@ -1790,3 +1790,23 @@ def test_application_builder_assigns_correct_actions_with_dual_api():
     )
     graph = app.graph
     assert {a.name for a in graph.actions} == {"counter", "result", "test_action"}
+
+
+def test__validate_halt_conditions():
+    counter_action = base_counter_action.with_name("counter")
+    result_action = Result("count")
+
+    @action(reads=[], writes=[])
+    def test_action(state: State) -> Tuple[State, Dict[str, Any]]:
+        return state, {}
+
+    app = (
+        ApplicationBuilder()
+        .with_state(count=0)
+        .with_actions(counter_action, test_action, result=result_action)
+        .with_transitions()
+        .with_entrypoint("counter")
+        .build()
+    )
+    with pytest.raises(ValueError, match="(?=.*no_exist_1)(?=.*no_exist_2)"):
+        app._validate_halt_conditions(halt_after=["no_exist_1"], halt_before=["no_exist_2"])
