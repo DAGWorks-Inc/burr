@@ -1,31 +1,12 @@
+import importlib
 import os
-from typing import Any, Dict, Optional
 
-from burr.core import Action
-from burr.lifecycle import PostRunStepHook, PreRunStepHook
+from application import logger
 
-from examples.conversational_rag import application as conversational_rag_application
-from examples.counter import application as counter_application
-from examples.gpt import application as chatbot_application
-from examples.gpt import application_with_traces as chatbot_application_with_traces
-
-
-class ProgressHook(
-    PreRunStepHook,
-    PostRunStepHook,
-):
-    def pre_run_step(self, *, action: "Action", inputs: Dict[str, Any], **future_kwargs: Any):
-        print(f">>> Running action {action.name} with inputs {inputs}")
-
-    def post_run_step(
-        self,
-        *,
-        action: "Action",
-        result: Optional[Dict[str, Any]],
-        exception: Exception,
-        **future_kwargs: Any,
-    ):
-        print(f">>> Action {action.name} completed")
+conversational_rag_application = importlib.import_module("examples.conversational-rag.application")
+counter_application = importlib.import_module("examples.hello-world-counter.application")
+chatbot_application = importlib.import_module("examples.multi-modal-chatbot.application")
+chatbot_application_with_traces = importlib.import_module("examples.tracing-and-spans.application")
 
 
 def generate_chatbot_data(data_dir: str, use_traces: bool):
@@ -67,8 +48,6 @@ def generate_chatbot_data(data_dir: str, use_traces: bool):
         app = (chatbot_application_with_traces if use_traces else chatbot_application).application(
             app_id=app_id,
             storage_dir=data_dir,
-            hooks=[ProgressHook()],
-            **({"use_hamilton": False} if not use_traces else {}),
         )
         for prompt in prompts:
             app.run(halt_after=["response"], inputs={"prompt": prompt})
@@ -92,7 +71,6 @@ def generate_counter_data(data_dir: str = "~/.burr"):
             count_up_to=count,
             app_id=f"count-to-{count}",
             storage_dir=data_dir,
-            hooks=[ProgressHook()],
             partition_key=f"user_{i}",
         )
         app.run(halt_after=["result"])
@@ -131,16 +109,19 @@ def generate_rag_data(data_dir: str = "~/.burr"):
         app = conversational_rag_application.application(
             app_id=app_id,
             storage_dir=data_dir,
-            hooks=[ProgressHook()],
         )
         for prompt in prompts:
             app.run(halt_after=["ai_converse", "terminal"], inputs={"user_question": prompt})
 
 
 def generate_all(data_dir: str):
+    logger.info("Generating chatbot data")
     generate_chatbot_data(data_dir, False)
+    logger.info("Generating chatbot data with traces")
     generate_chatbot_data(data_dir, True)
+    logger.info("Generating counter data")
     generate_counter_data(data_dir)
+    logger.info("Generating RAG data")
     generate_rag_data(data_dir)
 
 
