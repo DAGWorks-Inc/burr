@@ -1,4 +1,0 @@
-{"type":"begin_entry","start_time":"2024-03-18T15:42:00.046765","action":"counter","inputs":{},"sequence_id":0}
-{"type":"end_entry","end_time":"2024-03-18T15:42:00.048526","action":"counter","result":{"counter":1},"exception":null,"state":{"counter":1,"__SEQUENCE_ID":0,"__PRIOR_STEP":"counter"},"sequence_id":0}
-{"type":"begin_entry","start_time":"2024-03-18T15:42:00.049071","action":"result","inputs":{},"sequence_id":1}
-{"type":"end_entry","end_time":"2024-03-18T15:42:00.049729","action":"result","result":{"counter":1},"exception":null,"state":{"counter":1,"__SEQUENCE_ID":1,"__PRIOR_STEP":"result"},"sequence_id":1}
