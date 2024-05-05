@@ -246,6 +246,7 @@ const getLayoutedElements = (
 };
 
 const convertApplicationToGraph = (stateMachine: ApplicationModel): [NodeType[], EdgeType[]] => {
+  const shouldDisplayInput = (input: string) => !input.startsWith('__');
   const inputUniqueID = (action: ActionModel, input: string) => `${action.name}:${input}`; // Currently they're distinct by name
 
   const allActionNodes = stateMachine.actions.map((action) => ({
@@ -255,7 +256,7 @@ const convertApplicationToGraph = (stateMachine: ApplicationModel): [NodeType[],
     position: { x: 0, y: 0 }
   }));
   const allInputNodes = stateMachine.actions.flatMap((action) =>
-    (action.inputs || []).map((input) => ({
+    (action.inputs || []).filter(shouldDisplayInput).map((input) => ({
       id: inputUniqueID(action, input),
       type: 'externalInput',
       data: { input, label: input },
@@ -263,7 +264,7 @@ const convertApplicationToGraph = (stateMachine: ApplicationModel): [NodeType[],
     }))
   );
   const allInputTransitions = stateMachine.actions.flatMap((action) =>
-    (action.inputs || []).map((input) => ({
+    (action.inputs || []).filter(shouldDisplayInput).map((input) => ({
       id: `${action.name}:${input}-${action.name}`,
       source: inputUniqueID(action, input),
       target: action.name,
