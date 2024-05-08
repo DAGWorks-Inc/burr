@@ -85,7 +85,10 @@ class LocalTrackingClient(
 
     @classmethod
     def get_storage_path(cls, project, storage_dir) -> str:
-        return os.path.join(os.path.expanduser(storage_dir), project)
+        # need to replace `:` with `_` for the project_id; it becomes part of the path and characters
+        # need to work on windows, etc.
+        sanitized_project_id = project.replace(":", "_")
+        return os.path.join(os.path.expanduser(storage_dir), sanitized_project_id)
 
     @classmethod
     def app_log_exists(
