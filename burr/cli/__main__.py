@@ -24,6 +24,8 @@ except ImportError as e:
         "start",
     )
 
+IS_WINDOWS = os.name == "nt"
+
 
 # TODO -- add this as a general callback to the CLI
 def _telemetry_if_enabled(event: str):
@@ -114,6 +116,12 @@ def _run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: boo
         demo_data_path = files("burr").joinpath("tracking/server/demo_data")
         for top_level in os.listdir(demo_data_path):
             if not os.path.exists(f"{base_dir}/{top_level}"):
+                # this is purely for legacy -- we used to name with `demo_`
+                if not IS_WINDOWS and os.path.exists(
+                    f"{base_dir}/{top_level.replace('demo_', 'demo:')}"
+                ):
+                    # in this case we don't need to copy it over, it already exists in the right place...
+                    continue
                 logger.info(f"Copying {top_level} over...")
                 shutil.copytree(f"{demo_data_path}/{top_level}", f"{base_dir}/{top_level}")
 
@@ -292,7 +300,6 @@ cli.add_command(test_case)
 # will create a command called `cli_{command}` for every command we have
 for key, command in cli.commands.items():
     globals()[f'cli_{key.replace("-", "_")}'] = command
-
 
 if __name__ == "__main__":
     cli()

@@ -33,11 +33,12 @@ export const ProjectListTable = (props: { projects: Project[] }) => {
       <TableBody>
         {projectsSorted.map((project) => {
           let projectName = project.name;
-          const chipType = projectName.startsWith('demo:')
-            ? 'demo'
-            : projectName.startsWith('test:')
-              ? 'test'
-              : undefined;
+          const chipType =
+            projectName.startsWith('demo:') || projectName.startsWith('demo_')
+              ? 'demo'
+              : projectName.startsWith('test:') || projectName.startsWith('test_')
+                ? 'test'
+                : undefined;
           if (chipType) {
             projectName = projectName.slice(5);
           }
