@@ -9,7 +9,7 @@ All of the following are pre-populated in the UI under ``projects/``. You can st
 
     burr
 
-Telemetry UI chatbot demo ``demo:chatbot``
+Telemetry UI chatbot demo ``demo_chatbot``
 ------------------------------------------
 
 You'll need the env variable ``OPENAI_API_KEY`` set to your api key for this to work. If you don't
@@ -39,7 +39,7 @@ For the next examples you'll need the repository cloned:
     git clone https://github.com/dagworks-inc/burr && cd burr
 
 -------------------------------
-Simple Counter ``demo:counter``
+Simple Counter ``demo_counter``
 -------------------------------
 
 .. code-block:: bash
@@ -48,7 +48,7 @@ Simple Counter ``demo:counter``
     python application.py
 
 -------------------------------------------
-Interactive RAG ``demo:conversational-rag``
+Interactive RAG ``demo_conversational-rag``
 -------------------------------------------
 
 This is a toy interactive RAG example. You'll ask questions in the terminal about information it already has...

@@ -182,7 +182,7 @@ def application(
             ),
             ("response", "prompt", default),
         )
-        .with_tracker(project="demo:tracing", params={"storage_dir": storage_dir})
+        .with_tracker(project="demo_tracing", params={"storage_dir": storage_dir})
         .with_identifiers(app_id=app_id)
         .build()
     )

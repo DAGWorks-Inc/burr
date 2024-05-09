@@ -235,7 +235,7 @@ def main(query: str = None, app_instance_id: str = None, sequence_number: int = 
     :param sequence_number: a prior sequence number to restart from.
     :return:
     """
-    project_name = "demo:hamilton-multi-agent-v1"
+    project_name = "demo_hamilton-multi-agent-v1"
     if app_instance_id:
         tracker = burr_tclient.LocalTrackingClient(project_name)
         persisted_state = tracker.load("demo", app_id=app_instance_id, sequence_no=sequence_number)

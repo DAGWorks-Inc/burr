@@ -107,7 +107,7 @@ def application(
             ("human_converse", "ai_converse", default),
         )
         .with_entrypoint("human_converse")
-        .with_tracker(project="demo:conversational-rag", params={"storage_dir": storage_dir})
+        .with_tracker(project="demo_conversational-rag", params={"storage_dir": storage_dir})
         .with_identifiers(app_id=app_id, partition_key="sample_user")
         .with_hooks(*hooks if hooks else [])
         .build()

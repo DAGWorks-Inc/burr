@@ -301,7 +301,7 @@ export const ChatbotAppSelector = (props: {
 };
 
 export const ChatbotWithTelemetry = () => {
-  const currentProject = 'demo:chatbot';
+  const currentProject = 'demo_chatbot';
   const [currentApp, setCurrentApp] = useState<ApplicationSummary | undefined>(undefined);
 
   return (

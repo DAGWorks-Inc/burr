@@ -15,6 +15,7 @@ from burr.lifecycle import (
     PreRunStepHook,
     PreStartSpanHook,
 )
+from burr.system import IS_WINDOWS
 from burr.tracking.common.models import (
     ApplicationMetadataModel,
     ApplicationModel,
@@ -80,15 +81,16 @@ class LocalTrackingClient(
         """
 
         self.f = None
+        if ":" in project and IS_WINDOWS:
+            raise ValueError(
+                "Project name cannot contain ':' -- this is purely as we're using the filesystem as a storage utility."
+            )
         self.storage_dir = LocalTrackingClient.get_storage_path(project, storage_dir)
         self.project_id = project
 
     @classmethod
     def get_storage_path(cls, project, storage_dir) -> str:
-        # need to replace `:` with `_` for the project_id; it becomes part of the path and characters
-        # need to work on windows, etc.
-        sanitized_project_id = project.replace(":", "_")
-        return os.path.join(os.path.expanduser(storage_dir), sanitized_project_id)
+        return str(os.path.join(os.path.expanduser(storage_dir), project))
 
     @classmethod
     def app_log_exists(
