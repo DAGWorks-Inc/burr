@@ -9,7 +9,7 @@ import webbrowser
 from contextlib import contextmanager
 from importlib.resources import files
 
-from burr import telemetry
+from burr import system, telemetry
 from burr.core.persistence import PersistedStateData
 from burr.integrations.base import require_plugin
 
@@ -23,8 +23,6 @@ except ImportError as e:
         ["click", "requests", "loguru"],
         "start",
     )
-
-IS_WINDOWS = os.name == "nt"
 
 
 # TODO -- add this as a general callback to the CLI
@@ -117,7 +115,7 @@ def _run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: boo
         for top_level in os.listdir(demo_data_path):
             if not os.path.exists(f"{base_dir}/{top_level}"):
                 # this is purely for legacy -- we used to name with `demo_`
-                if not IS_WINDOWS and os.path.exists(
+                if not system.IS_WINDOWS and os.path.exists(
                     f"{base_dir}/{top_level.replace('demo_', 'demo:')}"
                 ):
                     # in this case we don't need to copy it over, it already exists in the right place...

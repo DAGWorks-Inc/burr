@@ -165,7 +165,7 @@ def application(app_id: Optional[str] = None):
                 "prompt",
             ),
         )
-        .with_tracker(project="demo:chatbot_streaming")
+        .with_tracker(project="demo_chatbot_streaming")
         .with_identifiers(app_id=app_id)
         .build()
     )

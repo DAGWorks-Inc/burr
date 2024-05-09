@@ -44,7 +44,7 @@ def application(
             default_entrypoint="counter",
         )
         .with_state_persister(persister)
-        .with_tracker(project="demo:counter", params={"storage_dir": storage_dir})
+        .with_tracker(project="demo_counter", params={"storage_dir": storage_dir})
         .with_hooks(*hooks if hooks else [])
         .build()
     )

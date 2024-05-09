@@ -436,7 +436,7 @@ export const EmailAssistantAppSelector = (props: {
 };
 
 export const EmailAssistantWithTelemetry = () => {
-  const currentProject = 'demo:email-assistant';
+  const currentProject = 'demo_email-assistant';
   const [currentApp, setCurrentApp] = useState<ApplicationSummary | undefined>(undefined);
 
   return (

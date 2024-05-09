@@ -56,7 +56,7 @@ For example, as you initialize the Burr Application, you'd have some control flo
 
     from burr.tracking import client
 
-    project_name = "demo:hamilton-multi-agent"
+    project_name = "demo_hamilton-multi-agent"
     if app_instance_id:
         initial_state, entry_point = client.LocalTrackingClient.load_state(
             project_name, app_instance_id

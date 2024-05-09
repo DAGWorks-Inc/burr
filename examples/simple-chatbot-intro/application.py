@@ -70,7 +70,7 @@ def application():
         )
         .with_state(chat_history=[])
         .with_entrypoint("human_input")
-        .with_tracker("local", project="demo:getting_started")
+        .with_tracker("local", project="demo_getting_started")
         .build()
     )
 

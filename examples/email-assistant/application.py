@@ -148,7 +148,7 @@ def final_result(state: State) -> Tuple[dict, State]:
 
 
 def application(
-    app_id: str = None, project: str = "demo:email_assistant", username: str = None
+    app_id: str = None, project: str = "demo_email_assistant", username: str = None
 ) -> Application:
     tracker = LocalTrackingClient(project=project)
     builder = (

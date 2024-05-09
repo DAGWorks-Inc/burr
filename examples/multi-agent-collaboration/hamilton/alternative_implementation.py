@@ -134,7 +134,7 @@ def default_state_and_entry_point() -> tuple[dict, str]:
 
 
 def application(app_instance_id: Optional[str] = None):
-    project_name = "demo:hamilton-multi-agent"
+    project_name = "demo_hamilton-multi-agent"
     # TODO -- use the new persistence API
     if app_instance_id:
         state, entry_point = burr_tclient.LocalTrackingClient.load_state(

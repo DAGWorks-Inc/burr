@@ -221,7 +221,7 @@ def main(query: str = None, app_instance_id: str = None, sequence_id: int = None
     Pass in an app_instance_id to restart from a previous run.
     Pass in an sequence_id to restart from a previous run and a specific position in it.
     """
-    project_name = "demo:lcel-multi-agent"
+    project_name = "demo_lcel-multi-agent"
     if app_instance_id:
         tracker = burr_tclient.LocalTrackingClient(project_name)
         persisted_state = tracker.load("demo", app_id=app_instance_id, sequence_no=sequence_id)

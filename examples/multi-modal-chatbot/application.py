@@ -200,7 +200,7 @@ def base_application(
 
 def application(
     app_id: Optional[str] = None,
-    project_id: str = "demo:chatbot",
+    project_id: str = "demo_chatbot",
     storage_dir: Optional[str] = "~/.burr",
     hooks: Optional[List[LifecycleAdapter]] = None,
 ) -> Application:
