@@ -199,6 +199,8 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
                                         : 'text-gray-700 hover:text-dwdarkblue hover:bg-gray-50',
                                     'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
                                   )}
+                                  target={item.linkType === 'external' ? '_blank' : undefined}
+                                  rel={item.linkType === 'external' ? 'noreferrer' : undefined}
                                 >
                                   <item.icon
                                     className={classNames(
@@ -250,6 +252,8 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
                                 : 'hover:bg-gray-50',
                               'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold text-gray-700'
                             )}
+                            target={item.linkType === 'external' ? '_blank' : undefined}
+                            rel={item.linkType === 'external' ? 'noreferrer' : undefined}
                           >
                             <item.icon
                               className="h-6 w-6 shrink-0 text-gray-400"
@@ -293,6 +297,12 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
                                             : 'hover:bg-gray-50',
                                           'block rounded-md py-2 pr-2 pl-9 text-sm leading-6 text-gray-700'
                                         )}
+                                        target={
+                                          subItem.linkType === 'external' ? '_blank' : undefined
+                                        }
+                                        rel={
+                                          subItem.linkType === 'external' ? 'noreferrer' : undefined
+                                        }
                                       >
                                         {subItem.name}
                                       </Link>
