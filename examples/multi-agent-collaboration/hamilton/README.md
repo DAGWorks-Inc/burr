@@ -6,6 +6,11 @@ This example resembles the example found originally [here](https://github.com/la
 ## show me the prompts
 With Hamilton the prompts can be found in the module [`func_agent.py`](func_agent.py).
 
+The Hamilton code creates the following dataflow:
+
+![dataflow](https://github.com/DAGWorks-Inc/burr/assets/2328071/24822ee5-f05b-4fa4-95e7-daa23969cfff)
+
+
 # Tracing
 You'll see that in `application.py` we
 have some lightweight `tracing` set up for Hamilton. This is a simple way to plug into Burr's
