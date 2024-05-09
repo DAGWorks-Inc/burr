@@ -2,9 +2,11 @@ import datetime
 import json
 import logging
 import os
+import re
 import traceback
 from typing import Any, Dict, Optional
 
+from burr import system
 from burr.core import Action, ApplicationGraph, State
 from burr.core.persistence import BaseStateLoader, PersistedStateData
 from burr.integrations.base import require_plugin
@@ -15,7 +17,6 @@ from burr.lifecycle import (
     PreRunStepHook,
     PreStartSpanHook,
 )
-from burr.system import IS_WINDOWS
 from burr.tracking.common.models import (
     ApplicationMetadataModel,
     ApplicationModel,
@@ -42,6 +43,16 @@ def _format_exception(exception: Exception) -> Optional[str]:
     if exception is None:
         return None
     return "".join(traceback.format_exception(type(exception), exception, exception.__traceback__))
+
+
+def _allowed_project_name(project_name: str, on_windows: bool) -> bool:
+    allowed_chars = "a-zA-Z0-9_\-"
+    if not on_windows:
+        allowed_chars += ":"
+    pattern = f"^[{allowed_chars}]+$"
+
+    # Use regular expression to check if the string is valid
+    return bool(re.match(pattern, project_name))
 
 
 class LocalTrackingClient(
@@ -81,9 +92,10 @@ class LocalTrackingClient(
         """
 
         self.f = None
-        if ":" in project and IS_WINDOWS:
+        if not _allowed_project_name(project, on_windows=system.IS_WINDOWS):
             raise ValueError(
-                "Project name cannot contain ':' -- this is purely as we're using the filesystem as a storage utility."
+                f"Project: {project} is not valid. Project name cannot contain non-alphanumeric (except _ and -) characters."
+                "We will be relaxing this restriction later but for now please rename your project!"
             )
         self.storage_dir = LocalTrackingClient.get_storage_path(project, storage_dir)
         self.project_id = project

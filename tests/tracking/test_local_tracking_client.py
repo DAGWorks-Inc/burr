@@ -8,6 +8,7 @@ import pytest
 import burr
 from burr.core import Result, State, action, default, expr
 from burr.tracking import LocalTrackingClient
+from burr.tracking.client import _allowed_project_name
 from burr.tracking.common.models import (
     ApplicationModel,
     BeginEntryModel,
@@ -118,3 +119,18 @@ def test_application_tracks_end_to_end_broken(tmpdir: str):
     assert len(pre_run) == 2
     assert len(post_run) == 2
     assert len(post_run[-1].exception) > 0 and "Broken" in post_run[-1].exception
+
+
+@pytest.mark.parametrize(
+    "input_string, on_windows, expected_result",
+    [
+        ("Hello-World_123", False, True),
+        ("Hello:World_123", False, True),
+        ("Hello:World_123", True, False),
+        ("Invalid:Chars*", False, False),
+        ("Just$ymbols", True, False),
+        ("Normal_Text", True, True),
+    ],
+)
+def test__allowed_project_name(input_string, on_windows, expected_result):
+    assert _allowed_project_name(input_string, on_windows) == expected_result

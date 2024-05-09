@@ -20,7 +20,7 @@ const DEFAULT_CHAT_HISTORY: ChatItem[] = [
     content:
       '📖 Select a conversation from the list to get started! ' +
       'The left side of this is a simple chatbot. The right side is the same' +
-      ' Burr Telemetry app you can see if you click through the [chatbot demo](/projects/demo:chatbot) project. Note that images ' +
+      ' Burr Telemetry app you can see if you click through the [chatbot demo](/projects/demo_chatbot) project. Note that images ' +
       "will likely stop displaying after a while due to OpenAI's persistence policy. So generate some new ones! 📖",
     type: ChatItem.type.TEXT
   },
