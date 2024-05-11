@@ -20,9 +20,13 @@ except ImportError as e:
 
 try:
     # try to import to serialize Langchain messages
+    from langchain_core import documents as lc_documents
+    from langchain_core import load as lc_serde
     from langchain_core import messages as lc_messages
 except ImportError:
     lc_messages = None
+    lc_documents = None
+    lc_serde = None
 
 
 class IdentifyingModel(pydantic.BaseModel):
@@ -123,13 +127,22 @@ class BeginEntryModel(IdentifyingModel):
         return _serialize_object(_filter_inputs(inputs))
 
 
-def _serialize_object(d: object) -> Union[dict, list, object]:
+def _serialize_object(d: object) -> Union[dict, list, object, str]:
     if isinstance(d, list):
         return [_serialize_object(x) for x in d]
     elif isinstance(d, dict):
         return {k: _serialize_object(v) for k, v in d.items()}
     elif lc_messages is not None and isinstance(d, lc_messages.BaseMessage):
         return lc_messages.message_to_dict(d)
+    elif lc_documents is not None and isinstance(d, lc_documents.Document):
+        if d.is_lc_serializable():
+            return lc_serde.dumpd(d)
+        else:
+            # d.page_content  # hack because not all documents are serializable
+            return d.page_content
+    elif hasattr(d, "to_document"):
+        # langchain can have things that look like a document but aren't...
+        return _serialize_object(d.to_document())
     elif hasattr(d, "model_dump"):  # generic pydantic object
         return d.model_dump()
     elif hasattr(d, "to_json"):
