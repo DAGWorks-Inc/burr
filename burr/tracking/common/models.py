@@ -50,12 +50,13 @@ class ActionModel(IdentifyingModel):
             code = inspect.getsource(action.fn)
         else:
             code = inspect.getsource(action.__class__)
+        optional_inputs, required_inputs = action.optional_and_required_inputs
         return ActionModel(
             name=action.name,
             reads=list(action.reads),
             writes=list(action.writes),
             code=code,
-            inputs=action.inputs,
+            inputs=list(required_inputs | optional_inputs),
         )
 
 

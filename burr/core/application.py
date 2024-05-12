@@ -403,17 +403,18 @@ class Application:
     def _process_inputs(self, inputs: Dict[str, Any], action: Action) -> Dict[str, Any]:
         inputs = inputs.copy()
         processed_inputs = {}
+        required_inputs, optional_inputs = action.optional_and_required_inputs
         for key in list(inputs.keys()):
-            if key in action.inputs:
+            if key in required_inputs or key in optional_inputs:
                 processed_inputs[key] = inputs.pop(key)
         if len(inputs) > 0 and logger.isEnabledFor(logging.DEBUG):
             logger.debug(
                 f"Keys {inputs.keys()} were passed in as inputs to action "
                 f"{action.name}, but not declared by the action as an input. "
-                f"Action only needs: {action.inputs} so we're just letting you know "
-                f"some inputs are being skipped."
+                f"Action only needs: {required_inputs} (optionally: {optional_inputs}) "
+                f"so we're just letting you know some inputs are being skipped."
             )
-        missing_inputs = set(action.inputs) - set(processed_inputs.keys())
+        missing_inputs = required_inputs - set(processed_inputs.keys())
         for required_input in list(missing_inputs):
             # if we can find it in the dependency factory, we'll use that
             if required_input in self.dependency_factory:
@@ -986,7 +987,8 @@ class Application:
                 else f"{action.name}({', '.join(action.reads)}): {', '.join(action.writes)}"
             )
             digraph.node(action.name, label=label, shape="box", style="rounded")
-            for input_ in action.inputs:
+            required_inputs, optional_inputs = action.optional_and_required_inputs
+            for input_ in required_inputs | optional_inputs:
                 if input_.startswith("__"):
                     # These are internally injected by the framework
                     continue

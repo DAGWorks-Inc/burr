@@ -181,7 +181,7 @@ def test_function_based_action_with_inputs():
     fn_based_action: SingleStepAction = create_action(
         my_action.bind(bound_input=10), name="my_action"
     )
-    assert fn_based_action.inputs == ["unbound_input"]
+    assert fn_based_action.inputs == (["unbound_input"], [])
     result, state = fn_based_action.run_and_update(State({"input_variable": 1}), unbound_input=100)
     assert state.get_all() == {"input_variable": 1, "output_variable": 111}
     assert result == {"output_variable": 111}
@@ -198,8 +198,29 @@ def test_function_based_action_with_defaults():
     fn_based_action: SingleStepAction = create_action(
         my_action.bind(bound_input=10), name="my_action"
     )
-    assert fn_based_action.inputs == ["unbound_input"]
+    assert fn_based_action.inputs == (["unbound_input"], ["unbound_default_input"])
     result, state = fn_based_action.run_and_update(State({"input_variable": 1}), unbound_input=100)
+    assert state.get_all() == {"input_variable": 1, "output_variable": 1111}
+    assert result == {"output_variable": 1111}
+
+
+def test_function_based_action_with_defaults_unbound():
+    # inputs can have defaults -- this tests that we treat them propertly
+    @action(reads=["input_variable"], writes=["output_variable"])
+    def my_action(
+        state: State, unbound_input_1: int, unbound_input_2: int, unbound_default_input: int = 1000
+    ) -> Tuple[dict, State]:
+        res = state["input_variable"] + unbound_input_1 + unbound_input_2 + unbound_default_input
+        return {"output_variable": res}, state.update(output_variable=res)
+
+    fn_based_action: SingleStepAction = create_action(my_action, name="my_action")
+    assert fn_based_action.inputs == (
+        ["unbound_input_1", "unbound_input_2"],
+        ["unbound_default_input"],
+    )
+    result, state = fn_based_action.run_and_update(
+        State({"input_variable": 1}), unbound_input_1=10, unbound_input_2=100
+    )
     assert state.get_all() == {"input_variable": 1, "output_variable": 1111}
     assert result == {"output_variable": 1111}
 
@@ -234,7 +255,7 @@ async def test_function_based_action_with_inputs_async():
         my_action.bind(bound_input=10), name="my_action"
     )
     assert fn_based_action.is_async()
-    assert fn_based_action.inputs == ["unbound_input"]
+    assert fn_based_action.inputs == (["unbound_input"], [])
     result, state = await fn_based_action.run_and_update(
         State({"input_variable": 1}), unbound_input=100
     )
@@ -254,7 +275,7 @@ async def test_function_based_action_with_defaults_async():
     fn_based_action: SingleStepAction = create_action(
         my_action.bind(bound_input=10), name="my_action"
     )
-    assert fn_based_action.inputs == ["unbound_input"]
+    assert fn_based_action.inputs == (["unbound_input"], ["unbound_default_input"])
     result, state = await fn_based_action.run_and_update(
         State({"input_variable": 1}), unbound_input=100
     )
