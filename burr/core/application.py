@@ -858,7 +858,10 @@ class Application:
             state=self._state,
             inputs=inputs,
             sequence_id=self.sequence_id,
+            app_id=self._uid,
+            partition_key=self._partition_key,
         )
+
         # we need to track if there's any exceptions that occur during this
         try:
 
@@ -871,10 +874,11 @@ class Application:
                 result: Optional[dict],
                 state: State,
                 exc: Optional[Exception] = None,
-                # seq_id=self.sequence_id,
             ):
                 self._adapter_set.call_all_lifecycle_hooks_sync(
                     "post_run_step",
+                    app_id=self._uid,
+                    partition_key=self._partition_key,
                     action=next_action,
                     state=state,
                     result=result,
@@ -889,6 +893,8 @@ class Application:
                 action, result, state = self._step(inputs=inputs, _run_hooks=False)
                 self._adapter_set.call_all_lifecycle_hooks_sync(
                     "post_run_step",
+                    app_id=self._uid,
+                    partition_key=self._partition_key,
                     action=next_action,
                     state=self._state,
                     result=result,
@@ -917,6 +923,8 @@ class Application:
             # block of the streaming result container
             self._adapter_set.call_all_lifecycle_hooks_sync(
                 "post_run_step",
+                app_id=self._uid,
+                partition_key=self._partition_key,
                 action=next_action,
                 state=self._state,
                 result=None,
