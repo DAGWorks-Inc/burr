@@ -1237,7 +1237,7 @@ async def test_app_a_run_async_and_sync():
     assert result["count"] > 20
 
 
-def test_stream_result_halt_after():
+def test_stream_result_halt_after_unique():
     action_tracker = ActionTracker()
     counter_action = base_streaming_counter.with_name("counter")
     counter_action_2 = base_streaming_counter.with_name("counter_2")
@@ -1251,7 +1251,6 @@ def test_stream_result_halt_after():
         adapter_set=LifecycleAdapterSet(action_tracker),
         partition_key="test",
         uid="test-123",
-        sequence_id=0,
     )
     action_, streaming_container = app.stream_result(halt_after=["counter_2"])
     results = list(streaming_container)
@@ -1263,6 +1262,14 @@ def test_stream_result_halt_after():
     assert len(action_tracker.post_called) == 2
     assert set(dict(action_tracker.pre_called).keys()) == {"counter", "counter_2"}
     assert set(dict(action_tracker.post_called).keys()) == {"counter", "counter_2"}
+    assert [item["sequence_id"] for _, item in action_tracker.pre_called] == [
+        0,
+        1,
+    ]  # ensure sequence ID is respected
+    assert [item["sequence_id"] for _, item in action_tracker.post_called] == [
+        0,
+        1,
+    ]  # ensure sequence ID is respected
 
 
 def test_stream_result_halt_after_single_step():
@@ -1279,7 +1286,6 @@ def test_stream_result_halt_after_single_step():
         adapter_set=LifecycleAdapterSet(action_tracker),
         partition_key="test",
         uid="test-123",
-        sequence_id=0,
     )
     action_, streaming_container = app.stream_result(halt_after=["counter_2"])
     results = list(streaming_container)
@@ -1291,6 +1297,14 @@ def test_stream_result_halt_after_single_step():
     assert len(action_tracker.post_called) == 2
     assert set(dict(action_tracker.pre_called).keys()) == {"counter", "counter_2"}
     assert set(dict(action_tracker.post_called).keys()) == {"counter", "counter_2"}
+    assert [item["sequence_id"] for _, item in action_tracker.pre_called] == [
+        0,
+        1,
+    ]  # ensure sequence ID is respected
+    assert [item["sequence_id"] for _, item in action_tracker.post_called] == [
+        0,
+        1,
+    ]  # ensure sequence ID is respected
 
 
 def test_stream_result_halt_after_run_through_final_streaming():
@@ -1311,7 +1325,6 @@ def test_stream_result_halt_after_run_through_final_streaming():
         adapter_set=LifecycleAdapterSet(action_tracker),
         partition_key="test",
         uid="test-123",
-        sequence_id=0,
     )
     action_, streaming_container = app.stream_result(halt_after=["counter_streaming"])
     results = list(streaming_container)
@@ -1328,6 +1341,12 @@ def test_stream_result_halt_after_run_through_final_streaming():
         "counter_streaming",
         "counter_non_streaming",
     }
+    assert [item["sequence_id"] for _, item in action_tracker.pre_called] == list(
+        range(0, 11)
+    )  # ensure sequence ID is respected
+    assert [item["sequence_id"] for _, item in action_tracker.post_called] == list(
+        range(0, 11)
+    )  # ensure sequence ID is respected
 
 
 def test_stream_result_halt_after_run_through_final_non_streaming():
@@ -1346,7 +1365,6 @@ def test_stream_result_halt_after_run_through_final_non_streaming():
         adapter_set=LifecycleAdapterSet(action_tracker),
         partition_key="test",
         uid="test-123",
-        sequence_id=0,
     )
     action, streaming_container = app.stream_result(halt_after=["counter_final_non_streaming"])
     results = list(streaming_container)
@@ -1363,9 +1381,16 @@ def test_stream_result_halt_after_run_through_final_non_streaming():
         "counter_non_streaming",
         "counter_final_non_streaming",
     }
+    assert [item["sequence_id"] for _, item in action_tracker.pre_called] == list(
+        range(0, 11)
+    )  # ensure sequence ID is respected
+    assert [item["sequence_id"] for _, item in action_tracker.post_called] == list(
+        range(0, 11)
+    )  # ensure sequence ID is respected
 
 
 def test_stream_result_halt_before():
+    action_tracker = ActionTracker()
     counter_non_streaming = base_counter_action.with_name("counter_non_streaming")
     counter_streaming = base_streaming_single_step_counter.with_name("counter_final")
 
@@ -1379,7 +1404,7 @@ def test_stream_result_halt_before():
         initial_step="counter_non_streaming",
         partition_key="test",
         uid="test-123",
-        sequence_id=0,
+        adapter_set=LifecycleAdapterSet(action_tracker),
     )
     action, streaming_container = app.stream_result(halt_after=[], halt_before=["counter_final"])
     results = list(streaming_container)
@@ -1388,6 +1413,12 @@ def test_stream_result_halt_before():
     assert action.name == "counter_final"  # halt before this one
     assert result is None
     assert state["count"] == 10
+    assert [item["sequence_id"] for _, item in action_tracker.pre_called] == list(
+        range(0, 10)
+    )  # ensure sequence ID is respected
+    assert [item["sequence_id"] for _, item in action_tracker.post_called] == list(
+        range(0, 10)
+    )  # ensure sequence ID is respected
 
 
 def test_app_set_state():

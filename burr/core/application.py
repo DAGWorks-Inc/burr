@@ -54,7 +54,6 @@ class Transition:
 PRIOR_STEP = "__PRIOR_STEP"
 SEQUENCE_ID = "__SEQUENCE_ID"
 
-
 ERROR_MESSAGE = (
     "-------------------------------------------------------------------\n"
     "Oh no an error! Need help with Burr?\n"
@@ -282,10 +281,23 @@ class Application:
         initial_step: str,
         partition_key: Optional[str],
         uid: str,
-        sequence_id: Optional[int],
+        sequence_id: Optional[int] = None,
         adapter_set: Optional[LifecycleAdapterSet] = None,
         builder: Optional["ApplicationBuilder"] = None,
     ):
+        """Instantiates an Application. This is an internal API -- use the builder!
+
+        :param actions: Actions to run
+        :param transitions: Transitions between actions
+        :param state: State to run with
+        :param initial_step: Step name to start at
+        :param partition_key: Partition key for the application (optional)
+        :param uid: Unique identifier for the application
+        :param sequence_id: Sequence ID for the application. Note this will be incremented every run.
+            So if this starts at 0, the first one you will see will be 1.
+        :param adapter_set: Set of lifecycle adapters
+        :param builder: Builder that created this application
+        """
         self._partition_key = partition_key
         self._uid = uid
         self._action_map = {action.name: action for action in actions}
@@ -820,7 +832,6 @@ class Application:
             halt_before, halt_after, inputs
         )
         self._validate_halt_conditions(halt_before, halt_after)
-        self._increment_sequence_id()
         next_action = self.get_next_action()
         if next_action is None:
             raise ValueError(
@@ -828,6 +839,7 @@ class Application:
             )
         if next_action.name not in halt_after:
             # fast forward until we get to the action
+            # run already handles incrementing sequence IDs, nothing to worry about here
             next_action, results, state = self.run(
                 halt_before=halt_after + halt_before, inputs=inputs
             )
@@ -836,18 +848,10 @@ class Application:
             # For context, this is specifically for the case in which you want to have
             # multiple terminal points with a unified API, where some are streaming, and some are not.
             if next_action.name in halt_before and next_action.name not in halt_after:
-                self._adapter_set.call_all_lifecycle_hooks_sync(
-                    "post_run_step",
-                    action=next_action,
-                    state=self._state,
-                    result=None,
-                    sequence_id=self.sequence_id,
-                    exception=None,
-                )
                 return next_action, StreamingResultContainer.pass_through(
                     results=results, final_state=state
                 )
-            inputs = {}  # inputs always go to the first action, we want to wipe them afterwards
+        self._increment_sequence_id()
         self._adapter_set.call_all_lifecycle_hooks_sync(
             "pre_run_step",
             action=next_action,
@@ -867,18 +871,18 @@ class Application:
                 result: Optional[dict],
                 state: State,
                 exc: Optional[Exception] = None,
-                seq_id=self.sequence_id,
+                # seq_id=self.sequence_id,
             ):
                 self._adapter_set.call_all_lifecycle_hooks_sync(
                     "post_run_step",
                     action=next_action,
                     state=state,
                     result=result,
-                    sequence_id=seq_id,
+                    sequence_id=self.sequence_id,
                     exception=exc,
                 )
-                # we want to increment regardless of failure
 
+            action_inputs = self._process_inputs(inputs, next_action)
             if not next_action.streaming:
                 # In this case we are halting at a non-streaming condition
                 # This is allowed as we want to maintain a more consistent API
@@ -894,16 +898,19 @@ class Application:
                 return action, StreamingResultContainer.pass_through(
                     results=result, final_state=state
                 )
-
             if next_action.single_step:
                 next_action = cast(SingleStepStreamingAction, next_action)
-                generator = _run_single_step_streaming_action(next_action, self._state, inputs)
+                generator = _run_single_step_streaming_action(
+                    next_action, self._state, action_inputs
+                )
                 return next_action, StreamingResultContainer(
                     generator, self._state, process_result, callback
                 )
             else:
                 next_action = cast(StreamingAction, next_action)
-                generator = _run_multi_step_streaming_action(next_action, self._state, inputs)
+                generator = _run_multi_step_streaming_action(
+                    next_action, self._state, action_inputs
+                )
         except Exception as e:
             # We only want to raise this in the case of an exception
             # otherwise, this will get delegated to the finally
