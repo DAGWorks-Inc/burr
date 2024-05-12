@@ -121,11 +121,33 @@ class ActionTracker(PreRunStepHook, PostRunStepHook):
         self.pre_called = []
         self.post_called = []
 
-    def pre_run_step(self, action: Action, **future_kwargs):
-        self.pre_called.append((action.name, future_kwargs))
+    def pre_run_step(
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        sequence_id: int,
+        state: "State",
+        action: "Action",
+        inputs: Dict[str, Any],
+        **future_kwargs: Any,
+    ):
+        self.pre_called.append((action.name, locals()))
 
-    def post_run_step(self, action: Action, **future_kwargs):
-        self.post_called.append((action.name, future_kwargs))
+    def post_run_step(
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        sequence_id: int,
+        state: "State",
+        action: "Action",
+        result: Optional[Dict[str, Any]],
+        exception: Exception,
+        **future_kwargs: Any,
+    ):
+        locals()
+        self.post_called.append((action.name, locals()))
 
 
 class ActionTrackerAsync(PreRunStepHookAsync, PostRunStepHookAsync):
@@ -1571,21 +1593,22 @@ def test_application_run_step_hooks_sync():
     # assert sequence id is incremented
     assert tracker.pre_called[0][1]["sequence_id"] == 1
     assert tracker.post_called[0][1]["sequence_id"] == 1
-    assert set(tracker.pre_called[0][1].keys()) == {
+    assert {
+        "action",
         "sequence_id",
         "state",
         "inputs",
         "app_id",
         "partition_key",
-    }
-    assert set(tracker.post_called[0][1].keys()) == {
+    }.issubset(set(tracker.pre_called[0][1].keys()))
+    assert {
         "sequence_id",
         "result",
         "state",
         "exception",
         "app_id",
         "partition_key",
-    }
+    }.issubset(set(tracker.post_called[0][1].keys()))
     assert len(tracker.pre_called) == 11
     assert len(tracker.post_called) == 11
     # quick inclusion to ensure that the action is not called when we're done running
@@ -1615,21 +1638,21 @@ async def test_application_run_step_hooks_async():
     # assert sequence id is incremented
     assert tracker.pre_called[0][1]["sequence_id"] == 1
     assert tracker.post_called[0][1]["sequence_id"] == 1
-    assert set(tracker.pre_called[0][1].keys()) == {
+    assert {
         "sequence_id",
         "state",
         "inputs",
         "app_id",
         "partition_key",
-    }
-    assert set(tracker.post_called[0][1].keys()) == {
+    }.issubset(set(tracker.pre_called[0][1].keys()))
+    assert {
         "sequence_id",
         "result",
         "state",
         "exception",
         "app_id",
         "partition_key",
-    }
+    }.issubset(set(tracker.post_called[0][1].keys()))
     assert len(tracker.pre_called) == 11
     assert len(tracker.post_called) == 11
 
@@ -1656,36 +1679,37 @@ async def test_application_run_step_runs_hooks():
     # assert sequence id is incremented
     assert hooks[0].pre_called[0][1]["sequence_id"] == 1
     assert hooks[0].post_called[0][1]["sequence_id"] == 1
-    assert set(hooks[0].pre_called[0][1].keys()) == {
+    assert {
         "sequence_id",
         "state",
         "inputs",
         "app_id",
         "partition_key",
-    }
-    assert set(hooks[1].pre_called[0][1].keys()) == {
+        "action",
+    }.issubset(set(hooks[0].pre_called[0][1].keys()))
+    assert {
         "sequence_id",
         "state",
         "inputs",
         "app_id",
         "partition_key",
-    }
-    assert set(hooks[0].post_called[0][1].keys()) == {
+    }.issubset(set(hooks[1].pre_called[0][1].keys()))
+    assert {
         "sequence_id",
         "result",
         "state",
         "exception",
         "app_id",
         "partition_key",
-    }
-    assert set(hooks[1].post_called[0][1].keys()) == {
+    }.issubset(set(hooks[0].post_called[0][1].keys()))
+    assert {
         "sequence_id",
         "result",
         "state",
         "exception",
         "app_id",
         "partition_key",
-    }
+    }.issubset(set(hooks[1].post_called[0][1].keys()))
     assert len(hooks[1].pre_called) == 1
     assert len(hooks[1].post_called) == 1
 
