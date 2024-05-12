@@ -1,7 +1,5 @@
 import datetime
-from typing import Any, Dict, List, Optional, Union
-
-from pydantic import field_serializer
+from typing import Any, Dict, List, Optional
 
 from burr.common import types as burr_types
 from burr.core import Action
@@ -16,16 +14,6 @@ except ImportError as e:
         ["pydantic"],
         "tracking",
     )
-
-try:
-    # try to import to serialize Langchain messages
-    from langchain_core import documents as lc_documents
-    from langchain_core import load as lc_serde
-    from langchain_core import messages as lc_messages
-except ImportError:
-    lc_messages = None
-    lc_documents = None
-    lc_serde = None
 
 
 class IdentifyingModel(pydantic.BaseModel):
@@ -128,13 +116,6 @@ class ApplicationMetadataModel(IdentifyingModel):
     type: str = "application_metadata"
 
 
-INPUT_FILTERLIST = {"__tracer"}
-
-
-def _filter_inputs(d: dict) -> dict:
-    return {k: v for k, v in d.items() if k not in INPUT_FILTERLIST}
-
-
 class BeginEntryModel(IdentifyingModel):
     """Pydantic model that represents an entry for the beginning of a step"""
 
@@ -143,33 +124,6 @@ class BeginEntryModel(IdentifyingModel):
     inputs: Dict[str, Any]
     sequence_id: int
     type: str = "begin_entry"
-
-    @field_serializer("inputs")
-    def serialize_inputs(self, inputs):
-        return _serialize_object(_filter_inputs(inputs))
-
-
-def _serialize_object(d: object) -> Union[dict, list, object, str]:
-    if isinstance(d, list):
-        return [_serialize_object(x) for x in d]
-    elif isinstance(d, dict):
-        return {k: _serialize_object(v) for k, v in d.items()}
-    elif lc_messages is not None and isinstance(d, lc_messages.BaseMessage):
-        return lc_messages.message_to_dict(d)
-    elif lc_documents is not None and isinstance(d, lc_documents.Document):
-        if d.is_lc_serializable():
-            return lc_serde.dumpd(d)
-        else:
-            # d.page_content  # hack because not all documents are serializable
-            return d.page_content
-    elif hasattr(d, "to_document"):
-        # langchain can have things that look like a document but aren't...
-        return _serialize_object(d.to_document())
-    elif hasattr(d, "model_dump"):  # generic pydantic object
-        return d.model_dump()
-    elif hasattr(d, "to_json"):
-        return d.to_json()
-    return d
 
 
 class EndEntryModel(IdentifyingModel):
@@ -182,14 +136,6 @@ class EndEntryModel(IdentifyingModel):
     state: Dict[str, Any]  # TODO -- consider logging updates to the state so we can recreate
     sequence_id: int
     type: str = "end_entry"
-
-    @field_serializer("result")
-    def serialize_result(self, result):
-        return _serialize_object(result)
-
-    @field_serializer("state")
-    def serialize_state(self, state):
-        return _serialize_object(state)
 
 
 class BeginSpanModel(IdentifyingModel):

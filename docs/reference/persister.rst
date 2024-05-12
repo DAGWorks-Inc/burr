@@ -56,6 +56,7 @@ Currently we support the following, although we highly recommend you contribute 
 
 .. autoclass:: burr.integrations.persisters.b_mongodb.MongoDBPersister
    :members:
+
    .. automethod:: __init__
 
 

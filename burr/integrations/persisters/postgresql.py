@@ -73,7 +73,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         )
         return cls(connection, table_name)
 
-    def __init__(self, connection, table_name: str = "burr_state"):
+    def __init__(self, connection, table_name: str = "burr_state", serde_kwargs: dict = None):
         """Constructor
 
         :param connection: the connection to the PostgreSQL database.
@@ -81,6 +81,11 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         """
         self.table_name = table_name
         self.connection = connection
+        self.serde_kwargs = serde_kwargs or {}
+
+    def set_serde_kwargs(self, serde_kwargs: dict):
+        """Sets the serde_kwargs for the persister."""
+        self.serde_kwargs = serde_kwargs
 
     def create_table(self, table_name: str):
         """Helper function to create the table where things are stored."""
@@ -160,7 +165,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         row = cursor.fetchone()
         if row is None:
             return None
-        _state = state.State(row[1])
+        _state = state.State.deserialize(row[1], **self.serde_kwargs)
         return {
             "partition_key": partition_key,
             "app_id": row[3],
@@ -208,7 +213,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
             status,
         )
         cursor = self.connection.cursor()
-        json_state = json.dumps(state.get_all())
+        json_state = json.dumps(state.serialize(**self.serde_kwargs))
         cursor.execute(
             f"INSERT INTO {self.table_name} (partition_key, app_id, sequence_id, position, state, status) "
             "VALUES (%s, %s, %s, %s, %s, %s)",

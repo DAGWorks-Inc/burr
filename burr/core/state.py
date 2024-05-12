@@ -1,8 +1,11 @@
 import abc
 import copy
 import dataclasses
+import importlib
 import logging
 from typing import Any, Dict, Iterator, Mapping
+
+from burr.core import serde
 
 logger = logging.getLogger(__name__)
 
@@ -190,6 +193,26 @@ class State(Mapping):
         """Returns the entire state, realize as a dictionary. This is a copy."""
         return dict(self)
 
+    def serialize(self, **kwargs) -> dict:
+        """Converts the state to a JSON serializable object"""
+        _dict = self.get_all()
+        return {
+            # TODO: handle field specific custom serialization
+            k: serde.serialize(v, **kwargs)
+            for k, v in _dict.items()
+        }
+
+    @classmethod
+    def deserialize(cls, json_dict: dict, **kwargs) -> "State":
+        """Converts a dictionary representing a JSON object back into a state"""
+        return State(
+            {
+                # TODO: handle field specific custom deserialization
+                k: serde.deserialize(v, **kwargs)
+                for k, v in json_dict.items()
+            }
+        )
+
     def update(self, **updates: Any) -> "State":
         """Updates the state with a set of key-value pairs
         Does an upsert operation (if the keys exist their value will be overwritten,
@@ -272,3 +295,14 @@ class State(Mapping):
 
     def __repr__(self):
         return self.get_all().__repr__()  # quick hack
+
+
+# We register the serde plugins here that we'll automatically try to load.
+# In the future if we need to reorder/replace, we'll just have some
+# check here that can skip loading plugins/override which ones to load.
+# Note for pickle, we require people to manually register the type for that.
+for serde_plugin in ["langchain", "pydantic", "pandas"]:
+    try:
+        importlib.import_module(f"burr.integrations.serde.{serde_plugin}")
+    except ImportError:
+        logger.debug(f"Skipped registering {serde_plugin} serde plugin.")

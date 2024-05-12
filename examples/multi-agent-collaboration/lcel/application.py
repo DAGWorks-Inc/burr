@@ -6,6 +6,7 @@ within the Action so that they also show up in the Burr UI. This is a
 very simple tracer, it could easily be extended to include more information.
 """
 import json
+import uuid
 from typing import Annotated, Any, Optional
 from uuid import UUID
 
@@ -221,27 +222,13 @@ def main(query: str = None, app_instance_id: str = None, sequence_id: int = None
     Pass in an app_instance_id to restart from a previous run.
     Pass in an sequence_id to restart from a previous run and a specific position in it.
     """
+    if app_instance_id is None:
+        app_instance_id = str(uuid.uuid4())
     project_name = "demo_lcel-multi-agent"
-    if app_instance_id:
-        tracker = burr_tclient.LocalTrackingClient(project_name)
-        persisted_state = tracker.load("demo", app_id=app_instance_id, sequence_no=sequence_id)
-        if not persisted_state:
-            print(f"Warning: No persisted state found for app_id {app_instance_id}.")
-            initial_state, entry_point = default_state_and_entry_point(query)
-        else:
-            initial_state = persisted_state["state"]
-            # for now we need to manually deserialize LangChain messages into LangChain Objects
-            from langchain_core import messages
-
-            initial_state = initial_state.update(
-                messages=messages.messages_from_dict(persisted_state["state"]["messages"])
-            )
-            entry_point = persisted_state["position"]
-    else:
-        initial_state, entry_point = default_state_and_entry_point(query)
+    tracker_persister = burr_tclient.LocalTrackingClient(project_name)
+    default_state, default_entrypoint = default_state_and_entry_point(query)
     app = (
         core.ApplicationBuilder()
-        .with_state(**initial_state)
         .with_actions(
             researcher=research_node,
             charter=chart_node,
@@ -258,9 +245,17 @@ def main(query: str = None, app_instance_id: str = None, sequence_id: int = None
             ("call_tool", "researcher", expr("sender == 'Researcher'")),
             ("call_tool", "charter", expr("sender == 'Chart Generator'")),
         )
-        .with_entrypoint(entry_point)
+        .with_identifiers(
+            app_id=app_instance_id, partition_key="sample_user", sequence_id=sequence_id
+        )
+        .initialize_from(
+            tracker_persister,
+            resume_at_next_action=True,
+            default_state=default_state,
+            default_entrypoint=default_entrypoint,
+        )
         .with_hooks(PrintStepHook())
-        .with_tracker(project=project_name)
+        .with_tracker(tracker_persister)
         .build()
     )
     app.visualize(
@@ -270,7 +265,7 @@ def main(query: str = None, app_instance_id: str = None, sequence_id: int = None
 
 
 if __name__ == "__main__":
-    main()
+    main(app_instance_id="e80f405b-2c79-4bc9-88d2-23413ceb5881", sequence_id=8)
     # main("Fetch the UK's GDP over the past 5 years,"
     #                  " then draw a line graph of it."
     #                  " Once you code it up, finish.")

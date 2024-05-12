@@ -105,14 +105,14 @@ class LocalBackend(BackendBase):
     async def get_number_of_steps(self, file_path: str) -> int:
         """Quick tool to get the latest sequence ID from a log file.
         This is not efficient and should be replaced."""
-        count = 0
         async with aiofiles.open(file_path, "rb") as f:
             for line in reversed(await f.readlines()):
                 line_data = safe_json_load(line)
-                # Just return the latest for now
-                # We add one as it is the count, not the index
-                return line_data["sequence_id"] + 1
-        return count
+                if "sequence_id" in line_data:
+                    # Just return the latest we can determine for now
+                    # We add one as it is the count, not the index
+                    return line_data["sequence_id"] + 1
+        return 0
 
     async def _load_metadata(self, metadata_path: str) -> models.ApplicationMetadataModel:
         if os.path.exists(metadata_path):
