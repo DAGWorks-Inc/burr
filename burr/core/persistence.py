@@ -140,15 +140,17 @@ class DevNullPersister(BaseStatePersister):
 class SQLLitePersister(BaseStatePersister):
     """Class for SQLLite persistence of state. This is a simple implementation."""
 
-    def __init__(self, db_path: str, table_name: str = "burr_state"):
+    def __init__(self, db_path: str, table_name: str = "burr_state", serde_kwargs: dict = None):
         """Constructor
 
         :param db_path: the path the DB will be stored.
-        :param table_name:  the table name to store things under.
+        :param table_name: the table name to store things under.
+        :param serde_kwargs: kwargs for state serialization/deserialization.
         """
         self.db_path = db_path
         self.table_name = table_name
         self.connection = sqlite3.connect(db_path)
+        self.serde_kwargs = serde_kwargs or {}
 
     def create_table_if_not_exists(self, table_name: str):
         """Helper function to create the table where things are stored if it doesn't exist."""
@@ -229,7 +231,7 @@ class SQLLitePersister(BaseStatePersister):
         row = cursor.fetchone()
         if row is None:
             return None
-        _state = State(json.loads(row[1]))
+        _state = State.deserialize(json.loads(row[1]), **self.serde_kwargs)
         return {
             "partition_key": partition_key,
             "app_id": row[3],
@@ -277,7 +279,7 @@ class SQLLitePersister(BaseStatePersister):
             status,
         )
         cursor = self.connection.cursor()
-        json_state = json.dumps(state.get_all())
+        json_state = json.dumps(state.serialize(**self.serde_kwargs))
         cursor.execute(
             f"INSERT INTO {self.table_name} (partition_key, app_id, sequence_id, position, state, status) "
             f"VALUES (?, ?, ?, ?, ?, ?)",

@@ -52,10 +52,17 @@ tests = [
   "pytest",
   "pytest-asyncio",
   "burr[hamilton]",
-  "pymongo"
+  "pymongo",
+  "burr[hamilton]",
+  "langchain_core",
+  "langchain_community",
+  "pandas",
+  "pydantic",
+  "pyarrow",
 ]
 
 documentation = [
+  "burr[tests]",
   "sphinx",
   "sphinx-autobuild",
   "myst-parser",

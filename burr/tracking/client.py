@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 
 from burr import system
 from burr.common import types as burr_types
-from burr.core import Action, ApplicationGraph, State
+from burr.core import Action, ApplicationGraph, State, serde
 from burr.core.persistence import BaseStateLoader, PersistedStateData
 from burr.integrations.base import require_plugin
 from burr.lifecycle import (
@@ -47,6 +47,13 @@ def _format_exception(exception: Exception) -> Optional[str]:
     return "".join(traceback.format_exception(type(exception), exception, exception.__traceback__))
 
 
+INPUT_FILTERLIST = {"__tracer"}
+
+
+def _filter_inputs(d: dict) -> dict:
+    return {k: v for k, v in d.items() if k not in INPUT_FILTERLIST}
+
+
 def _allowed_project_name(project_name: str, on_windows: bool) -> bool:
     allowed_chars = "a-zA-Z0-9_\-"
     if not on_windows:
@@ -80,6 +87,7 @@ class LocalTrackingClient(
         self,
         project: str,
         storage_dir: str = DEFAULT_STORAGE_DIR,
+        serde_kwargs: Optional[Dict[str, Any]] = None,
     ):
         """Instantiates a local tracking client. This will create the following directories, if they don't exist:
         #. The base directory (defaults to ~/.burr)
@@ -101,6 +109,7 @@ class LocalTrackingClient(
             )
         self.storage_dir = LocalTrackingClient.get_storage_path(project, storage_dir)
         self.project_id = project
+        self.serde_kwargs = serde_kwargs or {}
 
     @classmethod
     def get_storage_path(cls, project, storage_dir) -> str:
@@ -250,10 +259,11 @@ class LocalTrackingClient(
         sequence_id: int,
         **future_kwargs: Any,
     ):
+        _filtered_inputs = _filter_inputs(inputs)
         pre_run_entry = BeginEntryModel(
             start_time=datetime.datetime.now(),
             action=action.name,
-            inputs=inputs,
+            inputs=serde.serialize(_filtered_inputs, **self.serde_kwargs),
             sequence_id=sequence_id,
         )
         self._append_write_line(pre_run_entry)
@@ -270,10 +280,10 @@ class LocalTrackingClient(
         post_run_entry = EndEntryModel(
             end_time=datetime.datetime.now(),
             action=action.name,
-            result=result,
+            result=serde.serialize(result, **self.serde_kwargs),
             sequence_id=sequence_id,
             exception=_format_exception(exception),
-            state=state.get_all(),
+            state=state.serialize(),
         )
         self._append_write_line(post_run_entry)
 
@@ -339,8 +349,11 @@ class LocalTrackingClient(
         line = None
         if sequence_id is None:
             # get the last one, we want to start at the end
-            line = json_lines[-1]
-            sequence_id = line["sequence_id"]
+            for _line in reversed(json_lines):
+                if _line["type"] == "end_entry":
+                    sequence_id = _line["sequence_id"]
+                    line = _line
+                    break
         else:
             for js_line in json_lines:
                 if js_line["type"] == "end_entry":
@@ -367,7 +380,7 @@ class LocalTrackingClient(
             "app_id": app_id,
             "sequence_id": sequence_id,
             "position": position,
-            "state": State(prior_state),
+            "state": State.deserialize(prior_state, **self.serde_kwargs),
             "created_at": datetime.datetime.fromtimestamp(os.path.getctime(path)).isoformat(),
             "status": "completed" if line["exception"] is None else "failed",
         }

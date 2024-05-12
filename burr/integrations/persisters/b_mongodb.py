@@ -12,27 +12,36 @@ logger = logging.getLogger(__name__)
 
 class MongoDBPersister(persistence.BaseStatePersister):
     """A class used to represent a MongoDB Persister.
+
     Example usage:
-        persister = MongoDBPersister(uri='mongodb://user:pass@localhost:27017', db_name='mydatabase', collection_name='mystates')
-        persister.save(
-            partition_key='example_partition',
-            app_id='example_app',
-            sequence_id=1,
-            position='example_position',
-            state=state.State({'key': 'value'}),
-            status='completed'
-        )
-        loaded_state = persister.load(partition_key='example_partition', app_id='example_app', sequence_id=1)
-        print(loaded_state)
+
+    .. code-block:: python
+
+       persister = MongoDBPersister(uri='mongodb://user:pass@localhost:27017', db_name='mydatabase', collection_name='mystates')
+       persister.save(
+           partition_key='example_partition',
+           app_id='example_app',
+           sequence_id=1,
+           position='example_position',
+           state=state.State({'key': 'value'}),
+           status='completed'
+       )
+       loaded_state = persister.load(partition_key='example_partition', app_id='example_app', sequence_id=1)
+       print(loaded_state)
     """
 
     def __init__(
-        self, uri="mongodb://localhost:27017", db_name="mydatabase", collection_name="mystates"
+        self,
+        uri="mongodb://localhost:27017",
+        db_name="mydatabase",
+        collection_name="mystates",
+        serde_kwargs: dict = None,
     ):
         """Initializes the MongoDBPersister class."""
         self.client = MongoClient(uri)
         self.db = self.client[db_name]
         self.collection = self.db[collection_name]
+        self.serde_kwargs = serde_kwargs or {}
 
     def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
         """List the app ids for a given partition key."""
@@ -49,7 +58,7 @@ class MongoDBPersister(persistence.BaseStatePersister):
         document = self.collection.find_one(query, sort=[("sequence_id", -1)])
         if not document:
             return None
-        _state = state.State(json.loads(document["state"]))
+        _state = state.State.deserialize(json.loads(document["state"]), **self.serde_kwargs)
         return {
             "partition_key": partition_key,
             "app_id": app_id,
@@ -74,7 +83,7 @@ class MongoDBPersister(persistence.BaseStatePersister):
         key = {"partition_key": partition_key, "app_id": app_id, "sequence_id": sequence_id}
         if self.collection.find_one(key):
             raise ValueError(f"partition_key:app_id:sequence_id[{key}] already exists.")
-        json_state = json.dumps(state.get_all())
+        json_state = json.dumps(state.serialize(**self.serde_kwargs))
         self.collection.insert_one(
             {
                 "partition_key": partition_key,
@@ -84,7 +93,6 @@ class MongoDBPersister(persistence.BaseStatePersister):
                 "state": json_state,
                 "status": status,
                 "created_at": datetime.now(timezone.utc).isoformat(),
-                # "created_at": datetime.datetime.utcnow().isoformat(),
             }
         )
 

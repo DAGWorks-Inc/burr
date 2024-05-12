@@ -82,6 +82,18 @@ async def ready() -> bool:
     return True
 
 
+@app.get("/api/v0/version")
+async def version() -> dict:
+    """Returns the burr version"""
+    import pkg_resources
+
+    try:
+        version = pkg_resources.get_distribution("burr").version
+    except pkg_resources.DistributionNotFound:
+        version = "unknown"
+    return {"version": version}
+
+
 # Examples -- todo -- put them behind `if` statements
 app.include_router(chatbot.router, prefix="/api/v0/chatbot")
 app.include_router(email_assistant.router, prefix="/api/v0/email_assistant")

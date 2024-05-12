@@ -6,9 +6,9 @@ try:
 except ImportError as e:
     base.require_plugin(e, ["redis"], "redis")
 
-import datetime
 import json
 import logging
+from datetime import datetime, timezone
 from typing import Literal, Optional
 
 from burr.core import persistence, state
@@ -23,7 +23,9 @@ class RedisPersister(persistence.BaseStatePersister):
     It inherits from the BaseStatePersister class.
     """
 
-    def __init__(self, host: str, port: int, db: int, password: str = None):
+    def __init__(
+        self, host: str, port: int, db: int, password: str = None, serde_kwargs: dict = None
+    ):
         """Initializes the RedisPersister class.
 
         :param host:
@@ -32,6 +34,7 @@ class RedisPersister(persistence.BaseStatePersister):
         :param password:
         """
         self.connection = redis.Redis(host=host, port=port, db=db, password=password)
+        self.serde_kwargs = serde_kwargs or {}
 
     def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
         """List the app ids for a given partition key."""
@@ -60,7 +63,7 @@ class RedisPersister(persistence.BaseStatePersister):
         data = self.connection.hgetall(key)
         if not data:
             return None
-        _state = state.State(json.loads(data[b"state"].decode()))
+        _state = state.State.deserialize(json.loads(data[b"state"].decode()), **self.serde_kwargs)
         return {
             "partition_key": partition_key,
             "app_id": app_id,
@@ -100,7 +103,7 @@ class RedisPersister(persistence.BaseStatePersister):
         key = self.create_key(app_id, partition_key, sequence_id)
         if self.connection.exists(key):
             raise ValueError(f"partition_key:app_id:sequence_id[{key}] already exists.")
-        json_state = json.dumps(state.get_all())
+        json_state = json.dumps(state.serialize(**self.serde_kwargs))
         self.connection.hset(
             key,
             mapping={
@@ -110,7 +113,7 @@ class RedisPersister(persistence.BaseStatePersister):
                 "position": position,
                 "state": json_state,
                 "status": status,
-                "created_at": datetime.datetime.utcnow().isoformat(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
             },
         )
         self.connection.zadd(partition_key, {app_id: sequence_id})
