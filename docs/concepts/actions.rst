@@ -48,6 +48,9 @@ You can also define actions by decorating a function with the :py:func:`@action 
         custom_action=custom_action
     )...
 
+
+Note that these combine the ``update`` and ``run`` methods into a single function, and they're both executed at the same time.
+
 Function-based actions can take in parameters which are akin to passing in constructor parameters. This is done through the :py:meth:`bind <burr.core.action.bind>` method:
 
 .. code-block:: python
@@ -64,7 +67,6 @@ Function-based actions can take in parameters which are akin to passing in const
 This is the same as ``functools.partial``, but it is more explicit and easier to read. If an action has parameters that are not
 bound, they will be referred to as inputs. For example:
 
-
 .. code-block:: python
 
     @action(reads=["var_from_state"], writes=["var_to_update"])
@@ -76,10 +78,20 @@ bound, they will be referred to as inputs. For example:
         custom_action=custom_action
     )...
 
-Will require the inputs to be passed in at runtime. See below for how to do that.
+Will require the inputs to be passed in at runtime. See below for how to do that. You can use default values to set optional inputs as well:
 
-Note that these combine the ``update`` and ``run`` methods into a single function, and they're both executed at the same time.
+.. code-block:: python
 
+    @action(reads=["var_from_state"], writes=["var_to_update"])
+    def custom_action(state: State, increment_by: int = 1) -> Tuple[dict, State]:
+        result = {"var_to_update": state["var_from_state"] + increment_by}
+        return result, state.update(**result)
+
+    app = ApplicationBuilder().with_actions(
+        custom_action=custom_action
+    )...
+
+This means that the application does not *need* the inputs to be set.
 
 -------------------
 Class-Based Actions
@@ -143,7 +155,19 @@ Note that if the action has inputs, you have to define the optional ``inputs`` p
             return ["increment_by"]
 
 
-See below for how to pass in inputs at runtime.
+See below for how to pass in inputs at runtime. If you want to use optional inputs with the class-based API, `inputs` will return a tuple
+of (required, optional) inputs. For example:
+
+.. code-block:: python
+
+    from burr.core import Action, State
+
+    class CustomAction(Action):
+        ...
+        def inputs(self) -> Tuple[list[str], list[str]]:
+            return ["increment_by"], ["optional_input"]
+
+Note your code will have to handle the case where `optional_input` is not passed in (e.g. by setting the appropriate kwargs to the `run(...)` method.
 
 -----------------------
 ``Inputs`` only actions
