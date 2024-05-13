@@ -14,7 +14,6 @@ from typing import (
     List,
     Optional,
     Protocol,
-    Tuple,
     TypeVar,
     Union,
 )
@@ -59,7 +58,7 @@ class Function(abc.ABC):
         return []
 
     @property
-    def optional_and_required_inputs(self) -> Tuple[set[str], set[str]]:
+    def optional_and_required_inputs(self) -> tuple[set[str], set[str]]:
         """Returns a tuple of two lists of strings -- the first list is the required keys, the second is the optional keys.
         This is internal and not meant to override.
 
@@ -343,7 +342,7 @@ class SingleStepAction(Action, abc.ABC):
         return True
 
     @abc.abstractmethod
-    def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
+    def run_and_update(self, state: State, **run_kwargs) -> tuple[dict, State]:
         """Performs a run/update at the same time.
 
         :param state: State to run the action on
@@ -455,7 +454,7 @@ class FunctionBasedAction(SingleStepAction):
             self._fn, self._reads, self._writes, {**self._bound_params, **kwargs}
         )
 
-    def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
+    def run_and_update(self, state: State, **run_kwargs) -> tuple[dict, State]:
         return self._fn(state, **self._bound_params, **run_kwargs)
 
     def is_async(self) -> bool:
@@ -535,7 +534,7 @@ class StreamingResultContainer(Iterator[dict]):
         This is to be used internally -- it allows us to wrap non-streaming action results in a streaming
         result container."""
 
-        def empty_generator() -> Generator[dict, None, Tuple[dict, State]]:
+        def empty_generator() -> Generator[dict, None, tuple[dict, State]]:
             yield from ()
             return results, final_state
 
@@ -551,9 +550,9 @@ class StreamingResultContainer(Iterator[dict]):
 
     def __init__(
         self,
-        streaming_result_generator: Generator[dict, None, Tuple[dict, State]],
+        streaming_result_generator: Generator[dict, None, tuple[dict, State]],
         initial_state: State,
-        process_result: Callable[[dict, State], Tuple[dict, State]],
+        process_result: Callable[[dict, State], tuple[dict, State]],
         callback: Callable[[Optional[dict], State, Optional[Exception]], None],
     ):
         """Initializes a ``StreamingResultContainer``. This is meant to be used internally
@@ -592,7 +591,7 @@ class StreamingResultContainer(Iterator[dict]):
                 self._callback_realized = True
                 self._callback(*self._result, exc)
 
-    def get(self) -> Tuple[Optional[dict], State]:
+    def get(self) -> tuple[Optional[dict], State]:
         """Blocking call to get the final result of the streaming action. This will
         run through the entire generator (or until an exception is raised) and return
         the final result.
@@ -614,14 +613,14 @@ class SingleStepStreamingAction(SingleStepAction, abc.ABC):
     @abc.abstractmethod
     def stream_run_and_update(
         self, state: State, **run_kwargs
-    ) -> Generator[dict, None, Tuple[dict, State]]:
+    ) -> Generator[dict, None, tuple[dict, State]]:
         """Streaming version of the run and update function. This
         return type is a generator that streams in a result, has no "send"
         value, and returns the final result (new result + state).
         """
         pass
 
-    def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
+    def run_and_update(self, state: State, **run_kwargs) -> tuple[dict, State]:
         """Runs the action and returns the final result. This allows us to run this as a
         single step action. This is helpful for when the streaming result needs to be
         run as an intermediate.
@@ -639,11 +638,11 @@ class SingleStepStreamingAction(SingleStepAction, abc.ABC):
 
 
 class FunctionBasedStreamingAction(SingleStepStreamingAction):
-    _fn: Callable[..., Generator[dict, None, Tuple[dict, State]]]
+    _fn: Callable[..., Generator[dict, None, tuple[dict, State]]]
 
     def __init__(
         self,
-        fn: Callable[..., Generator[dict, None, Tuple[dict, State]]],
+        fn: Callable[..., Generator[dict, None, tuple[dict, State]]],
         reads: List[str],
         writes: List[str],
         bound_params: dict = None,
@@ -663,7 +662,7 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
 
     def stream_run_and_update(
         self, state: State, **run_kwargs
-    ) -> Generator[dict, None, Tuple[dict, State]]:
+    ) -> Generator[dict, None, tuple[dict, State]]:
         return (yield from self._fn(state, **self._bound_params, **run_kwargs))
 
     @property
@@ -699,7 +698,7 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
 
 
 def _validate_action_function(fn: Callable):
-    """Validates that an action has the signature: (state: State) -> Tuple[dict, State]
+    """Validates that an action has the signature: (state: State) -> tuple[dict, State]
 
     :param fn: Function to validate
     """
@@ -720,7 +719,7 @@ def _validate_action_function(fn: Callable):
                 f"so that bind(**kwargs) can be applied."
             )
 
-    if sig.return_annotation != Tuple[dict, State]:
+    if sig.return_annotation != tuple[dict, State]:
         raise ValueError(
             f"Function {fn} must return a tuple of (result, new_state), "
             f"not {sig.return_annotation}"
@@ -746,7 +745,7 @@ def bind(self: FunctionRepresentingAction, **kwargs: Any) -> FunctionRepresentin
     .. code-block:: python
 
         @action(["x"], ["y"])
-        def my_action(state: State, z: int) -> Tuple[dict, State]:
+        def my_action(state: State, z: int) -> tuple[dict, State]:
             return {"y": state.get("x") + z}, state
 
         my_action.bind(z=2)
@@ -797,7 +796,7 @@ def streaming_action(
     .. code-block:: python
 
         @streaming_action(reads=["prompt"], writes=['response'])
-        def streaming_response(state: State) -> Generator[dict, None, Tuple[dict, State]]:
+        def streaming_response(state: State) -> Generator[dict, None, tuple[dict, State]]:
             response = client.chat.completions.create(
                 model='gpt-3.5-turbo',
                 messages=[{
