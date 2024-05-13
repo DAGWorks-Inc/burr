@@ -48,13 +48,13 @@ class Function(abc.ABC):
     @property
     def inputs(self) -> Union[list[str], tuple[list[str], list[str]]]:
         """Represents inputs that are used for this to run.
-        These correspond to the `**function_kwargs` in `run` above.
+        These correspond to the ``**run_kwargs`` in `run` above.
 
         Note that this has two possible return values:
         1. A list of strings -- these are the keys that are required to run the function
         2. A tuple of two lists of strings -- the first list is the required keys, the second is the optional keys
 
-        :return:
+        :return: Either a list of strings (required inputs) or a tuple of two lists of strings (required and optional inputs)
         """
         return []
 
@@ -406,11 +406,11 @@ class FunctionBasedAction(SingleStepAction):
     ACTION_FUNCTION = "action_function"
 
     def __init__(
-            self,
-            fn: Callable,
-            reads: List[str],
-            writes: List[str],
-            bound_params: dict = None,
+        self,
+        fn: Callable,
+        reads: List[str],
+        writes: List[str],
+        bound_params: dict = None,
     ):
         """Instantiates a function-based action with the given function, reads, and writes.
         The function must take in a state and return a tuple of (result, new_state).
@@ -550,11 +550,11 @@ class StreamingResultContainer(Iterator[dict]):
         return next(self.generator())
 
     def __init__(
-            self,
-            streaming_result_generator: Generator[dict, None, Tuple[dict, State]],
-            initial_state: State,
-            process_result: Callable[[dict, State], Tuple[dict, State]],
-            callback: Callable[[Optional[dict], State, Optional[Exception]], None],
+        self,
+        streaming_result_generator: Generator[dict, None, Tuple[dict, State]],
+        initial_state: State,
+        process_result: Callable[[dict, State], Tuple[dict, State]],
+        callback: Callable[[Optional[dict], State, Optional[Exception]], None],
     ):
         """Initializes a ``StreamingResultContainer``. This is meant to be used internally
 
@@ -613,7 +613,7 @@ class SingleStepStreamingAction(SingleStepAction, abc.ABC):
 
     @abc.abstractmethod
     def stream_run_and_update(
-            self, state: State, **run_kwargs
+        self, state: State, **run_kwargs
     ) -> Generator[dict, None, Tuple[dict, State]]:
         """Streaming version of the run and update function. This
         return type is a generator that streams in a result, has no "send"
@@ -642,11 +642,11 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
     _fn: Callable[..., Generator[dict, None, Tuple[dict, State]]]
 
     def __init__(
-            self,
-            fn: Callable[..., Generator[dict, None, Tuple[dict, State]]],
-            reads: List[str],
-            writes: List[str],
-            bound_params: dict = None,
+        self,
+        fn: Callable[..., Generator[dict, None, Tuple[dict, State]]],
+        reads: List[str],
+        writes: List[str],
+        bound_params: dict = None,
     ):
         """Instantiates a function-based streaming action with the given function, reads, and writes.
         The function must take in a state (and inputs) and return a generator of (result, new_state).
@@ -662,7 +662,7 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         self._bound_params = bound_params if bound_params is not None else {}
 
     def stream_run_and_update(
-            self, state: State, **run_kwargs
+        self, state: State, **run_kwargs
     ) -> Generator[dict, None, Tuple[dict, State]]:
         return (yield from self._fn(state, **self._bound_params, **run_kwargs))
 
@@ -765,9 +765,8 @@ def action(reads: List[str], writes: List[str]) -> Callable[[Callable], Function
     all cases.
 
     If parameters are not bound, they will be interpreted as inputs and must
-    be passed in at runtime. If they have default values, they will *not* be
-    interpreted as inputs (all inputs are required to be present). They can
-    still be bound, however.
+    be passed in at runtime. If they have default values, they will be recorded
+    as optional inputs. These can (optionally) be provided at runtime.
 
     :param reads: Items to read from the state
     :param writes: Items to write to the state
@@ -783,7 +782,7 @@ def action(reads: List[str], writes: List[str]) -> Callable[[Callable], Function
 
 
 def streaming_action(
-        reads: List[str], writes: List[str]
+    reads: List[str], writes: List[str]
 ) -> Callable[[Callable], FunctionRepresentingAction]:
     """Decorator to create a streaming function-based action. This is user-facing.
 
