@@ -5,6 +5,7 @@ import copy
 import inspect
 import sys
 import types
+import typing
 from typing import (
     Any,
     Callable,
@@ -719,9 +720,16 @@ def _validate_action_function(fn: Callable):
                 f"so that bind(**kwargs) can be applied."
             )
 
-    if sig.return_annotation != tuple[dict, State]:
+    return_type = sig.return_annotation
+    print(return_type)
+    if (
+        return_type is inspect.Signature.empty
+        or not typing.get_origin(return_type) in {tuple, typing.Tuple}
+        or not len(typing.get_args(return_type)) == 2
+        or not typing.get_args(return_type) == (dict, State)
+    ):
         raise ValueError(
-            f"Function {fn} must return a tuple of (result, new_state), "
+            f"Function {fn} must return a tuple of (result, new_state), with type tuple[dict, State] "
             f"not {sig.return_annotation}"
         )
 
