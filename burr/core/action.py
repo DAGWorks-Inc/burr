@@ -216,7 +216,15 @@ class Condition(Function):
 
         return Condition(keys, condition_func, name=expr)
 
+    def _validate(self, state: State):
+        missing_keys = set(self._keys) - set(state.keys())
+        if missing_keys:
+            raise ValueError(
+                f"Missing keys in state required by condition: {self} {', '.join(missing_keys)}"
+            )
+
     def run(self, state: State, **run_kwargs) -> dict:
+        self._validate(state)
         return {Condition.KEY: self._resolver(state)}
 
     @property

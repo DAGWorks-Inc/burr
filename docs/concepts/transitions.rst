@@ -38,6 +38,8 @@ Conditions have a few APIs, but the most common are the three convenience functi
 Conditions are evaluated in the order they are specified, and the first one that evaluates to True will be the transition that is selected
 when determining which action to run next. If no condition evaluates to ``True``, the application execution will stop early.
 
+All keys present in the condition (E.G. ``foo`` and ``epochs`` above) must be present in the state for the condition to work. It will error otherwise.
+
 .. note::
 
     The ``default`` condition is a special case, and will always evaluate to ``True``. It is useful for defining a "catch-all" transition

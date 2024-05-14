@@ -127,6 +127,17 @@ def test_condition_expr_complex():
     assert cond.run(State({"foo": "baz", "baz": "corge"})) == {Condition.KEY: False}
 
 
+def test_condition__validate_success():
+    cond = Condition.when(foo="bar")
+    cond._validate(State({"foo": "bar"}))
+
+
+def test_condition__validate_failure():
+    cond = Condition.when(foo="bar")
+    with pytest.raises(ValueError, match="foo"):
+        cond._validate(State({"baz": "baz"}))
+
+
 def test_result():
     result = Result("foo", "bar")
     assert result.run(State({"foo": "baz", "bar": "qux", "baz": "quux"})) == {
