@@ -138,6 +138,19 @@ def test_condition__validate_failure():
         cond._validate(State({"baz": "baz"}))
 
 
+def test_condition_invert():
+    cond = Condition(
+        ["foo"],
+        lambda state: state["foo"] == "bar",
+        name="foo == 'bar'",
+    )
+    cond_inverted = ~cond
+    assert cond_inverted.name == "~foo == 'bar'"
+    assert cond_inverted.reads == ["foo"]
+    assert cond_inverted.run(State({"foo": "bar"})) == {Condition.KEY: False}
+    assert cond_inverted.run(State({"foo": "baz"})) == {Condition.KEY: True}
+
+
 def test_result():
     result = Result("foo", "bar")
     assert result.run(State({"foo": "baz", "bar": "qux", "baz": "quux"})) == {
