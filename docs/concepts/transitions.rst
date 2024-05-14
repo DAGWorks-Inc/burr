@@ -31,6 +31,7 @@ Conditions have a few APIs, but the most common are the three convenience functi
         ("from", "to", when(foo="bar"),  # will evaluate when the state has the variable "foo" set to the value "bar"
         ("from", "to", expr('epochs>100')) # will evaluate to True when the state has the variable "foo" set to the value "bar"
         ("from", "to", default)  # will always evaluate to True
+        ("from", "to") # leaving out a third conditions we allow defaults
     )
 
 
