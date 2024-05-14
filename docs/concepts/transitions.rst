@@ -29,7 +29,7 @@ Conditions have a few APIs, but the most common are the three convenience functi
     from burr.core import when, expr, default
     with_transitions(
         ("from", "to", when(foo="bar"),  # will evaluate when the state has the variable "foo" set to the value "bar"
-        ("from", "to", expr('epochs>100')) # will evaluate to True when the state has the variable "foo" set to the value "bar"
+        ("from", "to", expr('epochs>100')) # will evaluate to True when epochs is greater than 100
         ("from", "to", default)  # will always evaluate to True
         ("from", "to") # leaving out a third conditions we allow defaults
     )
@@ -37,6 +37,16 @@ Conditions have a few APIs, but the most common are the three convenience functi
 
 Conditions are evaluated in the order they are specified, and the first one that evaluates to True will be the transition that is selected
 when determining which action to run next. If no condition evaluates to ``True``, the application execution will stop early.
+
+The ``~`` operator will invert a condition. For instance:
+
+.. code-block:: python
+
+    from burr.core import when, expr
+    with_transitions(
+        ("from", "to", ~when(foo="baz"),  # will evaluate to True when foo != baz
+        ("from", "to", ~expr('epochs<=100')) # will evaluate to True when epochs hits 101
+    )
 
 All keys present in the condition (E.G. ``foo`` and ``epochs`` above) must be present in the state for the condition to work. It will error otherwise.
 

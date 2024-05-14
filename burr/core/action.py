@@ -174,6 +174,8 @@ class Condition(Function):
     def __init__(self, keys: List[str], resolver: Callable[[State], bool], name: str = None):
         """Base condition class. Chooses keys to read from the state and a resolver function.
 
+        Note that the ``~`` operator allows you to automatically invert the condition.
+
         :param keys: Keys to read from the state
         :param resolver:  Function to resolve the condition to True or False
         :param name: Name of the condition
@@ -265,6 +267,9 @@ class Condition(Function):
     @property
     def name(self) -> str:
         return self._name
+
+    def __invert__(self):
+        return Condition(self._keys, lambda state: not self._resolver(state), name=f"~{self._name}")
 
 
 # Annotated inline as linters don't understand classmethods + properties
