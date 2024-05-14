@@ -39,7 +39,7 @@ Build a Simple Chatbot
 
 Let's build! Our chatbot will accept user input and pass it to an AI. The AI will then respond with a message.
 
-Let's start by defining some actions, the building-block of Burr. You can think of actions as a function that
+Let's start by defining some actions, the building-blocks of Burr. You can think of actions as a function that
 computes a result and modifies state. They declare what they read and write.
 
 
@@ -115,7 +115,7 @@ Let's note the following about how we define the application
 1. It is an infinite loop! It is meant to pause for new prompt input.
 2. We're just using the function names as the action names. You can also name them if you want ``with_actions(human_input=human_input, ai_response=ai_response)``.
 3. We start it with an empty ``chat_history`` state field
-4. It utilizes a `builder pattern <https://en.wikipedia.org/wiki/Builder_pattern#:~:text=The%20builder%20pattern%20is%20a,Gang%20of%20Four%20design%20patterns>`_ -- this is a bit old-school (comes from the java days), but is an easy/modular way to express your appliaction
+4. It utilizes a `builder pattern <https://en.wikipedia.org/wiki/Builder_pattern#:~:text=The%20builder%20pattern%20is%20a,Gang%20of%20Four%20design%20patterns>`_ -- this is a bit old-school (comes from the java days), but is an easy/modular way to express your application
 
 Finally, we can run the application -- it gives back multiple pieces of information but all we'll use is the state.
 

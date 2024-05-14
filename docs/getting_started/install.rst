@@ -2,7 +2,7 @@
 Installing
 ==========
 
-Burr itself requires almost no dependencies. Every "extra"/"plugin" is an additional install target.
+Burr itself requires almost no dependencies. Every *extra*/*plugin* is an additional install target.
 
 We recommend you start with installing the ``learn`` target -- this has dependencies necessary to track burr through the UI,
 along with a fully built server.

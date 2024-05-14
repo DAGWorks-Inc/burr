@@ -117,14 +117,18 @@ If multiple are specified, it will stop after the first one encountered, and the
 
 .. code-block:: python
 
-    final_state, results = application.run(halt_after=["final_action_1", "final_action_2"])
+    action, result, state = application.run(
+        halt_after=["final_action_1", "final_action_2"]
+    )
 
 
 In the async context, you can run ``arun``:
 
 .. code-block:: python
 
-    final_state = await application.arun(halt_after=["final_action_1", "final_action_2"])
+    action, result, state = await application.arun(
+        halt_after=["final_action_1", "final_action_2"]
+    )
 
 .. note::
     You can add inputs to ``run``/``arun`` in the same way as you can with ``iterate`` -- it will only apply to the first action.
