@@ -116,6 +116,39 @@ class AppendFields(StateDelta):
 
 
 @dataclasses.dataclass
+class IncrementFields(StateDelta):
+    values: Mapping[str, int]
+
+    @classmethod
+    def name(cls) -> str:
+        return "increment"
+
+    def reads(self) -> list[str]:
+        return list(self.values.keys())
+
+    def writes(self) -> list[str]:
+        return list(self.values.keys())
+
+    def validate(self, input_state: Dict[str, Any]):
+        incorrect_types = {}
+        for write_key in self.writes():
+            if write_key in input_state and not isinstance(input_state[write_key], int):
+                incorrect_types[write_key] = type(input_state[write_key])
+        if incorrect_types:
+            raise ValueError(
+                f"Cannot increment non-integer values: {incorrect_types}. "
+                f"Please ensure that all fields are integers."
+            )
+
+    def apply_mutate(self, inputs: dict):
+        for key, value in self.values.items():
+            if key not in inputs:
+                inputs[key] = value
+            else:
+                inputs[key] += value
+
+
+@dataclasses.dataclass
 class DeleteField(StateDelta):
     """State delta that deletes fields from the state"""
 
@@ -137,13 +170,7 @@ class DeleteField(StateDelta):
 
 
 class State(Mapping):
-    """An immutable state object. Things to consider:
-    1. Adding hooks on change
-    2. Pulling/pushing to external places
-    3. Simultaneous writes/reads in the case of parallelism
-    4. Schema enforcement -- how to specify/manage? Should this be a
-    dataclass when implemented?
-    """
+    """An immutable state object. This is the only way to interact with state in Burr."""
 
     def __init__(self, initial_values: Dict[str, Any] = None):
         if initial_values is None:
@@ -164,22 +191,55 @@ class State(Mapping):
         return dict(self)
 
     def update(self, **updates: Any) -> "State":
-        """Updates the state with a set of key-value pairs"""
+        """Updates the state with a set of key-value pairs
+        Does an upsert operation (if the keys exist their value will be overwritten,
+        otherwise they will be created)
+
+        .. code-block:: python
+
+            state = State({"a": 1})
+            state.update(a=2, b=3)  # State({"a": 2, "b": 3})
+
+        :param updates: Updates to apply
+        :return: A new state with the updates applied
+        """
         return self.apply_operation(SetFields(updates))
 
     def append(self, **updates: Any) -> "State":
-        """For each pair specified, appends to a list in state."""
+        """Appends to the state with a set of key-value pairs. Each one
+        must correspond to a list-like object, or an error will be raised.
+
+        This is an upsert operation, meaning that if the key does not
+        exist, a new list will be created with the value in it.
+
+        .. code-block:: python
+
+            state = State({"a": [1]})
+            state.append(a=2)  # State({"a": [1, 2]})
+
+        :param updates: updates to apply
+        :return: new state object
+        """
 
         return self.apply_operation(AppendFields(updates))
+
+    def increment(self, **updates: int) -> "State":
+        """Increments the state with a set of key-value pairs. Each one
+        must correspond to an integer, or an error will be raised.
+
+        :param updates: updates to apply
+        :return: new state object
+        """ ""
+        return self.apply_operation(IncrementFields(updates))
 
     def wipe(self, delete: list[str] = None, keep: list[str] = None):
         """Wipes the state, either by deleting the keys in delete and keeping everything else
          or keeping the keys in keep. and deleting everything else. If you pass nothing in
          it will delete the whole thing.
 
-        :param delete:
-        :param keep:
-        :return:
+        :param delete: Keys to delete
+        :param keep: Keys to keep
+        :return: A new state object
         """
         if delete is not None and keep is not None:
             raise ValueError(

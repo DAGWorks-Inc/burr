@@ -82,7 +82,19 @@ def test_state_wipe_keep():
     assert wiped.get_all() == {"foo": "bar"}
 
 
-def test_append_validate():
+def test_state_append_validate_failure():
     state = State({"foo": "bar"})
     with pytest.raises(ValueError, match="non-appendable"):
         state.append(foo="baz", bar="qux")
+
+
+def test_state_increment():
+    state = State({"foo": 1})
+    incremented = state.increment(foo=2, bar=5)
+    assert incremented.get_all() == {"foo": 3, "bar": 5}
+
+
+def test_state_increment_validate_failure():
+    state = State({"foo": "bar"})
+    with pytest.raises(ValueError, match="non-integer"):
+        state.increment(foo="baz", bar="qux")

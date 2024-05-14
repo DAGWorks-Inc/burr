@@ -12,14 +12,20 @@ State
 The ``State`` class provides the ability to manipulate state for a given action. It is entirely immutable,
 meaning that you can only create new states from old ones, not modify them in place.
 
+
 State manipulation is done through calling methods on the ``State`` class. The most common write are:
 
 .. code-block:: python
 
     state.update(foo=bar)  # update the state with the key "foo" set to "bar"
     state.append(foo=bar)  # append "bar" to the list at "foo"
+    state.increment(foo=1)  # increment the value at "foo" by 1
     state.wipe(keep=["foo", "bar"])  # remove all keys except "foo" and "bar"
     state.wipe(delete=["foo", "bar"])  # remove "foo" and "bar" from the state
+
+.. warning::
+
+    The ``State`` object can only be treated immutably! Calling ``state.update(foo=bar)`` will do nothing if you don't use the value returned by the call.
 
 The read operations extend from those in the `Mapping <https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping>`_
 interface, but there are a few extra:
