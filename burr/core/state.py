@@ -28,6 +28,10 @@ class StateDelta(abc.ABC):
         """Converts the state delta to a JSON object"""
         return {"name": self.name(), "operation": self.serialize()}
 
+    def validate(self, input_state: Dict[str, Any]):
+        """Validates the input state given the state delta. This is a no-op by default, as most operations are valid"""
+        pass
+
     @classmethod
     def deserialize(cls, json_dict: dict) -> "StateDelta":
         """Converts a JSON object to a state delta"""
@@ -99,6 +103,17 @@ class AppendFields(StateDelta):
                 raise ValueError(f"Cannot append to non-list value {key}={inputs[self.key]}")
             inputs[key].append(value)
 
+    def validate(self, input_state: Dict[str, Any]):
+        incorrect_types = {}
+        for write_key in self.writes():
+            if write_key in input_state and not hasattr(input_state[write_key], "append"):
+                incorrect_types[write_key] = type(input_state[write_key])
+        if incorrect_types:
+            raise ValueError(
+                f"Cannot append to non-appendable values: {incorrect_types}. "
+                f"Please ensure that all fields are list-like."
+            )
+
 
 @dataclasses.dataclass
 class DeleteField(StateDelta):
@@ -138,6 +153,7 @@ class State(Mapping):
     def apply_operation(self, operation: StateDelta) -> "State":
         """Applies a given operation to the state, returning a new state"""
         new_state = copy.deepcopy(self._state)  # TODO -- restrict to just the read keys
+        operation.validate(new_state)
         operation.apply_mutate(
             new_state
         )  # todo -- validate that the write keys are the only different ones
