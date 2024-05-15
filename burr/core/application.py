@@ -1204,6 +1204,9 @@ class ApplicationBuilder:
         self.initializer = None
         self.use_entrypoint_from_save_state: Optional[bool] = None
         self.default_state: Optional[dict] = None
+        self.fork_from_app_id: Optional[str] = None
+        self.fork_from_partition_key: Optional[str] = None
+        self.fork_from_sequence_id: Optional[int] = None
 
     def with_identifiers(
         self, app_id: str = None, partition_key: str = None, sequence_id: int = None
@@ -1386,6 +1389,9 @@ class ApplicationBuilder:
         resume_at_next_action: bool,
         default_state: dict,
         default_entrypoint: str,
+        fork_from_app_id: str = None,
+        fork_from_partition_key: str = None,
+        fork_from_sequence_id: int = None,
     ) -> "ApplicationBuilder":
         """Initializes the application we will build from some prior state object.
         Note that you can *either* call this or use `with_state` and `with_entrypoint` -- this also assigns application ID,
@@ -1395,6 +1401,9 @@ class ApplicationBuilder:
         :param resume_at_next_action: Whether to resume at the next action, or default to the ``default_entrypoint``
         :param default_state: The default state to use if it does not exist. This is a dictionary.
         :param default_entrypoint: The default entry point to use if it does not exist or you elect not to resume_at_next_action.
+        :param fork_from_app_id: The app ID to fork from. This is used to fork from a prior application run.
+        :param fork_from_partition_key: The partition key to fork from a prior application. Optional. `fork_from_app_id` required.
+        :param fork_from_sequence_id: The sequence ID to fork from a prior application run. Optional, defaults to latest. `fork_from_app_id` required.
         :return: The application builder for future chaining.
         """
         if self.start is not None or self.state is not None:
@@ -1403,10 +1412,18 @@ class ApplicationBuilder:
                 + "Cannot call initialize_from if you have already set state or an entrypoint! "
                 "You can either use the initializer *or* set the state and entrypoint manually."
             )
+        if not self.fork_from_app_id and (fork_from_partition_key or fork_from_sequence_id):
+            raise ValueError(
+                ERROR_MESSAGE
+                + "If you set fork_from_partition_key or fork_from_sequence_id, you must also set fork_from_app_id."
+            )
         self.initializer = initializer
         self.resume_at_next_action = resume_at_next_action
         self.default_state = default_state
         self.start = default_entrypoint
+        self.fork_from_app_id = fork_from_app_id
+        self.fork_from_partition_key = fork_from_partition_key
+        self.fork_from_sequence_id = fork_from_sequence_id
         return self
 
     def with_state_persister(
@@ -1441,22 +1458,47 @@ class ApplicationBuilder:
          - maybe self.start
 
         """
+        if self.fork_from_app_id is not None:
+            if self.app_id == self.fork_from_app_id:
+                raise ValueError(
+                    ERROR_MESSAGE + "Cannot fork and save to the same app_id. "
+                    "Please update the app_id passed in via with_identifiers(), "
+                    "or don't pass in a fork_from_app_id value to `initialize_from()`."
+                )
+            _partition_key = self.fork_from_partition_key
+            _app_id = self.fork_from_app_id
+            _sequence_id = self.fork_from_sequence_id
+        else:
+            # only use the with_identifier values if we're not forking from a previous app
+            _partition_key = self.partition_key
+            _app_id = self.app_id
+            _sequence_id = self.sequence_id
         # load state from persister
-        load_result = self.initializer.load(self.partition_key, self.app_id, self.sequence_id)
+        load_result = self.initializer.load(_partition_key, _app_id, _sequence_id)
         if load_result is None:
+            if self.fork_from_app_id is not None:
+                logger.warning(
+                    f"{self.initializer.__class__.__name__} returned None while trying to fork from: "
+                    f"partition_key:{_partition_key}, app_id:{_app_id}, "
+                    f"sequence_id:{_sequence_id}. "
+                    "You explicitly requested to fork from a prior application run, but it does not exist. "
+                    "Defaulting to state defaults instead."
+                )
             # there was nothing to load -- use default state
             self.state = self.state.update(**self.default_state)
             self.sequence_id = None  # has to start at None
+            self.parent_id = None
         else:
             if load_result["state"] is None:
                 raise ValueError(
                     ERROR_MESSAGE
                     + f"Error: {self.initializer.__class__.__name__} returned {load_result} for "
-                    f"partition_key:{self.partition_key}, app_id:{self.app_id}, "
-                    f"sequence_id:{self.sequence_id}, "
-                    f"but state was None! This is not allowed. Please return None in this case, or double "
-                    f"check that persisted state can never be a None value."
+                    f"partition_key:{_partition_key}, app_id:{_app_id}, "
+                    f"sequence_id:{_sequence_id}, "
+                    "but value for state was None! This is not allowed. Please return just None in this case, "
+                    "or double check that persisted state can never be a None value."
                 )
+            # TODO: capture parent app ID relationship & wire it through
             # there was something
             last_position = load_result["position"]
             self.state = load_result["state"]
