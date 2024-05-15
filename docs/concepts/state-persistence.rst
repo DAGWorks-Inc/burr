@@ -38,10 +38,23 @@ This action takes in an initializer (an implementation of :py:class:`StateInitia
 - ``resume_at_next_action`` -- a boolean that says whether to start where you left off, or go back to the ``default_entrypoint``.
 - ``default_entrypoint`` -- the entry point to start at if ``resume_at_next_action`` is False, or no state is found
 - ``default_state`` -- the default state to use if no state is found
+- ``fork_from_app_id`` -- Optional. The app_id to fork from. This is useful if you want to start from a previous application's state.
+- ``fork_from_partition_key`` -- Optional. The partition key to fork from. Goes with ``fork_from_app_id``.
+- ``fork_from_sequence_id`` -- Optional. The sequence_id to fork from. Goes with ``fork_from_app_id``.
+
 
 Note that you cannot use this in conjunction with :py:meth:`with_state <burr.core.application.ApplicationBuilder.with_state>`
 or :py:meth:`with_entrypoint <burr.core.application.ApplicationBuilder.with_entrypoint>` -- these are mutually exclusive.
 Either you load from state or you start from scratch.
+
+Forking State
+_____________
+Note that you can also fork state from a previous application. This is useful if you want to start from a previous application's state,
+but don't want to add to it.The ``fork_from_app_id`` and ``fork_from_partition_key`` are used to identify the application to fork from, while
+``fork_from_sequence_id`` is used to identify the sequence_id to use. This is useful if you want to fork from a specific point in the application,
+rather than the latest state. This is especially useful for debugging, or building an application that enables you
+to rewind state and make different choices.
+
 
 Writing state
 _____________
