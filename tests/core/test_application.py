@@ -1810,7 +1810,7 @@ class BrokenPersister(BaseStatePersister):
 
 def test_application_builder_initialize_raises_on_broken_persistor():
     """Persisters should return None when there is no state to be loaded and the default used."""
-    with pytest.raises(ValueError, match="but state was None"):
+    with pytest.raises(ValueError, match="but value for state was None"):
         counter_action = base_counter_action.with_name("counter")
         result_action = Result("count").with_name("result")
         (
@@ -1865,3 +1865,102 @@ def test__validate_halt_conditions():
     )
     with pytest.raises(ValueError, match="(?=.*no_exist_1)(?=.*no_exist_2)"):
         app._validate_halt_conditions(halt_after=["no_exist_1"], halt_before=["no_exist_2"])
+
+
+def test_application_builder_initialize_raises_on_fork_app_id_not_provided():
+    """Can't pass in fork_from* without an app_id."""
+    with pytest.raises(ValueError, match="If you set fork_from_partition_key"):
+        counter_action = base_counter_action.with_name("counter")
+        result_action = Result("count").with_name("result")
+        (
+            ApplicationBuilder()
+            .with_actions(counter_action, result_action)
+            .with_transitions(("counter", "result", default))
+            .initialize_from(
+                BrokenPersister(),
+                resume_at_next_action=True,
+                default_state={},
+                default_entrypoint="foo",
+                fork_from_sequence_id=1,
+                fork_from_partition_key="foo-bar",
+            )
+            .build()
+        )
+
+
+class DummyPersister(BaseStatePersister):
+    """Dummy persistor."""
+
+    def load(
+        self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None, **kwargs
+    ) -> Optional[PersistedStateData]:
+        return PersistedStateData(
+            partition_key="user123",
+            app_id="123",
+            sequence_id=5,
+            position="counter",
+            state=State({"count": 5}),
+            created_at="",
+            status="completed",
+        )
+
+    def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
+        return ["123"]
+
+    def save(
+        self,
+        partition_key: Optional[str],
+        app_id: str,
+        sequence_id: int,
+        position: str,
+        state: State,
+        status: Literal["completed", "failed"],
+        **kwargs,
+    ):
+        return
+
+
+def test_application_builder_initialize_fork_errors_on_same_app_id():
+    """Tests that we can't have an app_id and fork_from_app_id that's the same"""
+    with pytest.raises(ValueError, match="Cannot fork and save"):
+        counter_action = base_counter_action.with_name("counter")
+        result_action = Result("count").with_name("result")
+        (
+            ApplicationBuilder()
+            .with_actions(counter_action, result_action)
+            .with_transitions(("counter", "result", default))
+            .initialize_from(
+                DummyPersister(),
+                resume_at_next_action=True,
+                default_state={},
+                default_entrypoint="foo",
+                fork_from_app_id="123",
+                fork_from_partition_key="user123",
+            )
+            .with_identifiers(app_id="123")
+            .build()
+        )
+
+
+def tests_application_builder_initialize_fork_app_id_happy_pth():
+    """Tests that forking properly works"""
+    counter_action = base_counter_action.with_name("counter")
+    result_action = Result("count").with_name("result")
+    old_app_id = "123"
+    app = (
+        ApplicationBuilder()
+        .with_actions(counter_action, result_action)
+        .with_transitions(("counter", "result", default))
+        .initialize_from(
+            DummyPersister(),
+            resume_at_next_action=True,
+            default_state={},
+            default_entrypoint="counter",
+            fork_from_app_id=old_app_id,
+            fork_from_partition_key="user123",
+        )
+        .with_identifiers(app_id="test123")
+        .build()
+    )
+    assert app.uid != old_app_id
+    assert app.state == State({"count": 5, "__PRIOR_STEP": "counter", "__SEQUENCE_ID": 5})

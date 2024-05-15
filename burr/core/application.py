@@ -1412,7 +1412,7 @@ class ApplicationBuilder:
                 + "Cannot call initialize_from if you have already set state or an entrypoint! "
                 "You can either use the initializer *or* set the state and entrypoint manually."
             )
-        if not self.fork_from_app_id and (fork_from_partition_key or fork_from_sequence_id):
+        if not fork_from_app_id and (fork_from_partition_key or fork_from_sequence_id):
             raise ValueError(
                 ERROR_MESSAGE
                 + "If you set fork_from_partition_key or fork_from_sequence_id, you must also set fork_from_app_id."
