@@ -1394,14 +1394,17 @@ class ApplicationBuilder:
         fork_from_sequence_id: int = None,
     ) -> "ApplicationBuilder":
         """Initializes the application we will build from some prior state object.
-        Note that you can *either* call this or use `with_state` and `with_entrypoint` -- this also assigns application ID,
-        partition key, and sequence ID.
+
+        Note (1) that you can *either* call this or use `with_state` and `with_entrypoint`.
+
+        Note (2) if you want to continue a prior application and don't want to fork it into a new application ID,
+        the values in `.with_identifiers()` will be used to query for prior state.
 
         :param initializer: The persister object to use for initialization. Likely the same one called with ``with_state_persister``.
         :param resume_at_next_action: Whether to resume at the next action, or default to the ``default_entrypoint``
         :param default_state: The default state to use if it does not exist. This is a dictionary.
         :param default_entrypoint: The default entry point to use if it does not exist or you elect not to resume_at_next_action.
-        :param fork_from_app_id: The app ID to fork from. This is used to fork from a prior application run.
+        :param fork_from_app_id: The app ID to fork from, not to be confused with the current app_id that is set with `.with_identifiers()`. This is used to fork from a prior application run.
         :param fork_from_partition_key: The partition key to fork from a prior application. Optional. `fork_from_app_id` required.
         :param fork_from_sequence_id: The sequence ID to fork from a prior application run. Optional, defaults to latest. `fork_from_app_id` required.
         :return: The application builder for future chaining.
@@ -1415,7 +1418,8 @@ class ApplicationBuilder:
         if not fork_from_app_id and (fork_from_partition_key or fork_from_sequence_id):
             raise ValueError(
                 ERROR_MESSAGE
-                + "If you set fork_from_partition_key or fork_from_sequence_id, you must also set fork_from_app_id."
+                + "If you set fork_from_partition_key or fork_from_sequence_id, you must also set fork_from_app_id. "
+                "See .initialize_from() documentation."
             )
         self.initializer = initializer
         self.resume_at_next_action = resume_at_next_action
@@ -1487,7 +1491,6 @@ class ApplicationBuilder:
             # there was nothing to load -- use default state
             self.state = self.state.update(**self.default_state)
             self.sequence_id = None  # has to start at None
-            self.parent_id = None
         else:
             if load_result["state"] is None:
                 raise ValueError(
