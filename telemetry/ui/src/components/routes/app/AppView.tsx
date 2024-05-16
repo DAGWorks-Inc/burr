@@ -114,12 +114,14 @@ export const AppView = (props: {
 
   useEffect(() => {
     const steps = data?.steps || [];
+    const maxSequenceID = Math.max(...steps.map((step) => step.step_start_log.sequence_id));
+    const minSequenceID = Math.min(...steps.map((step) => step.step_start_log.sequence_id));
     const handleKeyDown = (event: KeyboardEvent) => {
       switch (event.key) {
         case 'ArrowDown':
           setCurrentActionIndex((prevIndex) => {
-            if (prevIndex === undefined || prevIndex <= 0) {
-              return 0;
+            if (prevIndex === undefined || prevIndex <= minSequenceID) {
+              return minSequenceID;
             } else {
               return prevIndex - 1;
             }
@@ -128,8 +130,8 @@ export const AppView = (props: {
         case 'ArrowUp':
           setCurrentActionIndex((prevIndex) => {
             if (prevIndex === undefined) {
-              return 0;
-            } else if (prevIndex >= steps.length - 1) {
+              return maxSequenceID;
+            } else if (prevIndex >= maxSequenceID) {
               return prevIndex;
             } else {
               return prevIndex + 1;
