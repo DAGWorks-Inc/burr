@@ -42,6 +42,7 @@ class ActionModel(IdentifyingModel):
     code: str
     type: str = "action"
     inputs: List[str] = pydantic.Field(default_factory=list)
+    optional_inputs: List[str] = pydantic.Field(default_factory=list)
 
     @staticmethod
     def from_action(action: Action) -> "ActionModel":
@@ -60,7 +61,8 @@ class ActionModel(IdentifyingModel):
             reads=list(action.reads),
             writes=list(action.writes),
             code=code,
-            inputs=list(required_inputs | optional_inputs),
+            inputs=list(required_inputs),
+            optional_inputs=list(optional_inputs),
         )
 
 

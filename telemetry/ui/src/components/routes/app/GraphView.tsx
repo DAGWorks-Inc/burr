@@ -255,6 +255,7 @@ const convertApplicationToGraph = (stateMachine: ApplicationModel): [NodeType[],
     data: { action, label: action.name },
     position: { x: 0, y: 0 }
   }));
+  // TODO -- consider displaying optional inputs
   const allInputNodes = stateMachine.actions.flatMap((action) =>
     (action.inputs || []).filter(shouldDisplayInput).map((input) => ({
       id: inputUniqueID(action, input),
