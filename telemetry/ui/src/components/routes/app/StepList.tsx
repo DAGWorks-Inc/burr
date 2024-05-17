@@ -1,4 +1,4 @@
-import { Span, Step } from '../../../api';
+import { PointerModel, Span, Step } from '../../../api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../common/table';
 import { DateTimeDisplay, DurationDisplay, TimeDisplay } from '../../common/dates';
 import { backgroundColorsForIndex, backgroundColorsForStatus } from './AppView';
@@ -16,6 +16,8 @@ import {
 import { PauseIcon } from '@heroicons/react/24/solid';
 
 import { RiCornerDownRightLine } from 'react-icons/ri';
+import { MdForkRight } from 'react-icons/md';
+import { Link } from 'react-router-dom';
 
 /**
  * Quick display to suggest that the action is still running
@@ -330,6 +332,8 @@ export const StepList = (props: {
   setAutoRefresh: (b: boolean) => void;
   minimized: boolean;
   setMinimized: (b: boolean) => void;
+  projectId: string;
+  parentPointer: PointerModel | undefined;
 }) => {
   // This is a quick way of expanding the actions all at once
   const [expandedActions, setExpandedActions] = useState<number[]>([]);
@@ -359,6 +363,7 @@ export const StepList = (props: {
   };
   const MinimizeTableIcon = props.minimized ? ChevronRightIcon : ChevronLeftIcon;
   const hasAnySpans = props.steps.some((step) => step.spans.length > 0);
+  // const hasParent = props.
   return (
     <Table dense={2}>
       <TableHead className=" bg-white">
@@ -453,6 +458,30 @@ export const StepList = (props: {
             </>
           );
         })}
+        {props.parentPointer ? (
+          <TableRow className="text-gray-500 cursor-pointer bg-gray-100">
+            <TableCell colSpan={1} className="items-center justify-start max-w-20">
+              {props.parentPointer.sequence_id}
+            </TableCell>
+            <TableCell colSpan={4} className="text-gray-500">
+              <div className="flex flex-row gap-2 items-center ">
+                <MdForkRight className="h-5 w-5 -ml-1.5" />
+                <Link to={`/project/${props.projectId}/${props.parentPointer.app_id}`}>
+                  <span className="hover:underline">{props.parentPointer.app_id}</span>
+                </Link>
+              </div>
+            </TableCell>
+            <TableCell colSpan={1} className="text-gray-500">
+              <Chip
+                label={'forked'}
+                chipType={'fork'}
+                className="w-16 flex flex-row justify-center"
+              />
+            </TableCell>
+          </TableRow>
+        ) : (
+          <></>
+        )}
       </TableBody>
     </Table>
   );

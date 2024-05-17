@@ -109,6 +109,12 @@ class LocalBackend(BackendBase):
                     return line_data["sequence_id"] + 1
         return count
 
+    async def _load_metadata(self, metadata_path: str) -> models.ApplicationMetadataModel:
+        if os.path.exists(metadata_path):
+            async with aiofiles.open(metadata_path) as f:
+                return models.ApplicationMetadataModel.parse_obj(json.loads(await f.read()))
+        return models.ApplicationMetadataModel()
+
     async def list_apps(
         self, request: fastapi.Request, project_id: str
     ) -> Sequence[ApplicationSummary]:
@@ -125,13 +131,7 @@ class LocalBackend(BackendBase):
             metadata_path = os.path.join(full_path, "metadata.json")
             log_path = os.path.join(full_path, "log.jsonl")
             if os.path.isdir(full_path):
-                if os.path.exists(metadata_path):
-                    async with aiofiles.open(metadata_path) as f:
-                        metadata = models.ApplicationMetadataModel.parse_obj(
-                            json.loads(await f.read())
-                        )
-                else:
-                    metadata = models.ApplicationMetadataModel()  # backwards compatibility
+                metadata = await self._load_metadata(metadata_path)
                 out.append(
                     schema.ApplicationSummary(
                         app_id=entry,
@@ -140,6 +140,7 @@ class LocalBackend(BackendBase):
                         last_written=await aiofilesos.path.getmtime(full_path),
                         num_steps=await self.get_number_of_steps(log_path),
                         tags={},
+                        parent_pointer=metadata.parent_pointer,
                     )
                 )
         return out
@@ -154,6 +155,8 @@ class LocalBackend(BackendBase):
             )
         log_file = os.path.join(app_filepath, "log.jsonl")
         graph_file = os.path.join(app_filepath, "graph.json")
+        metadata_file = os.path.join(app_filepath, "metadata.json")
+        metadata = await self._load_metadata(metadata_file)
         if not os.path.exists(graph_file):
             raise fastapi.HTTPException(
                 status_code=404,
@@ -194,4 +197,5 @@ class LocalBackend(BackendBase):
         return ApplicationLogs(
             application=schema.ApplicationModel.parse_raw(str_graph),
             steps=list(steps_by_sequence_id.values()),
+            parent_pointer=metadata.parent_pointer,
         )

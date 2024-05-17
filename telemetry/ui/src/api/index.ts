@@ -20,6 +20,7 @@ export type { EndEntryModel } from './models/EndEntryModel';
 export type { EndSpanModel } from './models/EndSpanModel';
 export type { Feedback } from './models/Feedback';
 export type { HTTPValidationError } from './models/HTTPValidationError';
+export type { PointerModel } from './models/PointerModel';
 export type { Project } from './models/Project';
 export type { QuestionAnswers } from './models/QuestionAnswers';
 export type { Span } from './models/Span';

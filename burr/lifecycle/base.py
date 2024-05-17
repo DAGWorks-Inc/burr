@@ -1,6 +1,8 @@
 import abc
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
+import burr.common.types as burr_types
+
 if TYPE_CHECKING:
     # type-checking-only for a circular import
     from burr.core import State, Action, ApplicationGraph
@@ -134,6 +136,7 @@ class PostApplicationCreateHook(abc.ABC):
         partition_key: Optional[str],
         state: "State",
         application_graph: "ApplicationGraph",
+        parent_pointer: burr_types.ParentPointer,
         **future_kwargs: Any,
     ):
         """Runs after an "application" object is instantiated. This is run by the Application, in its constructor,
@@ -143,6 +146,7 @@ class PostApplicationCreateHook(abc.ABC):
         :param partition_key: Partition key of application
         :param state: Current state of the application
         :param application_graph: Application graph of the application, representing the state machine
+        :param parent_pointer: Parent pointer of the application
         :param future_kwargs: Future keyword arguments for backwards compatibility
         """
         pass

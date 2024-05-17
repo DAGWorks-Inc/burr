@@ -7,6 +7,7 @@ import traceback
 from typing import Any, Dict, Optional
 
 from burr import system
+from burr.common import types as burr_types
 from burr.core import Action, ApplicationGraph, State
 from burr.core.persistence import BaseStateLoader, PersistedStateData
 from burr.integrations.base import require_plugin
@@ -24,6 +25,7 @@ from burr.tracking.common.models import (
     BeginSpanModel,
     EndEntryModel,
     EndSpanModel,
+    PointerModel,
 )
 from burr.visibility import ActionSpan
 
@@ -203,6 +205,7 @@ class LocalTrackingClient(
         partition_key: Optional[str],
         state: "State",
         application_graph: "ApplicationGraph",
+        parent_pointer: Optional[burr_types.ParentPointer],
         **future_kwargs: Any,
     ):
         self._ensure_dir_structure(app_id)
@@ -211,7 +214,9 @@ class LocalTrackingClient(
         if os.path.exists(graph_path):
             logger.info(f"Graph already exists at {graph_path}. Not overwriting.")
             return
-        graph = ApplicationModel.from_application_graph(application_graph).model_dump()
+        graph = ApplicationModel.from_application_graph(
+            application_graph,
+        ).model_dump()
         with open(graph_path, "w") as f:
             json.dump(graph, f)
 
@@ -221,6 +226,9 @@ class LocalTrackingClient(
             return
         metadata = ApplicationMetadataModel(
             partition_key=partition_key,
+            parent_pointer=PointerModel.from_pointer(parent_pointer)
+            if parent_pointer is not None
+            else None,
         ).model_dump()
         with open(metadata_path, "w") as f:
             json.dump(metadata, f)

@@ -9,6 +9,7 @@ from burr.tracking.common.models import (
     BeginSpanModel,
     EndEntryModel,
     EndSpanModel,
+    PointerModel,
 )
 
 
@@ -28,6 +29,7 @@ class ApplicationSummary(pydantic.BaseModel):
     last_written: datetime.datetime
     num_steps: int
     tags: Dict[str, str]
+    parent_pointer: Optional[PointerModel] = None
 
 
 class Span(pydantic.BaseModel):
@@ -52,3 +54,4 @@ class ApplicationLogs(pydantic.BaseModel):
 
     application: ApplicationModel
     steps: List[Step]
+    parent_pointer: Optional[PointerModel] = None

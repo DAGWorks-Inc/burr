@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from pydantic import field_serializer
 
+from burr.common import types as burr_types
 from burr.core import Action
 from burr.core.action import FunctionBasedAction, FunctionBasedStreamingAction
 from burr.core.application import ApplicationGraph, Transition
@@ -81,6 +82,21 @@ class TransitionModel(IdentifyingModel):
         )
 
 
+class PointerModel(IdentifyingModel):
+    app_id: str
+    sequence_id: Optional[int]
+    partition_key: Optional[str]
+    type: str = "pointer_data"
+
+    @staticmethod
+    def from_pointer(pointer: burr_types.ParentPointer) -> "PointerModel":
+        return PointerModel(
+            app_id=pointer.app_id,
+            sequence_id=pointer.sequence_id,
+            partition_key=pointer.partition_key,
+        )
+
+
 class ApplicationModel(IdentifyingModel):
     """Pydantic model that represents an application for storing/visualization in the UI"""
 
@@ -90,7 +106,9 @@ class ApplicationModel(IdentifyingModel):
     type: str = "application"
 
     @staticmethod
-    def from_application_graph(application_graph: ApplicationGraph) -> "ApplicationModel":
+    def from_application_graph(
+        application_graph: ApplicationGraph,
+    ) -> "ApplicationModel":
         return ApplicationModel(
             entrypoint=application_graph.entrypoint.name,
             actions=[ActionModel.from_action(action) for action in application_graph.actions],
@@ -105,7 +123,8 @@ class ApplicationMetadataModel(IdentifyingModel):
     """Pydantic model that represents metadata for an application.
     We will want to add tags here when we have them."""
 
-    partition_key: Optional[str]
+    partition_key: Optional[str] = None
+    parent_pointer: Optional[PointerModel] = None  # pointer to parent data
     type: str = "application_metadata"
 
 
