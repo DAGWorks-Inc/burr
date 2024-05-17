@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { PointerModel } from './PointerModel';
 export type ApplicationSummary = {
   app_id: string;
   partition_key: string | null;
@@ -9,4 +10,5 @@ export type ApplicationSummary = {
   last_written: string;
   num_steps: number;
   tags: Record<string, string>;
+  parent_pointer?: PointerModel | null;
 };

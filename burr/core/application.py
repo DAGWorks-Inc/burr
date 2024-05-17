@@ -21,6 +21,7 @@ from typing import (
 )
 
 from burr import telemetry, visibility
+from burr.common import types as burr_types
 from burr.core import persistence
 from burr.core.action import (
     Action,
@@ -284,6 +285,7 @@ class Application:
         sequence_id: Optional[int] = None,
         adapter_set: Optional[LifecycleAdapterSet] = None,
         builder: Optional["ApplicationBuilder"] = None,
+        parent_pointer: Optional[burr_types.ParentPointer] = None,
     ):
         """Instantiates an Application. This is an internal API -- use the builder!
 
@@ -314,6 +316,7 @@ class Application:
             application_graph=self._graph,
             app_id=self._uid,
             partition_key=self._partition_key,
+            parent_pointer=parent_pointer,
         )
         # TODO -- consider adding global inputs + global input factories to the builder
         self.dependency_factory = {
@@ -324,6 +327,7 @@ class Application:
         if sequence_id is not None:
             self._set_sequence_id(sequence_id)
         self._builder = builder
+        self._parent_pointer = parent_pointer
 
     # @telemetry.capture_function_usage # todo -- capture usage when we break this up into one that isn't called internally
     # This will be doable when we move sequence ID to the beginning of the function https://github.com/DAGWorks-Inc/burr/pull/73
@@ -1064,6 +1068,15 @@ class Application:
         """
         return self._state
 
+    @property
+    def parent_pointer(self) -> Optional[burr_types.ParentPointer]:
+        """Gives the parent pointer of an application (from where it was forked).
+        This is None if it was not forked.
+
+        :return: The parent pointer object.
+        """
+        return self._parent_pointer
+
     def _create_graph(self) -> ApplicationGraph:
         """Internal-facing utility function for creating an ApplicationGraph"""
         all_actions = {action.name: action for action in self._actions}
@@ -1207,6 +1220,7 @@ class ApplicationBuilder:
         self.fork_from_app_id: Optional[str] = None
         self.fork_from_partition_key: Optional[str] = None
         self.fork_from_sequence_id: Optional[int] = None
+        self.loaded_from_fork: bool = False
 
     def with_identifiers(
         self, app_id: str = None, partition_key: str = None, sequence_id: int = None
@@ -1492,6 +1506,7 @@ class ApplicationBuilder:
             self.state = self.state.update(**self.default_state)
             self.sequence_id = None  # has to start at None
         else:
+            self.loaded_from_fork = True
             if load_result["state"] is None:
                 raise ValueError(
                     ERROR_MESSAGE
@@ -1560,4 +1575,11 @@ class ApplicationBuilder:
             sequence_id=self.sequence_id,
             adapter_set=LifecycleAdapterSet(*self.lifecycle_adapters),
             builder=self,
+            parent_pointer=burr_types.ParentPointer(
+                app_id=self.fork_from_app_id,
+                partition_key=self.fork_from_partition_key,
+                sequence_id=self.fork_from_sequence_id,
+            )
+            if self.loaded_from_fork
+            else None,
         )

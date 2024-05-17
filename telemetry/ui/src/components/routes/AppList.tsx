@@ -4,10 +4,10 @@ import { Loading } from '../common/loading';
 import { ApplicationSummary, DefaultService } from '../../api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../common/table';
 import { DateTimeDisplay } from '../common/dates';
-import { Button } from '../common/button';
 import { useState } from 'react';
 import { FunnelIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
+import { MdForkRight } from 'react-icons/md';
 
 const StepCountHeader = (props: {
   displayZeroCount: boolean;
@@ -23,9 +23,17 @@ const StepCountHeader = (props: {
           props.setDisplayZeroCount(!props.displayZeroCount);
         }}
       />
-      <span>Count</span>
+      <span>Seq ID</span>
     </div>
   );
+};
+
+const getForkID = (app: ApplicationSummary) => {
+  if (app.parent_pointer) {
+    return app.parent_pointer.app_id;
+  } else {
+    return null;
+  }
 };
 
 /**
@@ -50,6 +58,7 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
           <TableHeader>ID</TableHeader>
           <TableHeader>First Seen</TableHeader>
           <TableHeader>Last Run</TableHeader>
+          <TableHeader>Forked</TableHeader>
           <TableHeader>
             <StepCountHeader
               displayZeroCount={displayZeroCount}
@@ -61,30 +70,41 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
         </TableRow>
       </TableHead>
       <TableBody>
-        {appsToDisplay.map((app) => (
-          <TableRow
-            key={app.app_id}
-            className="hover:bg-gray-50 cursor-pointer"
-            onClick={() => {
-              navigate(`/project/${props.projectId}/${app.app_id}`);
-            }}
-          >
-            <TableCell className="text-gray-600 font-sans">{app.partition_key}</TableCell>
-            <TableCell className="font-semibold text-gray-700">{app.app_id}</TableCell>
-            <TableCell>
-              <DateTimeDisplay date={app.first_written} mode="long" />
-            </TableCell>
-            <TableCell>
-              <DateTimeDisplay date={app.last_written} mode="long" />
-            </TableCell>
-            <TableCell>{app.num_steps}</TableCell>
-            <TableCell>
-              <Button color="white" className={'cursor-pointer'}>
-                Steps
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
+        {appsToDisplay.map((app) => {
+          const forkID = getForkID(app);
+          return (
+            <TableRow
+              key={app.app_id}
+              className="hover:bg-gray-50 cursor-pointer"
+              onClick={() => {
+                navigate(`/project/${props.projectId}/${app.app_id}`);
+              }}
+            >
+              <TableCell className="text-gray-600 font-sans">{app.partition_key}</TableCell>
+              <TableCell className="font-semibold text-gray-700">{app.app_id}</TableCell>
+              <TableCell>
+                <DateTimeDisplay date={app.first_written} mode="long" />
+              </TableCell>
+              <TableCell>
+                <DateTimeDisplay date={app.last_written} mode="long" />
+              </TableCell>
+              <TableCell className="z-50">
+                {forkID ? (
+                  <MdForkRight
+                    className=" hover:scale-125 h-5 w-5 text-gray-600 "
+                    onClick={(e) => {
+                      navigate(`/project/${props.projectId}/${forkID}`);
+                      e.stopPropagation();
+                    }}
+                  />
+                ) : (
+                  <></>
+                )}
+              </TableCell>
+              <TableCell>{app.num_steps}</TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );

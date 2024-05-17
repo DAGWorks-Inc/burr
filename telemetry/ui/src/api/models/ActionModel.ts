@@ -12,4 +12,5 @@ export type ActionModel = {
   writes: Array<string>;
   code: string;
   inputs?: Array<string>;
+  optional_inputs?: Array<string>;
 };
