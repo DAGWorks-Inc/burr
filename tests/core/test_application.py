@@ -1964,3 +1964,4 @@ def tests_application_builder_initialize_fork_app_id_happy_pth():
     )
     assert app.uid != old_app_id
     assert app.state == State({"count": 5, "__PRIOR_STEP": "counter", "__SEQUENCE_ID": 5})
+    assert app.parent_pointer.app_id == old_app_id
