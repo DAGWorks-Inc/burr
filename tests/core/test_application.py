@@ -1,6 +1,7 @@
 import asyncio
 import collections
 import logging
+import typing
 from typing import Any, Awaitable, Callable, Dict, Generator, Literal, Optional, Tuple
 
 import pytest
@@ -8,11 +9,13 @@ import pytest
 from burr.core import State
 from burr.core.action import (
     Action,
+    AsyncStreamingAction,
     Condition,
     Reducer,
     Result,
     SingleStepAction,
     SingleStepStreamingAction,
+    SingleStepStreamingActionAsync,
     StreamingAction,
     action,
     default,
@@ -28,9 +31,11 @@ from burr.core.application import (
     _assert_set,
     _run_function,
     _run_multi_step_streaming_action,
+    _run_multi_step_streaming_action_async,
     _run_reducer,
     _run_single_step_action,
     _run_single_step_streaming_action,
+    _run_single_step_streaming_action_async,
     _validate_actions,
     _validate_start,
     _validate_transitions,
@@ -394,6 +399,29 @@ def test_run_single_step_streaming_action_errors_missing_write():
         collections.deque(gen, maxlen=0)  # exhaust the generator
 
 
+def test_run_single_step_streaming_action_errors_missing_write_async():
+    class BrokenAction(SingleStepStreamingAction):
+        def stream_run_and_update(
+            self, state: State, **run_kwargs
+        ) -> Generator[dict, None, Tuple[dict, State]]:
+            yield {}
+            return {"present_value": 1}, state.update(present_value=1)
+
+        @property
+        def reads(self) -> list[str]:
+            return []
+
+        @property
+        def writes(self) -> list[str]:
+            return ["missing_value", "present_value"]
+
+    action = BrokenAction()
+    state = State()
+    with pytest.raises(ValueError, match="missing_value"):
+        gen = _run_single_step_streaming_action(action, state, inputs={})
+        collections.deque(gen, maxlen=0)  # exhaust the generator
+
+
 def test_run_multi_step_streaming_action_errors_missing_write():
     class BrokenAction(StreamingAction):
         def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, dict]:
@@ -478,7 +506,7 @@ class SingleStepCounterWithInputsAsync(SingleStepCounterAsync):
 
 class StreamingCounter(StreamingAction):
     def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, dict]:
-        if "steps_per_couunt" in run_kwargs:
+        if "steps_per_count" in run_kwargs:
             steps_per_count = run_kwargs["granularity"]
         else:
             steps_per_count = 10
@@ -486,6 +514,29 @@ class StreamingCounter(StreamingAction):
         for i in range(steps_per_count):
             yield {"count": count + ((i + 1) / 10)}
         return {"count": count + 1}
+
+    @property
+    def reads(self) -> list[str]:
+        return ["count"]
+
+    @property
+    def writes(self) -> list[str]:
+        return ["count", "tracker"]
+
+    def update(self, result: dict, state: State) -> State:
+        return state.update(**result).append(tracker=result["count"])
+
+
+class AsyncStreamingCounter(AsyncStreamingAction):
+    async def stream_run(self, state: State, **run_kwargs) -> typing.AsyncGenerator[dict, None]:
+        if "steps_per_count" in run_kwargs:
+            steps_per_count = run_kwargs["granularity"]
+        else:
+            steps_per_count = 10
+        count = state["count"]
+        for i in range(steps_per_count):
+            await asyncio.sleep(0.01)
+            yield {"count": count + (i + 1) / 10}
 
     @property
     def reads(self) -> list[str]:
@@ -518,10 +569,48 @@ class SingleStepStreamingCounter(SingleStepStreamingAction):
         return ["count", "tracker"]
 
 
+class SingleStepStreamingCounterAsync(SingleStepStreamingActionAsync):
+    async def stream_run_and_update(
+        self, state: State, **run_kwargs
+    ) -> typing.AsyncGenerator[Tuple[dict, Optional[State]], None]:
+        steps_per_count = run_kwargs.get("granularity", 10)
+        count = state["count"]
+        for i in range(steps_per_count):
+            await asyncio.sleep(0.01)
+            yield {"count": count + ((i + 1) / 10)}, None
+        await asyncio.sleep(0.01)
+        yield {"count": count + 1}, state.update(count=count + 1).append(tracker=count + 1)
+
+    @property
+    def reads(self) -> list[str]:
+        return ["count"]
+
+    @property
+    def writes(self) -> list[str]:
+        return ["count", "tracker"]
+
+
 class StreamingActionIncorrectResultType(StreamingAction):
     def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, dict]:
         yield {}
         return "not a dict"
+
+    @property
+    def reads(self) -> list[str]:
+        return []
+
+    @property
+    def writes(self) -> list[str]:
+        return []
+
+    def update(self, result: dict, state: State) -> State:
+        return state
+
+
+class StreamingActionIncorrectResultTypeAsync(AsyncStreamingAction):
+    async def stream_run(self, state: State, **run_kwargs) -> typing.AsyncGenerator[dict, None]:
+        yield {}
+        yield "not a dict"
 
     @property
     def reads(self) -> list[str]:
@@ -551,6 +640,22 @@ class StreamingSingleStepActionIncorrectResultType(SingleStepStreamingAction):
         return []
 
 
+class StreamingSingleStepActionIncorrectResultTypeAsync(SingleStepStreamingActionAsync):
+    async def stream_run_and_update(
+        self, state: State, **run_kwargs
+    ) -> typing.AsyncGenerator[Tuple[dict, Optional[State]], None]:
+        yield {}, None
+        yield "not a dict", state
+
+    @property
+    def reads(self) -> list[str]:
+        return []
+
+    @property
+    def writes(self) -> list[str]:
+        return []
+
+
 base_single_step_counter = SingleStepCounter()
 base_single_step_counter_async = SingleStepCounterAsync()
 base_single_step_counter_with_inputs = SingleStepCounterWithInputs()
@@ -558,6 +663,9 @@ base_single_step_counter_with_inputs_async = SingleStepCounterWithInputsAsync()
 
 base_streaming_counter = StreamingCounter()
 base_streaming_single_step_counter = SingleStepStreamingCounter()
+
+base_streaming_counter_async = AsyncStreamingCounter()
+base_streaming_single_step_counter_async = SingleStepStreamingCounterAsync()
 
 base_single_step_action_incorrect_result_type = SingleStepActionIncorrectResultType()
 base_single_step_action_incorrect_result_type_async = SingleStepActionIncorrectResultTypeAsync()
@@ -661,6 +769,21 @@ def test__run_multistep_streaming_action():
         assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
 
 
+async def test__run_multistep_streaming_action_async():
+    action = base_streaming_counter_async.with_name("counter")
+    state = State({"count": 0, "tracker": []})
+    generator = _run_multi_step_streaming_action_async(action, state, inputs={})
+    last_result = -1
+    result = None
+    async for result, state in generator:
+        if last_result < 1:
+            # Otherwise you hit floating poit comparison problems
+            assert result["count"] > last_result
+        last_result = result["count"]
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+
+
 def test__run_streaming_action_incorrect_result_type():
     action = StreamingActionIncorrectResultType()
     state = State()
@@ -669,12 +792,29 @@ def test__run_streaming_action_incorrect_result_type():
         collections.deque(gen, maxlen=0)  # exhaust the generator
 
 
+async def test__run_streaming_action_incorrect_result_type_async():
+    action = StreamingActionIncorrectResultTypeAsync()
+    state = State()
+    with pytest.raises(ValueError, match="returned a non-dict"):
+        gen = _run_multi_step_streaming_action_async(action, state, inputs={})
+        async for item in gen:
+            print(item)
+
+
 def test__run_single_step_streaming_action_incorrect_result_type():
     action = StreamingSingleStepActionIncorrectResultType()
     state = State()
     with pytest.raises(ValueError, match="returned a non-dict"):
         gen = _run_single_step_streaming_action(action, state, inputs={})
         collections.deque(gen, maxlen=0)  # exhaust the generator
+
+
+async def test__run_single_step_streaming_action_incorrect_result_type_async():
+    action = StreamingSingleStepActionIncorrectResultTypeAsync()
+    state = State()
+    with pytest.raises(ValueError, match="returned a non-dict"):
+        gen = _run_single_step_streaming_action_async(action, state, inputs={})
+        _ = [item async for item in gen]
 
 
 def test__run_single_step_streaming_action():
@@ -691,6 +831,22 @@ def test__run_single_step_streaming_action():
         result, state = e.value
         assert result == {"count": 1}
         assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+
+
+async def test__run_single_step_streaming_action_async():
+    async_action = base_streaming_single_step_counter_async.with_name("counter")
+    state = State({"count": 0, "tracker": []})
+    generator = _run_single_step_streaming_action_async(async_action, state, inputs={})
+    last_result = -1
+    result, state = None, None
+    async for result, state in generator:
+        if last_result < 1:
+            # Otherwise you hit comparison issues
+            # This is because we get to the last one, which is the final result
+            assert result["count"] > last_result
+        last_result = result["count"]
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
 
 
 class SingleStepActionWithDeletionAsync(SingleStepActionWithDeletion):
@@ -1259,7 +1415,7 @@ async def test_app_a_run_async_and_sync():
     assert result["count"] > 20
 
 
-def test_stream_result_halt_after_unique():
+def test_stream_result_halt_after_unique_ordered_sequence_id():
     action_tracker = ActionTracker()
     counter_action = base_streaming_counter.with_name("counter")
     counter_action_2 = base_streaming_counter.with_name("counter_2")
@@ -1294,7 +1450,47 @@ def test_stream_result_halt_after_unique():
     ]  # ensure sequence ID is respected
 
 
-def test_stream_result_halt_after_single_step():
+async def test_astream_result_halt_after_unique_ordered_sequence_id():
+    action_tracker = ActionTracker()
+    counter_action = base_streaming_counter_async.with_name("counter")
+    counter_action_2 = base_streaming_counter_async.with_name("counter_2")
+    app = Application(
+        actions=[counter_action, counter_action_2],
+        transitions=[
+            Transition(counter_action, counter_action_2, default),
+        ],
+        state=State({"count": 0}),
+        initial_step="counter",
+        adapter_set=LifecycleAdapterSet(action_tracker),
+        partition_key="test",
+        uid="test-123",
+    )
+    action_, streaming_async_container = await app.astream_result(halt_after=["counter_2"])
+    results = [
+        item async for item in streaming_async_container
+    ]  # this should just have the intermediate results
+    # results = list(streaming_container)
+    assert len(results) == 10
+    result, state = await streaming_async_container.get()
+    assert result["count"] == state["count"] == 2
+    assert state["tracker"] == [1, 2]
+    assert len(action_tracker.pre_called) == 2
+    assert len(action_tracker.post_called) == 2
+    assert set(dict(action_tracker.pre_called).keys()) == {"counter", "counter_2"}
+    assert set(dict(action_tracker.post_called).keys()) == {"counter", "counter_2"}
+    assert [item["sequence_id"] for _, item in action_tracker.pre_called] == [
+        0,
+        1,
+    ]  # ensure sequence ID is respected
+    assert [item["sequence_id"] for _, item in action_tracker.post_called] == [
+        0,
+        1,
+    ]  # ensure sequence ID is respected
+
+
+def test_stream_result_halt_after_run_through_streaming():
+    """Tests that we can pass through streaming results,
+    fully realize them, then get to the streaming results at the end and return the stream"""
     action_tracker = ActionTracker()
     counter_action = base_streaming_single_step_counter.with_name("counter")
     counter_action_2 = base_streaming_single_step_counter.with_name("counter_2")
@@ -1329,7 +1525,44 @@ def test_stream_result_halt_after_single_step():
     ]  # ensure sequence ID is respected
 
 
-def test_stream_result_halt_after_run_through_final_streaming():
+async def test_astream_result_halt_after_run_through_streaming():
+    action_tracker = ActionTracker()
+    counter_action = base_streaming_single_step_counter_async.with_name("counter")
+    counter_action_2 = base_streaming_single_step_counter_async.with_name("counter_2")
+    app = Application(
+        actions=[counter_action, counter_action_2],
+        transitions=[
+            Transition(counter_action, counter_action_2, default),
+        ],
+        state=State({"count": 0}),
+        initial_step="counter",
+        adapter_set=LifecycleAdapterSet(action_tracker),
+        partition_key="test",
+        uid="test-123",
+    )
+    action_, streaming_container = await app.astream_result(halt_after=["counter_2"])
+    results = [
+        item async for item in streaming_container
+    ]  # this should just have the intermediate results
+    assert len(results) == 10
+    result, state = await streaming_container.get()
+    assert result["count"] == state["count"] == 2
+    assert state["tracker"] == [1, 2]
+    assert len(action_tracker.pre_called) == 2
+    assert len(action_tracker.post_called) == 2
+    assert set(dict(action_tracker.pre_called).keys()) == {"counter", "counter_2"}
+    assert set(dict(action_tracker.post_called).keys()) == {"counter", "counter_2"}
+    assert [item["sequence_id"] for _, item in action_tracker.pre_called] == [
+        0,
+        1,
+    ]  # ensure sequence ID is respected
+    assert [item["sequence_id"] for _, item in action_tracker.post_called] == [
+        0,
+        1,
+    ]  # ensure sequence ID is respected
+
+
+def test_stream_result_halt_after_run_through_non_streaming():
     """Tests what happens when we have an app that runs through non-streaming
     results before hitting a final streaming result specified by halt_after"""
     action_tracker = ActionTracker()
@@ -1371,7 +1604,50 @@ def test_stream_result_halt_after_run_through_final_streaming():
     )  # ensure sequence ID is respected
 
 
+async def test_astream_result_halt_after_run_through_non_streaming():
+    action_tracker = ActionTracker()
+    counter_non_streaming = base_counter_action_async.with_name("counter_non_streaming")
+    counter_streaming = base_streaming_single_step_counter_async.with_name("counter_streaming")
+
+    app = Application(
+        actions=[counter_non_streaming, counter_streaming],
+        transitions=[
+            Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
+            Transition(counter_non_streaming, counter_streaming, default),
+        ],
+        state=State({"count": 0}),
+        initial_step="counter_non_streaming",
+        adapter_set=LifecycleAdapterSet(action_tracker),
+        partition_key="test",
+        uid="test-123",
+    )
+    action_, async_streaming_container = await app.astream_result(halt_after=["counter_streaming"])
+    results = [
+        item async for item in async_streaming_container
+    ]  # this should just have the intermediate results
+    assert len(results) == 10
+    result, state = await async_streaming_container.get()
+    assert result["count"] == state["count"] == 11
+    assert len(action_tracker.pre_called) == 11
+    assert len(action_tracker.post_called) == 11
+    assert set(dict(action_tracker.pre_called).keys()) == {
+        "counter_streaming",
+        "counter_non_streaming",
+    }
+    assert set(dict(action_tracker.post_called).keys()) == {
+        "counter_streaming",
+        "counter_non_streaming",
+    }
+    assert [item["sequence_id"] for _, item in action_tracker.pre_called] == list(
+        range(0, 11)
+    )  # ensure sequence ID is respected
+    assert [item["sequence_id"] for _, item in action_tracker.post_called] == list(
+        range(0, 11)
+    )  # ensure sequence ID is respected
+
+
 def test_stream_result_halt_after_run_through_final_non_streaming():
+    """Tests that we can pass through non-streaming results when streaming is called"""
     action_tracker = ActionTracker()
     counter_non_streaming = base_counter_action.with_name("counter_non_streaming")
     counter_final_non_streaming = base_counter_action.with_name("counter_final_non_streaming")
@@ -1392,6 +1668,51 @@ def test_stream_result_halt_after_run_through_final_non_streaming():
     results = list(streaming_container)
     assert len(results) == 0  # nothing to steram
     result, state = streaming_container.get()
+    assert result["count"] == state["count"] == 11
+    assert len(action_tracker.pre_called) == 11
+    assert len(action_tracker.post_called) == 11
+    assert set(dict(action_tracker.pre_called).keys()) == {
+        "counter_non_streaming",
+        "counter_final_non_streaming",
+    }
+    assert set(dict(action_tracker.post_called).keys()) == {
+        "counter_non_streaming",
+        "counter_final_non_streaming",
+    }
+    assert [item["sequence_id"] for _, item in action_tracker.pre_called] == list(
+        range(0, 11)
+    )  # ensure sequence ID is respected
+    assert [item["sequence_id"] for _, item in action_tracker.post_called] == list(
+        range(0, 11)
+    )  # ensure sequence ID is respected
+
+
+async def test_astream_result_halt_after_run_through_final_streaming():
+    """Tests that we can pass through non-streaming results when streaming is called"""
+    action_tracker = ActionTracker()
+    counter_non_streaming = base_counter_action_async.with_name("counter_non_streaming")
+    counter_final_non_streaming = base_counter_action_async.with_name("counter_final_non_streaming")
+
+    app = Application(
+        actions=[counter_non_streaming, counter_final_non_streaming],
+        transitions=[
+            Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
+            Transition(counter_non_streaming, counter_final_non_streaming, default),
+        ],
+        state=State({"count": 0}),
+        initial_step="counter_non_streaming",
+        adapter_set=LifecycleAdapterSet(action_tracker),
+        partition_key="test",
+        uid="test-123",
+    )
+    action, streaming_container = await app.astream_result(
+        halt_after=["counter_final_non_streaming"]
+    )
+    results = [
+        item async for item in streaming_container
+    ]  # this should just have the intermediate results
+    assert len(results) == 0  # nothing to stream
+    result, state = await streaming_container.get()
     assert result["count"] == state["count"] == 11
     assert len(action_tracker.pre_called) == 11
     assert len(action_tracker.post_called) == 11
@@ -1432,6 +1753,42 @@ def test_stream_result_halt_before():
     results = list(streaming_container)
     assert len(results) == 0  # nothing to steram
     result, state = streaming_container.get()
+    assert action.name == "counter_final"  # halt before this one
+    assert result is None
+    assert state["count"] == 10
+    assert [item["sequence_id"] for _, item in action_tracker.pre_called] == list(
+        range(0, 10)
+    )  # ensure sequence ID is respected
+    assert [item["sequence_id"] for _, item in action_tracker.post_called] == list(
+        range(0, 10)
+    )  # ensure sequence ID is respected
+
+
+async def test_astream_result_halt_before():
+    action_tracker = ActionTracker()
+    counter_non_streaming = base_counter_action_async.with_name("counter_non_streaming")
+    counter_streaming = base_streaming_single_step_counter_async.with_name("counter_final")
+
+    app = Application(
+        actions=[counter_non_streaming, counter_streaming],
+        transitions=[
+            Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
+            Transition(counter_non_streaming, counter_streaming, default),
+        ],
+        state=State({"count": 0}),
+        initial_step="counter_non_streaming",
+        partition_key="test",
+        uid="test-123",
+        adapter_set=LifecycleAdapterSet(action_tracker),
+    )
+    action, streaming_container = await app.astream_result(
+        halt_after=[], halt_before=["counter_final"]
+    )
+    results = [
+        item async for item in streaming_container
+    ]  # this should just have the intermediate results
+    assert len(results) == 0  # nothing to stream
+    result, state = await streaming_container.get()
     assert action.name == "counter_final"  # halt before this one
     assert result is None
     assert state["count"] == 10

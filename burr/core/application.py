@@ -25,11 +25,14 @@ from burr.common import types as burr_types
 from burr.core import persistence
 from burr.core.action import (
     Action,
+    AsyncStreamingAction,
+    AsyncStreamingResultContainer,
     Condition,
     Function,
     Reducer,
     SingleStepAction,
     SingleStepStreamingAction,
+    SingleStepStreamingActionAsync,
     StreamingAction,
     StreamingResultContainer,
     create_action,
@@ -236,6 +239,35 @@ def _run_single_step_streaming_action(
     return result, state
 
 
+async def _run_single_step_streaming_action_async(
+    action: SingleStepStreamingActionAsync, state: State, inputs: Optional[Dict[str, Any]]
+) -> AsyncGenerator[Tuple[dict, Optional[State]], None]:
+    action.validate_inputs(inputs)
+    generator = action.stream_run_and_update(state, **inputs)
+    result = None
+    state_update = None
+    async for item in generator:
+        if not isinstance(item, tuple):
+            # TODO -- consider adding support for just returning a result.
+            raise ValueError(
+                f"Action {action.name} must yield a tuple of (result, state_update). "
+                f"For all non-final results (intermediate),"
+                f"the state update must be None"
+            )
+        result, state_update = item
+        if state_update is None:
+            yield result, None
+    if state_update is None:
+        raise ValueError(
+            f"Action {action.name} did not return a state update. For async actions, the last yield "
+            f"statement must be a tuple of (result, state_update). For example, yield dict(foo='bar'), state.update(foo='bar')"
+        )
+    _validate_result(result, action.name)
+    _validate_reducer_writes(action, state_update, action.name)
+    # TODO -- add guard against zero-length stream
+    yield result, state_update
+
+
 def _run_multi_step_streaming_action(
     action: StreamingAction, state: State, inputs: Optional[Dict[str, Any]]
 ) -> Generator[dict, None, Tuple[dict, State]]:
@@ -245,6 +277,21 @@ def _run_multi_step_streaming_action(
     _validate_result(result, action.name)
     new_state = _run_reducer(action, state, result, action.name)
     return result, _state_update(state, new_state)
+
+
+async def _run_multi_step_streaming_action_async(
+    action: AsyncStreamingAction, state: State, inputs: Optional[Dict[str, Any]]
+) -> AsyncGenerator[Tuple[dict, Optional[State]], None]:
+    action.validate_inputs(inputs)
+    generator = action.stream_run(state, **inputs)
+    result = None
+    async for item in generator:
+        result = item
+        yield item, None
+    state_update = _run_reducer(action, state, result, action.name)
+    _validate_result(result, action.name)
+    _validate_reducer_writes(action, state_update, action.name)
+    yield result, state_update
 
 
 async def _arun_single_step_action(
@@ -466,23 +513,28 @@ class Application:
 
         :return: Tuple[Function, dict, State] -- the action that was just ran, the result of running it, and the new state
         """
-        # we want to increment regardless of failure
         self._increment_sequence_id()
+        out = await self._astep(inputs=inputs, _run_hooks=True)
+        return out
+
+    async def _astep(self, inputs: Optional[Dict[str, Any]], _run_hooks: bool = True):
+        # we want to increment regardless of failure
         next_action = self.get_next_action()
         if next_action is None:
             return None
         if inputs is None:
             inputs = {}
         action_inputs = self._process_inputs(inputs, next_action)
-        await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
-            "pre_run_step",
-            action=next_action,
-            state=self._state,
-            inputs=action_inputs,
-            sequence_id=self.sequence_id,
-            app_id=self._uid,
-            partition_key=self._partition_key,
-        )
+        if _run_hooks:
+            await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
+                "pre_run_step",
+                action=next_action,
+                state=self._state,
+                inputs=action_inputs,
+                sequence_id=self.sequence_id,
+                app_id=self._uid,
+                partition_key=self._partition_key,
+            )
         exc = None
         result = None
         new_state = self._state
@@ -512,16 +564,17 @@ class Application:
             logger.exception(_format_error_message(next_action, self._state, inputs))
             raise e
         finally:
-            await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
-                "post_run_step",
-                action=next_action,
-                state=new_state,
-                result=result,
-                sequence_id=self.sequence_id,
-                exception=exc,
-                app_id=self._uid,
-                partition_key=self._partition_key,
-            )
+            if _run_hooks:
+                await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
+                    "post_run_step",
+                    action=next_action,
+                    state=new_state,
+                    result=result,
+                    sequence_id=self.sequence_id,
+                    exception=exc,
+                    app_id=self._uid,
+                    partition_key=self._partition_key,
+                )
 
         return next_action, result, new_state
 
@@ -947,12 +1000,122 @@ class Application:
         halt_after: list[str],
         halt_before: list[str] = None,
         inputs: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Action, ...]:
+    ) -> Tuple[Action, AsyncStreamingResultContainer]:
         """Placeholder for the async version of stream_result. This is not yet implemented."""
-        raise NotImplementedError(
-            "This has not yet been implemented! See the github issue: https://github.com/DAGWorks-Inc/burr/issues/64"
-            " for details. Please comment or vote to get it implemented quickly!"
+        halt_before, halt_after, inputs = self._clean_iterate_params(
+            halt_before, halt_after, inputs
         )
+        self._validate_halt_conditions(halt_before, halt_after)
+        next_action = self.get_next_action()
+        if next_action is None:
+            raise ValueError(
+                f"Cannot stream result -- no next action found! Prior action was: {self._state[PRIOR_STEP]}"
+            )
+        if next_action.name not in halt_after:
+            # fast forward until we get to the action
+            # run already handles incrementing sequence IDs, nothing to worry about here
+            next_action, results, state = await self.arun(
+                halt_before=halt_after + halt_before, inputs=inputs
+            )
+            # In this case, we are ready to halt and return an empty generator
+            # The results will be None, and the state will be the final state
+            # For context, this is specifically for the case in which you want to have
+            # multiple terminal points with a unified API, where some are streaming, and some are not.
+            if next_action.name in halt_before and next_action.name not in halt_after:
+                return next_action, AsyncStreamingResultContainer.pass_through(
+                    results=results, final_state=state
+                )
+        self._increment_sequence_id()
+        await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
+            "pre_run_step",
+            action=next_action,
+            state=self._state,
+            inputs=inputs,
+            sequence_id=self.sequence_id,
+            app_id=self._uid,
+            partition_key=self._partition_key,
+        )
+        try:
+
+            def process_result(result: dict, state: State) -> Tuple[Dict[str, Any], State]:
+                new_state = self._update_internal_state_value(state, next_action)
+                self._set_state(new_state)
+                return result, new_state
+
+            async def callback(
+                result: Optional[dict],
+                state: State,
+                exc: Optional[Exception] = None,
+            ):
+                await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
+                    "post_run_step",
+                    app_id=self._uid,
+                    partition_key=self._partition_key,
+                    action=next_action,
+                    state=state,
+                    result=result,
+                    sequence_id=self.sequence_id,
+                    exception=exc,
+                )
+
+            action_inputs = self._process_inputs(inputs, next_action)
+            if not next_action.streaming:
+                # In this case we are halting at a non-streaming condition
+                # This is allowed as we want to maintain a more consistent API
+                # TODO -- get this to work with async. Figure out how to run the async step...
+                action, result, state = await self._astep(inputs=inputs, _run_hooks=False)
+                await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
+                    "post_run_step",
+                    app_id=self._uid,
+                    partition_key=self._partition_key,
+                    action=next_action,
+                    state=self._state,
+                    result=result,
+                    sequence_id=self.sequence_id,
+                    exception=None,
+                )
+                return action, AsyncStreamingResultContainer.pass_through(
+                    results=result, final_state=state
+                )
+            if next_action.single_step:
+                next_action = cast(SingleStepStreamingActionAsync, next_action)
+                if not next_action.is_async():
+                    raise ValueError("TODO -- convert")
+                generator = _run_single_step_streaming_action_async(
+                    next_action, self._state, action_inputs
+                )
+                return next_action, AsyncStreamingResultContainer(
+                    generator, self._state, process_result, callback
+                )
+            else:
+                if not next_action.is_async():
+                    raise ValueError("TODO -- convert")
+                next_action = cast(AsyncStreamingAction, next_action)
+                generator = _run_multi_step_streaming_action_async(
+                    next_action, self._state, action_inputs
+                )
+        except Exception as e:
+            # We only want to raise this in the case of an exception
+            # otherwise, this will get delegated to the finally
+            # block of the streaming result container
+            self._adapter_set.call_all_lifecycle_hooks_sync(
+                "post_run_step",
+                app_id=self._uid,
+                partition_key=self._partition_key,
+                action=next_action,
+                state=self._state,
+                result=None,
+                sequence_id=self.sequence_id,
+                exception=e,
+            )
+            raise
+        return next_action, AsyncStreamingResultContainer(
+            generator, self._state, process_result, callback
+        )
+        # raise NotImplementedError(
+        #     "This has not yet been implemented! See the github issue: https://github.com/DAGWorks-Inc/burr/issues/64"
+        #     " for details. Please comment or vote to get it implemented quickly!"
+        # )
 
     @telemetry.capture_function_usage
     def visualize(
