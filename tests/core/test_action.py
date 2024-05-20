@@ -1,17 +1,20 @@
 import asyncio
-from typing import Generator, Tuple
+from typing import AsyncGenerator, Generator, Optional, Tuple
 
 import pytest
 
 from burr.core import State
 from burr.core.action import (
     Action,
+    AsyncStreamingAction,
+    AsyncStreamingResultContainer,
     Condition,
     Function,
     Input,
     Result,
     SingleStepAction,
     SingleStepStreamingAction,
+    SingleStepStreamingActionAsync,
     StreamingAction,
     StreamingResultContainer,
     _validate_action_function,
@@ -386,6 +389,36 @@ def test_create_action_streaming_fn_api_with_bind():
     assert out == list("prefix_foo")
 
 
+async def test_create_action_streaming_fn_api_with_bind_async():
+    @streaming_action(reads=["input_variable"], writes=["output_variable"])
+    async def test_action(
+        state: State, prefix: str
+    ) -> AsyncGenerator[Tuple[dict, Optional[State]], None]:
+        buffer = []
+        for c in prefix + state["input_variable"]:
+            buffer.append(c)
+            yield {"output_variable": c}, None  # intermediate results
+            await asyncio.sleep(0.01)
+        joined = "".join(buffer)
+        yield {"output_variable": joined}, state.update(output_variable=joined)
+
+    created_action = create_action(test_action.bind(prefix="prefix_"), name="my_action")
+    assert created_action.streaming  # streaming
+    assert created_action.is_async()  # async
+    assert isinstance(created_action, SingleStepStreamingActionAsync)
+    assert created_action.name == "my_action"
+    assert created_action.reads == ["input_variable"]
+    assert created_action.writes == ["output_variable"]
+    assert created_action.single_step
+    gen = created_action.stream_run_and_update(State({"input_variable": "foo"}))
+    out = [item async for item in gen]
+    final_result, state = out[-1]
+    intermediate_results = [item[0]["output_variable"] for item in out[:-1]]
+    assert final_result == {"output_variable": "prefix_foo"}
+    assert state.get_all() == {"input_variable": "foo", "output_variable": "prefix_foo"}
+    assert intermediate_results == list("prefix_foo")
+
+
 def test_create_action_undecorated_function():
     def test_action(state: State) -> Tuple[dict, State]:
         result = {"output_variable": state["input_variable"]}
@@ -427,12 +460,14 @@ def test__validate_action_function_invalid_signature_correct():
 
 def test_streaming_action_stream_run():
     class SimpleStreamingAction(StreamingAction):
-        def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, dict]:
+        def stream_run(
+            self, state: State, **run_kwargs
+        ) -> Generator[dict, None, Tuple[dict, State]]:
             buffer = []
             for char in state["echo"]:
                 yield {"response": char}
                 buffer.append(char)
-            return {"response": "".join(buffer)}
+            return {"response": "".join(buffer)}, state.update(response="".join(buffer))
 
         @property
         def reads(self) -> list[str]:
@@ -447,7 +482,39 @@ def test_streaming_action_stream_run():
 
     action = SimpleStreamingAction()
     STR = "test streaming action"
-    assert action.run(State({"echo": STR}))["response"] == STR
+    result, state_update = action.run(State({"echo": STR}))
+    assert result["response"] == STR
+    assert state_update["response"] == STR
+
+
+async def test_streaming_action_stream_run_async():
+    class SimpleAsyncStreamingAction(AsyncStreamingAction):
+        async def stream_run(
+            self, state: State, **run_kwargs
+        ) -> AsyncGenerator[Tuple[dict, Optional[State]], None]:
+            buffer = []
+            for char in state["echo"]:
+                yield {"response": char}, None
+                await asyncio.sleep(0.01)
+                buffer.append(char)
+            yield {"response": "".join(buffer)}, state.update(response="".join(buffer))
+
+        @property
+        def reads(self) -> list[str]:
+            return []
+
+        @property
+        def writes(self) -> list[str]:
+            return ["response"]
+
+        def update(self, result: dict, state: State) -> State:
+            return state.update(**result)
+
+    action = SimpleAsyncStreamingAction()
+    STR = "test streaming action"
+    result, state_update = await action.run(State({"echo": STR}))
+    assert result["response"] == STR
+    assert state_update["response"] == STR
 
 
 def sample_generator(chars: str) -> Generator[dict, None, Tuple[dict, State]]:
@@ -532,3 +599,112 @@ def test_streaming_result_callback_error():
             # See note in StreamingResultContainer
     except SentinelError:
         pass
+
+
+async def sample_async_generator(chars: str) -> AsyncGenerator[Tuple[dict, Optional[State]], None]:
+    buffer = []
+    for c in chars:
+        buffer.append(c)
+        yield {"response": c}, None
+        await asyncio.sleep(0.01)
+    joined = "".join(buffer)
+    yield {"response": joined}, State({"response": joined})
+
+
+async def test_streaming_result_container_iterate_async():
+    async def callback(r: dict, s: State, e: Exception):
+        pass
+
+    string_value = "test streaming action"
+    container = AsyncStreamingResultContainer(
+        sample_async_generator(string_value),
+        initial_state=State(),
+        process_result=lambda r, s: (r, s),
+        callback=callback,
+    )
+    assert [item["response"] async for item in container] == list(string_value)
+    result, state = await container.get()
+    assert result["response"] == string_value
+
+
+async def test_streaming_result_get_runs_through_async():
+    async def callback(r: dict, s: State, e: Exception):
+        pass
+
+    string_value = "test streaming action"
+    container = AsyncStreamingResultContainer(
+        sample_async_generator(string_value),
+        initial_state=State(),
+        process_result=lambda r, s: (r, s),
+        callback=callback,
+    )
+    result, state = await container.get()
+    assert result["response"] == string_value
+
+
+async def test_streaming_result_callback_called_async():
+    called = []
+    string_value = "test streaming action"
+
+    async def callback(r: Optional[dict], s: State, e: Exception):
+        called.append((s, r, e))
+
+    container = AsyncStreamingResultContainer(
+        sample_async_generator(string_value),
+        # initial state is here solely for returning debugging so we can return an
+        # state to the user in the case of failure
+        initial_state=State({"foo": "bar"}),
+        process_result=lambda r, s: (r, s),
+        callback=callback,
+    )
+    await container.get()
+    assert len(called) == 1
+    result, state, error = called[0]
+    assert result["response"] == string_value
+    assert state["response"] == string_value
+    assert error is None
+
+
+def test_streaming_result_callback_error_async():
+    """Oi. This can't use pytest-asyncio because pytest-asyncio doesn't shutdown async gens.
+    I sure hope our customer's stuff shuts down async gens.
+
+    See https://github.com/pytest-dev/pytest-asyncio/issues/759 for more details.
+
+    """
+    called = []
+
+    async def test_fn():
+        class SentinelError(Exception):
+            pass
+
+        try:
+
+            async def callback(r: Optional[dict], s: State, e: Exception):
+                print("calling back")
+                called.append((r, s, e))
+
+            string_value = "test streaming action"
+            container = AsyncStreamingResultContainer(
+                sample_async_generator(string_value),
+                initial_state=State({"foo": "bar"}),
+                process_result=lambda r, s: (r, s),
+                callback=callback,
+            )
+            try:
+                async for _ in container:
+                    raise SentinelError("error")
+            finally:
+                # pass
+                print("asserting")
+
+                # Exception is currently not exactly what we want, so won't assert on that.
+                # See note in StreamingResultContainer
+        except SentinelError:
+            pass
+
+    asyncio.run(test_fn())
+    assert len(called) == 1
+    ((result, state, error),) = called
+    assert state["foo"] == "bar"
+    assert result is None
