@@ -1,6 +1,5 @@
 import abc
 import ast
-import collections
 import copy
 import inspect
 import sys
@@ -8,7 +7,9 @@ import types
 import typing
 from typing import (
     Any,
+    AsyncGenerator,
     Callable,
+    Coroutine,
     Dict,
     Generator,
     Iterator,
@@ -481,12 +482,24 @@ class FunctionBasedAction(SingleStepAction):
         return inspect.iscoroutinefunction(self._fn)
 
 
+StreamType = Tuple[dict, Optional[State]]
+
+GeneratorReturnType = Generator[StreamType, None, None]
+AsyncGeneratorReturnType = AsyncGenerator[StreamType, None]
+
+StreamingFn = Callable[..., GeneratorReturnType]
+StreamingFnAsync = Callable[..., AsyncGeneratorReturnType]
+
+
 class StreamingAction(Action, abc.ABC):
+    """Base class for Streaming action. These are "multi-step", meaning that
+    they run in multiple passes (run -> update)"""
+
     @abc.abstractmethod
-    def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, Tuple[dict, State]]:
+    def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, None]:
         """Streaming action ``stream_run`` is different than standard action run. It:
-        1. streams in a result (the dict output)
-        2. Returns the final result
+        1. streams in an intermediate result (the dict output)
+        2. yields the final result at the end
 
         Note that the user, in this case, is responsible for joining the result.
 
@@ -499,7 +512,7 @@ class StreamingAction(Action, abc.ABC):
                 for token in query(state['prompt']):
                     yield {'response' : token}
                     buffer.append(token)
-                return {'response' : "".join(buffer)}
+                yield {'response' : "".join(buffer)}
 
         This would utilize a simple string buffer (implemented by a list) to store the results
         and then join them at the end. We return the final result.
@@ -511,12 +524,12 @@ class StreamingAction(Action, abc.ABC):
         pass
 
     def run(self, state: State, **run_kwargs) -> dict:
+        """Runs the streaming action through to completion."""
         gen = self.stream_run(state, **run_kwargs)
-        while True:
-            try:
-                next(gen)  # if we just run through, we do nothing with the result
-            except StopIteration as e:
-                return e.value
+        last_result = None
+        for item in gen:
+            last_result = item
+        return last_result
 
     @property
     def streaming(self) -> bool:
@@ -524,11 +537,47 @@ class StreamingAction(Action, abc.ABC):
 
 
 class AsyncStreamingAction(Action, abc.ABC):
+    """Asynchronous version of the streaming action. This is a base class for streaming actions.
+    Currently this is separate from the synchronous version, but we may want to merge them in the future.
+    Note this is the "multi-step" variant, in which run/update are separate."""
+
     @abc.abstractmethod
-    async def stream_run(self, state: State, **run_kwargs) -> typing.AsyncGenerator[dict, None]:
+    async def stream_run(self, state: State, **run_kwargs) -> AsyncGenerator[dict, None]:
+        """Asynchronous streaming action ``stream_run`` is different than the standard action run. It:
+        1. streams in an intermediate result (the dict output)
+        2. yields the final result at the end
+
+        Note that the user, in this case, is responsible for joining the result.
+
+        For instance, you could have:
+
+        .. code-block:: python
+
+            async def stream_run(state: State) -> Generator[dict, None, dict]:
+                buffer = [] # you might want to be more efficient than simple strcat
+                async for token in query(state['prompt']): # asynchronous generator
+                    yield {'response' : token}
+                    buffer.append(token)
+                yield {'response' : "".join(buffer)}
+
+        This would utilize a simple string buffer (implemented by a list) to store the results
+        and then join them at the end. We return the final result.
+
+        :param state: State to run the action on
+        :param run_kwargs: parameters passed to the run function -- these are specified by `inputs`
+        :return: A generator that streams in a result and returns the final result
+        """
         pass
 
     async def run(self, state: State, **run_kwargs) -> dict:
+        """Runs the streaming action through to completion.
+        Returns the final result. This is used if we want a streaming action
+        as an intermediate.
+
+        :param state: State to run the action on
+        :param run_kwargs: Additional arguments to the function passed at runtime.
+        :return: Final result
+        """
         gen = self.stream_run(state, **run_kwargs)
         result = None
         async for item in gen:
@@ -558,14 +607,13 @@ class StreamingResultContainer(Iterator[dict]):
 
     .. code-block:: python
 
-        streaming_result_container = application.stream_result(...)
-        action_we_just_ran = streaming_result_container.get()
+        action_we_just_ran, streaming_result_container = application.stream_result(...)
         print(f"getting streaming results for action={action_we_just_ran.name}")
 
         for result_component in streaming_result_container:
             print(result_component['response']) # this assumes you have a response key in your result
 
-        final_state, final_result = streaming_result_container.get()
+        final_result, final_state = streaming_result_container.get()
     """
 
     @staticmethod
@@ -574,9 +622,8 @@ class StreamingResultContainer(Iterator[dict]):
         This is to be used internally -- it allows us to wrap non-streaming action results in a streaming
         result container."""
 
-        def empty_generator() -> Generator[dict, None, tuple[dict, State]]:
-            yield from ()
-            return results, final_state
+        def empty_generator() -> GeneratorReturnType:
+            yield results, final_state
 
         return StreamingResultContainer(
             empty_generator(),
@@ -585,21 +632,20 @@ class StreamingResultContainer(Iterator[dict]):
             lambda result, state, exc: None,
         )
 
-    def __next__(self):
-        return next(self.generator())
-
     def __init__(
         self,
-        streaming_result_generator: Generator[dict, None, tuple[dict, State]],
+        streaming_result_generator: GeneratorReturnType,
         initial_state: State,
         process_result: Callable[[dict, State], tuple[dict, State]],
         callback: Callable[[Optional[dict], State, Optional[Exception]], None],
     ):
-        """Initializes a ``StreamingResultContainer``. This is meant to be used internally
+        """Initializes a streaming result container. User will never call directly.
 
-        :param streaming_result_generator: The generator that produces the streaming result
-        :param initial_state: The initial state
-        :param process_result: Function to process the result -- this gets called after the generator is exhausted, prior to returning the final result
+        :param streaming_result_generator: Generator of streaming results. Note that this
+            will always yield result, Optional[State] -- regardless of the API used to create it.
+        :param initial_state:  The initial state
+        :param process_result:  Function to process the result -- this gets called after the generator is exhausted,
+            prior to returning the final result
         :param callback: Callback to call at the very end. This will only get called *once*, and will be called during the finally block of the generator
         """
         self.streaming_result_generator = streaming_result_generator
@@ -610,67 +656,91 @@ class StreamingResultContainer(Iterator[dict]):
         self._result = None
         self._callback_realized = False
 
+    def __next__(self):
+        if self._result is not None:
+            # we're done, and we've run through it
+            raise StopIteration
+        result, state = self.streaming_result_generator.__next__()
+        if state is not None:  # we're done -- we've hit the last one
+            self._result = self._process_result(result, state)
+            raise StopIteration
+        return result
+
     def __iter__(self):
-        return self.generator()
-
-    def generator(self):
-        try:
-            if self._result is not None:
-                # this means we're already thorugh it, we can just call it a day
+        def gen_fn():
+            try:
+                while True:
+                    out = self.__next__()
+                    yield out
+            except StopIteration:
                 return
-            result = yield from self.streaming_result_generator
-            self._result = self._process_result(*result)
-        finally:
-            if self._result is None:
-                # This way we always have something after we exhaust the generator
-                self._result = None, self._initial_state
-            if not self._callback_realized:
-                exc = sys.exc_info()[1]
-                # For now this will not be the right exception type (Generator close),
-                # but its OK -- the exception is outside of our control fllow
-                self._callback_realized = True
-                self._callback(*self._result, exc)
+            finally:
+                if self._result is None:
+                    self._result = None, self._initial_state
+                if not self._callback_realized:
+                    exc = sys.exc_info()[1]
+                    self._callback_realized = True
+                    self._callback(*self._result, exc)
 
-    def get(self) -> tuple[Optional[dict], State]:
-        """Blocking call to get the final result of the streaming action. This will
-        run through the entire generator (or until an exception is raised) and return
-        the final result.
+        # We really don't need an internal generator function but this was done to keep it the same
+        # as the async version
+        return gen_fn()
 
-        :return: A tuple of the result and the new state
-        """
-        collections.deque(
-            self, maxlen=0
-        )  # exhausts the generator, producing the `_result` variable
+    def get(self) -> StreamType:
+        # exhaust the generator
+        for _ in self:
+            pass
+
         return self._result
 
 
 class AsyncStreamingResultContainer(typing.AsyncIterator[dict]):
+    """Container for an async streaming result. This allows you to:
+    1. Iterate over the result as it comes in
+    2. Await the final result/state at the end
+
+    If you're familiar with generators/iterators in python, this is effectively an
+    iterator that caches the final result after calling it. This is meant to be used
+    exclusively with the streaming action calls in `Application`. Note that you will
+    never instantiate this class directly, but you will use it in the API when it is returned
+    by :py:meth:`astream_result <burr.core.application.Application.stream_result>`.
+    For reference, here's how you would use it:
+
+    .. code-block:: python
+
+        action_we_just_ran, streaming_result_container = await application.stream_result(...)
+        print(f"getting streaming results for action={action_we_just_ran.name}")
+
+        async for result_component in streaming_result_container:
+            print(result_component['response']) # this assumes you have a response key in your result
+
+        final_result, final_state = await streaming_result_container.get()
+    """
+
     def __init__(
         self,
-        streaming_result_generator: typing.AsyncGenerator[
-            typing.Tuple[dict, Optional[State]], None
-        ],
+        streaming_result_generator: AsyncGeneratorReturnType,
         initial_state: State,
         process_result: Callable[[dict, State], tuple[dict, State]],
         callback: Callable[
             [Optional[dict], State, Optional[Exception]], typing.Coroutine[None, None, None]
         ],
     ):
+        """Initializes an async streaming result container. User will never call directly.
+
+        :param streaming_result_generator: Generator of streaming results. Note that this
+            will always yield result, Optional[State] -- regardless of the API used to create it.
+        :param initial_state:  The initial state
+        :param process_result:  Function to process the result -- this gets called after the generator is exhausted,
+            prior to returning the final result
+        :param callback: Callback to call at the very end. This will only get called *once*, and will be called during the finally block of the generator
+        """
         self.streaming_result_generator = streaming_result_generator
         self._initial_state = initial_state
         self._process_result = process_result
         self._callback = callback
         self._result = None
         self._callback_realized = False
-
-    #
-    # async def _cb(self):
-    #     print("calling back")
-    #     result = self._result if self._result is not None else None, self._initial_state
-    #     if not self._callback_realized:
-    #         exc = sys.exc_info()[1]
-    #         self._callback_realized = True
-    #         await self._callback(*result, exc)
 
     async def __anext__(self):
         # TODO -- ensure this works
@@ -684,7 +754,7 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict]):
         return result
 
     def __aiter__(self):
-        async def g():
+        async def gen_fn():
             try:
                 while True:
                     yield await self.__anext__()
@@ -698,9 +768,11 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict]):
                     self._callback_realized = True
                     await self._callback(*self._result, exc)
 
-        return g()
+        # return it as `__aiter__` cannot be async/have awaits :/
+        return gen_fn()
 
     async def get(self) -> tuple[Optional[dict], State]:
+        # exhaust the generator
         async for _ in self:
             pass
 
@@ -708,7 +780,7 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict]):
 
     @staticmethod
     def pass_through(results: dict, final_state: State) -> "AsyncStreamingResultContainer":
-        async def just_results() -> typing.AsyncGenerator[tuple[dict, State], None]:
+        async def just_results() -> AsyncGeneratorReturnType:
             yield results, final_state
 
         async def empty_callback(result: Optional[dict], state: State, exc: Optional[Exception]):
@@ -726,75 +798,59 @@ class SingleStepStreamingAction(SingleStepAction, abc.ABC):
     """
 
     @abc.abstractmethod
-    async def stream_run_and_update(
+    def stream_run_and_update(
         self, state: State, **run_kwargs
-    ) -> Generator[dict, None, tuple[dict, State]]:
+    ) -> Union[GeneratorReturnType, AsyncGeneratorReturnType]:
         """Streaming version of the run and update function. This
         return type is a generator that streams in a result, has no "send"
         value, and returns the final result (new result + state).
         """
         pass
 
-    def run_and_update(self, state: State, **run_kwargs) -> tuple[dict, State]:
-        """Runs the action and returns the final result. This allows us to run this as a
-        single step action. This is helpful for when the streaming result needs to be
-        run as an intermediate.
-        """
+    def _run_and_update(self, state: State, **run_kwargs) -> tuple[dict, State]:
         gen = self.stream_run_and_update(state, **run_kwargs)
-        while True:
-            try:
-                next(gen)  # if we just run through, we do nothing with the result
-            except StopIteration as e:
-                return e.value
+        result = None
+        new_state = state
+        for result, new_state in gen:
+            pass
+        # TODO -- validate that it has a single length output
+        return result, new_state
 
-    @property
-    def streaming(self) -> bool:
-        return True
-
-
-class SingleStepStreamingActionAsync(SingleStepAction, abc.ABC):
-    """Class to represent a "single-step" streaming action. This is meant to
-    work with the functional API. Note this is not user-facing -- the user will
-    only interact with this by using the ``@streaming_action`` decorator.
-    """
-
-    @abc.abstractmethod
-    async def stream_run_and_update(
-        self, state: State, **run_kwargs
-    ) -> typing.AsyncGenerator[tuple[dict, Optional[State]], None]:
-        """Streaming version of the run and update function. This
-        return type is a generator that streams in a result, has no "send"
-        value.
-        """
-        pass
-
-    async def run_and_update(self, state: State, **run_kwargs) -> tuple[dict, State]:
-        """Runs the action and returns the final result. This allows us to run this as a
-        single step action. This is helpful for when the streaming result needs to be
-        run as an intermediate.
-        """
+    async def _arun_and_update(self, state: State, **run_kwargs) -> tuple[dict, State]:
         gen = self.stream_run_and_update(state, **run_kwargs)
         last_result = None
-        while True:
-            try:
-                last_result = await gen.__anext__()
-            except StopAsyncIteration:
-                return last_result
+        new_state = state
+        async for last_result, new_state in gen:
+            pass
+        return last_result, new_state
+
+    def run_and_update(
+        self, state: State, **run_kwargs
+    ) -> Union[tuple[dict, State], Coroutine[Any, Any, tuple[dict, State]]]:
+        """Runs the action and returns the final result. This allows us to run this as a
+        single step action. This is helpful for when the streaming result needs to be
+        run as an intermediate."""
+        if self.is_async():
+            return self._arun_and_update(state, **run_kwargs)
+        return self._run_and_update(state, **run_kwargs)
 
     @property
     def streaming(self) -> bool:
         return True
 
     def is_async(self) -> bool:
-        return True
+        return inspect.isasyncgenfunction(self.stream_run_and_update)
 
 
 class FunctionBasedStreamingAction(SingleStepStreamingAction):
-    _fn: Callable[..., Generator[dict, None, tuple[dict, State]]]
+    _fn: Union[StreamingFn, StreamingFnAsync]
 
     def __init__(
         self,
-        fn: Callable[..., Generator[dict, None, tuple[dict, State]]],
+        fn: Union[
+            StreamingFn,
+            StreamingFnAsync,
+        ],
         reads: List[str],
         writes: List[str],
         bound_params: dict = None,
@@ -812,10 +868,21 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         self._writes = writes
         self._bound_params = bound_params if bound_params is not None else {}
 
+    async def _a_stream_run_and_update(
+        self, state: State, **run_kwargs
+    ) -> AsyncGeneratorReturnType:
+        async for result in self._fn(state, **self._bound_params, **run_kwargs):
+            yield result
+
+    def _stream_run_and_update(self, state: State, **run_kwargs) -> GeneratorReturnType:
+        yield from self._fn(state, **self._bound_params, **run_kwargs)
+
     def stream_run_and_update(
         self, state: State, **run_kwargs
-    ) -> Generator[dict, None, tuple[dict, State]]:
-        return (yield from self._fn(state, **self._bound_params, **run_kwargs))
+    ) -> Union[AsyncGeneratorReturnType, GeneratorReturnType]:
+        if self.is_async():
+            return self._a_stream_run_and_update(state, **run_kwargs)
+        return self._stream_run_and_update(state, **run_kwargs)
 
     @property
     def reads(self) -> list[str]:
@@ -845,70 +912,11 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         return _get_inputs(self._bound_params, self._fn)
 
     @property
-    def fn(self) -> Callable:
+    def fn(self) -> Union[StreamingFn, StreamingFnAsync]:
         return self._fn
 
-
-# TODO -- merge this with the above
-class FunctionBasedStreamingActionAsync(SingleStepStreamingActionAsync):
-    _fn: Callable[..., typing.AsyncGenerator[typing.Tuple[dict, Optional[State]], None]]
-
-    def __init__(
-        self,
-        fn: Callable[..., typing.AsyncGenerator[typing.Tuple[dict, Optional[State]], None]],
-        reads: List[str],
-        writes: List[str],
-        bound_params: dict = None,
-    ):
-        """Instantiates a function-based streaming action with the given function, reads, and writes.
-        The function must take in a state (and inputs) and return a generator of (result, new_state).
-
-        :param fn: Function to use
-        :param reads:
-        :param writes:
-        """
-        super(FunctionBasedStreamingActionAsync, self).__init__()
-        self._fn = fn
-        self._reads = reads
-        self._writes = writes
-        self._bound_params = bound_params if bound_params is not None else {}
-
-    async def stream_run_and_update(
-        self, state: State, **run_kwargs
-    ) -> typing.AsyncGenerator[typing.Tuple[dict, Optional[State]], None]:
-        async for result in self._fn(state, **self._bound_params, **run_kwargs):
-            yield result
-
-    @property
-    def reads(self) -> list[str]:
-        return self._reads
-
-    @property
-    def writes(self) -> list[str]:
-        return self._writes
-
-    @property
-    def streaming(self) -> bool:
-        return True
-
-    def with_params(self, **kwargs: Any) -> "FunctionBasedStreamingActionAsync":
-        """Binds parameters to the function. This is not user-facing -- this is
-        meant to be used internally by the API.
-
-        :param kwargs:
-        :return:
-        """
-        return FunctionBasedStreamingActionAsync(
-            self._fn, self._reads, self._writes, {**self._bound_params, **kwargs}
-        )
-
-    @property
-    def inputs(self) -> tuple[list[str], list[str]]:
-        return _get_inputs(self._bound_params, self._fn)
-
-    @property
-    def fn(self) -> Callable:
-        return self._fn
+    def is_async(self) -> bool:
+        return inspect.isasyncgenfunction(self._fn)
 
 
 def _validate_action_function(fn: Callable):
@@ -934,7 +942,6 @@ def _validate_action_function(fn: Callable):
             )
 
     return_type = sig.return_annotation
-    print(return_type)
     if (
         return_type is inspect.Signature.empty
         or not typing.get_origin(return_type) in {tuple, typing.Tuple}
@@ -1036,32 +1043,24 @@ def streaming_action(
             # return the final result
             return {'response': full_response}, state.update(response=full_response)
 
-    TODO -- async
     """
 
-    # TODO -- see if we want to consolidate this in some way with the above
-    # Currently this is our only other way to use a decorator to implement actions, so it is OK to duplicate
-    def decorator(fn) -> FunctionRepresentingAction:
-        is_async = inspect.isasyncgenfunction(fn)
-        if not is_async:
-            setattr(
-                fn,
-                FunctionBasedAction.ACTION_FUNCTION,
-                FunctionBasedStreamingAction(fn, reads, writes),
-            )
-        else:
-            setattr(
-                fn,
-                FunctionBasedAction.ACTION_FUNCTION,
-                FunctionBasedStreamingActionAsync(fn, reads, writes),
-            )
+    def wrapped(fn) -> FunctionRepresentingAction:
+        setattr(
+            fn,
+            FunctionBasedAction.ACTION_FUNCTION,
+            FunctionBasedStreamingAction(fn, reads, writes),
+        )
         setattr(fn, "bind", types.MethodType(bind, fn))
         return fn
 
-    return decorator
+    return wrapped
 
 
-def create_action(action_: Union[Callable, Action], name: str) -> Action:
+ActionT = TypeVar("ActionT", bound=Action)
+
+
+def create_action(action_: Union[Callable, ActionT], name: str) -> ActionT:
     """Factory function to create an action. This is meant to be called by
     the ApplicationBuilder, and not by the user. The internal API may change.
 

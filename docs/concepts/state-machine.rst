@@ -36,7 +36,7 @@ This is shown in the example from :ref:`getting started <simpleexample>`
 Running
 -------
 
-There are three APIs for executing an application.
+There are four APIs for executing an application.
 
 ``step``/``astep``
 ------------------
@@ -134,6 +134,12 @@ In the async context, you can run ``arun``:
     You can add inputs to ``run``/``arun`` in the same way as you can with ``iterate`` -- it will only apply to the first action.
 
 ``run`` and ``arun`` largely have the same behavior as ``iterate`` and ``aiterate``.
+
+``stream_result``/``astream_result``
+------------------------------------
+
+These allow you to stream responses back. Note they work best with streaming actions.
+Read about them in the :ref:`streaming <streaming>` section.
 
 ----------
 Inspection

@@ -195,7 +195,6 @@ async def it(app):
 async def main():
     app = application()
     await it(app)
-    await it(app)
 
 
 if __name__ == "__main__":
