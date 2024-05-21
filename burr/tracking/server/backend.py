@@ -58,6 +58,12 @@ class BackendBase(abc.ABC):
         pass
 
 
+def safe_json_load(line: bytes):
+    # Every once in a while we'll hit a non-utf-8 character
+    # In this case we replace it and hope for the best
+    return json.loads(line.decode("utf-8", errors="replace"))
+
+
 def get_uri(project_id: str) -> str:
     project_id_map = {
         "demo_counter": "https://github.com/DAGWorks-Inc/burr/tree/main/examples/hello-world-counter",
@@ -102,17 +108,17 @@ class LocalBackend(BackendBase):
         count = 0
         async with aiofiles.open(file_path, "rb") as f:
             for line in reversed(await f.readlines()):
-                line_data = json.loads(line)
-                if "sequence_id" in line_data:
-                    # Just return the latest for now
-                    # We add one as it is the count, not the index
-                    return line_data["sequence_id"] + 1
+                line_data = safe_json_load(line)
+                # Just return the latest for now
+                # We add one as it is the count, not the index
+                return line_data["sequence_id"] + 1
         return count
 
     async def _load_metadata(self, metadata_path: str) -> models.ApplicationMetadataModel:
         if os.path.exists(metadata_path):
-            async with aiofiles.open(metadata_path) as f:
-                return models.ApplicationMetadataModel.parse_obj(json.loads(await f.read()))
+            async with aiofiles.open(metadata_path, "rb") as f:
+                raw = await f.read()
+                return models.ApplicationMetadataModel.parse_obj(safe_json_load(raw))
         return models.ApplicationMetadataModel()
 
     async def list_apps(
@@ -167,9 +173,9 @@ class LocalBackend(BackendBase):
         steps_by_sequence_id = {}
         spans_by_id = {}
         if os.path.exists(log_file):
-            async with aiofiles.open(log_file) as f:
+            async with aiofiles.open(log_file, "rb") as f:
                 for line in await f.readlines():
-                    json_line = json.loads(line)
+                    json_line = safe_json_load(line)
                     # TODO -- make these into constants
                     if json_line["type"] == "begin_entry":
                         begin_step = BeginEntryModel.parse_obj(json_line)
