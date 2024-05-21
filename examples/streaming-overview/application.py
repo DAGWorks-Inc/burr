@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Generator, Optional, Tuple
 
 import openai
 
@@ -73,7 +73,7 @@ def prompt_for_more(state: State) -> Tuple[dict, State]:
 @streaming_action(reads=["prompt", "chat_history", "mode"], writes=["response"])
 def chat_response(
     state: State, prepend_prompt: str, model: str = "gpt-3.5-turbo"
-) -> Tuple[dict, State]:
+) -> Generator[Tuple[dict, Optional[State]], None, None]:
     """Streaming action, as we don't have the result immediately. This makes it more interactive"""
     chat_history = state["chat_history"].copy()
     chat_history[-1]["content"] = f"{prepend_prompt}: {chat_history[-1]['content']}"
@@ -96,12 +96,12 @@ def chat_response(
         buffer.append(chunk_str)
         yield {
             "response": {"content": chunk_str, "type": MODES[state["mode"]], "role": "assistant"}
-        }
+        }, None
 
     result = {
         "response": {"content": "".join(buffer), "type": MODES[state["mode"]], "role": "assistant"}
     }
-    return result, state.update(**result).append(chat_history=result["response"])
+    yield result, state.update(**result).append(chat_history=result["response"])
 
 
 @action(reads=["prompt", "chat_history"], writes=["response"])
@@ -180,7 +180,7 @@ TERMINAL_ACTIONS = [
     "unsafe_response",
 ]
 if __name__ == "__main__":
-    app = application(hooks=[])
+    app = application()
     app.visualize(
         output_file_path="statemachine", include_conditions=False, view=True, format="png"
     )

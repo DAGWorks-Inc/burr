@@ -9,13 +9,13 @@ import pytest
 from burr.core import State
 from burr.core.action import (
     Action,
+    AsyncGenerator,
     AsyncStreamingAction,
     Condition,
     Reducer,
     Result,
     SingleStepAction,
     SingleStepStreamingAction,
-    SingleStepStreamingActionAsync,
     StreamingAction,
     action,
     default,
@@ -27,15 +27,15 @@ from burr.core.application import (
     ApplicationBuilder,
     Transition,
     _arun_function,
+    _arun_multi_step_streaming_action,
     _arun_single_step_action,
+    _arun_single_step_streaming_action,
     _assert_set,
     _run_function,
     _run_multi_step_streaming_action,
-    _run_multi_step_streaming_action_async,
     _run_reducer,
     _run_single_step_action,
     _run_single_step_streaming_action,
-    _run_single_step_streaming_action_async,
     _validate_actions,
     _validate_start,
     _validate_transitions,
@@ -380,9 +380,9 @@ def test_run_single_step_streaming_action_errors_missing_write():
     class BrokenAction(SingleStepStreamingAction):
         def stream_run_and_update(
             self, state: State, **run_kwargs
-        ) -> Generator[dict, None, Tuple[dict, State]]:
-            yield {}
-            return {"present_value": 1}, state.update(present_value=1)
+        ) -> Generator[Tuple[dict, Optional[State]], None, None]:
+            yield {}, None
+            yield {"present_value": 1}, state.update(present_value=1)
 
         @property
         def reads(self) -> list[str]:
@@ -399,13 +399,13 @@ def test_run_single_step_streaming_action_errors_missing_write():
         collections.deque(gen, maxlen=0)  # exhaust the generator
 
 
-def test_run_single_step_streaming_action_errors_missing_write_async():
+async def test_run_single_step_streaming_action_errors_missing_write_async():
     class BrokenAction(SingleStepStreamingAction):
-        def stream_run_and_update(
+        async def stream_run_and_update(
             self, state: State, **run_kwargs
-        ) -> Generator[dict, None, Tuple[dict, State]]:
-            yield {}
-            return {"present_value": 1}, state.update(present_value=1)
+        ) -> AsyncGenerator[Tuple[dict, Optional[State]], None]:
+            yield {}, None
+            yield {"present_value": 1}, state.update(present_value=1)
 
         @property
         def reads(self) -> list[str]:
@@ -418,15 +418,15 @@ def test_run_single_step_streaming_action_errors_missing_write_async():
     action = BrokenAction()
     state = State()
     with pytest.raises(ValueError, match="missing_value"):
-        gen = _run_single_step_streaming_action(action, state, inputs={})
-        collections.deque(gen, maxlen=0)  # exhaust the generator
+        gen = _arun_single_step_streaming_action(action, state, inputs={})
+        [result async for result in gen]  # exhaust the generator
 
 
 def test_run_multi_step_streaming_action_errors_missing_write():
     class BrokenAction(StreamingAction):
-        def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, dict]:
+        def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, None]:
             yield {}
-            return {"present_value": 1}
+            yield {"present_value": 1}
 
         def update(self, result: dict, state: State) -> State:
             return state.update(present_value=1)
@@ -505,7 +505,7 @@ class SingleStepCounterWithInputsAsync(SingleStepCounterAsync):
 
 
 class StreamingCounter(StreamingAction):
-    def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, dict]:
+    def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, None]:
         if "steps_per_count" in run_kwargs:
             steps_per_count = run_kwargs["granularity"]
         else:
@@ -513,7 +513,7 @@ class StreamingCounter(StreamingAction):
         count = state["count"]
         for i in range(steps_per_count):
             yield {"count": count + ((i + 1) / 10)}
-        return {"count": count + 1}
+        yield {"count": count + 1}
 
     @property
     def reads(self) -> list[str]:
@@ -528,7 +528,7 @@ class StreamingCounter(StreamingAction):
 
 
 class AsyncStreamingCounter(AsyncStreamingAction):
-    async def stream_run(self, state: State, **run_kwargs) -> typing.AsyncGenerator[dict, None]:
+    async def stream_run(self, state: State, **run_kwargs) -> AsyncGenerator[dict, None]:
         if "steps_per_count" in run_kwargs:
             steps_per_count = run_kwargs["granularity"]
         else:
@@ -537,6 +537,8 @@ class AsyncStreamingCounter(AsyncStreamingAction):
         for i in range(steps_per_count):
             await asyncio.sleep(0.01)
             yield {"count": count + (i + 1) / 10}
+        await asyncio.sleep(0.01)
+        yield {"count": count + 1}
 
     @property
     def reads(self) -> list[str]:
@@ -553,12 +555,12 @@ class AsyncStreamingCounter(AsyncStreamingAction):
 class SingleStepStreamingCounter(SingleStepStreamingAction):
     def stream_run_and_update(
         self, state: State, **run_kwargs
-    ) -> Generator[dict, None, Tuple[dict, State]]:
+    ) -> Generator[Tuple[dict, Optional[State]], None, None]:
         steps_per_count = run_kwargs.get("granularity", 10)
         count = state["count"]
         for i in range(steps_per_count):
-            yield {"count": count + ((i + 1) / 10)}
-        return {"count": count + 1}, state.update(count=count + 1).append(tracker=count + 1)
+            yield {"count": count + ((i + 1) / 10)}, None
+        yield {"count": count + 1}, state.update(count=count + 1).append(tracker=count + 1)
 
     @property
     def reads(self) -> list[str]:
@@ -569,10 +571,10 @@ class SingleStepStreamingCounter(SingleStepStreamingAction):
         return ["count", "tracker"]
 
 
-class SingleStepStreamingCounterAsync(SingleStepStreamingActionAsync):
+class SingleStepStreamingCounterAsync(SingleStepStreamingAction):
     async def stream_run_and_update(
         self, state: State, **run_kwargs
-    ) -> typing.AsyncGenerator[Tuple[dict, Optional[State]], None]:
+    ) -> AsyncGenerator[Tuple[dict, Optional[State]], None]:
         steps_per_count = run_kwargs.get("granularity", 10)
         count = state["count"]
         for i in range(steps_per_count):
@@ -593,7 +595,7 @@ class SingleStepStreamingCounterAsync(SingleStepStreamingActionAsync):
 class StreamingActionIncorrectResultType(StreamingAction):
     def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, dict]:
         yield {}
-        return "not a dict"
+        yield "not a dict"
 
     @property
     def reads(self) -> list[str]:
@@ -608,7 +610,7 @@ class StreamingActionIncorrectResultType(StreamingAction):
 
 
 class StreamingActionIncorrectResultTypeAsync(AsyncStreamingAction):
-    async def stream_run(self, state: State, **run_kwargs) -> typing.AsyncGenerator[dict, None]:
+    async def stream_run(self, state: State, **run_kwargs) -> AsyncGenerator[dict, None]:
         yield {}
         yield "not a dict"
 
@@ -627,9 +629,9 @@ class StreamingActionIncorrectResultTypeAsync(AsyncStreamingAction):
 class StreamingSingleStepActionIncorrectResultType(SingleStepStreamingAction):
     def stream_run_and_update(
         self, state: State, **run_kwargs
-    ) -> Generator[dict, None, Tuple[dict, State]]:
-        yield {}
-        return "not a dict", state
+    ) -> Generator[Tuple[dict, Optional[State]], None, None]:
+        yield {}, State
+        yield "not a dict", state
 
     @property
     def reads(self) -> list[str]:
@@ -640,7 +642,7 @@ class StreamingSingleStepActionIncorrectResultType(SingleStepStreamingAction):
         return []
 
 
-class StreamingSingleStepActionIncorrectResultTypeAsync(SingleStepStreamingActionAsync):
+class StreamingSingleStepActionIncorrectResultTypeAsync(SingleStepStreamingAction):
     async def stream_run_and_update(
         self, state: State, **run_kwargs
     ) -> typing.AsyncGenerator[Tuple[dict, Optional[State]], None]:
@@ -758,21 +760,20 @@ def test__run_multistep_streaming_action():
     state = State({"count": 0, "tracker": []})
     generator = _run_multi_step_streaming_action(action, state, inputs={})
     last_result = -1
-    try:
-        while True:
-            result = next(generator)
+    result = None
+    for result, state in generator:
+        if last_result < 1:
+            # Otherwise you hit floating poit comparison problems
             assert result["count"] > last_result
-            last_result = result["count"]
-    except StopIteration as e:
-        result, state = e.value
-        assert result == {"count": 1}
-        assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+        last_result = result["count"]
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
 
 
 async def test__run_multistep_streaming_action_async():
     action = base_streaming_counter_async.with_name("counter")
     state = State({"count": 0, "tracker": []})
-    generator = _run_multi_step_streaming_action_async(action, state, inputs={})
+    generator = _arun_multi_step_streaming_action(action, state, inputs={})
     last_result = -1
     result = None
     async for result, state in generator:
@@ -796,9 +797,9 @@ async def test__run_streaming_action_incorrect_result_type_async():
     action = StreamingActionIncorrectResultTypeAsync()
     state = State()
     with pytest.raises(ValueError, match="returned a non-dict"):
-        gen = _run_multi_step_streaming_action_async(action, state, inputs={})
-        async for item in gen:
-            print(item)
+        gen = _arun_multi_step_streaming_action(action, state, inputs={})
+        async for _ in gen:
+            pass
 
 
 def test__run_single_step_streaming_action_incorrect_result_type():
@@ -813,7 +814,7 @@ async def test__run_single_step_streaming_action_incorrect_result_type_async():
     action = StreamingSingleStepActionIncorrectResultTypeAsync()
     state = State()
     with pytest.raises(ValueError, match="returned a non-dict"):
-        gen = _run_single_step_streaming_action_async(action, state, inputs={})
+        gen = _arun_single_step_streaming_action(action, state, inputs={})
         _ = [item async for item in gen]
 
 
@@ -822,21 +823,21 @@ def test__run_single_step_streaming_action():
     state = State({"count": 0, "tracker": []})
     generator = _run_single_step_streaming_action(action, state, inputs={})
     last_result = -1
-    try:
-        while True:
-            result = next(generator)
+    result, state = None, None
+    for result, state in generator:
+        if last_result < 1:
+            # Otherwise you hit comparison issues
+            # This is because we get to the last one, which is the final result
             assert result["count"] > last_result
-            last_result = result["count"]
-    except StopIteration as e:
-        result, state = e.value
-        assert result == {"count": 1}
-        assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+        last_result = result["count"]
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
 
 
 async def test__run_single_step_streaming_action_async():
     async_action = base_streaming_single_step_counter_async.with_name("counter")
     state = State({"count": 0, "tracker": []})
-    generator = _run_single_step_streaming_action_async(async_action, state, inputs={})
+    generator = _arun_single_step_streaming_action(async_action, state, inputs={})
     last_result = -1
     result, state = None, None
     async for result, state in generator:
@@ -1529,6 +1530,8 @@ async def test_astream_result_halt_after_run_through_streaming():
     action_tracker = ActionTracker()
     counter_action = base_streaming_single_step_counter_async.with_name("counter")
     counter_action_2 = base_streaming_single_step_counter_async.with_name("counter_2")
+    assert counter_action.is_async()
+    assert counter_action_2.is_async()
     app = Application(
         actions=[counter_action, counter_action_2],
         transitions=[
