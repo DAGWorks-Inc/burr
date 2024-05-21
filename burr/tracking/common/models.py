@@ -83,6 +83,11 @@ class TransitionModel(IdentifyingModel):
 
 
 class PointerModel(IdentifyingModel):
+    """Stores pointers to unique identifiers for an application.
+    This is used by a few different places to, say, store parent references
+    bewteen application instances.
+    """
+
     app_id: str
     sequence_id: Optional[int]
     partition_key: Optional[str]
