@@ -209,7 +209,12 @@ class LocalTrackingClient(
         **future_kwargs: Any,
     ):
         self._ensure_dir_structure(app_id)
-        self.f = open(os.path.join(self.storage_dir, app_id, self.LOG_FILENAME), "a")
+        self.f = open(
+            os.path.join(self.storage_dir, app_id, self.LOG_FILENAME),
+            "a",
+            encoding="utf-8",
+            errors="replace",
+        )
         graph_path = os.path.join(self.storage_dir, app_id, self.GRAPH_FILENAME)
         if os.path.exists(graph_path):
             logger.info(f"Graph already exists at {graph_path}. Not overwriting.")
@@ -217,7 +222,7 @@ class LocalTrackingClient(
         graph = ApplicationModel.from_application_graph(
             application_graph,
         ).model_dump()
-        with open(graph_path, "w") as f:
+        with open(graph_path, "w", encoding="utf-8", errors="replace") as f:
             json.dump(graph, f)
 
         metadata_path = os.path.join(self.storage_dir, app_id, self.METADATA_FILENAME)
@@ -230,7 +235,7 @@ class LocalTrackingClient(
             if parent_pointer is not None
             else None,
         ).model_dump()
-        with open(metadata_path, "w") as f:
+        with open(metadata_path, "w", errors="replace") as f:
             json.dump(metadata, f)
 
     def _append_write_line(self, model: pydantic.BaseModel):
