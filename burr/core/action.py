@@ -601,6 +601,7 @@ class AsyncStreamingAction(Action, abc.ABC):
 # TODO -- documentation for this
 class StreamingResultContainer(Iterator[dict]):
     """Container for a streaming result. This allows you to:
+
     1. Iterate over the result as it comes in
     2. Get the final result/state at the end
 

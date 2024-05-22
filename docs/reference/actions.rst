@@ -35,6 +35,9 @@ Actions
 .. autoclass:: burr.core.action.StreamingResultContainer
    :members:
 
+.. autoclass:: burr.core.action.AsyncStreamingResultContainer
+   :members:
+
 .. autoclass:: burr.core.action.streaming_action
    :members:
 
