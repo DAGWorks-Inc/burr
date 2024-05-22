@@ -230,11 +230,21 @@ def _run_single_step_action(
 def _run_single_step_streaming_action(
     action: SingleStepStreamingAction, state: State, inputs: Optional[Dict[str, Any]]
 ) -> Generator[Tuple[dict, Optional[State]], None, None]:
+    """Runs a single step streaming action. This API is internal-facing.
+    This normalizes + validates the output."""
     action.validate_inputs(inputs)
     generator = action.stream_run_and_update(state, **inputs)
     result = None
     state_update = None
-    for result, state_update in generator:
+    for item in generator:
+        if not isinstance(item, tuple):
+            # TODO -- consider adding support for just returning a result.
+            raise ValueError(
+                f"Action {action.name} must yield a tuple of (result, state_update). "
+                f"For all non-final results (intermediate),"
+                f"the state update must be None"
+            )
+        result, state_update = item
         if state_update is None:
             yield result, None
     if state_update is None:
@@ -250,6 +260,7 @@ def _run_single_step_streaming_action(
 async def _arun_single_step_streaming_action(
     action: SingleStepStreamingAction, state: State, inputs: Optional[Dict[str, Any]]
 ) -> AsyncGenerator[Tuple[dict, Optional[State]], None]:
+    """Runs a single step streaming action in async. See the synchronous version for more details."""
     action.validate_inputs(inputs)
     generator = action.stream_run_and_update(state, **inputs)
     result = None
@@ -279,6 +290,13 @@ async def _arun_single_step_streaming_action(
 def _run_multi_step_streaming_action(
     action: StreamingAction, state: State, inputs: Optional[Dict[str, Any]]
 ) -> Generator[Tuple[dict, Optional[State]], None, None]:
+    """Runs a multi-step streaming action. E.G. one with a run/reduce step.
+    This API is internal-facing. Note that this converts the shape of a
+    multi-step streaming action to yielding the results of the run step
+    as well as the state update, which is None for all the finaly ones.
+
+    This peeks ahead by one so we know when this is done (and when to validate).
+    """
     action.validate_inputs(inputs)
     generator = action.stream_run(state, **inputs)
     result = None
@@ -290,7 +308,6 @@ def _run_multi_step_streaming_action(
         result = item
         if next_result is not None:
             yield next_result, None
-        # yield item, None
     state_update = _run_reducer(action, state, result, action.name)
     _validate_result(result, action.name)
     _validate_reducer_writes(action, state_update, action.name)
@@ -300,6 +317,7 @@ def _run_multi_step_streaming_action(
 async def _arun_multi_step_streaming_action(
     action: AsyncStreamingAction, state: State, inputs: Optional[Dict[str, Any]]
 ) -> AsyncGenerator[Tuple[dict, Optional[State]], None]:
+    """Runs a multi-step streaming action in async. See the synchronous version for more details."""
     action.validate_inputs(inputs)
     generator = action.stream_run(state, **inputs)
     result = None
