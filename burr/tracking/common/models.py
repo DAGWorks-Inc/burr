@@ -1,12 +1,10 @@
 import datetime
-import inspect
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import field_serializer
 
 from burr.common import types as burr_types
 from burr.core import Action
-from burr.core.action import FunctionBasedAction, FunctionBasedStreamingAction
 from burr.core.application import ApplicationGraph, Transition
 from burr.integrations.base import require_plugin
 
@@ -52,10 +50,7 @@ class ActionModel(IdentifyingModel):
         :param action: Action to create the model from
         :return:
         """
-        if isinstance(action, (FunctionBasedAction, FunctionBasedStreamingAction)):
-            code = inspect.getsource(action.fn)
-        else:
-            code = inspect.getsource(action.__class__)
+        code = action.get_source()  # delegate to the action
         optional_inputs, required_inputs = action.optional_and_required_inputs
         return ActionModel(
             name=action.name,
