@@ -1,5 +1,6 @@
 import abc
 import ast
+import builtins
 import copy
 import inspect
 import sys
@@ -204,6 +205,7 @@ class Condition(Function):
         :return: A condition that evaluates the given expression
         """
         tree = ast.parse(expr, mode="eval")
+        all_builtins = builtins.__dict__
 
         # Visitor class to collect variable names
         class NameVisitor(ast.NodeVisitor):
@@ -211,7 +213,8 @@ class Condition(Function):
                 self.names = set()
 
             def visit_Name(self, node):
-                self.names.add(node.id)
+                if node.id not in all_builtins:
+                    self.names.add(node.id)
 
         # Visit the nodes and collect variable names
         visitor = NameVisitor()
@@ -260,6 +263,9 @@ class Condition(Function):
 
         name = f"{', '.join(f'{key}={value}' for key, value in sorted(kwargs.items()))}"
         return Condition(keys, condition_func, name=name)
+
+    def __repr__(self):
+        return f"condition: {self._name}"
 
     @classmethod
     @property
@@ -786,6 +792,7 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict]):
     def pass_through(results: dict, final_state: State) -> "AsyncStreamingResultContainer":
         """Creates a streaming result container that just passes through the given results.
         This is not a public facing API."""
+
         async def just_results() -> AsyncGeneratorReturnType:
             yield results, final_state
 

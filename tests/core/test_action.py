@@ -120,8 +120,8 @@ def test_condition_expr():
 
 
 def test_condition_expr_complex():
-    cond = Condition.expr("foo == 'bar' and baz == 'qux'")
-    assert cond.name == "foo == 'bar' and baz == 'qux'"
+    cond = Condition.expr("foo == 'bar' and len(baz) == 3")
+    assert cond.name == "foo == 'bar' and len(baz) == 3"
     assert sorted(cond.reads) == ["baz", "foo"]
     assert cond.run(State({"foo": "bar", "baz": "qux"})) == {Condition.KEY: True}
     assert cond.run(State({"foo": "baz", "baz": "qux"})) == {Condition.KEY: False}
