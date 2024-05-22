@@ -182,23 +182,24 @@ TERMINAL_ACTIONS = [
 ]
 
 
-async def it(app):
+async def run(app):
+    """Runs the application. Queries the input for prompt"""
     action, result = await app.astream_result(
-        halt_after=TERMINAL_ACTIONS, inputs={"prompt": "What are the first 100 prime numbers?"}
+        halt_after=TERMINAL_ACTIONS, inputs={"prompt": input("Please enter a prompt: ")}
     )
     async for item in result:
-        print(item["response"]["content"], end="")
+        print(item["response"]["content"], end="\n")
     result, state = await result.get()
     print(result["response"]["content"])
 
 
 async def main():
     app = application()
-    await it(app)
+    app.visualize(
+        output_file_path="statemachine", include_conditions=False, view=True, format="png"
+    )
+    await run(app)
 
 
 if __name__ == "__main__":
-    # app.visualize(
-    #     output_file_path="statemachine", include_conditions=False, view=True, format="png"
-    # )
     asyncio.run(main())

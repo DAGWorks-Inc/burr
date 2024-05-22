@@ -743,7 +743,7 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict]):
         self._callback_realized = False
 
     async def __anext__(self):
-        # TODO -- ensure this works
+        """Moves to the next state in the streaming result"""
         if self._result is not None:
             # we're done, and we've run through it
             raise StopAsyncIteration
@@ -754,6 +754,10 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict]):
         return result
 
     def __aiter__(self):
+        """Gives the iterator. Just calls anext, assigning the result in the finally block.
+        Note this may not be perfect due to the complexity of callbacks for async generators,
+        but it works in most cases."""
+
         async def gen_fn():
             try:
                 while True:
@@ -780,6 +784,8 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict]):
 
     @staticmethod
     def pass_through(results: dict, final_state: State) -> "AsyncStreamingResultContainer":
+        """Creates a streaming result container that just passes through the given results.
+        This is not a public facing API."""
         async def just_results() -> AsyncGeneratorReturnType:
             yield results, final_state
 
