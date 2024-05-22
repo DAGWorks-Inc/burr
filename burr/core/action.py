@@ -170,6 +170,13 @@ class Action(Function, Reducer, abc.ABC):
     def streaming(self) -> bool:
         return False
 
+    def get_source(self) -> str:
+        """Returns the source code of the action. This will default to
+        the source code of the class in which the action is implemented,
+        but can be overwritten." Override if you want debugging/tracking
+        to display a different source"""
+        return inspect.getsource(self.__class__)
+
     def __repr__(self):
         read_repr = ", ".join(self.reads) if self.reads else "{}"
         write_repr = ", ".join(self.writes) if self.writes else "{}"
@@ -538,6 +545,10 @@ class FunctionBasedAction(SingleStepAction):
 
     def is_async(self) -> bool:
         return inspect.iscoroutinefunction(self._fn)
+
+    def get_source(self) -> str:
+        """Return the source of the code for this action."""
+        return inspect.getsource(self._fn)
 
 
 StreamType = Tuple[dict, Optional[State]]
@@ -983,6 +994,10 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
 
     def is_async(self) -> bool:
         return inspect.isasyncgenfunction(self._fn)
+
+    def get_source(self) -> str:
+        """Return the source of the code for this action"""
+        return inspect.getsource(self._fn)
 
 
 def _validate_action_function(fn: Callable):
