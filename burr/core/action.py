@@ -975,7 +975,7 @@ class FunctionRepresentingAction(Protocol[C]):
     action_function: FunctionBasedActionType
     __call__: C
 
-    def bind(self, **kwargs: Any):
+    def bind(self, **kwargs: Any) -> Self:
         ...
 
 
