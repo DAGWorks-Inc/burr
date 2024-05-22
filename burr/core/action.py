@@ -182,7 +182,11 @@ class Condition(Function):
     def __init__(self, keys: List[str], resolver: Callable[[State], bool], name: str = None):
         """Base condition class. Chooses keys to read from the state and a resolver function.
 
-        Note that the ``~`` operator allows you to automatically invert the condition.
+        Note that you can use a few fundamental operators to build more complex conditions:
+
+         - ``~`` operator allows you to automatically invert the condition.
+         - ``|`` operator allows you to OR two conditions together.
+         - ``&`` operator allows you to AND two conditions together.
 
         :param keys: Keys to read from the state
         :param resolver:  Function to resolve the condition to True or False
@@ -280,6 +284,54 @@ class Condition(Function):
     @property
     def name(self) -> str:
         return self._name
+
+    def __or__(self, other: "Condition") -> "Condition":
+        """Combines two conditions with an OR operator. This will return a new condition
+        that is the OR of the two conditions.
+
+        To check if either foo is bar or baz is qux:
+
+        .. code-block:: python
+
+            condition = Condition.when(foo="bar") | Condition.when(baz="qux")
+
+        :param other: Other condition to OR with
+        :return: A new condition that is the OR of the two conditions
+        """
+        if not isinstance(other, Condition):
+            raise ValueError(f"Cannot OR a Condition with {other}")
+        return Condition(
+            self._keys + other._keys,
+            lambda state: self._resolver(state) or other.resolver(state),
+            name=f"{self._name} | {other._name}",
+        )
+
+    def __and__(self, other: "Condition") -> "Condition":
+        """Combines two conditions with an AND operator. This will return a new condition
+        that is the AND of the two conditions.
+
+        To check if both foo is bar and baz is qux:
+
+        .. code-block:: python
+
+            condition = Condition.when(foo="bar") & Condition.when(baz="qux")
+            # equivalent to
+            condition = Condition.when(foo="bar", baz="qux")
+
+        :param other: Other condition to AND with
+        :return:  A new condition that is the AND of the two conditions
+        """
+        if not isinstance(other, Condition):
+            raise ValueError(f"Cannot AND a Condition with {other}")
+        return Condition(
+            self._keys + other._keys,
+            lambda state: self._resolver(state) and other.resolver(state),
+            name=f"{self._name} & {other._name}",
+        )
+
+    @property
+    def resolver(self) -> Callable[[State], bool]:
+        return self._resolver
 
     def __invert__(self):
         return Condition(self._keys, lambda state: not self._resolver(state), name=f"~{self._name}")
