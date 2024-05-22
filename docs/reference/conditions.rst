@@ -8,6 +8,7 @@ Conditions represent choices to move between actions -- these are read by the ap
 Note that these will always be specified in order -- the first condition that evaluates to ``True`` will be the selected action.
 
 .. autoclass:: burr.core.action.Condition
+   :special-members: __and__, __or__, __invert__
    :members:
 
    .. automethod:: __init__

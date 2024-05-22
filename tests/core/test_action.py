@@ -153,6 +153,30 @@ def test_condition_invert():
     assert cond_inverted.run(State({"foo": "baz"})) == {Condition.KEY: True}
 
 
+def test_condition_and():
+    cond1 = Condition.when(foo="bar")
+    cond2 = Condition.when(baz="qux")
+    cond_and = cond1 & cond2
+    assert cond_and.name == "foo=bar & baz=qux"
+    assert sorted(cond_and.reads) == ["baz", "foo"]
+    assert cond_and.run(State({"foo": "bar", "baz": "qux"})) == {Condition.KEY: True}
+    assert cond_and.run(State({"foo": "baz", "baz": "qux"})) == {Condition.KEY: False}
+    assert cond_and.run(State({"foo": "bar", "baz": "corge"})) == {Condition.KEY: False}
+    assert cond_and.run(State({"foo": "baz", "baz": "corge"})) == {Condition.KEY: False}
+
+
+def test_condition_or():
+    cond1 = Condition.when(foo="bar")
+    cond2 = Condition.when(baz="qux")
+    cond_or = cond1 | cond2
+    assert cond_or.name == "foo=bar | baz=qux"
+    assert sorted(cond_or.reads) == ["baz", "foo"]
+    assert cond_or.run(State({"foo": "bar", "baz": "qux"})) == {Condition.KEY: True}
+    assert cond_or.run(State({"foo": "baz", "baz": "qux"})) == {Condition.KEY: True}
+    assert cond_or.run(State({"foo": "bar", "baz": "corge"})) == {Condition.KEY: True}
+    assert cond_or.run(State({"foo": "baz", "baz": "corge"})) == {Condition.KEY: False}
+
+
 def test_result():
     result = Result("foo", "bar")
     assert result.run(State({"foo": "baz", "bar": "qux", "baz": "quux"})) == {
