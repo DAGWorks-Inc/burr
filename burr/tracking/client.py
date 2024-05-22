@@ -333,21 +333,15 @@ class LocalTrackingClient(
         # load as JSON
         json_lines = [json.loads(js_line) for js_line in json_lines]
         # filter to only end_entry
-        json_lines = [js_line for js_line in json_lines if js_line["type"] == "end_entry"]
-        try:
-            line = json_lines[sequence_id]
-        except IndexError:
+        line = None
+        for js_line in json_lines:
+            if js_line["type"] == "end_entry":
+                if js_line["sequence_id"] == sequence_id:
+                    line = js_line
+        if line is None:
             raise ValueError(
                 f"Sequence number {sequence_id} not found for {self.project_id}/{app_id}."
             )
-        # check sequence number matches if non-negative; will break if either is None.
-        line_seq = int(line["sequence_id"])
-        if -1 < sequence_id != line_seq:
-            logger.warning(
-                f"Sequence number mismatch. For {self.project_id}/{app_id}: "
-                f"actual:{line_seq} != expected:{sequence_id}"
-            )
-        # get the prior state
         prior_state = line["state"]
         position = line["action"]
         # delete internally stuff. We can't loop over the keys and delete them in the same loop
@@ -358,11 +352,11 @@ class LocalTrackingClient(
                 to_delete.append(key)
         for key in to_delete:
             del prior_state[key]
-        prior_state["__SEQUENCE_ID"] = line_seq  # add the sequence id back
+        prior_state["__SEQUENCE_ID"] = sequence_id  # add the sequence id back
         return {
             "partition_key": partition_key,
             "app_id": app_id,
-            "sequence_id": line_seq,
+            "sequence_id": sequence_id,
             "position": position,
             "state": State(prior_state),
             "created_at": datetime.datetime.fromtimestamp(os.path.getctime(path)).isoformat(),

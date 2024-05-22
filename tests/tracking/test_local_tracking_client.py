@@ -6,7 +6,8 @@ from typing import Literal, Optional, Tuple
 import pytest
 
 import burr
-from burr.core import Application, ApplicationBuilder, Result, State, action, default, expr
+from burr import lifecycle
+from burr.core import Action, Application, ApplicationBuilder, Result, State, action, default, expr
 from burr.core.persistence import BaseStatePersister, PersistedStateData
 from burr.tracking import LocalTrackingClient
 from burr.tracking.client import _allowed_project_name
@@ -205,3 +206,81 @@ def test_persister_tracks_parent(tmpdir):
     assert metadata_parsed.parent_pointer.app_id == old_app_id
     assert metadata_parsed.parent_pointer.sequence_id == 5
     assert metadata_parsed.parent_pointer.partition_key == "user123"
+
+
+def test_multi_fork_tracking_client(tmpdir):
+    """This is more of an end-to-end test. We shoudl probably break it out
+    into smaller tests but the local tracking client being used as a persister is
+    a bit of a complex case, and we don't want to get lost in the details.
+    """
+    common_app_id = uuid.uuid4()
+    initial_app_id = f"new_{common_app_id}"
+    # newer_app_id = "newer"
+    log_dir = os.path.join(tmpdir, "tracking")
+    # results_dir = os.path.join(log_dir, "test_persister_tracks_parent", new_app_id)
+    project_name = "test_persister_tracks_parent"
+
+    tracking_client = LocalTrackingClient(project=project_name, storage_dir=log_dir)
+
+    class CallTracker(lifecycle.PostRunStepHook):
+        def __init__(self):
+            self.count = 0
+
+        def post_run_step(self, action: Action, **kwargs):
+            if action.name == "counter":
+                self.count += 1
+
+    def create_application(
+        old_app_id: Optional[str], new_app_id: str, old_sequence_id: Optional[int], max_count: int
+    ) -> Tuple[Application, CallTracker]:
+        tracker = CallTracker()
+        app: Application = (
+            ApplicationBuilder()
+            .with_actions(counter, Result("count").with_name("result"))
+            .with_transitions(
+                ("counter", "counter", expr(f"counter < {max_count}")),
+                ("counter", "result", default),
+            )
+            .initialize_from(
+                tracking_client,
+                resume_at_next_action=True,
+                default_state={"counter": 0, "break_at": -1},  # never break
+                default_entrypoint="counter",
+                fork_from_app_id=old_app_id,
+                fork_from_sequence_id=old_sequence_id,
+            )
+            .with_identifiers(app_id=new_app_id)
+            .with_tracker(tracking_client)
+            .with_hooks(tracker)
+            .build()
+        )
+        return app, tracker
+
+    # create an initial one
+    app_initial, tracker = create_application(None, initial_app_id, None, max_count=10)
+    action_, result, state = app_initial.run(halt_after=["result"])  # Run all the way through
+    assert state["counter"] == 10  # should have counted to 10
+    assert tracker.count == 10  # 10 counts
+
+    # create a new one from position 5
+
+    forked_app_id = f"fork_1_{common_app_id}"
+    forked_app_1, tracker = create_application(initial_app_id, forked_app_id, 5, max_count=15)
+    assert forked_app_1.sequence_id == 5
+    action_, result, state = forked_app_1.run(halt_after=["result"])  # Run all the way through
+    assert state["counter"] == 15  # should have counted to 15
+    assert tracker.count == 9  # start at 6, go to 15
+    assert forked_app_1.parent_pointer.app_id == initial_app_id
+    assert forked_app_1.parent_pointer.sequence_id == 5
+
+    forked_forked_app_id = f"fork_2_{common_app_id}"
+    forked_app_2, tracker = create_application(
+        forked_app_id, forked_forked_app_id, 10, max_count=25
+    )
+    assert forked_app_2.sequence_id == 10
+    action_, result, state = forked_app_2.run(halt_after=["result"])  # Run all the way through
+    assert state["counter"] == 25  # should have counted to 15
+    assert tracker.count == 14  # start at 11, go to 20
+
+    assert forked_app_2.parent_pointer.app_id == forked_app_id
+    assert forked_app_2.parent_pointer.sequence_id == 10
