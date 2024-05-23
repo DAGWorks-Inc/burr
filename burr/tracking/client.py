@@ -326,8 +326,6 @@ class LocalTrackingClient(
         # TODO:
         if app_id is None:
             return  # no application ID
-        if sequence_id is None:
-            sequence_id = -1  # get the last one
         path = os.path.join(self.storage_dir, app_id, self.LOG_FILENAME)
         if not os.path.exists(path):
             return None
@@ -339,10 +337,16 @@ class LocalTrackingClient(
         json_lines = [json.loads(js_line) for js_line in json_lines]
         # filter to only end_entry
         line = None
-        for js_line in json_lines:
-            if js_line["type"] == "end_entry":
-                if js_line["sequence_id"] == sequence_id:
-                    line = js_line
+        if sequence_id is None:
+            # get the last one, we want to start at the end
+            line = json_lines[-1]
+            sequence_id = line["sequence_id"]
+        else:
+            for js_line in json_lines:
+                if js_line["type"] == "end_entry":
+                    if js_line["sequence_id"] == sequence_id:
+                        line = js_line
+
         if line is None:
             raise ValueError(
                 f"Sequence number {sequence_id} not found for {self.project_id}/{app_id}."
