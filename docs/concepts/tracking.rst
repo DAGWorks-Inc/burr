@@ -84,3 +84,21 @@ run it with the following command:
     burr
 
 This will start a server on port 7241, and open up a browser window with the UI for you to explore.
+
+
+Using Burr in Google Collab
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If you run Burr in Google Collab, you can use the following code to expose the Burr UI to your browser:
+
+.. code-block:: python
+
+    # in one cell - expose the port:
+    from google.colab import output
+    output.serve_kernel_port_as_window(7241)
+
+.. code-block:: python
+
+    # in another cell - start burr: (! denotes a command line call)
+    !burr &
+    # now click the localhost:7241 from the prior cell.
+    # It should open up a new tab with the burr UI!
