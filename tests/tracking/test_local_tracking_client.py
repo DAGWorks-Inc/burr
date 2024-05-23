@@ -284,3 +284,16 @@ def test_multi_fork_tracking_client(tmpdir):
 
     assert forked_app_2.parent_pointer.app_id == forked_app_id
     assert forked_app_2.parent_pointer.sequence_id == 10
+
+    # fork from latest
+    # TODO -- break this up -- this test tests too much at once
+    # This is a quick addition to test that forking from sequence_id=None picks up where the last one left off
+
+    forked_forked_forked_app_id = f"fork_3_{common_app_id}"
+    forked_app_3, tracker = create_application(
+        forked_forked_app_id, forked_forked_forked_app_id, None, max_count=35
+    )
+    assert (
+        forked_app_3.sequence_id == forked_app_2.sequence_id == 25
+    )  # this should pick up where the last one left off
+    assert forked_app_3.parent_pointer.app_id == forked_forked_app_id
