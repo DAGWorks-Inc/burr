@@ -73,6 +73,13 @@ to rewind state and make different choices.
 When you use the ``fork_from_app_id`` to load state, the values passed to :py:meth:`with_identifiers() <burr.core.application.ApplicationBuilder.with_identifiers>`
 will then dictate where the new application state is ultimately stored.
 
+For a quick overview of using it, Ashis from `PeanutRobotics <https://peanutrobotics.com>`_ has kindly submitted a
+video on how they use this feature:
+
+.. raw:: html
+
+    <iframe width="800" height="455" src="https://www.youtube.com/embed/98vxhIcE6NI?si=w1vMHr9QUxjlVVgm" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 
 Writing state
 _____________
