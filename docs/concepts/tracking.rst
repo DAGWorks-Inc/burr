@@ -96,7 +96,7 @@ If you run Burr in Google Collab, you can use the following code to expose the B
     from google.colab import output
     output.serve_kernel_port_as_window(7241)
 
-.. code-block:: python
+.. code-block:: bash
 
     # in another cell - start burr: (! denotes a command line call)
     !burr &
