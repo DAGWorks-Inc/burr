@@ -239,6 +239,7 @@ class LocalTrackingClient(
         state: "State",
         application_graph: "ApplicationGraph",
         parent_pointer: Optional[burr_types.ParentPointer],
+        spawning_parent_pointer: Optional[burr_types.ParentPointer],
         **future_kwargs: Any,
     ):
         self._ensure_dir_structure(app_id)
@@ -264,9 +265,8 @@ class LocalTrackingClient(
             return
         metadata = ApplicationMetadataModel(
             partition_key=partition_key,
-            parent_pointer=PointerModel.from_pointer(parent_pointer)
-            if parent_pointer is not None
-            else None,
+            parent_pointer=PointerModel.from_pointer(parent_pointer),
+            spawning_parent_pointer=PointerModel.from_pointer(spawning_parent_pointer),
         ).model_dump()
         with open(metadata_path, "w", errors="replace") as f:
             json.dump(metadata, f)

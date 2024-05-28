@@ -412,14 +412,6 @@ class Application:
         self._state = state
         self._adapter_set = adapter_set if adapter_set is not None else LifecycleAdapterSet()
         self._graph = self._create_graph()
-        self._adapter_set.call_all_lifecycle_hooks_sync(
-            "post_application_create",
-            state=self._state,
-            application_graph=self._graph,
-            app_id=self._uid,
-            partition_key=self._partition_key,
-            parent_pointer=parent_pointer,
-        )
         # TODO -- consider adding global inputs + global input factories to the builder
         self._tracker = tracker
 
@@ -434,6 +426,15 @@ class Application:
             "__context": self._context_factory,
         }
         self._spawning_parent_pointer = spawning_parent_pointer
+        self._adapter_set.call_all_lifecycle_hooks_sync(
+            "post_application_create",
+            state=self._state,
+            application_graph=self._graph,
+            app_id=self._uid,
+            partition_key=self._partition_key,
+            parent_pointer=parent_pointer,
+            spawning_parent_pointer=spawning_parent_pointer,
+        )
 
     # @telemetry.capture_function_usage # todo -- capture usage when we break this up into one that isn't called internally
     # This will be doable when we move sequence ID to the beginning of the function https://github.com/DAGWorks-Inc/burr/pull/73

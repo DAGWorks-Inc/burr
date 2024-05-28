@@ -137,6 +137,7 @@ class PostApplicationCreateHook(abc.ABC):
         state: "State",
         application_graph: "ApplicationGraph",
         parent_pointer: burr_types.ParentPointer,
+        spawning_parent_pointer: burr_types.ParentPointer,
         **future_kwargs: Any,
     ):
         """Runs after an "application" object is instantiated. This is run by the Application, in its constructor,
@@ -146,7 +147,8 @@ class PostApplicationCreateHook(abc.ABC):
         :param partition_key: Partition key of application
         :param state: Current state of the application
         :param application_graph: Application graph of the application, representing the state machine
-        :param parent_pointer: Parent pointer of the application
+        :param parent_pointer: Parent pointer of the application (what it was forked from)
+        :param spawning_parent_pointer: Pointer to the parent that spawned this application
         :param future_kwargs: Future keyword arguments for backwards compatibility
         """
         pass

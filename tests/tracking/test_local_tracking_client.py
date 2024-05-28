@@ -31,7 +31,13 @@ def counter(state: State, __tracer: TracerFactory) -> Tuple[dict, State]:
     return result, state.update(**result)
 
 
-def sample_application(project_name: str, log_dir: str, app_id: str, broken: bool = False):
+def sample_application(
+    project_name: str,
+    log_dir: str,
+    app_id: str,
+    broken: bool = False,
+    spawn_from: Tuple[Optional[str], Optional[int]] = (None, None),
+):
     return (
         burr.core.ApplicationBuilder()
         .with_state(counter=0, break_at=2 if broken else -1)
@@ -43,6 +49,10 @@ def sample_application(project_name: str, log_dir: str, app_id: str, broken: boo
         .with_entrypoint("counter")
         .with_tracker(project=project_name, tracker="local", params={"storage_dir": log_dir})
         .with_identifiers(app_id=app_id)
+        .with_spawning_parent(
+            app_id=spawn_from[0],
+            sequence_id=spawn_from[1],  # no need to test the partition key here really
+        )
         .build()
     )
 
@@ -297,3 +307,22 @@ def test_multi_fork_tracking_client(tmpdir):
         forked_app_3.sequence_id == forked_app_2.sequence_id == 25
     )  # this should pick up where the last one left off
     assert forked_app_3.parent_pointer.app_id == forked_forked_app_id
+
+
+def test_application_tracks_end_to_end_with_spawning_parent(tmpdir: str):
+    """Tests that we record the parent of the spawned application in the metadata file for the spawned application."""
+    app_id = str(uuid.uuid4())
+    log_dir = os.path.join(tmpdir, "tracking_parent_test")
+    project_name = "test_application_tracks_end_to_end_with_spawning_parent"
+    # constructing this will cause the desired side-effect
+    sample_application(project_name, log_dir, app_id, spawn_from=(f"spawn_{app_id}", 5))
+    results_dir = os.path.join(log_dir, project_name, app_id)
+    assert os.path.exists(results_dir)
+    assert os.path.exists(
+        metadata_output := os.path.join(results_dir, LocalTrackingClient.METADATA_FILENAME)
+    )
+    with open(metadata_output) as f:
+        metadata = json.load(f)
+    metadata_parsed = ApplicationMetadataModel.model_validate(metadata)
+    assert metadata_parsed.spawning_parent_pointer.app_id == f"spawn_{app_id}"
+    assert metadata_parsed.spawning_parent_pointer.sequence_id == 5

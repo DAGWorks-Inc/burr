@@ -77,11 +77,15 @@ class PointerModel(IdentifyingModel):
     type: str = "pointer_data"
 
     @staticmethod
-    def from_pointer(pointer: burr_types.ParentPointer) -> "PointerModel":
-        return PointerModel(
-            app_id=pointer.app_id,
-            sequence_id=pointer.sequence_id,
-            partition_key=pointer.partition_key,
+    def from_pointer(pointer: Optional[burr_types.ParentPointer]) -> Optional["PointerModel"]:
+        return (
+            PointerModel(
+                app_id=pointer.app_id,
+                sequence_id=pointer.sequence_id,
+                partition_key=pointer.partition_key,
+            )
+            if pointer is not None
+            else None
         )
 
 
@@ -113,6 +117,7 @@ class ApplicationMetadataModel(IdentifyingModel):
 
     partition_key: Optional[str] = None
     parent_pointer: Optional[PointerModel] = None  # pointer to parent data
+    spawning_parent_pointer: Optional[PointerModel] = None  # pointer to spawning parent data
     type: str = "application_metadata"
 
 
