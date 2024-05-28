@@ -2403,7 +2403,8 @@ def test_application_passes_context_when_declared():
 
 def test_optional_context_in_dependency_factories():
     """Tests that the context is passed to the function correctly when nulled out.
-    TODO -- gret this to tests without instantiating an application."""
+    TODO -- get this to test without instantiating an application through the builder --
+    this is slightly overkill for a bit of code"""
     context_list = []
 
     @action(reads=["count"], writes=["count"])
@@ -2431,3 +2432,42 @@ def test_optional_context_in_dependency_factories():
     assert (
         inputs["__context"].tracker.unique_id == "unique_tracker_name"
     )  # it should be the correct context
+
+
+def test_application_with_no_spawning_parent():
+    """Test that the application does not have a spawning parent when it is not specified"""
+    counter_action = base_counter_action.with_name("counter")
+    result_action = Result("count").with_name("result")
+    app = (
+        ApplicationBuilder()
+        .with_actions(counter_action, result_action)
+        .with_transitions(("counter", "result", default))
+        .with_identifiers(app_id="test123", partition_key="user123", sequence_id=5)
+        .with_entrypoint("counter")
+        .with_state(count=0)
+        .build()
+    )
+    spawned_by = app.spawning_parent_pointer
+    assert spawned_by is None
+
+
+def test_application_with_spawning_parent():
+    """Tests that the application builder can specify a spawning
+    parent and it gets wired through to the app."""
+    counter_action = base_counter_action.with_name("counter")
+    result_action = Result("count").with_name("result")
+    app = (
+        ApplicationBuilder()
+        .with_actions(counter_action, result_action)
+        .with_transitions(("counter", "result", default))
+        .with_identifiers(app_id="test123", partition_key="user123")
+        .with_spawning_parent(app_id="test123", partition_key="user123", sequence_id=5)
+        .with_entrypoint("counter")
+        .with_state(count=0)
+        .build()
+    )
+    spawned_by = app.spawning_parent_pointer
+    assert spawned_by is not None
+    assert spawned_by.app_id == "test123"
+    assert spawned_by.partition_key == "user123"
+    assert spawned_by.sequence_id == 5

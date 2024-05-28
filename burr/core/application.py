@@ -386,6 +386,7 @@ class Application:
         adapter_set: Optional[LifecycleAdapterSet] = None,
         builder: Optional["ApplicationBuilder"] = None,
         parent_pointer: Optional[burr_types.ParentPointer] = None,
+        spawning_parent_pointer: Optional[burr_types.ParentPointer] = None,
         tracker: Optional["TrackingClient"] = None,
     ):
         """Instantiates an Application. This is an internal API -- use the builder!
@@ -432,6 +433,7 @@ class Application:
             ),
             "__context": self._context_factory,
         }
+        self._spawning_parent_pointer = spawning_parent_pointer
 
     # @telemetry.capture_function_usage # todo -- capture usage when we break this up into one that isn't called internally
     # This will be doable when we move sequence ID to the beginning of the function https://github.com/DAGWorks-Inc/burr/pull/73
@@ -1414,9 +1416,23 @@ class Application:
         """Gives the parent pointer of an application (from where it was forked).
         This is None if it was not forked.
 
+        Forking is the process of starting an application off of another.
+
         :return: The parent pointer object.
         """
         return self._parent_pointer
+
+    @property
+    def spawning_parent_pointer(self) -> Optional[burr_types.ParentPointer]:
+        """Gives the parent pointer of an application (from where it was spawned).
+        This is None if it was not spawned.
+
+        Spawning is the process of launching an application from within
+        a step of another. This is used for recursive tracking.
+
+        :return: The parent pointer object.
+        """
+        return self._spawning_parent_pointer
 
     def _create_graph(self) -> ApplicationGraph:
         """Internal-facing utility function for creating an ApplicationGraph"""
@@ -1570,6 +1586,9 @@ class ApplicationBuilder:
         self.fork_from_app_id: Optional[str] = None
         self.fork_from_partition_key: Optional[str] = None
         self.fork_from_sequence_id: Optional[int] = None
+        self.spawn_from_app_id: Optional[str] = None
+        self.spawn_from_partition_key: Optional[str] = None
+        self.spawn_from_sequence_id: Optional[int] = None
         self.loaded_from_fork: bool = False
         self.tracker = None
 
@@ -1819,6 +1838,27 @@ class ApplicationBuilder:
             self.lifecycle_adapters.append(persistence.PersisterHook(persister))
         return self
 
+    def with_spawning_parent(
+        self, app_id: str, sequence_id: int, partition_key: Optional[str] = None
+    ) -> "ApplicationBuilder":
+        """Sets the 'spawning' parent application that created this app.
+        This is used for tracking purposes. Doing this creates a parent/child relationship.
+        There can be many spawned children from a single sequence ID (just as there can be many forks of an app).
+
+        Note the difference between this and forking. Forking allows you to create a new app
+        where the old one left off. This suggests that this application is wholly contained
+        within the parent application.
+
+        :param app_id: ID of application that spawned this app
+        :param sequence_id: Sequence ID of the parent app that spawned this app
+        :param partition_key: Partition key of the parent app that spawned this app
+        :return: The application builder for future chaining.
+        """
+        self.spawn_from_app_id = app_id
+        self.spawn_from_sequence_id = sequence_id
+        self.spawn_from_partition_key = partition_key
+        return self
+
     def _load_from_persister(self):
         """Loads from the set persister and into this current object.
 
@@ -1935,4 +1975,11 @@ class ApplicationBuilder:
             if self.loaded_from_fork
             else None,
             tracker=self.tracker,
+            spawning_parent_pointer=burr_types.ParentPointer(
+                app_id=self.spawn_from_app_id,
+                partition_key=self.spawn_from_partition_key,
+                sequence_id=self.spawn_from_sequence_id,
+            )
+            if self.spawn_from_app_id is not None
+            else None,
         )
