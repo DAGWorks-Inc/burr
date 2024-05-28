@@ -1,10 +1,17 @@
+import abc
 import datetime
 import json
 import logging
 import os
 import re
 import traceback
+from abc import ABC
 from typing import Any, Dict, Optional
+
+try:
+    from typing import Self
+except ImportError:
+    Self = "Self"
 
 from burr import system
 from burr.common import types as burr_types
@@ -64,12 +71,29 @@ def _allowed_project_name(project_name: str, on_windows: bool) -> bool:
     return bool(re.match(pattern, project_name))
 
 
-class LocalTrackingClient(
+class SyncTrackingClient(
     PostApplicationCreateHook,
     PreRunStepHook,
     PostRunStepHook,
     PreStartSpanHook,
     PostEndSpanHook,
+    ABC,
+):
+    @abc.abstractmethod
+    def spawn(self) -> Self:
+        """Spawns a tracking client with the correct parent pointer.
+        Also potentially logs the spawn event to the tracking system.
+
+        This enables you to launch a Burr application inside another Burr application,
+        and have the parent application track the child application.
+
+        :return:
+        """
+        pass
+
+
+class LocalTrackingClient(
+    SyncTrackingClient,
     BaseStateLoader,
 ):
     """Tracker to track locally -- goes along with the Burr UI. Writes
@@ -329,6 +353,9 @@ class LocalTrackingClient(
     def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
         # TODO:
         return []
+
+    def spawn(self) -> Self:
+        raise ValueError("TODO")
 
     def load(
         self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None, **kwargs
