@@ -1,10 +1,14 @@
 import unittest
-from burr.integrations.persisters.b_mongodb import MongoDBPersister
+
 from burr.core import state
+from burr.integrations.persisters.b_mongodb import MongoDBPersister
+
 
 class TestMongoDBPersister(unittest.TestCase):
     def setUp(self):
-        self.persister = MongoDBPersister(uri='mongodb://localhost:27017', db_name='testdb', collection_name='testcollection')
+        self.persister = MongoDBPersister(
+            uri="mongodb://localhost:27017", db_name="testdb", collection_name="testcollection"
+        )
 
     def tearDown(self):
         self.persister.collection.drop()
@@ -25,5 +29,6 @@ class TestMongoDBPersister(unittest.TestCase):
         state_data = self.persister.load("pk", "nonexistent_key")
         self.assertIsNone(state_data)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -52,7 +52,7 @@ tests = [
   "pytest",
   "pytest-asyncio",
   "burr[hamilton]",
-  "mongodb"
+  "pymongo"
 ]
 
 documentation = [

@@ -1,12 +1,14 @@
-from pymongo import MongoClient
-import datetime
 import json
 import logging
-from typing import Literal, Optional
-from burr.core import persistence, state
 from datetime import datetime, timezone
+from typing import Literal, Optional
+
+from pymongo import MongoClient
+
+from burr.core import persistence, state
 
 logger = logging.getLogger(__name__)
+
 
 class MongoDBPersister(persistence.BaseStatePersister):
     """A class used to represent a MongoDB Persister.
@@ -24,7 +26,9 @@ class MongoDBPersister(persistence.BaseStatePersister):
         print(loaded_state)
     """
 
-    def __init__(self, uri='mongodb://localhost:27017', db_name='mydatabase', collection_name='mystates'):
+    def __init__(
+        self, uri="mongodb://localhost:27017", db_name="mydatabase", collection_name="mystates"
+    ):
         """Initializes the MongoDBPersister class."""
         self.client = MongoClient(uri)
         self.db = self.client[db_name]
@@ -71,17 +75,18 @@ class MongoDBPersister(persistence.BaseStatePersister):
         if self.collection.find_one(key):
             raise ValueError(f"partition_key:app_id:sequence_id[{key}] already exists.")
         json_state = json.dumps(state.get_all())
-        self.collection.insert_one({
-            "partition_key": partition_key,
-            "app_id": app_id,
-            "sequence_id": sequence_id,
-            "position": position,
-            "state": json_state,
-            "status": status,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-
-            # "created_at": datetime.datetime.utcnow().isoformat(),
-        })
+        self.collection.insert_one(
+            {
+                "partition_key": partition_key,
+                "app_id": app_id,
+                "sequence_id": sequence_id,
+                "position": position,
+                "state": json_state,
+                "status": status,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                # "created_at": datetime.datetime.utcnow().isoformat(),
+            }
+        )
 
     def __del__(self):
         self.client.close()
