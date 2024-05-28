@@ -25,6 +25,7 @@ from burr.core.application import (
     PRIOR_STEP,
     Application,
     ApplicationBuilder,
+    ApplicationContext,
     Transition,
     _arun_function,
     _arun_multi_step_streaming_action,
@@ -50,6 +51,7 @@ from burr.lifecycle import (
 )
 from burr.lifecycle.base import PostApplicationCreateHook
 from burr.lifecycle.internal import LifecycleAdapterSet
+from burr.tracking.base import SyncTrackingClient
 
 
 class PassedInAction(Action):
@@ -2302,7 +2304,7 @@ def test_application_builder_initialize_fork_errors_on_same_app_id():
         )
 
 
-def tests_application_builder_initialize_fork_app_id_happy_pth():
+def test_application_builder_initialize_fork_app_id_happy_pth():
     """Tests that forking properly works"""
     counter_action = base_counter_action.with_name("counter")
     result_action = Result("count").with_name("result")
@@ -2325,3 +2327,107 @@ def tests_application_builder_initialize_fork_app_id_happy_pth():
     assert app.uid != old_app_id
     assert app.state == State({"count": 5, "__PRIOR_STEP": "counter", "__SEQUENCE_ID": 5})
     assert app.parent_pointer.app_id == old_app_id
+
+
+class NoOpTracker(SyncTrackingClient):
+    def __init__(self, unique_id: str):
+        self.unique_id = unique_id
+
+    def post_application_create(self, **future_kwargs: Any):
+        pass
+
+    def pre_run_step(self, **future_kwargs: Any):
+        pass
+
+    def post_run_step(self, **future_kwargs: Any):
+        pass
+
+    def pre_start_span(self, **future_kwargs: Any):
+        pass
+
+    def post_end_span(self, **future_kwargs: Any):
+        pass
+
+
+def test_application_exposes_app_context():
+    """Tests that we can get the context from the application correctly"""
+    counter_action = base_counter_action.with_name("counter")
+    result_action = Result("count").with_name("result")
+    app = (
+        ApplicationBuilder()
+        .with_actions(counter_action, result_action)
+        .with_transitions(("counter", "result", default))
+        .with_tracker(NoOpTracker("unique_tracker_name"))
+        .with_identifiers(app_id="test123", partition_key="user123", sequence_id=5)
+        .with_entrypoint("counter")
+        .with_state(count=0)
+        .build()
+    )
+    context = app.context
+    assert context.app_id == "test123"
+    assert context.partition_key == "user123"
+    assert context.sequence_id == 5
+    assert context.tracker.unique_id == "unique_tracker_name"
+
+
+def test_application_passes_context_when_declared():
+    """Tests that the context is passed to the function correctly"""
+    context_list = []
+
+    @action(reads=["count"], writes=["count"])
+    def context_counter(
+        state: State, __context: ApplicationContext
+    ) -> Tuple[Dict[str, Any], State]:
+        context_list.append(__context)
+        return {}, state.update(count=state["count"] + 1)
+
+    result_action = Result("count")
+    app = (
+        ApplicationBuilder()
+        .with_actions(counter=context_counter, result=result_action)
+        .with_transitions(("counter", "counter", expr("count < 10")), ("counter", "result"))
+        .with_tracker(NoOpTracker("unique_tracker_name"))
+        .with_identifiers(app_id="test123", partition_key="user123", sequence_id=5)
+        .with_entrypoint("counter")
+        .with_state(count=0)
+        .build()
+    )
+    app.run(halt_after=["result"])
+    sequence_ids = [context.sequence_id for context in context_list]
+    assert sequence_ids == list(range(6, 16))
+    app_ids = set(context.app_id for context in context_list)
+    assert app_ids == {"test123"}
+    trackers = set(context.tracker.unique_id for context in context_list)
+    assert trackers == {"unique_tracker_name"}
+
+
+def test_optional_context_in_dependency_factories():
+    """Tests that the context is passed to the function correctly when nulled out.
+    TODO -- gret this to tests without instantiating an application."""
+    context_list = []
+
+    @action(reads=["count"], writes=["count"])
+    def context_counter(
+        state: State, __context: ApplicationContext = None
+    ) -> Tuple[Dict[str, Any], State]:
+        context_list.append(__context)
+        return {}, state.update(count=state["count"] + 1)
+
+    result_action = Result("count")
+    app = (
+        ApplicationBuilder()
+        .with_actions(counter=context_counter, result=result_action)
+        .with_transitions(("counter", "counter", expr("count < 10")), ("counter", "result"))
+        .with_tracker(NoOpTracker("unique_tracker_name"))
+        .with_identifiers(app_id="test123", partition_key="user123", sequence_id=5)
+        .with_entrypoint("counter")
+        .with_state(count=0)
+        .build()
+    )
+    inputs = app._process_inputs({}, app.get_next_action())
+    assert "__context" in inputs  # it should be there
+    assert inputs["__context"] is not None  # it should not be None
+    assert inputs["__context"].app_id == "test123"  # it should be the correct context
+    assert (
+        inputs["__context"].tracker.unique_id == "unique_tracker_name"
+    )  # it should be the correct context

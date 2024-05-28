@@ -6,6 +6,7 @@ import logging
 import pprint
 import uuid
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncGenerator,
     Callable,
@@ -41,6 +42,9 @@ from burr.core.persistence import BaseStateLoader, BaseStateSaver
 from burr.core.state import State
 from burr.lifecycle.base import LifecycleAdapter
 from burr.lifecycle.internal import LifecycleAdapterSet
+
+if TYPE_CHECKING:
+    from burr.tracking.base import TrackingClient
 
 logger = logging.getLogger(__name__)
 
@@ -361,6 +365,14 @@ class ApplicationGraph:
     entrypoint: Action
 
 
+@dataclasses.dataclass
+class ApplicationContext:
+    app_id: str
+    partition_key: Optional[str]
+    sequence_id: Optional[int]
+    tracker: Optional["TrackingClient"]
+
+
 class Application:
     def __init__(
         self,
@@ -374,6 +386,7 @@ class Application:
         adapter_set: Optional[LifecycleAdapterSet] = None,
         builder: Optional["ApplicationBuilder"] = None,
         parent_pointer: Optional[burr_types.ParentPointer] = None,
+        tracker: Optional["TrackingClient"] = None,
     ):
         """Instantiates an Application. This is an internal API -- use the builder!
 
@@ -407,15 +420,18 @@ class Application:
             parent_pointer=parent_pointer,
         )
         # TODO -- consider adding global inputs + global input factories to the builder
-        self.dependency_factory = {
-            "__tracer": functools.partial(
-                visibility.tracing.TracerFactory, lifecycle_adapters=self._adapter_set
-            )
-        }
+        self._tracker = tracker
+
         if sequence_id is not None:
             self._set_sequence_id(sequence_id)
         self._builder = builder
         self._parent_pointer = parent_pointer
+        self.dependency_factory = {
+            "__tracer": functools.partial(
+                visibility.tracing.TracerFactory, lifecycle_adapters=self._adapter_set
+            ),
+            "__context": self._context_factory,
+        }
 
     # @telemetry.capture_function_usage # todo -- capture usage when we break this up into one that isn't called internally
     # This will be doable when we move sequence ID to the beginning of the function https://github.com/DAGWorks-Inc/burr/pull/73
@@ -437,6 +453,14 @@ class Application:
         self._increment_sequence_id()
         out = self._step(inputs=inputs, _run_hooks=True)
         return out
+
+    def _context_factory(self, action: Action, sequence_id: int) -> ApplicationContext:
+        return ApplicationContext(
+            app_id=self._uid,
+            tracker=self._tracker,
+            partition_key=self._partition_key,
+            sequence_id=sequence_id,
+        )
 
     def _step(
         self, inputs: Optional[Dict[str, Any]], _run_hooks: bool = True
@@ -519,13 +543,15 @@ class Application:
                 f"so we're just letting you know some inputs are being skipped."
             )
         missing_inputs = required_inputs - set(processed_inputs.keys())
-        for required_input in list(missing_inputs):
+        additional_inputs = optional_inputs - set(processed_inputs.keys())
+        for input_ in missing_inputs | additional_inputs:
             # if we can find it in the dependency factory, we'll use that
-            if required_input in self.dependency_factory:
-                processed_inputs[required_input] = self.dependency_factory[required_input](
-                    action, self.sequence_id
-                )
-                missing_inputs.remove(required_input)
+            # TODO -- figure out what happens if people attempt to override default factory
+            # inputs
+            if input_ in self.dependency_factory:
+                processed_inputs[input_] = self.dependency_factory[input_](action, self.sequence_id)
+                if input_ in missing_inputs:
+                    missing_inputs.remove(input_)
         if len(missing_inputs) > 0:
             missing_inputs_dict = {key: "FILL ME IN" for key in missing_inputs}
             missing_inputs_dict.update({key: "..." for key in inputs.keys()})
@@ -1420,6 +1446,15 @@ class Application:
         """
         return self._state.get(SEQUENCE_ID)
 
+    @property
+    def context(self) -> ApplicationContext:
+        """Gives the application context.
+        This has information you need for the tracker, sequence ID, application, etc...
+
+        :return: Application context
+        """
+        return self._context_factory(self.get_next_action(), self.sequence_id)
+
     def _increment_sequence_id(self):
         if SEQUENCE_ID not in self._state:
             self._state = self._state.update(**{SEQUENCE_ID: 0})
@@ -1536,6 +1571,7 @@ class ApplicationBuilder:
         self.fork_from_partition_key: Optional[str] = None
         self.fork_from_sequence_id: Optional[int] = None
         self.loaded_from_fork: bool = False
+        self.tracker = None
 
     def with_identifiers(
         self, app_id: str = None, partition_key: str = None, sequence_id: int = None
@@ -1672,8 +1708,8 @@ class ApplicationBuilder:
     def with_tracker(
         self,
         tracker: Union[
-            Literal["local"], LifecycleAdapter
-        ] = "local",  # TODO -- tighten type-check for tracker. For now it has the lifecycle adapter
+            Literal["local"], "TrackingClient"  # TODO -- support async tracking
+        ] = "local",
         project: str = "default",
         params: Dict[str, Any] = None,
     ):
@@ -1710,6 +1746,7 @@ class ApplicationBuilder:
                 raise ValueError(
                     "Params are not supported for object-specified trackers, these are already initialized!"
                 )
+        self.tracker = tracker
         return self
 
     def initialize_from(
@@ -1897,4 +1934,5 @@ class ApplicationBuilder:
             )
             if self.loaded_from_fork
             else None,
+            tracker=self.tracker,
         )
