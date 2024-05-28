@@ -214,6 +214,8 @@ export const AppView = (props: {
               setMinimized={setMinimizedTable}
               projectId={projectId}
               parentPointer={data?.parent_pointer || undefined}
+              spawningParentPointer={data?.spawning_parent_pointer || undefined}
+              links={data.children || []}
             />
           </div>
           {props.orientation === 'stacked_horizontal' && (

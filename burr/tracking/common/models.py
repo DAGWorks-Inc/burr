@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from burr.common import types as burr_types
 from burr.core import Action
@@ -77,12 +77,29 @@ class PointerModel(IdentifyingModel):
     type: str = "pointer_data"
 
     @staticmethod
-    def from_pointer(pointer: burr_types.ParentPointer) -> "PointerModel":
-        return PointerModel(
-            app_id=pointer.app_id,
-            sequence_id=pointer.sequence_id,
-            partition_key=pointer.partition_key,
+    def from_pointer(pointer: Optional[burr_types.ParentPointer]) -> Optional["PointerModel"]:
+        return (
+            PointerModel(
+                app_id=pointer.app_id,
+                sequence_id=pointer.sequence_id,
+                partition_key=pointer.partition_key,
+            )
+            if pointer is not None
+            else None
         )
+
+
+class ChildApplicationModel(IdentifyingModel):
+    """Stores data about a child application (either a fork or a spawned application).
+    This allows us to link from parent -> child in the UI."""
+
+    child: PointerModel
+    event_time: datetime.datetime
+    event_type: Literal[
+        "fork", "spawn_start"
+    ]  # TODO -- get spawn_end working when we have interaction hooks (E.G. on app fn calls)
+    sequence_id: Optional[int]
+    type: str = "child_application_data"
 
 
 class ApplicationModel(IdentifyingModel):
@@ -113,7 +130,15 @@ class ApplicationMetadataModel(IdentifyingModel):
 
     partition_key: Optional[str] = None
     parent_pointer: Optional[PointerModel] = None  # pointer to parent data
+    spawning_parent_pointer: Optional[PointerModel] = None  # pointer to spawning parent data
     type: str = "application_metadata"
+
+
+INPUT_FILTERLIST = {"__tracer", "__context"}
+
+
+def _filter_inputs(d: dict) -> dict:
+    return {k: v for k, v in d.items() if k not in INPUT_FILTERLIST}
 
 
 class BeginEntryModel(IdentifyingModel):

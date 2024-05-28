@@ -7,6 +7,7 @@ from burr.tracking.common.models import (
     ApplicationModel,
     BeginEntryModel,
     BeginSpanModel,
+    ChildApplicationModel,
     EndEntryModel,
     EndSpanModel,
     PointerModel,
@@ -30,6 +31,13 @@ class ApplicationSummary(pydantic.BaseModel):
     num_steps: int
     tags: Dict[str, str]
     parent_pointer: Optional[PointerModel] = None
+    spawning_parent_pointer: Optional[PointerModel] = None
+
+
+class ApplicationModelWithChildren(pydantic.BaseModel):
+    application: ApplicationModel
+    children: List[PointerModel]
+    type: str = "application_with_children"
 
 
 class Span(pydantic.BaseModel):
@@ -53,5 +61,7 @@ class ApplicationLogs(pydantic.BaseModel):
     we will likely be rethinking this but for now this provides for easy parsing."""
 
     application: ApplicationModel
+    children: List[ChildApplicationModel]
     steps: List[Step]
     parent_pointer: Optional[PointerModel] = None
+    spawning_parent_pointer: Optional[PointerModel] = None

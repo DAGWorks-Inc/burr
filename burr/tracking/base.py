@@ -20,7 +20,8 @@ class SyncTrackingClient(
     """Base class for synchronous tracking clients. All tracking clients must implement from this
     TODO -- create an async tracking client"""
 
-    pass
+    def copy(self):
+        pass
 
 
 TrackingClient = SyncTrackingClient
