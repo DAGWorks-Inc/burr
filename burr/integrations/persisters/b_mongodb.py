@@ -9,7 +9,20 @@ from datetime import datetime, timezone
 logger = logging.getLogger(__name__)
 
 class MongoDBPersister(persistence.BaseStatePersister):
-    """A class used to represent a MongoDB Persister."""
+    """A class used to represent a MongoDB Persister.
+    Example usage:
+        persister = MongoDBPersister(uri='mongodb://user:pass@localhost:27017', db_name='mydatabase', collection_name='mystates')
+        persister.save(
+            partition_key='example_partition',
+            app_id='example_app',
+            sequence_id=1,
+            position='example_position',
+            state=state.State({'key': 'value'}),
+            status='completed'
+        )
+        loaded_state = persister.load(partition_key='example_partition', app_id='example_app', sequence_id=1)
+        print(loaded_state)
+    """
 
     def __init__(self, uri='mongodb://localhost:27017', db_name='mydatabase', collection_name='mystates'):
         """Initializes the MongoDBPersister class."""

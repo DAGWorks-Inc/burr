@@ -51,7 +51,8 @@ redis = [
 tests = [
   "pytest",
   "pytest-asyncio",
-  "burr[hamilton]"
+  "burr[hamilton]",
+  "mongodb"
 ]
 
 documentation = [
