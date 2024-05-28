@@ -1,5 +1,6 @@
 import abc
 import datetime
+import fcntl
 import json
 import logging
 import os
@@ -30,6 +31,7 @@ from burr.tracking.common.models import (
     ApplicationModel,
     BeginEntryModel,
     BeginSpanModel,
+    ChildApplicationModel,
     EndEntryModel,
     EndSpanModel,
     PointerModel,
@@ -80,14 +82,13 @@ class SyncTrackingClient(
     ABC,
 ):
     @abc.abstractmethod
-    def spawn(self) -> Self:
-        """Spawns a tracking client with the correct parent pointer.
-        Also potentially logs the spawn event to the tracking system.
+    def copy(self) -> Self:
+        """Clones the tracking client. This is useful for forking applications.
+        Note we have to copy the tracking client as it is stateful for tracking.
+        We may make this called internally if it has started already,
+        or make it so it carries multiple states at once.
 
-        This enables you to launch a Burr application inside another Burr application,
-        and have the parent application track the child application.
-
-        :return:
+        :return: a copy of the self.
         """
         pass
 
@@ -105,6 +106,10 @@ class LocalTrackingClient(
     GRAPH_FILENAME = "graph.json"
     METADATA_FILENAME = "metadata.json"
     LOG_FILENAME = "log.jsonl"
+    CHILDREN_FILENAME = (
+        "children.jsonl"  # any applications that are spawned or forked will show up here
+    )
+    # This is purely an optimization for bi-directional relationships using filesystems (denormalized data)
     DEFAULT_STORAGE_DIR = "~/.burr"
 
     def __init__(
@@ -131,9 +136,85 @@ class LocalTrackingClient(
                 f"Project: {project} is not valid. Project name cannot contain non-alphanumeric (except _ and -) characters."
                 "We will be relaxing this restriction later but for now please rename your project!"
             )
+        self.raw_storage_dir = storage_dir
         self.storage_dir = LocalTrackingClient.get_storage_path(project, storage_dir)
         self.project_id = project
         self.serde_kwargs = serde_kwargs or {}
+
+    def _log_child_relationships(
+        self,
+        fork_parent_pointer_model: Optional[burr_types.ParentPointer],
+        spawn_parent_pointer_model: Optional[burr_types.ParentPointer],
+        app_id: str,
+    ):
+        """Logs a child relationship. This is special as it does not log to the main log file. Rather
+        it logs within the parent directory. Note this only exists to maintain (denormalized) bidirectional
+        pointers, as the filesystem is not a database, so querying is very inefficient.
+
+        This uses fctl.flock to ensure that the file is not written to by multiple processes at the same time.
+        Read may be corrupted (by the server), as it does not use the lock, but that will retry.
+        """
+        parent_relationships = []
+        if fork_parent_pointer_model is not None:
+            parent_relationships.append(
+                # This effectively inverts the pointers
+                # The logging call is being made from the child, so we're logging to the parent
+                # We do it once for the fork_parent (if it exists), and once for the spawn_parent (if it exists)
+                (
+                    fork_parent_pointer_model.app_id,
+                    ChildApplicationModel(
+                        child=PointerModel(
+                            app_id=app_id,
+                            sequence_id=None,
+                            partition_key=None,  # TODO -- get partition key
+                        ),
+                        event_time=datetime.datetime.now(),
+                        event_type="fork",
+                        # this is the sequence ID at which this link occurred (from the parent)
+                        sequence_id=fork_parent_pointer_model.sequence_id,
+                    ),
+                )
+            )
+        if spawn_parent_pointer_model is not None:
+            # See the notes above
+            parent_relationships.append(
+                (
+                    spawn_parent_pointer_model.app_id,
+                    ChildApplicationModel(
+                        child=PointerModel(
+                            app_id=app_id,
+                            sequence_id=None,
+                            partition_key=None,  # TODO -- get partition key
+                        ),
+                        event_time=datetime.datetime.now(),
+                        event_type="spawn_start",
+                        sequence_id=spawn_parent_pointer_model.sequence_id,
+                    ),
+                )
+            )
+        for parent_id, child_of in parent_relationships:
+            parent_path = os.path.join(self.storage_dir, parent_id)
+            if not os.path.exists(parent_path):
+                # This currently makes the parent directory so that it does not fail
+                # If the parent directory exists we'll just use that
+                os.makedirs(parent_path)
+            parent_children_list_path = os.path.join(
+                parent_path, LocalTrackingClient.CHILDREN_FILENAME
+            )
+            with open(parent_children_list_path, "a") as f:
+                fileno = f.fileno()
+                try:
+                    fcntl.flock(fileno, fcntl.LOCK_EX)
+                    f.write(child_of.model_dump_json() + "\n")
+                finally:
+                    # we always want to release the lock so its not held indefinitely
+                    fcntl.flock(fileno, fcntl.LOCK_UN)
+
+    def copy(self) -> "LocalTrackingClient":
+        return LocalTrackingClient(
+            project=self.project_id,
+            storage_dir=self.raw_storage_dir,
+        )
 
     @classmethod
     def get_storage_path(cls, project, storage_dir) -> str:
@@ -239,6 +320,7 @@ class LocalTrackingClient(
         state: "State",
         application_graph: "ApplicationGraph",
         parent_pointer: Optional[burr_types.ParentPointer],
+        spawning_parent_pointer: Optional[burr_types.ParentPointer],
         **future_kwargs: Any,
     ):
         self._ensure_dir_structure(app_id)
@@ -264,12 +346,18 @@ class LocalTrackingClient(
             return
         metadata = ApplicationMetadataModel(
             partition_key=partition_key,
-            parent_pointer=PointerModel.from_pointer(parent_pointer)
-            if parent_pointer is not None
-            else None,
+            parent_pointer=PointerModel.from_pointer(parent_pointer),
+            spawning_parent_pointer=PointerModel.from_pointer(spawning_parent_pointer),
         ).model_dump()
         with open(metadata_path, "w", errors="replace") as f:
             json.dump(metadata, f)
+
+        # Append to the parents of this the pointer to this, now
+        self._log_child_relationships(
+            parent_pointer,
+            spawning_parent_pointer,
+            app_id,
+        )
 
     def _append_write_line(self, model: pydantic.BaseModel):
         self.f.write(model.model_dump_json() + "\n")
@@ -353,9 +441,6 @@ class LocalTrackingClient(
     def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
         # TODO:
         return []
-
-    def spawn(self) -> Self:
-        raise ValueError("TODO")
 
     def load(
         self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None, **kwargs

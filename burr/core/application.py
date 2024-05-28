@@ -386,6 +386,7 @@ class Application:
         adapter_set: Optional[LifecycleAdapterSet] = None,
         builder: Optional["ApplicationBuilder"] = None,
         parent_pointer: Optional[burr_types.ParentPointer] = None,
+        spawning_parent_pointer: Optional[burr_types.ParentPointer] = None,
         tracker: Optional["TrackingClient"] = None,
     ):
         """Instantiates an Application. This is an internal API -- use the builder!
@@ -411,14 +412,6 @@ class Application:
         self._state = state
         self._adapter_set = adapter_set if adapter_set is not None else LifecycleAdapterSet()
         self._graph = self._create_graph()
-        self._adapter_set.call_all_lifecycle_hooks_sync(
-            "post_application_create",
-            state=self._state,
-            application_graph=self._graph,
-            app_id=self._uid,
-            partition_key=self._partition_key,
-            parent_pointer=parent_pointer,
-        )
         # TODO -- consider adding global inputs + global input factories to the builder
         self._tracker = tracker
 
@@ -432,6 +425,16 @@ class Application:
             ),
             "__context": self._context_factory,
         }
+        self._spawning_parent_pointer = spawning_parent_pointer
+        self._adapter_set.call_all_lifecycle_hooks_sync(
+            "post_application_create",
+            state=self._state,
+            application_graph=self._graph,
+            app_id=self._uid,
+            partition_key=self._partition_key,
+            parent_pointer=parent_pointer,
+            spawning_parent_pointer=spawning_parent_pointer,
+        )
 
     # @telemetry.capture_function_usage # todo -- capture usage when we break this up into one that isn't called internally
     # This will be doable when we move sequence ID to the beginning of the function https://github.com/DAGWorks-Inc/burr/pull/73
@@ -455,6 +458,7 @@ class Application:
         return out
 
     def _context_factory(self, action: Action, sequence_id: int) -> ApplicationContext:
+        """Helper function to create an application context, in the form of the dependency factories we inject to nodes."""
         return ApplicationContext(
             app_id=self._uid,
             tracker=self._tracker,
@@ -1414,9 +1418,23 @@ class Application:
         """Gives the parent pointer of an application (from where it was forked).
         This is None if it was not forked.
 
+        Forking is the process of starting an application off of another.
+
         :return: The parent pointer object.
         """
         return self._parent_pointer
+
+    @property
+    def spawning_parent_pointer(self) -> Optional[burr_types.ParentPointer]:
+        """Gives the parent pointer of an application (from where it was spawned).
+        This is None if it was not spawned.
+
+        Spawning is the process of launching an application from within
+        a step of another. This is used for recursive tracking.
+
+        :return: The parent pointer object.
+        """
+        return self._spawning_parent_pointer
 
     def _create_graph(self) -> ApplicationGraph:
         """Internal-facing utility function for creating an ApplicationGraph"""
@@ -1570,6 +1588,9 @@ class ApplicationBuilder:
         self.fork_from_app_id: Optional[str] = None
         self.fork_from_partition_key: Optional[str] = None
         self.fork_from_sequence_id: Optional[int] = None
+        self.spawn_from_app_id: Optional[str] = None
+        self.spawn_from_partition_key: Optional[str] = None
+        self.spawn_from_sequence_id: Optional[int] = None
         self.loaded_from_fork: bool = False
         self.tracker = None
 
@@ -1707,9 +1728,7 @@ class ApplicationBuilder:
 
     def with_tracker(
         self,
-        tracker: Union[
-            Literal["local"], "TrackingClient"  # TODO -- support async tracking
-        ] = "local",
+        tracker: Union[Literal["local"], "TrackingClient"] = "local",
         project: str = "default",
         params: Dict[str, Any] = None,
     ):
@@ -1729,6 +1748,7 @@ class ApplicationBuilder:
         :return: The application builder for future chaining.
         """
         # if it's a lifecycle adapter, just add it
+        instantiated_tracker = tracker
         if isinstance(tracker, str):
             if params is None:
                 params = {}
@@ -1737,16 +1757,17 @@ class ApplicationBuilder:
 
                 kwargs = {"project": project}
                 kwargs.update(params)
-                self.lifecycle_adapters.append(LocalTrackingClient(**kwargs))
+                instantiated_tracker = LocalTrackingClient(**kwargs)
+                self.lifecycle_adapters.append(instantiated_tracker)
             else:
                 raise ValueError(f"Tracker {tracker}:{project} not supported")
         else:
-            self.lifecycle_adapters.append(tracker)
+            self.lifecycle_adapters.append(instantiated_tracker)
             if params is not None:
                 raise ValueError(
                     "Params are not supported for object-specified trackers, these are already initialized!"
                 )
-        self.tracker = tracker
+        self.tracker = instantiated_tracker
         return self
 
     def initialize_from(
@@ -1817,6 +1838,27 @@ class ApplicationBuilder:
             self.lifecycle_adapters.append(persister)
         else:
             self.lifecycle_adapters.append(persistence.PersisterHook(persister))
+        return self
+
+    def with_spawning_parent(
+        self, app_id: str, sequence_id: int, partition_key: Optional[str] = None
+    ) -> "ApplicationBuilder":
+        """Sets the 'spawning' parent application that created this app.
+        This is used for tracking purposes. Doing this creates a parent/child relationship.
+        There can be many spawned children from a single sequence ID (just as there can be many forks of an app).
+
+        Note the difference between this and forking. Forking allows you to create a new app
+        where the old one left off. This suggests that this application is wholly contained
+        within the parent application.
+
+        :param app_id: ID of application that spawned this app
+        :param sequence_id: Sequence ID of the parent app that spawned this app
+        :param partition_key: Partition key of the parent app that spawned this app
+        :return: The application builder for future chaining.
+        """
+        self.spawn_from_app_id = app_id
+        self.spawn_from_sequence_id = sequence_id
+        self.spawn_from_partition_key = partition_key
         return self
 
     def _load_from_persister(self):
@@ -1935,4 +1977,11 @@ class ApplicationBuilder:
             if self.loaded_from_fork
             else None,
             tracker=self.tracker,
+            spawning_parent_pointer=burr_types.ParentPointer(
+                app_id=self.spawn_from_app_id,
+                partition_key=self.spawn_from_partition_key,
+                sequence_id=self.spawn_from_sequence_id,
+            )
+            if self.spawn_from_app_id is not None
+            else None,
         )

@@ -8,7 +8,13 @@ import aiofiles.os as aiofilesos
 import fastapi
 
 from burr.tracking.common import models
-from burr.tracking.common.models import BeginEntryModel, BeginSpanModel, EndEntryModel, EndSpanModel
+from burr.tracking.common.models import (
+    BeginEntryModel,
+    BeginSpanModel,
+    ChildApplicationModel,
+    EndEntryModel,
+    EndSpanModel,
+)
 from burr.tracking.server import schema
 from burr.tracking.server.schema import ApplicationLogs, ApplicationSummary
 
@@ -147,6 +153,7 @@ class LocalBackend(BackendBase):
                         num_steps=await self.get_number_of_steps(log_path),
                         tags={},
                         parent_pointer=metadata.parent_pointer,
+                        spawning_parent_pointer=metadata.spawning_parent_pointer,
                     )
                 )
         return out
@@ -162,6 +169,7 @@ class LocalBackend(BackendBase):
         log_file = os.path.join(app_filepath, "log.jsonl")
         graph_file = os.path.join(app_filepath, "graph.json")
         metadata_file = os.path.join(app_filepath, "metadata.json")
+        children_file = os.path.join(app_filepath, "children.jsonl")
         metadata = await self._load_metadata(metadata_file)
         if not os.path.exists(graph_file):
             raise fastapi.HTTPException(
@@ -200,8 +208,18 @@ class LocalBackend(BackendBase):
         for span in spans_by_id.values():
             step = steps_by_sequence_id[span.begin_entry.action_sequence_id]
             step.spans.append(span)
+        children = []
+        if os.path.exists(children_file):
+            async with aiofiles.open(children_file) as f:
+                str_children = await f.readlines()
+                children = [
+                    ChildApplicationModel.parse_obj(json.loads(item)) for item in str_children
+                ]
+
         return ApplicationLogs(
             application=schema.ApplicationModel.parse_raw(str_graph),
             steps=list(steps_by_sequence_id.values()),
             parent_pointer=metadata.parent_pointer,
+            spawning_parent_pointer=metadata.spawning_parent_pointer,
+            children=children,
         )
