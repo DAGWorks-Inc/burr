@@ -1749,6 +1749,7 @@ class ApplicationBuilder:
         :return: The application builder for future chaining.
         """
         # if it's a lifecycle adapter, just add it
+        instantiated_tracker = tracker
         if isinstance(tracker, str):
             if params is None:
                 params = {}
@@ -1757,16 +1758,17 @@ class ApplicationBuilder:
 
                 kwargs = {"project": project}
                 kwargs.update(params)
-                self.lifecycle_adapters.append(LocalTrackingClient(**kwargs))
+                instantiated_tracker = LocalTrackingClient(**kwargs)
+                self.lifecycle_adapters.append(instantiated_tracker)
             else:
                 raise ValueError(f"Tracker {tracker}:{project} not supported")
         else:
-            self.lifecycle_adapters.append(tracker)
+            self.lifecycle_adapters.append(instantiated_tracker)
             if params is not None:
                 raise ValueError(
                     "Params are not supported for object-specified trackers, these are already initialized!"
                 )
-        self.tracker = tracker
+        self.tracker = instantiated_tracker
         return self
 
     def initialize_from(

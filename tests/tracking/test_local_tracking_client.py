@@ -16,6 +16,7 @@ from burr.tracking.common.models import (
     ApplicationModel,
     BeginEntryModel,
     BeginSpanModel,
+    ChildApplicationModel,
     EndEntryModel,
     EndSpanModel,
 )
@@ -309,7 +310,7 @@ def test_multi_fork_tracking_client(tmpdir):
     assert forked_app_3.parent_pointer.app_id == forked_forked_app_id
 
 
-def test_application_tracks_end_to_end_with_spawning_parent(tmpdir: str):
+def test_application_tracks_link_to_spawning_parent(tmpdir: str):
     """Tests that we record the parent of the spawned application in the metadata file for the spawned application."""
     app_id = str(uuid.uuid4())
     log_dir = os.path.join(tmpdir, "tracking_parent_test")
@@ -326,3 +327,30 @@ def test_application_tracks_end_to_end_with_spawning_parent(tmpdir: str):
     metadata_parsed = ApplicationMetadataModel.model_validate(metadata)
     assert metadata_parsed.spawning_parent_pointer.app_id == f"spawn_{app_id}"
     assert metadata_parsed.spawning_parent_pointer.sequence_id == 5
+
+
+def test_application_tracks_link_from_spawning_parent(tmpdir: str):
+    """Tests that we record the child in the parent's directory when instantiated."""
+    spawning_parent_app_id = str(uuid.uuid4())
+    project_name = "test_application_tracks_link_from_spawning_parent"
+    log_dir = os.path.join(tmpdir, "tracking_child_test")
+    # creates the directory for the parent
+    # technically not needed (it'll create an empty directory), but nice to have
+    sample_application(project_name, log_dir, spawning_parent_app_id)
+    parent_result_dir = os.path.join(log_dir, project_name, spawning_parent_app_id)
+    spawned_children = [str(uuid.uuid4()), str(uuid.uuid4())]
+    for child_app_id in spawned_children:
+        # constructing this will cause the desired side effect -- crating the pointer to the child in the parent's directory
+        sample_application(
+            project_name, log_dir, child_app_id, spawn_from=(spawning_parent_app_id, 5)
+        )
+        assert os.path.exists(
+            children_output := os.path.join(
+                parent_result_dir, LocalTrackingClient.CHILDREN_FILENAME
+            )
+        )
+        with open(children_output) as f:
+            children = [json.loads(line) for line in f.readlines()]
+    children_parsed = [ChildApplicationModel.model_validate(child) for child in children]
+    assert set(child.child.app_id for child in children_parsed) == set(spawned_children)
+    assert all(child.event_type == "spawn_start" for child in children_parsed)

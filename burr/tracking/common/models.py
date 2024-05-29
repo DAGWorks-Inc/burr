@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from burr.common import types as burr_types
 from burr.core import Action
@@ -87,6 +87,18 @@ class PointerModel(IdentifyingModel):
             if pointer is not None
             else None
         )
+
+
+class ChildApplicationModel(IdentifyingModel):
+    """Stores data about a child application (either a fork or a spawned application).
+    This allows us to link from parent -> child in the UI."""
+
+    child: PointerModel
+    event_time: datetime.datetime
+    event_type: Literal[
+        "fork", "spawn_start"
+    ]  # TODO -- get spawn_end working when we have interaction hooks (E.G. on app fn calls)
+    type: str = "child_application_data"
 
 
 class ApplicationModel(IdentifyingModel):
