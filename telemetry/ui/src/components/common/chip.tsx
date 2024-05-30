@@ -9,7 +9,8 @@ const chipColorMap = {
   running: 'bg-dwlightblue',
   demo: 'bg-yellow-400',
   test: 'bg-gray-800',
-  fork: 'bg-dwdarkblue/80'
+  fork: 'bg-dwdarkblue/80',
+  spawn: 'bg-purple-600'
 };
 
 export type ChipType = keyof typeof chipColorMap;

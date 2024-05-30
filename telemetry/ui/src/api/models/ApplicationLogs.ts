@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { ApplicationModel } from './ApplicationModel';
+import type { ChildApplicationModel } from './ChildApplicationModel';
 import type { PointerModel } from './PointerModel';
 import type { Step } from './Step';
 /**
@@ -11,6 +12,8 @@ import type { Step } from './Step';
  */
 export type ApplicationLogs = {
   application: ApplicationModel;
+  children: Array<ChildApplicationModel>;
   steps: Array<Step>;
   parent_pointer?: PointerModel | null;
+  spawning_parent_pointer?: PointerModel | null;
 };

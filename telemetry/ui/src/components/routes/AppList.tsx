@@ -91,9 +91,6 @@ const AppSubList = (props: {
           </div>
         </TableCell>
         <TableCell>
-          <DateTimeDisplay date={app.first_written} mode="long" />
-        </TableCell>
-        <TableCell>
           <DateTimeDisplay date={app.last_written} mode="long" />
         </TableCell>
         <TableCell className="z-50">
@@ -186,7 +183,6 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
         <TableRow>
           {anyHavePartitionKey && <TableHeader>Partition Key</TableHeader>}
           <TableHeader>ID</TableHeader>
-          <TableHeader>First Seen</TableHeader>
           <TableHeader>Last Run</TableHeader>
           <TableHeader>Forked</TableHeader>
           <TableHeader>Sub Apps</TableHeader>

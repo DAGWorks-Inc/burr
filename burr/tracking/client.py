@@ -167,6 +167,8 @@ class LocalTrackingClient(
                         ),
                         event_time=datetime.datetime.now(),
                         event_type="fork",
+                        # this is the sequence ID at which this link occurred (from the parent)
+                        sequence_id=fork_parent_pointer_model.sequence_id,
                     ),
                 )
             )
@@ -183,6 +185,7 @@ class LocalTrackingClient(
                         ),
                         event_time=datetime.datetime.now(),
                         event_type="spawn_start",
+                        sequence_id=spawn_parent_pointer_model.sequence_id,
                     ),
                 )
             )

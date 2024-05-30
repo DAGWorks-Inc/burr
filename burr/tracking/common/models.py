@@ -98,6 +98,7 @@ class ChildApplicationModel(IdentifyingModel):
     event_type: Literal[
         "fork", "spawn_start"
     ]  # TODO -- get spawn_end working when we have interaction hooks (E.G. on app fn calls)
+    sequence_id: Optional[int]
     type: str = "child_application_data"
 
 
@@ -131,6 +132,16 @@ class ApplicationMetadataModel(IdentifyingModel):
     parent_pointer: Optional[PointerModel] = None  # pointer to parent data
     spawning_parent_pointer: Optional[PointerModel] = None  # pointer to spawning parent data
     type: str = "application_metadata"
+
+
+#
+# class ApplicationMetadataModelWithChildren(IdentifyingModel):
+#     """Pydantic model that represents metadata for an application.
+#     We will want to add tags here when we have them."""
+#
+#     applicationMetadata: ApplicationMetadataModel
+#     children: List[ChildApplicationModel]
+#     type: str = "application_metadata_with_children"
 
 
 INPUT_FILTERLIST = {"__tracer", "__context"}

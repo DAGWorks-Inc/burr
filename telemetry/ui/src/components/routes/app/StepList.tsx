@@ -1,10 +1,12 @@
-import { PointerModel, Span, Step } from '../../../api';
+import { ChildApplicationModel, PointerModel, Span, Step } from '../../../api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../common/table';
 import { DateTimeDisplay, DurationDisplay, TimeDisplay } from '../../common/dates';
 import { backgroundColorsForIndex, backgroundColorsForStatus } from './AppView';
 import { Status, getActionStatus } from '../../../utils';
 import { Chip } from '../../common/chip';
 import { useRef, useState } from 'react';
+import { TbGrillFork } from 'react-icons/tb';
+
 import {
   ArrowPathIcon,
   ChevronLeftIcon,
@@ -14,9 +16,9 @@ import {
 } from '@heroicons/react/24/outline';
 
 import { PauseIcon } from '@heroicons/react/24/solid';
+import { TiFlowChildren } from 'react-icons/ti';
 
 import { RiCornerDownRightLine } from 'react-icons/ri';
-import { MdForkRight } from 'react-icons/md';
 import { Link } from 'react-router-dom';
 
 /**
@@ -117,18 +119,25 @@ const ActionTableRow = (props: {
   currentSelectedIndex: number | undefined;
   setCurrentSelectedIndex: (index?: number) => void;
   numPriorIndices: number;
-  isExpanded: boolean;
-  toggleExpanded: (index: number) => void;
+  isTracesExpanded: boolean;
+  toggleTraceExpanded: (index: number) => void;
+  isLinksExpanded: boolean;
+  toggleLinksExpanded: (index: number) => void;
   minimized: boolean;
+  links: ChildApplicationModel[];
+  displaySpansCol: boolean;
+  displayLinksCol: boolean;
 }) => {
   const sequenceID = props.step.step_start_log.sequence_id;
   const isHovered = props.currentHoverIndex === sequenceID;
   const spanCount = props.step.spans.length;
+  const childCount = props.links.length;
   const shouldBeHighlighted =
     props.currentSelectedIndex !== undefined &&
     sequenceID <= props.currentSelectedIndex &&
     sequenceID >= props.currentSelectedIndex - props.numPriorIndices;
-  const ExpandIcon = props.isExpanded ? MinusIcon : PlusIcon;
+  const TraceExpandIcon = props.isTracesExpanded ? MinusIcon : PlusIcon;
+  const LinkExpandIcon = props.isLinksExpanded ? MinusIcon : PlusIcon;
   return (
     <CommonTableRow
       sequenceID={sequenceID}
@@ -154,22 +163,42 @@ const ActionTableRow = (props: {
               end={props.step.step_end_log?.end_time}
             />
           </TableCell>
-          <TableCell>
-            {spanCount > 0 ? (
-              <div className="flex gap-1 items-center">
-                <ExpandIcon
-                  className="h-4 w-4 text-gray-600 hover:scale-110 cursor-pointer"
-                  onClick={(e) => {
-                    props.toggleExpanded(sequenceID);
-                    e.stopPropagation();
-                  }}
-                />
-                <span className="text-gray-600">{spanCount}</span>
-              </div>
-            ) : (
-              <span></span>
-            )}
-          </TableCell>
+          {props.displaySpansCol && (
+            <TableCell>
+              {spanCount > 0 ? (
+                <div className="flex gap-1 items-center">
+                  <TraceExpandIcon
+                    className="h-4 w-4 text-gray-600 hover:scale-110 cursor-pointer"
+                    onClick={(e) => {
+                      props.toggleTraceExpanded(sequenceID);
+                      e.stopPropagation();
+                    }}
+                  />
+                  <span className="text-gray-600">{spanCount}</span>
+                </div>
+              ) : (
+                <span></span>
+              )}
+            </TableCell>
+          )}
+          {props.displayLinksCol && (
+            <TableCell>
+              {childCount > 0 ? (
+                <div className="flex gap-1 items-center">
+                  <LinkExpandIcon
+                    className="h-4 w-4 text-gray-600 hover:scale-110 cursor-pointer"
+                    onClick={(e) => {
+                      props.toggleLinksExpanded(sequenceID);
+                      e.stopPropagation();
+                    }}
+                  />
+                  <span className="text-gray-600">{childCount}</span>
+                </div>
+              ) : (
+                <span></span>
+              )}
+            </TableCell>
+          )}
           <TableCell>
             <div className="max-w-min">
               <StatusChip status={getActionStatus(props.step)} />
@@ -178,6 +207,73 @@ const ActionTableRow = (props: {
         </>
       )}
     </CommonTableRow>
+  );
+};
+
+const LinkSubTable = (props: {
+  step: Step;
+  currentHoverIndex: number | undefined;
+  setCurrentHoverIndex: (index?: number) => void;
+  currentSelectedIndex: number | undefined;
+  setCurrentSelectedIndex: (index?: number) => void;
+  numPriorIndices: number;
+  minimized: boolean;
+  links: ChildApplicationModel[];
+  projectId: string;
+  displaySpansCol: boolean;
+  displayLinksCol: boolean;
+}) => {
+  const sequenceID = props.step.step_start_log.sequence_id;
+  const isHovered = props.currentHoverIndex === sequenceID;
+  const shouldBeHighlighted =
+    props.currentSelectedIndex !== undefined &&
+    sequenceID <= props.currentSelectedIndex &&
+    sequenceID >= props.currentSelectedIndex - props.numPriorIndices;
+  const normalText = shouldBeHighlighted ? 'text-gray-100' : 'text-gray-600';
+  const iconColor = shouldBeHighlighted ? 'text-gray-100' : 'text-gray-400';
+  return (
+    <>
+      {props.links.map((subApp) => {
+        const childType = subApp.event_type;
+        const Icon = childType === 'fork' ? TbGrillFork : TiFlowChildren;
+        return (
+          <CommonTableRow
+            key={`${subApp.child.app_id}-link-table-row`}
+            sequenceID={sequenceID}
+            isHovered={isHovered}
+            shouldBeHighlighted={shouldBeHighlighted}
+            currentSelectedIndex={props.currentSelectedIndex}
+            step={props.step}
+            setCurrentHoverIndex={props.setCurrentHoverIndex}
+            setCurrentSelectedIndex={props.setCurrentSelectedIndex}
+          >
+            <TableCell colSpan={1}>
+              <Icon className={`h-5 w-5 ${iconColor} `} />
+            </TableCell>
+            <TableCell colSpan={1} className={` ${normalText}  w-48 min-w-48 max-w-48 truncate`}>
+              <Link to={`/project/${props.projectId}/${subApp.child.app_id}`}>
+                <span className="hover:underline">{subApp.child.app_id}</span>
+              </Link>
+            </TableCell>
+            <TableCell colSpan={1} className={` ${normalText} min-w-10`}>
+              <div className="flex flex-row justify-end">
+                <DateTimeDisplay date={subApp.event_time} mode={'short'} />
+              </div>
+            </TableCell>
+            <TableCell
+              colSpan={1 + +!!props.displayLinksCol + +!!props.displaySpansCol}
+            ></TableCell>
+            <TableCell colSpan={1} className="text-gray-500">
+              <Chip
+                label={subApp.event_type === 'fork' ? 'forked' : 'spawned'}
+                chipType={subApp.event_type === 'fork' ? 'fork' : 'spawn'}
+                className="w-16 flex flex-row justify-center"
+              />
+            </TableCell>
+          </CommonTableRow>
+        );
+      })}
+    </>
   );
 };
 
@@ -190,6 +286,8 @@ const TraceSubTable = (props: {
   setCurrentSelectedIndex: (index?: number) => void;
   numPriorIndices: number;
   minimized: boolean;
+  displaySpansCol: boolean;
+  displayLinksCol: boolean;
 }) => {
   return (
     <>
@@ -209,7 +307,7 @@ const TraceSubTable = (props: {
         const normalText = shouldBeHighlighted ? 'text-gray-100' : 'text-gray-400';
         return (
           <CommonTableRow
-            key={span.begin_entry.span_id}
+            key={`${span.begin_entry.span_id}-trace-table-row`}
             sequenceID={sequenceID}
             isHovered={isHovered}
             shouldBeHighlighted={shouldBeHighlighted}
@@ -334,36 +432,49 @@ export const StepList = (props: {
   setMinimized: (b: boolean) => void;
   projectId: string;
   parentPointer: PointerModel | undefined;
+  spawningParentPointer: PointerModel | undefined;
+  links: ChildApplicationModel[];
 }) => {
   // This is a quick way of expanding the actions all at once
-  const [expandedActions, setExpandedActions] = useState<number[]>([]);
-  const toggleExpanded = (index: number) => {
-    if (expandedActions.includes(index)) {
-      setExpandedActions(expandedActions.filter((i) => i !== index));
+  const [traceExpandedActions, setTraceExpandedActions] = useState<number[]>([]);
+  const toggleTraceExpandedActions = (index: number) => {
+    if (traceExpandedActions.includes(index)) {
+      setTraceExpandedActions(traceExpandedActions.filter((i) => i !== index));
     } else {
-      setExpandedActions([...expandedActions, index]);
+      setTraceExpandedActions([...traceExpandedActions, index]);
     }
   };
   const [intentionExpandAll, setIntentionExpandAll] = useState(false);
-  // const ExpandAllIcon = intentionExpandAll ? MinusIcon : PlusIcon;
-  const expandAll = () => {
-    const allIndices = props.steps.map((step) => step.step_start_log.sequence_id);
-    setExpandedActions(allIndices);
-  };
-  const toggleExpandAll = () => {
+
+  const [linksExpandedActions, setLinksExpandedActions] = useState<number[]>([]);
+  const toggleExpandAllTraces = () => {
     if (intentionExpandAll) {
-      setExpandedActions([]);
+      setTraceExpandedActions([]);
     } else {
-      expandAll();
+      const allIndices = props.steps.map((step) => step.step_start_log.sequence_id);
+      setTraceExpandedActions(allIndices);
     }
     setIntentionExpandAll(!intentionExpandAll);
   };
-  const isExpanded = (index: number) => {
-    return expandedActions.includes(index);
+  const isLinksExpanded = (index: number) => {
+    return linksExpandedActions.includes(index);
+  };
+  const toggleLinksExpanded = (index: number) => {
+    if (isLinksExpanded(index)) {
+      setLinksExpandedActions(linksExpandedActions.filter((i) => i !== index));
+    } else {
+      setLinksExpandedActions([...linksExpandedActions, index]);
+    }
   };
   const MinimizeTableIcon = props.minimized ? ChevronRightIcon : ChevronLeftIcon;
-  const hasAnySpans = props.steps.some((step) => step.spans.length > 0);
-  // const hasParent = props.
+  const displaySpansCol = props.steps.some((step) => step.spans.length > 0);
+  const displayLinksCol = props.links.length > 0;
+  const linksBySequenceID = props.links.reduce((acc, child) => {
+    const existing = acc.get(child.sequence_id) || [];
+    existing.push(child);
+    acc.set(child.sequence_id, existing);
+    return acc;
+  }, new Map<number, ChildApplicationModel[]>());
   return (
     <Table dense={2}>
       <TableHead className=" bg-white">
@@ -379,9 +490,9 @@ export const StepList = (props: {
               />
               {props.minimized ? (
                 <ExpandAllButton
-                  disabled={!hasAnySpans}
+                  disabled={!displaySpansCol}
                   isExpanded={intentionExpandAll}
-                  toggleExpandAll={toggleExpandAll}
+                  toggleExpandAll={toggleExpandAllTraces}
                 />
               ) : (
                 <></>
@@ -404,16 +515,30 @@ export const StepList = (props: {
                 <span className="flex justify-end">Ran</span>
               </TableHeader>
               <TableHeader>Duration</TableHeader>
-              <TableHeader>
-                <div className="flex flex-row items-center gap-2">
-                  <ExpandAllButton
-                    disabled={!hasAnySpans}
-                    isExpanded={intentionExpandAll}
-                    toggleExpandAll={toggleExpandAll}
-                  />
-                  Spans
-                </div>
-              </TableHeader>
+              {displaySpansCol && (
+                <TableHeader>
+                  <div className="flex flex-row items-center gap-2">
+                    <ExpandAllButton
+                      disabled={!displaySpansCol}
+                      isExpanded={intentionExpandAll}
+                      toggleExpandAll={toggleExpandAllTraces}
+                    />
+                    Spans
+                  </div>
+                </TableHeader>
+              )}
+              {displayLinksCol && (
+                <TableHeader>
+                  <div className="flex flex-row items-center gap-2">
+                    <ExpandAllButton
+                      disabled={!displaySpansCol}
+                      isExpanded={intentionExpandAll}
+                      toggleExpandAll={toggleExpandAllTraces}
+                    />
+                    Links
+                  </div>
+                </TableHeader>
+              )}
               <TableHeader>
                 <div className="flex flex-row items-center gap-2">
                   <AutoRefreshSwitch
@@ -430,20 +555,29 @@ export const StepList = (props: {
       {/* <div className="h-10"></div> */}
       <TableBody className="pt-10">
         {props.steps.map((step) => {
+          const isTraceExpanded = traceExpandedActions.includes(step.step_start_log.sequence_id);
+          const isLinksExpanded = linksExpandedActions.includes(step.step_start_log.sequence_id);
+          const links = linksBySequenceID.get(step.step_start_log.sequence_id) || [];
           return (
             <>
               <ActionTableRow
+                key={`${step.step_start_log.sequence_id}-action-table-row`}
                 step={step}
                 currentHoverIndex={props.currentHoverIndex}
                 setCurrentHoverIndex={props.setCurrentHoverIndex}
                 currentSelectedIndex={props.currentSelectedIndex}
                 setCurrentSelectedIndex={props.setCurrentSelectedIndex}
                 numPriorIndices={props.numPriorIndices}
-                isExpanded={isExpanded(step.step_start_log.sequence_id)}
-                toggleExpanded={toggleExpanded}
+                isTracesExpanded={isTraceExpanded}
+                isLinksExpanded={isLinksExpanded}
+                toggleTraceExpanded={toggleTraceExpandedActions}
+                toggleLinksExpanded={toggleLinksExpanded}
                 minimized={props.minimized}
+                links={links}
+                displaySpansCol={displaySpansCol}
+                displayLinksCol={displayLinksCol}
               ></ActionTableRow>
-              {isExpanded(step.step_start_log.sequence_id) && (
+              {isTraceExpanded && (
                 <TraceSubTable
                   spans={step.spans}
                   step={step}
@@ -453,36 +587,81 @@ export const StepList = (props: {
                   setCurrentSelectedIndex={props.setCurrentSelectedIndex}
                   numPriorIndices={props.numPriorIndices}
                   minimized={props.minimized}
+                  displaySpansCol={displaySpansCol}
+                  displayLinksCol={displayLinksCol}
+                />
+              )}
+              {isLinksExpanded && (
+                <LinkSubTable
+                  step={step}
+                  links={links}
+                  currentHoverIndex={props.currentHoverIndex}
+                  setCurrentHoverIndex={props.setCurrentHoverIndex}
+                  currentSelectedIndex={props.currentSelectedIndex}
+                  setCurrentSelectedIndex={props.setCurrentSelectedIndex}
+                  numPriorIndices={props.numPriorIndices}
+                  minimized={props.minimized}
+                  projectId={props.projectId}
+                  displaySpansCol={displaySpansCol}
+                  displayLinksCol={displayLinksCol}
                 />
               )}
             </>
           );
         })}
         {props.parentPointer ? (
-          <TableRow className="text-gray-500 cursor-pointer bg-gray-100">
-            <TableCell colSpan={1} className="items-center justify-start max-w-20">
-              {props.parentPointer.sequence_id}
-            </TableCell>
-            <TableCell colSpan={4} className="text-gray-500">
-              <div className="flex flex-row gap-2 items-center ">
-                <MdForkRight className="h-5 w-5 -ml-1.5" />
-                <Link to={`/project/${props.projectId}/${props.parentPointer.app_id}`}>
-                  <span className="hover:underline">{props.parentPointer.app_id}</span>
-                </Link>
-              </div>
-            </TableCell>
-            <TableCell colSpan={1} className="text-gray-500">
-              <Chip
-                label={'forked'}
-                chipType={'fork'}
-                className="w-16 flex flex-row justify-center"
-              />
-            </TableCell>
-          </TableRow>
+          <ParentLink parentPointer={props.parentPointer} projectId={props.projectId} type="fork" />
+        ) : (
+          <></>
+        )}
+        {props.spawningParentPointer ? (
+          <ParentLink
+            parentPointer={props.spawningParentPointer}
+            projectId={props.projectId}
+            type="spawn"
+            displayLinksCol={displayLinksCol}
+            displaySpansCol={displaySpansCol}
+          />
         ) : (
           <></>
         )}
       </TableBody>
     </Table>
+  );
+};
+
+const ParentLink = (props: {
+  parentPointer: PointerModel;
+  projectId: string;
+  displayLinksCol?: boolean;
+  displaySpansCol?: boolean;
+  type: 'spawn' | 'fork';
+}) => {
+  const Icon = props.type === 'fork' ? TbGrillFork : TiFlowChildren;
+  return (
+    <TableRow className="text-gray-500 cursor-pointer bg-gray-100">
+      <TableCell colSpan={1} className="items-center justify-center flex max-w-20">
+        <Icon className="h-5 w-5 -ml-1.5" />
+      </TableCell>
+      <TableCell
+        colSpan={3 + +!!props.displayLinksCol + +!!props.displaySpansCol}
+        className="text-gray-500"
+      >
+        <div className="flex flex-row gap-1 items-center ">
+          <Link to={`/project/${props.projectId}/${props.parentPointer.app_id}`}>
+            <span className="hover:underline">{props.parentPointer.app_id}</span>
+          </Link>
+          <span>@</span>
+          <span>{props.parentPointer.sequence_id}</span>
+        </div>
+      </TableCell>
+      <TableCell colSpan={1} className="text-gray-500">
+        <Chip
+          label={'parent'}
+          chipType={props.type}
+          className="w-16 flex flex-row justify-center"
+        />
+      </TableCell>
+    </TableRow>
   );
 };

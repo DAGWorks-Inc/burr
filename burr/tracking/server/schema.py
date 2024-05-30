@@ -7,6 +7,7 @@ from burr.tracking.common.models import (
     ApplicationModel,
     BeginEntryModel,
     BeginSpanModel,
+    ChildApplicationModel,
     EndEntryModel,
     EndSpanModel,
     PointerModel,
@@ -33,6 +34,12 @@ class ApplicationSummary(pydantic.BaseModel):
     spawning_parent_pointer: Optional[PointerModel] = None
 
 
+class ApplicationModelWithChildren(pydantic.BaseModel):
+    application: ApplicationModel
+    children: List[PointerModel]
+    type: str = "application_with_children"
+
+
 class Span(pydantic.BaseModel):
     """Represents a span. These have action sequence IDs associated with
     them to put them in order."""
@@ -54,5 +61,7 @@ class ApplicationLogs(pydantic.BaseModel):
     we will likely be rethinking this but for now this provides for easy parsing."""
 
     application: ApplicationModel
+    children: List[ChildApplicationModel]
     steps: List[Step]
     parent_pointer: Optional[PointerModel] = None
+    spawning_parent_pointer: Optional[PointerModel] = None
