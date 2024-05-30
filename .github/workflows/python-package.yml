@@ -18,6 +18,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
       - uses: pre-commit/action@v3.0.0
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -36,7 +37,7 @@ jobs:
           python -m pip install -e ".[tests,tracking-client]"
       - name: Run tests
         run: |
-          python -m pytest tests
+          python -m pytest tests --ignore=tests/integrations/persisters
 
   validate-examples:
     runs-on: ubuntu-latest
@@ -50,3 +51,36 @@ jobs:
         working-directory: ./examples
         run: |
           python -m pytest validate_examples.py
+
+  test-persister-dbs:
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+      postgres:
+        image: postgres:15
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install -e ".[tests,tracking-client]"
+      - name: Run tests
+        run: |
+          python -m pytest tests/integrations/persisters/
