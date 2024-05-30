@@ -30,6 +30,7 @@ class ApplicationSummary(pydantic.BaseModel):
     num_steps: int
     tags: Dict[str, str]
     parent_pointer: Optional[PointerModel] = None
+    spawning_parent_pointer: Optional[PointerModel] = None
 
 
 class Span(pydantic.BaseModel):

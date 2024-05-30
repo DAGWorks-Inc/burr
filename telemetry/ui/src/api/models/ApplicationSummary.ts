@@ -11,4 +11,5 @@ export type ApplicationSummary = {
   num_steps: number;
   tags: Record<string, string>;
   parent_pointer?: PointerModel | null;
+  spawning_parent_pointer?: PointerModel | null;
 };

@@ -133,6 +133,13 @@ class ApplicationMetadataModel(IdentifyingModel):
     type: str = "application_metadata"
 
 
+INPUT_FILTERLIST = {"__tracer", "__context"}
+
+
+def _filter_inputs(d: dict) -> dict:
+    return {k: v for k, v in d.items() if k not in INPUT_FILTERLIST}
+
+
 class BeginEntryModel(IdentifyingModel):
     """Pydantic model that represents an entry for the beginning of a step"""
 

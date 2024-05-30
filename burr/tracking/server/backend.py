@@ -147,6 +147,7 @@ class LocalBackend(BackendBase):
                         num_steps=await self.get_number_of_steps(log_path),
                         tags={},
                         parent_pointer=metadata.parent_pointer,
+                        spawning_parent_pointer=metadata.spawning_parent_pointer,
                     )
                 )
         return out
