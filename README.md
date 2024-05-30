@@ -126,6 +126,7 @@ Users who have contributed core functionality, integrations, or examples.
 - [Elijah ben Izzy](https://github.com/elijahbenizzy)
 - [Stefan Krawczyk](https://github.com/skrawcz)
 - [Joseph Booth](https://github.com/jombooth)
+- [Nandani Thakur](https://github.com/NandaniThakur)
 
 ### Bug hunters/special mentions
 Users who have contributed small docs fixes, design suggestions, and found bugs
