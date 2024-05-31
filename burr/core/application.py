@@ -533,6 +533,14 @@ class Application:
         return new_state
 
     def _process_inputs(self, inputs: Dict[str, Any], action: Action) -> Dict[str, Any]:
+        starting_with_double_underscore = {key for key in inputs.keys() if key.startswith("__")}
+        if len(starting_with_double_underscore) > 0:
+            raise ValueError(
+                ERROR_MESSAGE
+                + f"Inputs starting with a double underscore ({starting_with_double_underscore}) "
+                f"are reserved for internal use/injected inputs."
+                "Please do not use keys"
+            )
         inputs = inputs.copy()
         processed_inputs = {}
         required_inputs, optional_inputs = action.optional_and_required_inputs
