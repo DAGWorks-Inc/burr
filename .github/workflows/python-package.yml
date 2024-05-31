@@ -83,4 +83,4 @@ jobs:
           python -m pip install -e ".[tests,tracking-client]"
       - name: Run tests
         run: |
-          python -m pytest tests/integrations/persisters/
+          BURR_CI_INTEGRATION_TESTS=true python -m pytest tests/integrations/persisters/
