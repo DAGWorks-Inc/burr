@@ -1,10 +1,11 @@
-# Burr
+# 🧊 Burr
 <div>
 <a href="https://discord.gg/6Zy2DwP4f3" target="_blank"><img src="https://img.shields.io/badge/Join-Burr_Discord-brightgreen?logo=discord" alt="Burr Discord"/></a>
 </div>
 
-Burr makes it easy to develop applications that make decisions based on state (chatbots, agents, simulations, etc...) from simple python building blocks.
-Burr includes a UI that can track/monitor those decisions in real time.
+Burr makes it easy to develop applications that make decisions (chatbots, agents, simulations, etc...) from simple python building blocks.
+
+Burr works well for any application that uses LLMs, and can integrate with any of your favorite frameworks. Burr includes a UI that can track/monitor your system in real time.
 
 Link to [documentation](https://burr.dagworks.io/). Quick (<3min) video intro [here](https://www.loom.com/share/a10f163428b942fea55db1a84b1140d8?sid=1512863b-f533-4a42-a2f3-95b13deb07c9).
 Longer [video intro & walkthrough](https://www.youtube.com/watch?v=rEZ4oDN0GdU). Blog post [here](https://blog.dagworks.io/p/burr-develop-stateful-ai-applications).
@@ -41,13 +42,11 @@ For more details see the [getting started guide](https://burr.dagworks.io/gettin
 ## 🔩 How does Burr work?
 
 With Burr you express your application as a state machine (i.e. a graph/flowchart).
-You can (and should!) use it for anything where managing state can be hard. Hint: managing state is always hard!
-This is true across a wide array of contexts, from building RAG applications to power a chatbot, to running ML parameter tuning/evaluation workflows,
-to conducting a complex forecasting simulation.
+You can (and should!) use it for anything in which you have to manage state, track complex decisions, add human feedback, or dictate an idempotent, self-persisting workflow.
 
 Burr includes:
 
-1. A (dependency-free) low abstraction python library that enables you to build and manage state machines with simple python functions
+1. A (dependency-free) low-abstraction python library that enables you to build and manage state machines with simple python functions
 2. A UI you can use view execution telemetry for introspection and debugging
 3. A set of integrations to make it easier to persist state, connect to telemetry, and integrate with other systems
 
@@ -71,7 +70,7 @@ Burr will _not_ tell you how to build your models, how to query APIs, or how to 
 in a way that scales with your needs and makes following the logic of your system easy. Burr comes out of the box with a host of integrations
 including tooling to build a UI in streamlit and watch your state machine execute.
 
-## 🏗 Start Building
+## 🏗 Start building
 
 See the documentation for [getting started](https://burr.dagworks.io/getting_started/simple-example), and follow the example.
 Then read through some of the concepts and write your own application!
@@ -86,7 +85,7 @@ While Burr is attempting something (somewhat) unique, there are a variety of too
 | Framework-agnostic                        | ✅  |      ✅    |    ✅    |     ✅    |     ❌     |   ✅     |
 | Asynchronous event-based orchestration    | ❌  |      ❌    |    ✅    |     ❌    |     ❌     |   ❌     |
 | Built for core web-service logic          | ✅  |      ✅    |    ❌    |     ✅    |     ✅     |   ✅     |
-| Open-source user-interface for monitoring | ✅  |      ❌    |    ❌    |     ❌    |     ❌     |   ❌     |
+| Open-source user-interface for monitoring | ✅  |      ❌    |    ❌    |     ❌    |     ❌     |   ✅     |
 | Works with non-LLM use-cases              | ✅  |      ❌    |    ❌    |     ❌    |     ❌     |   ✅     |
 
 ## 🌯 Why the name Burr?
@@ -101,13 +100,13 @@ but realized that it has a wide array of applications and decided to release it 
 
 While Burr is stable and well-tested, we have quite a few tools/features on our roadmap!
 
-1. Testing & eval curation. Curating data with annotations and being able to export these annotations to create unit & integration tests.
-2. Various efficiency/usability improvements for the core library (see [planned capabilities](https://burr.dagworks.io/concepts/planned-capabilities/) for more details). This includes:
+1. Recursive state machines. Run Burr within Burr to get hierarchical agents/parallelism + track through to the UI.
+2. Testing & eval curation. Curating data with annotations and being able to export these annotations to create unit & integration tests.
+3. Various efficiency/usability improvements for the core library (see [planned capabilities](https://burr.dagworks.io/concepts/planned-capabilities/) for more details). This includes:
    1. Fully typed state with validation
    2. First-class support for retries + exception management
    3. More integration with popular frameworks (LCEL, LLamaIndex, Hamilton, etc...)
    4. Capturing & surfacing extra metadata, e.g. annotations for particular point in time, that you can then pull out for fine-tuning, etc.
-3. Cloud-based checkpointing/restart for debugging or production use cases (save state to db and replay/warm start, backed by a configurable database)
 4. Tooling for hosted execution of state machines, integrating with your infrastructure (Ray, modal, FastAPI + EC2, etc...)
 5. Storage integrations. More integrations with technologies like Redis, MongoDB, MySQL, etc. so you can run Burr on top of what you have available.
 
