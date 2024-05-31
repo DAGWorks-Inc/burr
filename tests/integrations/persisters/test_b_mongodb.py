@@ -1,7 +1,12 @@
+import os
+
 import pytest
 
 from burr.core import state
 from burr.integrations.persisters.b_mongodb import MongoDBPersister
+
+if not os.environ.get("BURR_CI_INTEGRATION_TESTS") == "true":
+    pytest.skip("Skipping integration tests", allow_module_level=True)
 
 
 @pytest.fixture
