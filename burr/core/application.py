@@ -458,6 +458,7 @@ class Application:
         return out
 
     def _context_factory(self, action: Action, sequence_id: int) -> ApplicationContext:
+        """Helper function to create an application context, in the form of the dependency factories we inject to nodes."""
         return ApplicationContext(
             app_id=self._uid,
             tracker=self._tracker,
@@ -1735,9 +1736,7 @@ class ApplicationBuilder:
 
     def with_tracker(
         self,
-        tracker: Union[
-            Literal["local"], "TrackingClient"  # TODO -- support async tracking
-        ] = "local",
+        tracker: Union[Literal["local"], "TrackingClient"] = "local",
         project: str = "default",
         params: Dict[str, Any] = None,
     ):

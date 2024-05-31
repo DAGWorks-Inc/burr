@@ -151,7 +151,6 @@ const AppSubList = (props: {
 export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: string }) => {
   const appsCopy = [...props.apps];
   const [displayZeroCount, setDisplayZeroCount] = useState(false);
-  // const [expandedSubApps, setExpandedSubApps] = useState<Set<string>>(new Set<string>()); // [app_id, app_id, ...
   const navigate = useNavigate();
   const appsToDisplay = appsCopy
     .sort((a, b) => {

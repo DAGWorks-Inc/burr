@@ -134,16 +134,6 @@ class ApplicationMetadataModel(IdentifyingModel):
     type: str = "application_metadata"
 
 
-#
-# class ApplicationMetadataModelWithChildren(IdentifyingModel):
-#     """Pydantic model that represents metadata for an application.
-#     We will want to add tags here when we have them."""
-#
-#     applicationMetadata: ApplicationMetadataModel
-#     children: List[ChildApplicationModel]
-#     type: str = "application_metadata_with_children"
-
-
 INPUT_FILTERLIST = {"__tracer", "__context"}
 
 

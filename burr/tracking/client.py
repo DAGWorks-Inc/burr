@@ -84,8 +84,11 @@ class SyncTrackingClient(
     @abc.abstractmethod
     def copy(self) -> Self:
         """Clones the tracking client. This is useful for forking applications.
+        Note we have to copy the tracking client as it is stateful for tracking.
+        We may make this called internally if it has started already,
+        or make it so it carries multiple states at once.
 
-        :return:
+        :return: a copy of the self.
         """
         pass
 
