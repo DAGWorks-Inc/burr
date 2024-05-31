@@ -37,7 +37,8 @@ def write(state: State) -> Tuple[dict, State]:
     feedback = state.get("feedback")
 
     parts = [
-        f'You are an AI poet. Create a {poem_type} poem on the following subject: "{poem_subject}".'
+        f'You are an AI poet. Create a {poem_type} poem on the following subject: "{poem_subject}". '
+        "It is absolutely imperative that you respond with only the poem and no other text."
     ]
 
     if current_draft:
