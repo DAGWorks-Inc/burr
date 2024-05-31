@@ -2471,3 +2471,20 @@ def test_application_with_spawning_parent():
     assert spawned_by.app_id == "test123"
     assert spawned_by.partition_key == "user123"
     assert spawned_by.sequence_id == 5
+
+
+def test_application_does_not_allow_dunderscore_inputs():
+    """Tests that the context is passed to the function correctly when nulled out.
+    TODO -- get this to test without instantiating an application through the builder --
+    this is slightly overkill for a bit of code"""
+    result_action = Result("count").with_name("result")
+    app = (
+        ApplicationBuilder()
+        .with_actions(result_action)
+        .with_entrypoint("result")
+        .with_transitions()
+        .with_state(count=0)
+        .build()
+    )
+    with pytest.raises(ValueError, match="double underscore"):
+        app._process_inputs({"__not_allowed": ...}, app.get_next_action())
