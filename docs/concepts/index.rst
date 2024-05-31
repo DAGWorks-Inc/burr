@@ -19,4 +19,5 @@ Overview of the concepts -- read these to get a mental model for how Burr works.
     streaming-actions
     hooks
     additional-visibility
+    recursion
     planned-capabilities
