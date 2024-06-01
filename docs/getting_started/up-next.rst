@@ -55,7 +55,7 @@ This is a toy interactive RAG example. You'll ask questions in the terminal abou
 
 .. code-block:: bash
 
-    cd examples/conversational-rag
+    cd examples/conversational-rag/simple_example
     pip install -r requirements.txt
     python application.py
 

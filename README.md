@@ -57,7 +57,7 @@ Burr includes:
 Burr can be used to power a variety of applications, including:
 
 1. [A simple gpt-like chatbot](https://github.com/dagworks-inc/burr/tree/main/examples/multi-modal-chatbot)
-2. [A stateful RAG-based chatbot](https://github.com/dagworks-inc/burr/tree/main/examples/conversational-rag)
+2. [A stateful RAG-based chatbot](https://github.com/dagworks-inc/burr/tree/main/examples/conversational-rag/simple_example)
 3. [An LLM-based adventure game](https://github.com/DAGWorks-Inc/burr/tree/main/examples/llm-adventure-game)
 4. [An interactive assistant for writing emails](https://github.com/DAGWorks-Inc/burr/tree/main/examples/email-assistant)
 
