@@ -27,14 +27,14 @@ For the function-based API, this would look as follows:
     from burr.core import action
 
     @action(reads=['input_var'], writes=['output_var'])
-    def my_action(state: State, __tracer: TracingFactory) -> Tuple[dict, State]:
+    def my_action(state: State, __tracer: TracingFactory) -> State:
         with __tracer('process_data'):
             initial_data = _process_data(state['input_var'])
             with __tracer('validate_data'):
                 _validate(initial_data)
         with __tracer('transform_data', dependencies=['process_data']):
             transformed_data = _transform(initial_data)
-        return {'output_var': transformed_data}, state.update({'output_var': transformed_data})
+        return state.update({'output_var': transformed_data})
 
 
 This would create the following traces:
@@ -77,7 +77,7 @@ For instance:
         state: State,
         __tracer: TracingFactory,
         __logger: ArtifactLogger
-        ) -> Tuple[dict, State]:
+        ) -> State:
         with __tracer('process_data'):
             initial_data = _process_data(state['input_var'])
             with __tracer('validate_data'):
@@ -87,7 +87,7 @@ For instance:
             transformed_data = _transform(initial_data)
             __logger.log_artifact(transformed_data_size=len(transformed_data))
 
-        return {'output_var': transformed_data}, state.update({'output_var': transformed_data})
+        return state.update(output_var=transformed_data)
 
 The output can be any "json-dumpable" object (or pydantic model). This will be stored along with the span and can be used for debugging or analysis.
 

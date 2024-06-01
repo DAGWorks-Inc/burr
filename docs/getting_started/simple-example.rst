@@ -54,18 +54,16 @@ We define two actions:
     client = openai.Client()
 
     @action(reads=[], writes=["prompt", "chat_history"])
-    def human_input(state: State, prompt: str) -> Tuple[dict, State]:
+    def human_input(state: State, prompt: str) -> State:
         chat_item = {
             "content": prompt,
             "role": "user"
         }
-        return (
-            {"prompt": prompt},
-            state.update(prompt=prompt).append(chat_history=chat_item)
-        )
+        return state.update(prompt=prompt).append(chat_history=chat_item)
+
 
     @action(reads=["chat_history"], writes=["response", "chat_history"])
-    def ai_response(state: State) -> Tuple[dict, State]:
+    def ai_response(state: State) -> State:
         content = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=state["chat_history"],
@@ -74,17 +72,20 @@ We define two actions:
             "content": content,
             "role": "assistant"
         }
-        return (
-            {"response": content},
-            state.update(response=content).append(chat_history=chat_item)
-        )
+        return state.update(response=content).append(chat_history=chat_item)
+
 
 Before we proceed, let's note the following about how we define these actions:
 
 1. State is a dictionary -- actions declare input fields (as strings) and write values to those fields
 2. Actions use a specific *immutable* state object and call operations on it (``.append(...)``, ``.update(...)``)
-3. Functions can do whatever you want -- they can use plain python, or delegate to `langchain <langchain.io>`_, `hamilton <https://github.com/dagworks-inc/hamilton>`_, etc...
+3. Functions can do whatever you want -- they can use plain python, or delegate to `langchain <langchain.io>`_, `hamilton <https://github.com/dagworks-inc/hamilton>`_, etc... All they have to do is return the new state.
 4. We declare the parameter ``prompt``, meaning that we will expect the user to pass ``prompt`` every time they run the graph.
+
+.. note::
+
+   The action API has a few different forms. We've shown the simplest above, but it can also return a tuple of ``result, state`` (where ``result``
+   the intermediate result of the computation), to help with debugging. There are also multiple class-based APIs. See the :ref:`actions <actions>` section for more details.
 
 Next, let's piece together our application. To do this, we'll use an ``ApplicationBuilder``
 
@@ -110,7 +111,7 @@ We can visualize the application (note you need ``burr[graphviz]`` installed):
 .. image:: ../_static/chatbot.png
     :align: center
 
-Let's note the following about how we define the application
+Let's note the following about how we define the application:
 
 1. It is an infinite loop! It is meant to pause for new prompt input.
 2. We're just using the function names as the action names. You can also name them if you want ``with_actions(human_input=human_input, ai_response=ai_response)``.
@@ -143,27 +144,23 @@ If you want to copy/paste, you can open up the following code block and add to a
     .. code-block:: python
 
         import uuid
-        from typing import Tuple
 
         import openai
 
-        from burr.core import action, State, ApplicationBuilder, when, persistence
+        from burr.core import action, State, ApplicationBuilder
 
         client = openai.Client()
 
         @action(reads=[], writes=["prompt", "chat_history"])
-        def human_input(state: State, prompt: str) -> Tuple[dict, State]:
+        def human_input(state: State, prompt: str) -> State:
             chat_item = {
                 "content": prompt,
                 "role": "user"
             }
-            return (
-                {"prompt": prompt},
-                state.update(prompt=prompt).append(chat_history=chat_item)
-            )
+            return state.update(prompt=prompt).append(chat_history=chat_item)
 
         @action(reads=["chat_history"], writes=["response", "chat_history"])
-        def ai_response(state: State) -> Tuple[dict, State]:
+        def ai_response(state: State) -> State:
             content = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=state["chat_history"],
@@ -172,10 +169,7 @@ If you want to copy/paste, you can open up the following code block and add to a
                 "content": content,
                 "role": "assistant"
             }
-            return (
-                {"response": content},
-                state.update(response=content).append(chat_history=chat_item)
-            )
+            return state.update(response=content).append(chat_history=chat_item)
         app = (
             ApplicationBuilder()
             .with_actions(human_input, ai_response)
@@ -186,6 +180,7 @@ If you want to copy/paste, you can open up the following code block and add to a
             .with_entrypoint("human_input")
             .build()
         )
+
         app.visualize("./graph", format="png")
         *_, state = app.run(halt_after=["ai_response"], inputs={"prompt": "Who was Aaron Burr?"})
         print("answer:", app.state["response"])

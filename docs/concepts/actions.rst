@@ -21,7 +21,8 @@ Actions have two primary responsibilities:
 2. ``update`` -- modify the state
 
 The ``run`` method should return a dictionary of the result and the ``update`` method should return
-the updated state. They declare their dependencies so the framework knows *which* state variables they read and write. This allows the
+the updated state, given the results of the ``run`` method.
+They declare their dependencies so the framework knows *which* state variables they read and write. This allows the
 framework to optimize the execution of the workflow. We call (1) a ``Function`` and (2) a ``Reducer`` (similar to `Redux <https://redux.js.org/>`_, if you're familiar with frontend UI technology).
 
 There are two APIs for defining actions: class-based and function-based. They are largely equivalent, but differ in use.
@@ -33,32 +34,47 @@ There are two APIs for defining actions: class-based and function-based. They ar
 Function-based actions
 ----------------------
 
-You can also define actions by decorating a function with the :py:func:`@action <burr.core.action.action>` decorator:
+You can define actions by decorating a function with the :py:func:`@action <burr.core.action.action>` decorator. These
+can return either just the state or a tuple of the result and the state. For example:
 
 .. code-block:: python
 
     from burr.core import action, State
 
     @action(reads=["var_from_state"], writes=["var_to_update"])
-    def custom_action(state: State) -> Tuple[dict, State]:
-        result = {"var_to_update": state["var_from_state"] + 1}
-        return result, state.update(**result)
+    def custom_action(state: State) -> State:
+        return state.update(var_to_update=state["var_from_state"] + 1)
 
     app = ApplicationBuilder().with_actions(
         custom_action=custom_action
     )...
 
 
-Note that these combine the ``update`` and ``run`` methods into a single function, and they're both executed at the same time.
+Conceptually, these combine the ``update`` and ``run`` methods into a single function, and they're both executed at the same time.
+You also have the option of returning the intermediate results, which is useful for tracking/debugging. The code
+above is equivalent to returning an empty dictionary instead of the results.
+
+.. code-block:: python
+
+    from burr.core import action, State
+
+    @action(reads=["var_from_state"], writes=["var_to_update"])
+    def custom_action(state: State) -> State
+        return results, state.update(var_to_update=var_from_state + 1)
+
+    app = ApplicationBuilder().with_actions(
+        custom_action=custom_action
+    )...
+
+
 
 Function-based actions can take in parameters which are akin to passing in constructor parameters. This is done through the :py:meth:`bind <burr.core.action.bind>` method:
 
 .. code-block:: python
 
     @action(reads=["var_from_state"], writes=["var_to_update"])
-    def custom_action(state: State, increment_by: int) -> Tuple[dict, State]:
-        result = {"var_to_update": state["var_from_state"] + increment_by}
-        return result, state.update(**result)
+    def custom_action(state: State, increment_by: int) -> State:
+        return state.update(var_to_update=state["var_from_state"] + increment_by)
 
     app = ApplicationBuilder().with_actions(
         custom_action=custom_action.bind(increment_by=2)
@@ -70,9 +86,8 @@ bound, they will be referred to as inputs. For example:
 .. code-block:: python
 
     @action(reads=["var_from_state"], writes=["var_to_update"])
-    def custom_action(state: State, increment_by: int) -> Tuple[dict, State]:
-        result = {"var_to_update": state["var_from_state"] + increment_by}
-        return result, state.update(**result)
+    def custom_action(state: State, increment_by: int) -> State:
+        return state.update(var_to_update=state["var_from_state"] + increment_by)
 
     app = ApplicationBuilder().with_actions(
         custom_action=custom_action
@@ -83,9 +98,9 @@ Will require the inputs to be passed in at runtime. See below for how to do that
 .. code-block:: python
 
     @action(reads=["var_from_state"], writes=["var_to_update"])
-    def custom_action(state: State, increment_by: int = 1) -> Tuple[dict, State]:
+    def custom_action(state: State, increment_by: int = 1) -> State:
         result = {"var_to_update": state["var_from_state"] + increment_by}
-        return result, state.update(**result)
+        return state.update(var_to_update=state["var_from_state"] + increment_by)
 
     app = ApplicationBuilder().with_actions(
         custom_action=custom_action
@@ -220,11 +235,11 @@ For example using the function based API, consider the following action:
 .. code-block:: python
 
     @action(reads=["..."], writes=["..."])
-    def my_action(state: State, client: Client, prompt: str) -> Tuple[dict, State]:
+    def my_action(state: State, client: Client, prompt: str) -> State:
         """client & `prompt` here are something we need to pass in."""
         context = client.get_data(state["..."])
         result = llm_call(prompt, context) # some LLM call...
-        return result, state.update(**result)
+        return state.update(**result)
 
 We need to pass in `client` and `prompt` somehow. Here are the ways to do that:
 
