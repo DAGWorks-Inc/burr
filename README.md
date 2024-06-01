@@ -50,16 +50,19 @@ Burr includes:
 2. A UI you can use view execution telemetry for introspection and debugging
 3. A set of integrations to make it easier to persist state, connect to telemetry, and integrate with other systems
 
-![Burr at work](./chatbot.gif)
+![Burr at work](https://github.com/DAGWorks-Inc/burr/blob/main/chatbot.gif)
 
 ## 💻️ What can you do with Burr?
 
 Burr can be used to power a variety of applications, including:
 
-1. [A simple gpt-like chatbot](examples/multi-modal-chatbot)
-2. [A stateful RAG-based chatbot](examples/conversational-rag)
-3. [A machine learning pipeline](examples/ml-training)
-4. [A simulation](examples/simulation)
+1. [A simple gpt-like chatbot](https://github.com/dagworks-inc/burr/tree/main/examples/multi-modal-chatbot)
+2. [A stateful RAG-based chatbot](https://github.com/dagworks-inc/burr/tree/main/conversational-rag)
+3. [An LLM-based adventure game](https://github.com/DAGWorks-Inc/burr/tree/main/examples/llm-adventure-game)
+4. [An interactive assistant for writing emails](https://github.com/DAGWorks-Inc/burr/tree/main/examples/email-assistant)
+
+As well as a variety of (non-LLM) use-cases, including a time-series forecasting [simulation](https://github.com/DAGWorks-Inc/burr/tree/main/examples/simulation),
+and [hyperparameter tuning](https://github.com/DAGWorks-Inc/burr/tree/main/examples/ml-training).
 
 And a lot more!
 
