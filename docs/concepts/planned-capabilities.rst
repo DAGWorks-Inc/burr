@@ -31,9 +31,9 @@ against that state.
         qux: str
 
     @action(reads=["foo", "bar"], writes=["baz"])
-    def my_action(state: State[InputState]) -> Tuple[dict, State[OutputState]]:
+    def my_action(state: State[InputState]) -> State[OutputState]:
         result = {"baz": state["foo"] + 1, "qux": state["bar"] + "!"}
-        return result, state.update(**result)
+        return state.update(**result)
 
 The above could also be dataclasses/pydantic models. We could also add something as simple as:
 
@@ -82,23 +82,23 @@ Here is what it would look liek in the current API:
 .. code-block:: python
 
     @action(reads=["attempts"], writes=["output", "attempts"])
-    def some_flaky_action(state: State, max_retries: int=3) -> Tuple[dict, State]:
+    def some_flaky_action(state: State, max_retries: int=3) -> State:
         result = {"output": None, "attempts": state["attempts"] + 1}
         try:
             result["output"] = call_some_api(...)
         excecpt APIException as e:
             if state["attempts"] >= max_retries:
                raise e
-        return result, state.update(**result)
+        return state.update(**result)
 
 One could imagine adding it as a condition (a few possibilities)
 
 .. code-block:: python
 
     @action(reads=[], writes=["output"])
-    def some_flaky_action(state: State) -> Tuple[dict, State]:
+    def some_flaky_action(state: State) -> State
         result = {"output": call_some_api(...)}
-        return result, state.update(**result)
+        return state.update(**result)
 
     builder.with_actions(
        some_flaky_action=some_flaky_action

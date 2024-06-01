@@ -39,7 +39,7 @@ After creating a simple application (1)/(2) above, you can wire through the trac
 .. code-block:: python
 
     @action(reads=["parameters_to_map"], writes=["joined_results"])
-    def run_multiple_sub_apps(state: State, __context: ApplicationContext) -> Tuple[dict, State]:
+    def run_multiple_sub_apps(state: State, __context: ApplicationContext) -> State:
         # for every parameter incoming, run a sub-application
         results = []
         for parameter_set in state["parameters_to_map"]:
@@ -61,7 +61,7 @@ After creating a simple application (1)/(2) above, you can wire through the trac
 
         joined = _join(results)
 
-        return {"joined_results": joined}, state.update(joined_results=joined)
+        return state.update(joined_results= _join(results))
 
 Note we're simply passing through the tracker to the next app, which sets a link between them.
 The tracker knows how to record the link so its in the UI.
@@ -72,7 +72,7 @@ Parallel and delayed functions, but you can use whatever tooling you want (multi
 .. code-block:: python
 
     @action(reads=["parameters_to_map"], writes=["joined_results"])
-    def run_multiple_sub_apps(state: State, __context: ApplicationContext) -> Tuple[dict, State]:
+    def run_multiple_sub_apps(state: State, __context: ApplicationContext) -> State:
         def run_subapp(parameter_set):
             subapp = (
                 ApplicationBuilder()
@@ -93,7 +93,7 @@ Parallel and delayed functions, but you can use whatever tooling you want (multi
         results = Parallel(n_jobs=-1)(delayed(run_subapp)(parameter_set) for parameter_set in state["parameters_to_map"])
         joined = _join(results)
 
-        return {"joined_results": joined}, state.update(joined_results=joined)
+        return state.update(joined_results=joined)
 
 Note the following:
 
