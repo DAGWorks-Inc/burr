@@ -201,6 +201,10 @@ class LocalTrackingClient(
             parent_children_list_path = os.path.join(
                 parent_path, LocalTrackingClient.CHILDREN_FILENAME
             )
+            # Order should not matter here
+            # currently we write start events, so it really won't matter
+            # but in the future we'll write end events, but we'll parse it in a
+            # way that allows them to be interwoven
             with open(parent_children_list_path, "a") as f:
                 fileno = f.fileno()
                 try:
