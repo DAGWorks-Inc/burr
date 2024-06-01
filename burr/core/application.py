@@ -385,7 +385,7 @@ class Application:
         sequence_id: Optional[int] = None,
         adapter_set: Optional[LifecycleAdapterSet] = None,
         builder: Optional["ApplicationBuilder"] = None,
-        parent_pointer: Optional[burr_types.ParentPointer] = None,
+        fork_parent_pointer: Optional[burr_types.ParentPointer] = None,
         spawning_parent_pointer: Optional[burr_types.ParentPointer] = None,
         tracker: Optional["TrackingClient"] = None,
     ):
@@ -418,7 +418,7 @@ class Application:
         if sequence_id is not None:
             self._set_sequence_id(sequence_id)
         self._builder = builder
-        self._parent_pointer = parent_pointer
+        self._parent_pointer = fork_parent_pointer
         self.dependency_factory = {
             "__tracer": functools.partial(
                 visibility.tracing.TracerFactory, lifecycle_adapters=self._adapter_set
@@ -432,7 +432,7 @@ class Application:
             application_graph=self._graph,
             app_id=self._uid,
             partition_key=self._partition_key,
-            parent_pointer=parent_pointer,
+            parent_pointer=fork_parent_pointer,
             spawning_parent_pointer=spawning_parent_pointer,
         )
 
@@ -533,6 +533,7 @@ class Application:
         return new_state
 
     def _process_inputs(self, inputs: Dict[str, Any], action: Action) -> Dict[str, Any]:
+        """Processes inputs, injecting the common inputs and ensuring that all required inputs are present."""
         starting_with_double_underscore = {key for key in inputs.keys() if key.startswith("__")}
         if len(starting_with_double_underscore) > 0:
             raise ValueError(
@@ -1977,7 +1978,7 @@ class ApplicationBuilder:
             sequence_id=self.sequence_id,
             adapter_set=LifecycleAdapterSet(*self.lifecycle_adapters),
             builder=self,
-            parent_pointer=burr_types.ParentPointer(
+            fork_parent_pointer=burr_types.ParentPointer(
                 app_id=self.fork_from_app_id,
                 partition_key=self.fork_from_partition_key,
                 sequence_id=self.fork_from_sequence_id,
