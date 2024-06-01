@@ -6,7 +6,7 @@ Welcome to Burr's documentation.
 
 For a quick overview of Burr, watch `this walkthrough <https://www.loom.com/share/a10f163428b942fea55db1a84b1140d8?sid=1512863b-f533-4a42-a2f3-95b13deb07c9>`_
 or read `our blog post <https://blog.dagworks.io/p/burr-develop-stateful-ai-applications?r=2cg5z1&utm_campaign=post&utm_medium=web>`_. The following video is
-a longer demo of building a simple chatbot application with Burr using `this notebook <https://github.com/DAGWorks-Inc/burr/blob/main/examples/conversational-rag/notebook.ipynb>`_:
+a longer demo of building a simple chatbot application with Burr using `this notebook <https://github.com/DAGWorks-Inc/burr/blob/main/examples/conversational-rag/simple_example/notebook.ipynb>`_:
 
 .. raw:: html
 

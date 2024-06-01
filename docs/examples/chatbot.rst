@@ -15,7 +15,7 @@ See `github repository example <https://github.com/DAGWorks-Inc/burr/tree/main/e
 
 Conversational RAG chatbot
 --------------------------
-See `github example <https://github.com/DAGWorks-Inc/burr/tree/main/examples/conversational-rag>`_.
+See `github example <https://github.com/DAGWorks-Inc/burr/tree/main/examples/conversational-rag/simple_example>`_.
 
 Accompanying video walkthrough:
 

@@ -22,7 +22,7 @@ Note we have a few more in [other-examples](other-examples/), but those do not y
 # Index
 
 - [simple-chatbot-intro](simple-chatbot-intro/) - This is a simple chatbot that shows how to use Burr to create a simple chatbot. This is a good starting point for understanding how to use Burr -- the notebook follows the original [blog post](https://blog.dagworks.io/p/burr-develop-stateful-ai-applications).
-- [conversational-rag](conversational-rag/) - This example shows how to use Burr to create a conversational RAG chatbot. This shows how to use state/prior knowledge to augment your LLM call with Burr.
+- [conversational-rag](conversational-rag/) - This shows multiple examples on how to use Burr to create a conversational RAG chatbot. This shows how to use state/prior knowledge to augment your LLM call with Burr.
 - [hello-world-counter](hello-world-counter/) - This is an example of a simple state machine, used in the docs.
 - [llm-adventure-game](llm-adventure-game/) - This is an example of a simple text-based adventure game using LLMs -- it shows how to progress through hidden states while reusing components.
 - [ml-training](ml-training/) - This is an example of a simple ML training pipeline. It shows how to use Burr to track the training of a model. This is not complete.
