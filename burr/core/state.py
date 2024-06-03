@@ -38,12 +38,12 @@ def register_field_serde(field_name: str, serializer: Callable, deserializer: Ca
     # assert that the serializer has **kwargs argument; it also needs to return a dict but we can't check that.
     # def name(value: Any, **kwargs) -> dict
     serializer_sig = inspect.signature(serializer)
-    if not any(param.name == "kwargs" for param in serializer_sig.parameters.values()):
+    if not any(param.kind == param.VAR_KEYWORD for param in serializer_sig.parameters.values()):
         raise ValueError(f"Serializer for [{field_name}] must have **kwargs argument.")
 
     # assert that the deserializer has **kwargs argument; it also needs to return a dict but we can't check that.
     deserializer_sig = inspect.signature(deserializer)
-    if not any(param.name == "kwargs" for param in deserializer_sig.parameters.values()):
+    if not any(param.kind == param.VAR_KEYWORD for param in deserializer_sig.parameters.values()):
         raise ValueError(f"Deserializer for [{field_name}] must have **kwargs argument.")
 
     FIELD_SERIALIZATION[field_name] = (serializer, deserializer)
@@ -236,30 +236,31 @@ class State(Mapping):
         """Converts the state to a JSON serializable object"""
         _dict = self.get_all()
 
-        def _choose_serde(k, v, **extrakwargs) -> Union[dict, str]:
-            """chooses the correct serde function for the given key"""
+        def _serialize(k, v, **extrakwargs) -> Union[dict, str]:
+            """chooses the correct serde function for the given key and calls it"""
             if k in FIELD_SERIALIZATION:
                 result = FIELD_SERIALIZATION[k][0](v, **extrakwargs)
                 if not isinstance(result, dict):
                     raise ValueError(
-                        f"Field serde for {k} must return a dict, but return {type(result)}"
+                        f"Field serde for {k} must return a dict,"
+                        f" but {FIELD_SERIALIZATION[k][0].__name__} returned {type(result)} ({str(result)[0:10]})."
                     )
                 return result
             return serde.serialize(v, **extrakwargs)
 
-        return {k: _choose_serde(k, v, **kwargs) for k, v in _dict.items()}
+        return {k: _serialize(k, v, **kwargs) for k, v in _dict.items()}
 
     @classmethod
     def deserialize(cls, json_dict: dict, **kwargs) -> "State":
         """Converts a dictionary representing a JSON object back into a state"""
 
-        def _choose_serde(k, v: Union[str, dict], **extrakwargs) -> Callable:
-            """chooses the correct serde function for the given key"""
+        def _deserialize(k, v: Union[str, dict], **extrakwargs) -> Callable:
+            """chooses the correct serde function for the given key and calls it"""
             if k in FIELD_SERIALIZATION:
                 return FIELD_SERIALIZATION[k][1](v, **extrakwargs)
             return serde.deserialize(v, **extrakwargs)
 
-        return State({k: _choose_serde(k, v, **kwargs) for k, v in json_dict.items()})
+        return State({k: _deserialize(k, v, **kwargs) for k, v in json_dict.items()})
 
     def update(self, **updates: Any) -> "State":
         """Updates the state with a set of key-value pairs
