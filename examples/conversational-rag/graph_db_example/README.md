@@ -22,7 +22,7 @@ We have pulled some data and stored it in the `/data` folder.
 
 
 # Querying the AI agent
-Once the data is loaded either into a Knowledge Graph, users can start asking the AI agent questions. For example:
+Once the data is loaded into the Knowledge Graph DB, users can start asking the AI agent questions. For example:
 
 ```
 Which fighter holds the fastest win?
