@@ -44,6 +44,33 @@ For more details see the [getting started guide](https://burr.dagworks.io/gettin
 With Burr you express your application as a state machine (i.e. a graph/flowchart).
 You can (and should!) use it for anything in which you have to manage state, track complex decisions, add human feedback, or dictate an idempotent, self-persisting workflow.
 
+The core API is simple -- the Burr hello-world looks like this (plug in your own LLM, or copy from [the docs](https://burr.dagworks.io/getting_started/simple-example/#build-a-simple-chatbot>) for _gpt-X_)
+
+```python
+@action(reads=[], writes=["prompt", "chat_history"])
+def human_input(state: State, prompt: str) -> State:
+    # your code -- write what you want here!
+    return state.update(prompt=prompt).append(chat_history=chat_item)
+
+@action(reads=["chat_history"], writes=["response", "chat_history"])
+def ai_response(state: State) -> State:
+    response = _query_llm(state["chat_history"]) # Burr doesn't care how you use LLMs!
+    return state.update(response=content).append(chat_history=chat_item)
+
+app = (
+    ApplicationBuilder()
+    .with_actions(human_input, ai_response)
+    .with_transitions(
+        ("human_input", "ai_response"),
+        ("ai_response", "human_input")
+    ).with_state(chat_history=[])
+    .with_entrypoint("human_input")
+    .build()
+)
+*_, state = app.run(halt_after=["ai_response"], inputs={"prompt": "Who was Aaron Burr, sir?"})
+print("answer:", app.state["response"])
+```
+
 Burr includes:
 
 1. A (dependency-free) low-abstraction python library that enables you to build and manage state machines with simple python functions
