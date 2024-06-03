@@ -2194,8 +2194,8 @@ def test_application_builder_assigns_correct_actions_with_dual_api():
     result_action = Result("count")
 
     @action(reads=[], writes=[])
-    def test_action(state: State) -> Tuple[State, Dict[str, Any]]:
-        return state, {}
+    def test_action(state: State) -> State:
+        return state
 
     app = (
         ApplicationBuilder()
@@ -2214,8 +2214,8 @@ def test__validate_halt_conditions():
     result_action = Result("count")
 
     @action(reads=[], writes=[])
-    def test_action(state: State) -> Tuple[State, Dict[str, Any]]:
-        return state, {}
+    def test_action(state: State) -> State:
+        return state
 
     app = (
         ApplicationBuilder()
@@ -2375,11 +2375,9 @@ def test_application_passes_context_when_declared():
     context_list = []
 
     @action(reads=["count"], writes=["count"])
-    def context_counter(
-        state: State, __context: ApplicationContext
-    ) -> Tuple[Dict[str, Any], State]:
+    def context_counter(state: State, __context: ApplicationContext) -> State:
         context_list.append(__context)
-        return {}, state.update(count=state["count"] + 1)
+        return state.update(count=state["count"] + 1)
 
     result_action = Result("count")
     app = (
@@ -2408,11 +2406,9 @@ def test_optional_context_in_dependency_factories():
     context_list = []
 
     @action(reads=["count"], writes=["count"])
-    def context_counter(
-        state: State, __context: ApplicationContext = None
-    ) -> Tuple[Dict[str, Any], State]:
+    def context_counter(state: State, __context: ApplicationContext = None) -> State:
         context_list.append(__context)
-        return {}, state.update(count=state["count"] + 1)
+        return state.update(count=state["count"] + 1)
 
     result_action = Result("count")
     app = (

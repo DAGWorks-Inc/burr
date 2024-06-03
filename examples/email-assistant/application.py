@@ -15,22 +15,20 @@ def _get_openai_client():
 
 
 @action(reads=[], writes=["incoming_email", "response_instructions"])
-def process_input(
-    state: State, email_to_respond: str, response_instructions: str
-) -> Tuple[dict, State]:
+def process_input(state: State, email_to_respond: str, response_instructions: str) -> State:
     """Processes input from user and updates state with the input."""
     result = {"incoming_email": email_to_respond, "response_instructions": response_instructions}
-    return result, state.update(**result)
+    return state.update(**result)
 
 
 @action(reads=[], writes=["has_openai_key"])
-def check_openai_key(state: State) -> Tuple[dict, State]:
+def check_openai_key(state: State) -> State:
     result = {"has_openai_key": "OPENAI_API_KEY" in os.environ}
-    return result, state.update(**result)
+    return state.update(**result)
 
 
 @action(reads=["response_instructions", "incoming_email"], writes=["clarification_questions"])
-def determine_clarifications(state: State) -> Tuple[dict, State]:
+def determine_clarifications(state: State) -> State:
     """Determines if the response instructions require clarification."""
     # TODO -- query an LLM to determine if the response instructions are clear, or if it needs more information
     incoming_email = state["incoming_email"]
@@ -61,18 +59,14 @@ def determine_clarifications(state: State) -> Tuple[dict, State]:
     )
     content = result.choices[0].message.content
     all_questions = content.split("\n") if content else []
-    return {"clarification_questions": all_questions}, state.update(
-        clarification_questions=all_questions
-    )
+    return state.update(clarification_questions=all_questions)
 
 
 @action(reads=["clarification_questions"], writes=["clarification_answers"])
-def clarify_instructions(state: State, clarification_inputs: list[str]) -> Tuple[dict, State]:
+def clarify_instructions(state: State, clarification_inputs: list[str]) -> State:
     """Clarifies the response instructions if needed."""
     clarification_answers = list(clarification_inputs)
-    return {"clarification_answers": clarification_answers}, state.update(
-        clarification_answers=clarification_answers
-    )
+    return state.update(clarification_answers=clarification_answers)
 
 
 @action(
@@ -128,6 +122,7 @@ def formulate_draft(state: State) -> Tuple[dict, State]:
         ],
     )
     content = result.choices[0].message.content
+    # returning some intermediate results for debugging as well
     return {"prompt": prompt, "current_draft": content}, state.update(current_draft=content).append(
         draft_history=content
     )
