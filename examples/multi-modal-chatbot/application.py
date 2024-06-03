@@ -1,6 +1,6 @@
 import copy
 import os
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import openai
 
@@ -18,23 +18,25 @@ MODES = {
 
 
 @action(reads=[], writes=["chat_history", "prompt"])
-def process_prompt(state: State, prompt: str) -> Tuple[dict, State]:
+def process_prompt(state: State, prompt: str):
     result = {"chat_item": {"role": "user", "content": prompt, "type": "text"}}
-    return result, state.wipe(keep=["prompt", "chat_history"]).append(
-        chat_history=result["chat_item"]
-    ).update(prompt=prompt)
+    return (
+        state.wipe(keep=["prompt", "chat_history"])
+        .append(chat_history=result["chat_item"])
+        .update(prompt=prompt)
+    )
 
 
 @action(reads=[], writes=["has_openai_key"])
-def check_openai_key(state: State) -> Tuple[dict, State]:
+def check_openai_key(state: State):
     result = {"has_openai_key": "OPENAI_API_KEY" in os.environ}
-    return result, state.update(**result)
+    return state.update(**result)
 
 
 @action(reads=["prompt"], writes=["safe"])
-def check_safety(state: State) -> Tuple[dict, State]:
+def check_safety(state: State):
     result = {"safe": "unsafe" not in state["prompt"]}  # quick hack to demonstrate
-    return result, state.update(safe=result["safe"])
+    return state.update(safe=result["safe"])
 
 
 def _get_openai_client():
@@ -42,7 +44,7 @@ def _get_openai_client():
 
 
 @action(reads=["prompt"], writes=["mode"])
-def choose_mode(state: State) -> Tuple[dict, State]:
+def choose_mode(state: State):
     prompt = (
         f"You are a chatbot. You've been prompted this: {state['prompt']}. "
         f"You have the capability of responding in the following modes: {', '.join(MODES)}. "
@@ -64,11 +66,11 @@ def choose_mode(state: State) -> Tuple[dict, State]:
     if mode not in MODES:
         mode = "unknown"
     result = {"mode": mode}
-    return result, state.update(**result)
+    return state.update(**result)
 
 
 @action(reads=["prompt", "chat_history"], writes=["response"])
-def prompt_for_more(state: State) -> Tuple[dict, State]:
+def prompt_for_more(state: State):
     result = {
         "response": {
             "content": "None of the response modes I support apply to your question. Please clarify?",
@@ -76,13 +78,13 @@ def prompt_for_more(state: State) -> Tuple[dict, State]:
             "role": "assistant",
         }
     }
-    return result, state.update(**result)
+    return state.update(**result)
 
 
 @action(reads=["prompt", "chat_history", "mode"], writes=["response"])
 def chat_response(
     state: State, prepend_prompt: str, display_type: str = "text", model: str = "gpt-3.5-turbo"
-) -> Tuple[dict, State]:
+):
     chat_history = copy.deepcopy(state["chat_history"])
     chat_history[-1]["content"] = f"{prepend_prompt}: {chat_history[-1]['content']}"
     chat_history_api_format = [
@@ -99,11 +101,11 @@ def chat_response(
     )
     response = result.choices[0].message.content
     result = {"response": {"content": response, "type": MODES[state["mode"]], "role": "assistant"}}
-    return result, state.update(**result)
+    return state.update(**result)
 
 
 @action(reads=["prompt", "chat_history", "mode"], writes=["response"])
-def image_response(state: State, model: str = "dall-e-2") -> Tuple[dict, State]:
+def image_response(state: State, model: str = "dall-e-2"):
     """Generates an image response to the prompt. Optional save function to save the image to a URL."""
     client = _get_openai_client()
     result = client.images.generate(
@@ -111,11 +113,11 @@ def image_response(state: State, model: str = "dall-e-2") -> Tuple[dict, State]:
     )
     response = result.data[0].url
     result = {"response": {"content": response, "type": MODES[state["mode"]], "role": "assistant"}}
-    return result, state.update(**result)
+    return state.update(**result)
 
 
 @action(reads=["response", "mode", "safe", "has_openai_key"], writes=["chat_history"])
-def response(state: State) -> Tuple[dict, State]:
+def response(state: State):
     if not state["has_openai_key"]:
         result = {
             "chat_item": {
@@ -137,7 +139,7 @@ def response(state: State) -> Tuple[dict, State]:
         }
     else:
         result = {"chat_item": state["response"]}
-    return result, state.append(chat_history=result["chat_item"])
+    return state.append(chat_history=result["chat_item"])
 
 
 def base_application(
@@ -212,4 +214,4 @@ if __name__ == "__main__":
     app.visualize(
         output_file_path="statemachine", include_conditions=False, view=True, format="png"
     )
-    app.run(halt_after=["response"])
+    print(app.run(halt_after=["response"], inputs={"prompt": "Who was Aaron Burr, sir?"}))

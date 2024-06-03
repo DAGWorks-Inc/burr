@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import burr.core
 from burr.core import Application, Result, State, default, expr
@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 @action(reads=["counter"], writes=["counter"])
-def counter(state: State) -> Tuple[dict, State]:
+def counter(state: State) -> State:
     result = {"counter": state["counter"] + 1}
     print(f"counted to {result['counter']}")
-    return result, state.update(**result)
+    return state.update(**result)
 
 
 def application(
