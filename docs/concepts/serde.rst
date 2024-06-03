@@ -9,7 +9,7 @@ Burr comes with a pluggable serialization/deserialization mechanism.
 Currently it is class/type based. Field level serialization is in the works! See :py:func:`serialize <burr.core.serde.serialize>` and :py:func:`deserialize <burr.core.serde.deserialize>` for reference details.
 
 How it works
-____________
+------------
 The :py:class:`State <burr.core.state.State>` object has a :py:meth:`serialize <burr.core.state.State.serialize>` method that returns a dictionary.
 The :py:class:`State <burr.core.state.State>` class also has a :py:meth:`deserialize <burr.core.state.State.deserialize>` method that takes a dictionary and returns a state object.
 
@@ -17,10 +17,22 @@ It is then delegated to persisters and trackers to call these methods and store 
 
 Underneath the State object delegates to the :py:func:`serialize <burr.core.serde.serialize>` and :py:func:`deserialize <burr.core.serde.deserialize>` functions.
 
-How to create your own serialization/deserialization
+Customizing Serialization/Deserialization
+-----------------------------------------
+Here's a video walkthrough of how to add custom type and field serialization/deserialization:
+
+.. raw:: html
+
+    <div>
+        <iframe width="800" height="455" src="https://www.youtube.com/embed/Squ5IAeQBzc?si=6l6e0SJ0EqEjAW2K" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    </div>
+
+See `this example <https://github.com/DAGWorks-Inc/burr/tree/main/examples/custom-serde>`_ for the notebook.
+
+Type based serialization/deserialization
 _____________________________________________________
-To create your own serialization/deserialization mechanism, you need to implement the following code. The assumption
-here is that you have some custom class you want to serialize/deserialize.
+To create your own python type based serialization/deserialization mechanism, you need to implement the following code. The assumption
+here is that you have some custom class/type you want to serialize/deserialize.
 
 .. code-block:: python
 
@@ -70,9 +82,12 @@ _________________________________________
 
 .. _state-field-serialization:
 
-Field level serialization/deserialization is handled by a registration function in the state module.
-Fields will be first checked to see if there is a custom serializer/deserializer registered for that field,
-before delegating to the default serialization/deserialization mechanism.
+Field level serialization/deserialization is for when you want to further customize your state serialization
+strategy. E.g. you have two fields of the same type but want to serialize things differently.
+Registration of this approach is handled by a registration function in the `core.state` module.
+When serializing/deserializing state, field names will be first checked to see if there is a
+custom serializer/deserializer registered for that field, before delegating to the default
+type based serialization/deserialization mechanism.
 
 .. code-block:: python
 
