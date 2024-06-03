@@ -9,9 +9,9 @@ but we are actively working on building first-level constructs that allow this.
 This can enable the following use-cases (among many others):
 
 1. Parallel results to different LLMs for comparison
-2. Multi simultaneous tasks/chains for an LLM
+2. Multiple simultaneous tasks/chains for an LLM to answer at once
 3. Black-boxing an action as a subset of tasks
-4. Running multiple queries simultaneously and getting an LLM to synthesize.
+4. Running multiple queries simultaneously and getting an LLM to synthesize
 
 And so on. These can be arbitrarily complex and nested, allowing agents consisting of agents consisting of agents...
 
@@ -103,6 +103,9 @@ Note the following:
 
 For persistence, you'll want to use (3) to ensure a stable hash -- have the sub-application load its own state from the ID, resuming where it left off.
 
+We currently don't wire through persisters, although we are planning to add that shortly. For the meanwhile, you'll want to leverage the right persister
+yourself.
+
 When you track in the UI, you will see the following (in this example we're generating poems of different styles in parallel):
 
 .. image:: ../_static/recursive_steps.png
@@ -114,7 +117,7 @@ Future Improvements
 
 We are working on the following:
 
-1. A recursive application to allow for more ergonomic management of the above
+1. A first class way to define a recursive application application to allow for more ergonomic management of the above
 2. Static visualization of the recursive application when using (1)
 3. A more ergonomic way to pass through the tracker
 

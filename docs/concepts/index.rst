@@ -9,6 +9,7 @@ Overview of the concepts -- read these to get a mental model for how Burr works.
 .. toctree::
     :maxdepth: 2
 
+    overview
     actions
     state
     state-machine
