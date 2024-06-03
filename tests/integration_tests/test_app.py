@@ -2,7 +2,7 @@ import pydantic
 from langchain_core import documents
 
 from burr import core
-from burr.core import State, action, expr, persistence
+from burr.core import State, action, expr, persistence, state
 from burr.tracking import client as tracking_client
 
 
@@ -51,7 +51,11 @@ def build_application(sqllite_persister, tracker, partition_key, app_id):
         .initialize_from(
             persister,
             resume_at_next_action=True,
-            default_state={},
+            default_state={
+                "custom_field": documents.Document(
+                    page_content="this is a custom field to serialize"
+                )
+            },
             default_entrypoint="basic_action",
         )
     )
@@ -62,6 +66,20 @@ def build_application(sqllite_persister, tracker, partition_key, app_id):
     return app_builder.build()
 
 
+def register_custom_serde_for_lc_document(field_name: str):
+    """Register a custom serde for a field"""
+
+    def my_field_serializer(value: documents.Document, **kwargs) -> dict:
+        serde_value = f"serialized::{value.page_content}"
+        return {"value": serde_value}
+
+    def my_field_deserializer(value: dict, **kwargs) -> documents.Document:
+        serde_value = value["value"]
+        return documents.Document(page_content=serde_value.replace("serialized::", ""))
+
+    state.register_field_serde(field_name, my_field_serializer, my_field_deserializer)
+
+
 def test_whole_application_tracker(tmp_path):
     """This test creates an application and then steps through it rebuilding the
     application each time. This is a test of things being serialized and deserialized."""
@@ -70,7 +88,15 @@ def test_whole_application_tracker(tmp_path):
     partition_key = ""
     # step 1
     app = build_application(None, tracker, partition_key, app_id)
+    register_custom_serde_for_lc_document("custom_field")
     action1, result1, state1 = app.step(inputs={"user_input": "hello"})
+    # check custom serde
+    assert state1.serialize() == {
+        "__PRIOR_STEP": "basic_action",
+        "__SEQUENCE_ID": 0,
+        "custom_field": {"value": "serialized::this is a custom field to serialize"},
+        "dict": {"None": None, "bar": "2", "bool": True, "foo": 1, "input": "hello"},
+    }
     assert action1.name == "basic_action"
     # step 2
     app = build_application(None, tracker, partition_key, app_id)
@@ -111,7 +137,16 @@ def test_whole_application_sqllite(tmp_path):
     partition_key = ""
     # step 1
     app = build_application(sqllite_persister, None, partition_key, app_id)
+    register_custom_serde_for_lc_document("custom_field")
     action1, result1, state1 = app.step(inputs={"user_input": "hello"})
+    # check custom serde
+    assert state1.serialize() == {
+        "__PRIOR_STEP": "basic_action",
+        "__SEQUENCE_ID": 0,
+        "custom_field": {"value": "serialized::this is a custom field to serialize"},
+        "dict": {"None": None, "bar": "2", "bool": True, "foo": 1, "input": "hello"},
+    }
+    # check actions
     assert action1.name == "basic_action"
     # step 2
     app = build_application(sqllite_persister, None, partition_key, app_id)

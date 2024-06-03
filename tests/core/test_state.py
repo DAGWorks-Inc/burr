@@ -1,6 +1,6 @@
 import pytest
 
-from burr.core.state import State
+from burr.core.state import State, register_field_serde
 
 
 def test_state_access():
@@ -98,3 +98,63 @@ def test_state_increment_validate_failure():
     state = State({"foo": "bar"})
     with pytest.raises(ValueError, match="non-integer"):
         state.increment(foo="baz", bar="qux")
+
+
+def test_field_level_serde():
+    def my_field_serializer(value: str, **kwargs) -> dict:
+        serde_value = f"serialized_{value}"
+        return {"value": serde_value}
+
+    def my_field_deserializer(value: dict, **kwargs) -> str:
+        serde_value = value["value"]
+        return serde_value.replace("serialized_", "")
+
+    register_field_serde("my_field", my_field_serializer, my_field_deserializer)
+    state = State({"foo": {"hi": "world"}, "baz": "qux", "my_field": "testing 123"})
+    assert state.serialize() == {
+        "foo": {"hi": "world"},
+        "baz": "qux",
+        "my_field": {"value": "serialized_testing 123"},
+    }
+    state = State.deserialize(
+        {"foo": {"hi": "world"}, "baz": "qux", "my_field": {"value": "serialized_testing 123"}}
+    )
+    assert state.get_all() == {"foo": {"hi": "world"}, "baz": "qux", "my_field": "testing 123"}
+
+
+def test_field_level_serde_bad_serde_function():
+    def my_field_serializer(value: str, **kwargs) -> str:
+        # bad function
+        serde_value = f"serialized_{value}"
+        return serde_value
+
+    def my_field_deserializer(value: dict, **kwargs) -> str:
+        serde_value = value["value"]
+        return serde_value.replace("serialized_", "")
+
+    register_field_serde("my_field", my_field_serializer, my_field_deserializer)
+    state = State({"foo": {"hi": "world"}, "baz": "qux", "my_field": "testing 123"})
+    with pytest.raises(ValueError):
+        state.serialize()
+
+
+def test_register_field_serde_check_no_kwargs():
+    def my_field_serializer(value: str) -> dict:
+        serde_value = f"serialized_{value}"
+        return {"value": serde_value}
+
+    def my_field_deserializer(value: dict) -> str:
+        serde_value = value["value"]
+        return serde_value.replace("serialized_", "")
+
+    with pytest.raises(ValueError):
+        # serializer & deserializer missing kwargs
+        register_field_serde("my_field", my_field_serializer, my_field_deserializer)
+
+    def my_field_serializer(value: str, **kwargs) -> dict:
+        serde_value = f"serialized_{value}"
+        return {"value": serde_value}
+
+    with pytest.raises(ValueError):
+        # deserializer still bad
+        register_field_serde("my_field", my_field_serializer, my_field_deserializer)
