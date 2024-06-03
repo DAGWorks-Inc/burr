@@ -18,7 +18,7 @@ MODES = {
 
 
 @action(reads=[], writes=["chat_history", "prompt"])
-def process_prompt(state: State, prompt: str):
+def process_prompt(state: State, prompt: str) -> State:
     result = {"chat_item": {"role": "user", "content": prompt, "type": "text"}}
     return (
         state.wipe(keep=["prompt", "chat_history"])
@@ -28,13 +28,13 @@ def process_prompt(state: State, prompt: str):
 
 
 @action(reads=[], writes=["has_openai_key"])
-def check_openai_key(state: State):
+def check_openai_key(state: State) -> State:
     result = {"has_openai_key": "OPENAI_API_KEY" in os.environ}
     return state.update(**result)
 
 
 @action(reads=["prompt"], writes=["safe"])
-def check_safety(state: State):
+def check_safety(state: State) -> State:
     result = {"safe": "unsafe" not in state["prompt"]}  # quick hack to demonstrate
     return state.update(safe=result["safe"])
 
@@ -44,7 +44,7 @@ def _get_openai_client():
 
 
 @action(reads=["prompt"], writes=["mode"])
-def choose_mode(state: State):
+def choose_mode(state: State) -> State:
     prompt = (
         f"You are a chatbot. You've been prompted this: {state['prompt']}. "
         f"You have the capability of responding in the following modes: {', '.join(MODES)}. "
@@ -70,7 +70,7 @@ def choose_mode(state: State):
 
 
 @action(reads=["prompt", "chat_history"], writes=["response"])
-def prompt_for_more(state: State):
+def prompt_for_more(state: State) -> State:
     result = {
         "response": {
             "content": "None of the response modes I support apply to your question. Please clarify?",
@@ -84,7 +84,7 @@ def prompt_for_more(state: State):
 @action(reads=["prompt", "chat_history", "mode"], writes=["response"])
 def chat_response(
     state: State, prepend_prompt: str, display_type: str = "text", model: str = "gpt-3.5-turbo"
-):
+) -> State:
     chat_history = copy.deepcopy(state["chat_history"])
     chat_history[-1]["content"] = f"{prepend_prompt}: {chat_history[-1]['content']}"
     chat_history_api_format = [
@@ -105,7 +105,7 @@ def chat_response(
 
 
 @action(reads=["prompt", "chat_history", "mode"], writes=["response"])
-def image_response(state: State, model: str = "dall-e-2"):
+def image_response(state: State, model: str = "dall-e-2") -> State:
     """Generates an image response to the prompt. Optional save function to save the image to a URL."""
     client = _get_openai_client()
     result = client.images.generate(
@@ -117,7 +117,7 @@ def image_response(state: State, model: str = "dall-e-2"):
 
 
 @action(reads=["response", "mode", "safe", "has_openai_key"], writes=["chat_history"])
-def response(state: State):
+def response(state: State) -> State:
     if not state["has_openai_key"]:
         result = {
             "chat_item": {
