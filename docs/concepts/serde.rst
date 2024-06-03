@@ -67,6 +67,30 @@ You'll need to this code to run/be imported so it can register itself.
 
 Field level Serialization/Deserialization
 _________________________________________
-We are working on field level serialization/deserialization registration. This will allow you to set the
-serialize/deserialize on specific fields of an object. This is will give you more control over
-how to serialize/deserialize objects within state.
+
+.. _state-field-serialization:
+
+Field level serialization/deserialization is handled by a registration function in the state module.
+Fields will be first checked to see if there is a custom serializer/deserializer registered for that field,
+before delegating to the default serialization/deserialization mechanism.
+
+.. code-block:: python
+
+        from burr.core import state
+
+        def my_field_serializer(value: MyType, **kwargs) -> dict:
+            serde_value = _do_something_to_serialize(value)
+            return {"value": serde_value}
+
+        def my_field_deserializer(value: dict, **kwargs) -> MyType:
+            serde_value = value["value"]
+            return _do_something_to_deserialize(serde_value)
+
+        state.register_field_serde("my_field", my_field_serializer, my_field_deserializer)
+
+This will register a custom serializer/deserializer for the field "my_field".
+
+Requirements for the serializer/deserializer functions:
+
+    1. The serializer function needs to return a dictionary.
+    2. Both function signatures needs to have a ``**kwargs`` parameter to allow for custom arguments to be passed in. We advise namespacing the kwargs provided to avoid conflicts with other serializers/deserializers.

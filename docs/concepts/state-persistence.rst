@@ -173,3 +173,10 @@ tracked runs. This is useful for debugging, or building an application that enab
 
 In this case the ``LocalTrackingClient`` is used both as a persister and a loader. It will persist as it is
 running (by tracking), and then load from the tracker if the application is restarted. This is useful for local development.
+
+Custom Serialization and Deserialization
+----------------------------------------
+See :doc:`serde` for more information on how to customize state serialization and deserialization.
+
+This includes how to register custom serializers and deserializers based on type, as well
+as :ref:`registering custom serializers and deserializers for a field<state-field-serialization>` in state.
