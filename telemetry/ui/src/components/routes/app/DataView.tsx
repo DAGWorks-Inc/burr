@@ -5,8 +5,56 @@ import { Button } from '../../common/button';
 import { Switch, SwitchField } from '../../common/switch';
 import { Label } from '../../common/fieldset';
 import { classNames } from '../../../utils/tailwind';
-import { ChevronDownIcon, ChevronUpIcon, MinusIcon, PlusIcon } from '@heroicons/react/20/solid';
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid';
 
+/**
+ * Common JSON view so we can make everything look the same.
+ * We override icons to keep them consistent.
+ * @param props The value/how deep we want it to be collapsed (defaults to 2)
+ * @returns JSON view
+ */
+const CommonJsonView = (props: { value: object; collapsed?: number }) => {
+  const collapsed = props.collapsed || 2;
+  return (
+    <JsonView value={props.value} collapsed={collapsed} enableClipboard={false}>
+      <JsonView.Arrow
+        // @ts-ignore
+        render={({ 'data-expanded': isExpanded }) => {
+          if (isExpanded) {
+            return (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+                className="size-4 hover:cursor-pointer"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            );
+          }
+          return (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              className="size-4 hover:cursor-pointer"
+            >
+              <path
+                fillRule="evenodd"
+                d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z"
+                clipRule="evenodd"
+              />
+            </svg>
+          );
+        }}
+      ></JsonView.Arrow>
+    </JsonView>
+  );
+};
 const StateButton = (props: { label: string; selected: boolean; setSelected: () => void }) => {
   const color = props.selected ? 'zinc' : 'light';
   return (
@@ -32,7 +80,7 @@ const SectionHeaderWithExpand = (props: {
   setDefaultExpanded?: (expanded: boolean) => void;
   enableExpansion: boolean;
 }) => {
-  const MinimizeMaximizeIcon = props.defaultExpanded ? MinusIcon : PlusIcon;
+  const MinimizeMaximizeIcon = props.defaultExpanded ? ChevronUpIcon : ChevronDownIcon;
   return (
     <div className="flex flex-row items-center gap-1">
       <h1 className="text-2xl text-gray-900 font-semibold">{props.name}</h1>
@@ -69,7 +117,6 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
   return (
     <div className="pl-1 flex flex-col gap-2 hide-scrollbar">
       <div className="flex flex-row justify-between sticky top-0 z-20 bg-white">
-        {/* <h1 className="text-2xl text-gray-900 font-semibold pt-2">State</h1> */}
         <SectionHeaderWithExpand
           name="State"
           defaultExpanded={allStateExpanded}
@@ -159,9 +206,7 @@ export const StateView = (props: {
       {stateData !== undefined && viewRawData === 'render' && (
         <FormRenderer data={stateData} isDefaultExpanded={isExpanded} />
       )}
-      {stateData !== undefined && viewRawData === 'raw' && (
-        <JsonView value={stateData} collapsed={2} enableClipboard={false} />
-      )}
+      {stateData !== undefined && viewRawData === 'raw' && <CommonJsonView value={stateData} />}
     </>
   );
 };
@@ -181,7 +226,7 @@ export const ResultView = (props: {
       )}
       {resultData && viewRawData === 'raw' && (
         <>
-          <JsonView value={resultData} collapsed={2} enableClipboard={false} />
+          <CommonJsonView value={resultData} />{' '}
         </>
       )}
     </>
@@ -203,7 +248,7 @@ export const InputsView = (props: {
       ) : (
         (inputs && viewRawData) === 'raw' && (
           <>
-            <JsonView value={inputs} collapsed={2} enableClipboard={false} />
+            <CommonJsonView value={inputs} />
           </>
         )
       )}
@@ -261,7 +306,7 @@ const RenderedField = (props: {
         props.value.length > 0 &&
         typeof props.value[0] === 'number' ? (
           <div key={key + '-' + String(level)}>
-            <JsonView value={props.value} enableClipboard={false} collapsed={1} />
+            <CommonJsonView value={props.value} />
           </div>
         ) : typeof value === 'string' ? (
           <div key={key + '-' + String(level)}>
