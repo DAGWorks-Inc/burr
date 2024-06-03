@@ -77,17 +77,27 @@ def _validate_result(result: dict, name: str) -> None:
         )
 
 
-def _adjust_single_step_output(output: Union[State, Tuple[dict, State]]):
-    """Adjusts the output of a single step action to be a tuple of (result, state)"""
+def _raise_fn_return_validation_error(output: Any, action_name: str):
+    raise ValueError(
+        ERROR_MESSAGE
+        + f"Single step action: {action_name} must return either *just* the newly updated State or a tuple of (result: dict, state: State). "
+        f"Got: {output} of type {type(output)} instead, which is not valid."
+    )
+
+
+def _adjust_single_step_output(output: Union[State, Tuple[dict, State]], action_name: str):
+    """Adjusts the output of a single step action to be a tuple of (result, state) or just state"""
+
     if isinstance(output, tuple):
+        if not len(output) == 2:
+            _raise_fn_return_validation_error(output, action_name)
+        _validate_result(output[0], action_name)
+        if not isinstance(output[1], State):
+            _raise_fn_return_validation_error(output, action_name)
         return output
     if isinstance(output, State):
         return {}, output
-    raise ValueError(
-        ERROR_MESSAGE
-        + "Single step action must return either *just* the state update or a tuple of (result, state). "
-        f"Got: {output} of type {type(output)} instead."
-    )
+    _raise_fn_return_validation_error(output, action_name)
 
 
 def _run_function(function: Function, state: State, inputs: Dict[str, Any], name: str) -> dict:
@@ -236,7 +246,9 @@ def _run_single_step_action(
     """
     # TODO -- guard all reads/writes with a subset of the state
     action.validate_inputs(inputs)
-    result, new_state = _adjust_single_step_output(action.run_and_update(state, **inputs))
+    result, new_state = _adjust_single_step_output(
+        action.run_and_update(state, **inputs), action.name
+    )
     _validate_result(result, action.name)
     out = result, _state_update(state, new_state)
     _validate_result(result, action.name)
@@ -359,7 +371,7 @@ async def _arun_single_step_action(
     state_to_use = state
     action.validate_inputs(inputs)
     result, new_state = _adjust_single_step_output(
-        await action.run_and_update(state_to_use, **inputs)
+        await action.run_and_update(state_to_use, **inputs), action.name
     )
     _validate_result(result, action.name)
     _validate_reducer_writes(action, new_state, action.name)
