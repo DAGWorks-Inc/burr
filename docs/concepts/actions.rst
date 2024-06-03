@@ -35,7 +35,7 @@ Function-based actions
 ----------------------
 
 You can define actions by decorating a function with the :py:func:`@action <burr.core.action.action>` decorator. These
-can return either just the state or a tuple of the result and the state. For example:
+can return either just the updated state or a tuple of the result and the state. For example:
 
 .. code-block:: python
 
@@ -170,7 +170,7 @@ Note that if the action has inputs, you have to define the optional ``inputs`` p
             return ["increment_by"]
 
 
-See below for how to pass in inputs at runtime. If you want to use optional inputs with the class-based API, `inputs` will return a tuple
+See below for how to pass in inputs at runtime. If you want to use optional inputs with the class-based API, ``inputs`` will return a tuple
 of (required, optional) inputs. For example:
 
 .. code-block:: python
@@ -182,41 +182,9 @@ of (required, optional) inputs. For example:
         def inputs(self) -> Tuple[list[str], list[str]]:
             return ["increment_by"], ["optional_input"]
 
-Note your code will have to handle the case where `optional_input` is not passed in (e.g. by setting the appropriate kwargs to the `run(...)` method.
+Note your code will have to handle the case where ``optional_input`` is not passed in (e.g. by setting the appropriate kwargs to the `run(...)` method.
 
------------------------
-``Inputs`` only actions
------------------------
-
-If you simply want a node to take in inputs and pass them to the state, you can use the `Input` action:
-
-.. code-block:: python
-
-    app = ApplicationBuilder().with_actions(
-        get_input=Input("var_from_state")
-    )...
-
-This will look for the `var_from_state` in the inputs and pass it to the state. Note this is just syntactic sugar
-for declaring inputs through one of the other APIs and adding it to state -- if you want to do anything more complex
-with the input, you should use other APIs.
-
-------------------------
-``Results`` only actions
-------------------------
-
-If you just want to fill a result from the state, you can use the `Result` action:
-
-.. code-block:: python
-
-    app = ApplicationBuilder().with_actions(
-        get_result=Result("var_from_state")
-    )...
-
-
-This simply grabs the value from the state and returns it as the result. It is purely a placeholder
-for an action that should just use the result, although you do not need it.
-
-Refer to :ref:`actions <actions>` for documentation.
+Refer to :ref:`actions <actions>` for more documentation.
 
 
 .. _inputref:

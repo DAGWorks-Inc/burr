@@ -9,7 +9,7 @@ State
     Burr's ``State`` API enables actions to talk to each other, and enables you to persist data.
     Burr has a ``State`` API that allows you to manipulate state in a functional way.
 
-The ``State`` class provides the ability to manipulate state for a given action. It is entirely immutable,
+The :py:class:`State <burr.core.state.State>` class provides the ability to manipulate state for a given action. It is entirely immutable,
 meaning that you can only create new states from old ones, not modify them in place.
 
 

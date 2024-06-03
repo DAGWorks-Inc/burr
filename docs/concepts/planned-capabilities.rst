@@ -86,7 +86,7 @@ Here is what it would look liek in the current API:
         result = {"output": None, "attempts": state["attempts"] + 1}
         try:
             result["output"] = call_some_api(...)
-        excecpt APIException as e:
+        except APIException as e:
             if state["attempts"] >= max_retries:
                raise e
         return state.update(**result)
