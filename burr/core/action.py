@@ -1000,41 +1000,6 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         return inspect.getsource(self._fn)
 
 
-def _validate_action_function(fn: Callable):
-    """Validates that an action has the signature: (state: State) -> tuple[dict, State]
-
-    :param fn: Function to validate
-    """
-    sig = inspect.signature(fn)
-    params = sig.parameters
-    if list(params.keys())[0] != "state" or not list(params.values())[0].annotation == State:
-        raise ValueError(f"Function {fn} must take in a single argument: state with type: State")
-    other_params = list(params.keys())[1:]
-    for param in other_params:
-        param = params[param]
-        if param.kind not in {
-            inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            inspect.Parameter.KEYWORD_ONLY,
-        }:
-            raise ValueError(
-                f"Function {fn} has an invalid parameter: {param}. "
-                f"All parameters must be position or keyword only,"
-                f"so that bind(**kwargs) can be applied."
-            )
-
-    return_type = sig.return_annotation
-    if (
-        return_type is inspect.Signature.empty
-        or not typing.get_origin(return_type) in {tuple, typing.Tuple}
-        or not len(typing.get_args(return_type)) == 2
-        or not typing.get_args(return_type) == (dict, State)
-    ):
-        raise ValueError(
-            f"Function {fn} must return a tuple of (result, new_state), with type tuple[dict, State] "
-            f"not {sig.return_annotation}"
-        )
-
-
 C = TypeVar("C", bound=Callable)  # placeholder for any Callable
 
 

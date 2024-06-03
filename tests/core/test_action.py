@@ -16,7 +16,6 @@ from burr.core.action import (
     SingleStepStreamingAction,
     StreamingAction,
     StreamingResultContainer,
-    _validate_action_function,
     action,
     create_action,
     default,
@@ -447,36 +446,6 @@ def test_create_action_undecorated_function():
 
     with pytest.raises(ValueError, match="not a valid action"):
         create_action(test_action, name="my_action")
-
-
-def test__validate_action_function_invalid_signature_extra_parameters():
-    def incorrect_signature(state: State, extra_to_bind: str) -> Tuple[dict, State]:
-        pass
-
-    _validate_action_function(incorrect_signature)
-
-
-def test__validate_action_function_invalid_signature_incorrect_param_type():
-    def incorrect_signature(state: int) -> Tuple[dict, State]:
-        pass
-
-    with pytest.raises(ValueError, match="single argument"):
-        _validate_action_function(incorrect_signature)
-
-
-def test__validate_action_function_invalid_signature_incorrect_return_type():
-    def incorrect_signature(state: State) -> int:
-        pass
-
-    with pytest.raises(ValueError, match="must return"):
-        _validate_action_function(incorrect_signature)
-
-
-def test__validate_action_function_invalid_signature_correct():
-    def correct_signature(state: State) -> Tuple[dict, State]:
-        pass
-
-    _validate_action_function(correct_signature)
 
 
 def test_streaming_action_stream_run():
