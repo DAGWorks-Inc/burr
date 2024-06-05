@@ -100,7 +100,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
                 status TEXT NOT NULL,
                 state JSONB NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (partition_key, app_id, sequence_id, position, state)
+                PRIMARY KEY (partition_key, app_id, sequence_id, position)
             )"""
         )
         cursor.execute(
