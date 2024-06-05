@@ -2395,6 +2395,58 @@ def test_application_exposes_app_context():
     assert context.tracker.unique_id == "unique_tracker_name"
 
 
+def test_application_exposes_app_context_through_context_manager_sync():
+    """Tests that we can get the context from the application correctly"""
+
+    @action(reads=["count"], writes=["count"])
+    def counter(state: State) -> State:
+        app_context = ApplicationContext.get()
+        assert app_context is not None
+        assert app_context.tracker is not None  # NoOpTracker is used
+        assert isinstance(app_context.sequence_id, int)
+        assert app_context.app_id == "test123"
+        return state.update(count=state["count"] + 1)
+
+    result_action = Result("count").with_name("result")
+    app = (
+        ApplicationBuilder()
+        .with_actions(result_action, counter=counter)
+        .with_transitions(("counter", "result", default))
+        .with_tracker(NoOpTracker("unique_tracker_name"))
+        .with_identifiers(app_id="test123", partition_key="user123", sequence_id=5)
+        .with_entrypoint("counter")
+        .with_state(count=0)
+        .build()
+    )
+    app.run(halt_after=["result"])
+
+
+async def test_application_exposes_app_context_through_context_manager_async():
+    """Tests that we can get the context from the application correctly"""
+
+    @action(reads=["count"], writes=["count"])
+    async def counter(state: State) -> State:
+        app_context = ApplicationContext.get()
+        assert app_context is not None
+        assert app_context.tracker is not None  # NoOpTracker is used
+        assert isinstance(app_context.sequence_id, int)
+        assert app_context.app_id == "test123"
+        return state.update(count=state["count"] + 1)
+
+    result_action = Result("count").with_name("result")
+    app = (
+        ApplicationBuilder()
+        .with_actions(result_action, counter=counter)
+        .with_transitions(("counter", "result", default))
+        .with_tracker(NoOpTracker("unique_tracker_name"))
+        .with_identifiers(app_id="test123", partition_key="user123", sequence_id=5)
+        .with_entrypoint("counter")
+        .with_state(count=0)
+        .build()
+    )
+    await app.arun(halt_after=["result"])
+
+
 def test_application_passes_context_when_declared():
     """Tests that the context is passed to the function correctly"""
     context_list = []

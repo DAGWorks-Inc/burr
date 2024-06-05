@@ -78,7 +78,7 @@ Parallel and delayed functions, but you can use whatever tooling you want (multi
                 ApplicationBuilder()
                 .with_actions(...)
                 .with_transitions(...)
-                .with_tracker(__context.tracker.copy())
+                .with_tracker(__context.tracker.copy() if __context.tracker is not None else None)
                 .with_spawning_parent(
                     __context.app_id,
                     __context.sequence_id,
@@ -110,6 +110,43 @@ When you track in the UI, you will see the following (in this example we're gene
 
 .. image:: ../_static/recursive_steps.png
     :align: center
+
+Alternatives
+------------
+
+If, for some reason, you want to run a Burr application inside a burr application but can't effectively wire through the tracker/context
+(say, for instance, that it's run through levels of other frameworks), you can get access to the active context and tracker by using the following:
+
+.. code-block:: python
+
+    from burr import get_active_context, get_active_tracker, ApplicationContext
+
+    @action(reads=["parameters_to_map"], writes=["joined_results"])
+    def my_action(state: State) -> State:
+       context = ApplicationContext.get()
+       def run_subapp(parameter_set):
+            subapp = (
+                ApplicationBuilder()
+                .with_actions(...)
+                .with_transitions(...)
+                .with_tracker(context.tracker.copy() if context.tracker is not None else None)
+                .with_spawning_parent(
+                    context.app_id,
+                    context.sequence_id,
+                    context.partition_key,
+                )
+                .with_entrypoint(...)
+                .with_state(...)
+                .build()
+            )
+            return subapp.run(...)
+
+        results = Parallel(n_jobs=-1)(delayed(run_subapp)(parameter_set) for parameter_set in state["parameters_to_map"])
+        joined = _join(results)
+
+        # do something with the context and tracker
+
+        return state
 
 -------------------
 Future Improvements
