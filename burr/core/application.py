@@ -1,10 +1,12 @@
 import collections
+import contextvars
 import dataclasses
 import functools
 import inspect
 import logging
 import pprint
 import uuid
+from contextlib import AbstractContextManager
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -393,11 +395,40 @@ class ApplicationGraph:
 
 
 @dataclasses.dataclass
-class ApplicationContext:
+class ApplicationContext(AbstractContextManager):
+    """Application context. This is anything your node might need to know about the application.
+    Often used for recursive tracking.
+
+    Note this is also a context manager (allowing you to pass context to sub-applications).
+    """
+
     app_id: str
     partition_key: Optional[str]
     sequence_id: Optional[int]
     tracker: Optional["TrackingClient"]
+
+    @staticmethod
+    def get() -> Optional["ApplicationContext"]:
+        """Provides the context-local application context.
+        You can use this instead of declaring `__context` in an application.
+        You really should only be using this if you're wiring through multiple layers of abstraction
+        and want to connect two applications.
+
+        :return: The ApplicationContext you'll want to use
+        """
+        return _application_context.get()
+
+    def __enter__(self) -> "ApplicationContext":
+        _application_context.set(self)
+        return self
+
+    def __exit__(self, __exc_type, __exc_value, __traceback):
+        _application_context.set(None)
+
+
+_application_context = contextvars.ContextVar[Optional[ApplicationContext]](
+    "application_context", default=None
+)
 
 
 class Application:
@@ -498,53 +529,56 @@ class Application:
     ) -> Optional[Tuple[Action, dict, State]]:
         """Internal-facing version of step. This is the same as step, but with an additional
         parameter to hide hook execution so async can leverage it."""
-        next_action = self.get_next_action()
-        if next_action is None:
-            return None
-        if inputs is None:
-            inputs = {}
-        action_inputs = self._process_inputs(inputs, next_action)
-        if _run_hooks:
-            self._adapter_set.call_all_lifecycle_hooks_sync(
-                "pre_run_step",
-                action=next_action,
-                state=self._state,
-                inputs=action_inputs,
-                sequence_id=self.sequence_id,
-                app_id=self._uid,
-                partition_key=self._partition_key,
-            )
-        exc = None
-        result = None
-        new_state = self._state
-        try:
-            if next_action.single_step:
-                result, new_state = _run_single_step_action(next_action, self._state, action_inputs)
-            else:
-                result = _run_function(
-                    next_action, self._state, action_inputs, name=next_action.name
-                )
-                new_state = _run_reducer(next_action, self._state, result, next_action.name)
-
-            new_state = self._update_internal_state_value(new_state, next_action)
-            self._set_state(new_state)
-        except Exception as e:
-            exc = e
-            logger.exception(_format_error_message(next_action, self._state, inputs))
-            raise e
-        finally:
+        with self.context:
+            next_action = self.get_next_action()
+            if next_action is None:
+                return None
+            if inputs is None:
+                inputs = {}
+            action_inputs = self._process_inputs(inputs, next_action)
             if _run_hooks:
                 self._adapter_set.call_all_lifecycle_hooks_sync(
-                    "post_run_step",
+                    "pre_run_step",
+                    action=next_action,
+                    state=self._state,
+                    inputs=action_inputs,
+                    sequence_id=self.sequence_id,
                     app_id=self._uid,
                     partition_key=self._partition_key,
-                    action=next_action,
-                    state=new_state,
-                    result=result,
-                    sequence_id=self.sequence_id,
-                    exception=exc,
                 )
-        return next_action, result, new_state
+            exc = None
+            result = None
+            new_state = self._state
+            try:
+                if next_action.single_step:
+                    result, new_state = _run_single_step_action(
+                        next_action, self._state, action_inputs
+                    )
+                else:
+                    result = _run_function(
+                        next_action, self._state, action_inputs, name=next_action.name
+                    )
+                    new_state = _run_reducer(next_action, self._state, result, next_action.name)
+
+                new_state = self._update_internal_state_value(new_state, next_action)
+                self._set_state(new_state)
+            except Exception as e:
+                exc = e
+                logger.exception(_format_error_message(next_action, self._state, inputs))
+                raise e
+            finally:
+                if _run_hooks:
+                    self._adapter_set.call_all_lifecycle_hooks_sync(
+                        "post_run_step",
+                        app_id=self._uid,
+                        partition_key=self._partition_key,
+                        action=next_action,
+                        state=new_state,
+                        result=result,
+                        sequence_id=self.sequence_id,
+                        exception=exc,
+                    )
+            return next_action, result, new_state
 
     def reset_to_entrypoint(self) -> None:
         """Resets the state machine to the entrypoint action."""
@@ -626,64 +660,65 @@ class Application:
 
     async def _astep(self, inputs: Optional[Dict[str, Any]], _run_hooks: bool = True):
         # we want to increment regardless of failure
-        next_action = self.get_next_action()
-        if next_action is None:
-            return None
-        if inputs is None:
-            inputs = {}
-        action_inputs = self._process_inputs(inputs, next_action)
-        if _run_hooks:
-            await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
-                "pre_run_step",
-                action=next_action,
-                state=self._state,
-                inputs=action_inputs,
-                sequence_id=self.sequence_id,
-                app_id=self._uid,
-                partition_key=self._partition_key,
-            )
-        exc = None
-        result = None
-        new_state = self._state
-        try:
-            if not next_action.is_async():
-                # we can just delegate to the synchronous version, it will block the event loop,
-                # but that's safer than assuming its OK to launch a thread
-                # TODO -- add an option/configuration to launch a thread (yikes, not super safe, but for a pure function
-                # which this is supposed to be its OK).
-                # this delegates hooks to the synchronous version, so we'll call all of them as well
-                return self._step(
-                    inputs=action_inputs, _run_hooks=False
-                )  # Skip hooks as we already ran all of them/will run all of them in this function's finally
-            if next_action.single_step:
-                result, new_state = await _arun_single_step_action(
-                    next_action, self._state, inputs=action_inputs
-                )
-            else:
-                result = await _arun_function(
-                    next_action, self._state, inputs=action_inputs, name=next_action.name
-                )
-                new_state = _run_reducer(next_action, self._state, result, next_action.name)
-            new_state = self._update_internal_state_value(new_state, next_action)
-            self._set_state(new_state)
-        except Exception as e:
-            exc = e
-            logger.exception(_format_error_message(next_action, self._state, inputs))
-            raise e
-        finally:
+        with self.context:
+            next_action = self.get_next_action()
+            if next_action is None:
+                return None
+            if inputs is None:
+                inputs = {}
+            action_inputs = self._process_inputs(inputs, next_action)
             if _run_hooks:
                 await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
-                    "post_run_step",
+                    "pre_run_step",
                     action=next_action,
-                    state=new_state,
-                    result=result,
+                    state=self._state,
+                    inputs=action_inputs,
                     sequence_id=self.sequence_id,
-                    exception=exc,
                     app_id=self._uid,
                     partition_key=self._partition_key,
                 )
+            exc = None
+            result = None
+            new_state = self._state
+            try:
+                if not next_action.is_async():
+                    # we can just delegate to the synchronous version, it will block the event loop,
+                    # but that's safer than assuming its OK to launch a thread
+                    # TODO -- add an option/configuration to launch a thread (yikes, not super safe, but for a pure function
+                    # which this is supposed to be its OK).
+                    # this delegates hooks to the synchronous version, so we'll call all of them as well
+                    return self._step(
+                        inputs=action_inputs, _run_hooks=False
+                    )  # Skip hooks as we already ran all of them/will run all of them in this function's finally
+                if next_action.single_step:
+                    result, new_state = await _arun_single_step_action(
+                        next_action, self._state, inputs=action_inputs
+                    )
+                else:
+                    result = await _arun_function(
+                        next_action, self._state, inputs=action_inputs, name=next_action.name
+                    )
+                    new_state = _run_reducer(next_action, self._state, result, next_action.name)
+                new_state = self._update_internal_state_value(new_state, next_action)
+                self._set_state(new_state)
+            except Exception as e:
+                exc = e
+                logger.exception(_format_error_message(next_action, self._state, inputs))
+                raise e
+            finally:
+                if _run_hooks:
+                    await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
+                        "post_run_step",
+                        action=next_action,
+                        state=new_state,
+                        result=result,
+                        sequence_id=self.sequence_id,
+                        exception=exc,
+                        app_id=self._uid,
+                        partition_key=self._partition_key,
+                    )
 
-        return next_action, result, new_state
+            return next_action, result, new_state
 
     def _clean_iterate_params(
         self,

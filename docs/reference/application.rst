@@ -18,3 +18,6 @@ and not the ``Application`` class directly.
 
 .. autoclass:: burr.core.application.ApplicationGraph
    :members:
+
+.. autoclass:: burr.core.application.ApplicationContext
+   :members:
