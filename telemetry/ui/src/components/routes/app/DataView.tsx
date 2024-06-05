@@ -16,7 +16,7 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid';
 const CommonJsonView = (props: { value: object; collapsed?: number }) => {
   const collapsed = props.collapsed || 2;
   return (
-    <JsonView value={props.value} collapsed={collapsed} enableClipboard={false}>
+    <JsonView value={props.value} collapsed={collapsed} enableClipboard={true}>
       <JsonView.Arrow
         // @ts-ignore
         render={({ 'data-expanded': isExpanded }) => {
