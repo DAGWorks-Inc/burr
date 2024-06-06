@@ -37,6 +37,8 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
 
     """
 
+    PARTITION_KEY_DEFAULT = ""
+
     @classmethod
     def from_config(cls, config: dict) -> "PostgreSQLPersister":
         """Creates a new instance of the PostgreSQLPersister from a configuration dictionary."""
@@ -93,7 +95,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         cursor.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {table_name} (
-                partition_key TEXT DEFAULT '',
+                partition_key TEXT DEFAULT {self.PARTITION_KEY_DEFAULT},
                 app_id TEXT NOT NULL,
                 sequence_id INTEGER NOT NULL,
                 position TEXT NOT NULL,
@@ -127,7 +129,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         return app_ids
 
     def load(
-        self, partition_key: str, app_id: str, sequence_id: int = None, **kwargs
+        self, partition_key: Optional[str], app_id: str, sequence_id: int = None, **kwargs
     ) -> Optional[persistence.PersistedStateData]:
         """Loads state for a given partition id.
 
@@ -139,6 +141,8 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         :param sequence_id:
         :return:
         """
+        if partition_key is None:
+            partition_key = self.PARTITION_KEY_DEFAULT
         logger.debug("Loading %s, %s, %s", partition_key, app_id, sequence_id)
         cursor = self.connection.cursor()
         if app_id is None:
