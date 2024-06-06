@@ -1,6 +1,22 @@
 import abc
 import datetime
-import fcntl
+
+# this is a quick hack to get it to work on windows
+# we'll have to implement a proper lock later
+# but its better that it works than breaks on import
+try:
+    import fcntl
+except ImportError:
+
+    class fcntl:
+        @staticmethod
+        def flock(*args, **kwargs):
+            return
+
+        LOCK_EX = 0
+        LOCK_UN = 0
+
+
 import json
 import logging
 import os
