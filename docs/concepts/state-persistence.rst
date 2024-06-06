@@ -96,7 +96,7 @@ To make the above more concrete, let's look at a basic chatbot:
 
 .. code-block:: python
 
-    state_persister =  SQLLitePersister(db_path=".sqllite.db", table_name="table")
+    state_persister =  SQLLitePersister(db_path=".sqllite.db", table_name="burr_state")
     app = (
         ApplicationBuilder()
         .with_actions(
