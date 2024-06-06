@@ -140,6 +140,8 @@ class DevNullPersister(BaseStatePersister):
 class SQLLitePersister(BaseStatePersister):
     """Class for SQLLite persistence of state. This is a simple implementation."""
 
+    PARTITION_KEY_DEFAULT = ""
+
     def __init__(self, db_path: str, table_name: str = "burr_state", serde_kwargs: dict = None):
         """Constructor
 
@@ -155,11 +157,10 @@ class SQLLitePersister(BaseStatePersister):
     def create_table_if_not_exists(self, table_name: str):
         """Helper function to create the table where things are stored if it doesn't exist."""
         cursor = self.connection.cursor()
-
         cursor.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {table_name} (
-                partition_key TEXT NOT NULL,
+                partition_key TEXT DEFAULT '{self.PARTITION_KEY_DEFAULT}',
                 app_id TEXT NOT NULL,
                 sequence_id INTEGER NOT NULL,
                 position TEXT NOT NULL,
@@ -193,7 +194,7 @@ class SQLLitePersister(BaseStatePersister):
         return app_ids
 
     def load(
-        self, partition_key: str, app_id: str, sequence_id: int = None, **kwargs
+        self, partition_key: Optional[str], app_id: str, sequence_id: int = None, **kwargs
     ) -> Optional[PersistedStateData]:
         """Loads state for a given partition id.
 
@@ -205,6 +206,8 @@ class SQLLitePersister(BaseStatePersister):
         :param sequence_id:
         :return:
         """
+        if partition_key is None:
+            partition_key = self.PARTITION_KEY_DEFAULT
         logger.debug("Loading %s, %s, %s", partition_key, app_id, sequence_id)
         cursor = self.connection.cursor()
         if app_id is None:
@@ -224,7 +227,7 @@ class SQLLitePersister(BaseStatePersister):
             )
         else:
             cursor.execute(
-                f"SELECT position, state, seqeuence_id, app_id, created_at, status FROM {self.table_name} "
+                f"SELECT position, state, sequence_id, app_id, created_at, status FROM {self.table_name} "
                 f"WHERE partition_key = ? AND app_id = ? AND sequence_id = ?",
                 (partition_key, app_id, sequence_id),
             )
@@ -278,6 +281,8 @@ class SQLLitePersister(BaseStatePersister):
             state,
             status,
         )
+        if partition_key is None:
+            partition_key = self.PARTITION_KEY_DEFAULT
         cursor = self.connection.cursor()
         json_state = json.dumps(state.serialize(**self.serde_kwargs))
         cursor.execute(

@@ -93,7 +93,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         cursor.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {table_name} (
-                partition_key TEXT NOT NULL,
+                partition_key TEXT DEFAULT '',
                 app_id TEXT NOT NULL,
                 sequence_id INTEGER NOT NULL,
                 position TEXT NOT NULL,
@@ -158,7 +158,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
             )
         else:
             cursor.execute(
-                f"SELECT position, state, seqeuence_id, app_id, created_at, status FROM {self.table_name} "
+                f"SELECT position, state, sequence_id, app_id, created_at, status FROM {self.table_name} "
                 f"WHERE partition_key = %s AND app_id = %s AND sequence_id = %s ",
                 (partition_key, app_id, sequence_id),
             )
