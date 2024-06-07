@@ -6,7 +6,7 @@ Core to :ref:`state-persistence <state-persistence>` is the ability to serialize
 
 Burr comes with a pluggable serialization/deserialization mechanism.
 
-Currently it is class/type based. Field level serialization is in the works! See :py:func:`serialize <burr.core.serde.serialize>` and :py:func:`deserialize <burr.core.serde.deserialize>` for reference details.
+There are two approaches: class/type based, & field level registration. See :py:func:`serialize <burr.core.serde.serialize>` and :py:func:`deserialize <burr.core.serde.deserialize>` for reference details.
 
 How it works
 ------------
