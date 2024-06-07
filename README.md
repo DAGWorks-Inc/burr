@@ -47,6 +47,8 @@ You can (and should!) use it for anything in which you have to manage state, tra
 The core API is simple -- the Burr hello-world looks like this (plug in your own LLM, or copy from [the docs](https://burr.dagworks.io/getting_started/simple-example/#build-a-simple-chatbot>) for _gpt-X_)
 
 ```python
+from burr.core import action, State, ApplicationBuilder
+
 @action(reads=[], writes=["prompt", "chat_history"])
 def human_input(state: State, prompt: str) -> State:
     # your code -- write what you want here!
