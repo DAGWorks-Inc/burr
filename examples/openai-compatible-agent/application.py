@@ -26,3 +26,13 @@ def build_application() -> Application:
         .with_entrypoint("dummy_bot")
         .build()
     )
+
+
+if __name__ == "__main__":
+    app = build_application()
+    app.visualize(
+        output_file_path="statemachine",
+        include_conditions=False,
+        view=True,
+        format="png",
+    )

@@ -4,8 +4,8 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Optional
 
+import application as my_agent
 import fastapi
-import my_agent
 import uvicorn
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice

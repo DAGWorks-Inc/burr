@@ -13,6 +13,7 @@ REQUIRED_FILES = [
 ]
 
 FILTERLIST = [
+    "openai-compatible-agent",
     "other-examples",
     "conversational-rag",
     # todo -- remove the following once we've fleshed them out
