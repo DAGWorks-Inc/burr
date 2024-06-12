@@ -1,17 +1,16 @@
-import time
 import logging
+import time
 import uuid
 from contextlib import asynccontextmanager
 from typing import Optional
 
 import fastapi
+import my_agent
 import uvicorn
-from burr.core import Application
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
 
-import my_agent
-
+from burr.core import Application
 
 logger = logging.getLogger(__name__)
 
@@ -39,17 +38,13 @@ app = fastapi.FastAPI(lifespan=lifespan)
 
 @app.post("/v1/chat/completions")
 async def create_chat_completion(
-    request: fastapi.Request,
-    burr_app: Application = fastapi.Depends(get_burr_app)
+    request: fastapi.Request, burr_app: Application = fastapi.Depends(get_burr_app)
 ):
     """Creates a completion for the chat message"""
     request_json = await request.json()
     latest_message = request_json["messages"][-1]["content"]
 
-    _, result, _ = burr_app.run(
-        halt_after=["dummy_bot"],
-        inputs={"user_input": latest_message}
-    )
+    _, result, _ = burr_app.run(halt_after=["dummy_bot"], inputs={"user_input": latest_message})
 
     return ChatCompletion(
         id=f"{uuid.uuid4()}",
