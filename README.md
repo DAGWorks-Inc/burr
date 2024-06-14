@@ -158,9 +158,9 @@ Users who have contributed core functionality, integrations, or examples.
 - [Stefan Krawczyk](https://github.com/skrawcz)
 - [Joseph Booth](https://github.com/jombooth)
 - [Nandani Thakur](https://github.com/NandaniThakur)
+- [Thierry Jean](https://github.com/zilto)
 
 ### Bug hunters/special mentions
 Users who have contributed small docs fixes, design suggestions, and found bugs
-- [Thierry Jean](https://github.com/zilto)
 - [Luke Chadwick](https://github.com/vertis)
 - [Evans](https://github.com/sudoevans)
