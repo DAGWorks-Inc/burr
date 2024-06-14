@@ -19,6 +19,8 @@ Other LLM providers (e.g., Cohere, HuggingFace) have their own set of endpoints.
 ## OpenAI API compatible Burr application
 This example contains a very simple Burr application (`application.py`) and a FastAPI server to deploy this agent behind the OpenAI `v1/chat/completions` endpoint. After starting the server with `server.py`, you should be able to interact with it from your other tools ([Jan](https://jan.ai/docs) is easy and quick to install across platforms).
 
+![](statemachine.png)
+
 This is great because we can quickly integrate our Burr Agent with high-quality UIs and tools. Simulaneously, you gain Burr's observability, logging, and persistence across your applications.
 
 Most tools save state "in the frontend" because they don't have access to the official OpenAI backend. This means that each of your LLM applications are isolated. By using Burr and persisting state (e.g., chat history) on the backend, this means you can share and resume a conversation between your LLM frontend, CLI, or coding assistant!
