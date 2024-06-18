@@ -1585,6 +1585,16 @@ class Application:
         """
         return self._builder
 
+    def _repr_mimebundle_(self, include=None, exclude=None, **kwargs):
+        """Attribute read by notebook renderers
+        This returns the attribute of the `graphviz.Digraph` returned by `self.display_all_functions()`
+
+        The parameters `include`, `exclude`, and `**kwargs` are required, but not explicitly used
+        ref: https://ipython.readthedocs.io/en/stable/config/integrating.html
+        """
+        dot = self.visualize(include_conditions=True, include_state=False)
+        return dot._repr_mimebundle_(include=include, exclude=exclude, **kwargs)
+
 
 def _assert_set(value: Optional[Any], field: str, method: str):
     if value is None:
