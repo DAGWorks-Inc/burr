@@ -150,7 +150,7 @@ const AppSubList = (props: {
  */
 export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: string }) => {
   const appsCopy = [...props.apps];
-  const [displayZeroCount, setDisplayZeroCount] = useState(false);
+  const [displayZeroCount, setDisplayZeroCount] = useState(true);
   const navigate = useNavigate();
   const appsToDisplay = appsCopy
     .sort((a, b) => {
@@ -173,7 +173,7 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
   }, new Map<string, ApplicationSummary[]>());
 
   // Display the parents no matter what
-  const rootAppsToDisplay = appsCopy.filter((app) => app.spawning_parent_pointer === null);
+  const rootAppsToDisplay = appsToDisplay.filter((app) => app.spawning_parent_pointer === null);
   const anyHavePartitionKey = rootAppsToDisplay.some((app) => app.partition_key !== null);
 
   return (
