@@ -102,11 +102,13 @@ const SectionHeaderWithExpand = (props: {
   );
 };
 export const DataView = (props: { currentStep: Step | undefined; priorStep: Step | undefined }) => {
-  const [whichState, setWhichState] = useState<'after' | 'before'>('after');
-  const stepToExamine = whichState === 'after' ? props.currentStep : props.priorStep;
+  const [whichState, setWhichState] = useState<'after' | 'before' | 'compare'>('after');
+  const stepToExamine = whichState !== 'before' ? props.currentStep : props.priorStep;
   const stateData = stepToExamine?.step_end_log?.state;
   const resultData = stepToExamine?.step_end_log?.result || undefined;
   const inputs = stepToExamine?.step_start_log?.inputs;
+  const compareStateData =
+    whichState === 'compare' ? props.priorStep?.step_end_log?.state : undefined;
   const error = props.currentStep?.step_end_log?.exception;
   const [viewRawData, setViewRawData] = useState<'raw' | 'render'>('render');
 
@@ -154,10 +156,24 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
               }}
             />
           }
+          {stateData !== undefined && (
+            <StateButton
+              label="compare"
+              selected={whichState === 'compare'}
+              setSelected={() => {
+                setWhichState('compare');
+              }}
+            />
+          )}
         </div>
       </div>
 
-      <StateView stateData={stateData} viewRawData={viewRawData} isExpanded={allStateExpanded} />
+      <StateView
+        stateData={stateData}
+        viewRawData={viewRawData}
+        isExpanded={allStateExpanded}
+        compareStateData={compareStateData}
+      />
       {error && (
         <>
           <h1 className="text-2xl text-gray-900 font-semibold">Error</h1>
@@ -195,18 +211,40 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
   );
 };
 
+const diffJSON = (current: DataType, prior: DataType): DataType => {
+  const diff: DataType = {};
+  for (const key in current) {
+    if (!(key in prior)) {
+      diff[key] = current[key];
+    } else {
+      const eq = JSON.stringify(current[key]) === JSON.stringify(prior[key]);
+      if (!eq) {
+        diff[key] = current[key];
+      }
+    }
+  }
+  return diff;
+};
+
 export const StateView = (props: {
   stateData: DataType | undefined;
+  compareStateData: DataType | undefined;
   viewRawData: 'render' | 'raw';
   isExpanded: boolean;
 }) => {
   const { stateData, viewRawData, isExpanded } = props;
+  const stateToView =
+    props.stateData === undefined || props.compareStateData === undefined
+      ? stateData
+      : diffJSON(props.stateData, props.compareStateData);
   return (
     <>
       {stateData !== undefined && viewRawData === 'render' && (
-        <FormRenderer data={stateData} isDefaultExpanded={isExpanded} />
+        <FormRenderer data={stateToView || {}} isDefaultExpanded={isExpanded} />
       )}
-      {stateData !== undefined && viewRawData === 'raw' && <CommonJsonView value={stateData} />}
+      {stateData !== undefined && viewRawData === 'raw' && (
+        <CommonJsonView value={stateToView || {}} />
+      )}
     </>
   );
 };
