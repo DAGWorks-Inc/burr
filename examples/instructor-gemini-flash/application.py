@@ -249,6 +249,6 @@ if __name__ == "__main__":
     app.visualize(
         output_file_path="statemachine",
         include_conditions=True,
-        include_state=True,
+        include_state=False,
         format="png",
     )
