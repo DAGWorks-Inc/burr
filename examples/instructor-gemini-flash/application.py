@@ -151,15 +151,22 @@ def creator(
     topics_so_far = state.get("topics_so_far", [])
     topic_feedback = state.get("topic_feedback", "")
     messages = deepcopy(state["chat_history"])
+
     if topic_feedback:
+        # this means that we had some user feedback on the previously generated topic
+        # so instead of prompting for a new topic, we will add the feedback as a user message
+        # the previously generated topic is already an assistant message at the end of the chat history
         user_message = f"User feedback: {topic_feedback.strip()}"
     else:
+        # either no previous topic or no feedback on the previous topic
+        # so we will prompt for a new topic based on the outline and topics generated so far
         user_message = creation_template(
             outline=state["outline"],
             topics_so_far=topics_so_far,
             num_required_topics=num_required_topics,
         )
     messages.append({"role": "user", "content": user_message})
+    # these are the parameters that we will pass to the create function from the Instructor library
     create_kwargs = dict(
         response_model=Topic,
         messages=messages,
@@ -170,7 +177,10 @@ def creator(
         res = ask_gemini.create(**create_kwargs)  # type: ignore
     except Exception as e:
         print(f"ERROR in creator: {e}")
-        return {"generated_topic": None}, state.update(generated_topic="")
+        # if the model fails to generate a response even after multiple attempts, we will return None
+        # creator will be called again until a valid response is generated
+        return {"generated_topic": None}, state.update(generated_topic=None)
+    # add the user message and the generated topic to the chat history
     return {"generated_topic": res}, state.update(generated_topic=res).append(
         chat_history={"role": "user", "content": user_message}
     ).append(chat_history={"role": "assistant", "content": str(res)})
