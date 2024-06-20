@@ -159,6 +159,7 @@ Users who have contributed core functionality, integrations, or examples.
 - [Joseph Booth](https://github.com/jombooth)
 - [Nandani Thakur](https://github.com/NandaniThakur)
 - [Thierry Jean](https://github.com/zilto)
+- [Hamza Farhan](https://github.com/HamzaFarhan)
 
 ### Bug hunters/special mentions
 Users who have contributed small docs fixes, design suggestions, and found bugs
