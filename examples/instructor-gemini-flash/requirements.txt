@@ -1,0 +1,5 @@
+burr[start]
+google-generativeai
+instructor
+pydantic
+python-dotenv
