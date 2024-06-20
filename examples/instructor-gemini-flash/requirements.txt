@@ -1,0 +1,4 @@
+burr[start]
+pydantic
+instructor
+google-generativeai
