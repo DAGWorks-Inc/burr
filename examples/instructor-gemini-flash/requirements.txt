@@ -1,4 +1,5 @@
 burr[start]
-pydantic
-instructor
 google-generativeai
+instructor
+pydantic
+python-dotenv

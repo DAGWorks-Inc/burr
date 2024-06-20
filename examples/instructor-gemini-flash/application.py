@@ -4,10 +4,14 @@ from typing import Annotated
 
 import google.generativeai as genai
 import instructor
+from dotenv import load_dotenv
+from pydantic import AfterValidator, BaseModel, Field
+
 from burr.core import Application, ApplicationBuilder, State, expr
 from burr.core.action import action
 from burr.tracking import LocalTrackingClient
-from pydantic import AfterValidator, BaseModel, Field
+
+load_dotenv()  # load the GOOGLE_API_KEY from your .env file
 
 ask_gemini = instructor.from_gemini(
     client=genai.GenerativeModel(model_name="gemini-1.5-flash-latest")
@@ -105,9 +109,7 @@ def setup(state: State, outline: str, num_required_topics: int) -> State:
         chat_history=[
             {
                 "role": "system",
-                "content": topics_system_template(
-                    num_required_topics=num_required_topics
-                ),
+                "content": topics_system_template(num_required_topics=num_required_topics),
             }
         ],
     )
@@ -127,6 +129,24 @@ def creator(
     state: State,
     attempts: int = ATTEMPTS,
 ) -> tuple[dict, State]:
+    """
+    Generates a topic based on the outline and topics generated so far using the create function from the Instructor library.
+    https://python.useinstructor.com/#using-gemini
+
+    Parameters:
+    - state (State): The current state of the application.
+    - attempts (int, optional): The number of times the model should try to generate a response. 3 by default. If the model fails to generate a response after the specified number of attempts, the function will return with 'generated_topic' set to None.
+
+    Returns:
+    - tuple[dict, State]: A tuple containing the generated topic and the updated state.
+
+    Instructor Parameters Used:
+    - response_model: The Pydantic model or the type that we want the response to be. In our case, it's the `Topic` model.
+    - messages: The chat history that we want to pass to the model. This could have the prompt for generating the next topic, or the previously generated topic with user feedback.
+    - max_retries: The number of times we want to retry if the model fails to generate a response. 1 means just the original attempt, 2 means the original attempt and one retry.
+    - temperature: The temperature of the model. A float between 0 and 1. Lower values give more deterministic results. 0.3 by default.
+    """
+
     num_required_topics = state.get("num_required_topics", NUM_REQUIRED_TOPICS)
     topics_so_far = state.get("topics_so_far", [])
     topic_feedback = state.get("topic_feedback", "")
@@ -165,9 +185,7 @@ def get_topic_feedback(state: State) -> tuple[dict, State]:
     num_required_topics = state.get("num_required_topics", NUM_REQUIRED_TOPICS)
     num_topics_so_far = len(state.get("topics_so_far", []))
     generated_topic = state["generated_topic"]
-    generated_topic_str = (
-        f"{num_topics_so_far+1}/{num_required_topics}\n{generated_topic}"
-    )
+    generated_topic_str = f"{num_topics_so_far+1}/{num_required_topics}\n{generated_topic}"
     feedback = (
         input(
             f"Give your feedback on this generated topic. Leave empty if it's perfect.\n\n{generated_topic_str}"
@@ -183,6 +201,11 @@ def update_topics_so_far(state: State) -> State:
     return state.append(topics_so_far=state["generated_topic"])
 
 
+@action(reads=["topics_so_far"], writes=[])
+def terminal(state: State) -> tuple[dict, State]:
+    return {"topics_so_far": state["topics_so_far"]}, state
+
+
 def application(
     app_id: str | None = None,
     username: str | None = None,
@@ -191,7 +214,7 @@ def application(
     tracker = LocalTrackingClient(project=project)
     builder = (
         ApplicationBuilder()
-        .with_actions(setup, creator, get_topic_feedback, update_topics_so_far)
+        .with_actions(setup, creator, get_topic_feedback, update_topics_so_far, terminal)
         .with_transitions(
             ("setup", "creator"),
             ("creator", "creator", expr("generated_topic is None")),  # type: ignore
@@ -202,6 +225,11 @@ def application(
                 expr("topic_feedback is None"),  # type: ignore
             ),
             ("get_topic_feedback", "creator"),
+            (
+                "update_topics_so_far",
+                "terminal",
+                expr("len(topics_so_far) == num_required_topics"),  # type: ignore
+            ),
             ("update_topics_so_far", "creator"),
         )
         .with_tracker("local", project=project)
