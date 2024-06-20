@@ -30,6 +30,8 @@ TEMPERATURE = 0.3
 
 class Subtopic(BaseModel):
     name: Annotated[str, AfterValidator(str.title)]
+    # pydantic will ensure that we have at least MIN_CONCEPTS and at most MAX_CONCEPTS concepts
+    # if we don't, the LLM will be asked to generate the concepts again
     concepts: Annotated[
         list[str], AfterValidator(lambda concepts: [x.title() for x in concepts])
     ] = Field(
@@ -41,6 +43,8 @@ class Subtopic(BaseModel):
 
 class Topic(BaseModel):
     name: Annotated[str, AfterValidator(str.title)]
+    # pydantic will ensure that we have at least MIN_SUBTOPICS and at most MAX_SUBTOPICS subtopics
+    # if we don't, the LLM will be asked to generate the subtopics again
     subtopics: list[Subtopic] = Field(
         description=f"{MIN_SUBTOPICS}-{MAX_SUBTOPICS} ordered subtopics with concepts.",
         min_length=MIN_SUBTOPICS,
@@ -103,6 +107,9 @@ def creation_template(
 
 @action(reads=[], writes=["outline", "num_required_topics", "chat_history"])
 def setup(state: State, outline: str, num_required_topics: int) -> State:
+    """
+    Initializes the state of the application with the course outline and the number of topics to be generated.
+    """
     return state.update(
         outline=outline,
         num_required_topics=num_required_topics,
@@ -191,6 +198,11 @@ def creator(
     writes=["topic_feedback"],
 )
 def get_topic_feedback(state: State) -> tuple[dict, State]:
+    """
+    Asks the user for feedback on the generated topic.
+    If the user is happy with the generated topic, they can leave the feedback empty.
+    This feedback will be added as a user message to the chat history.
+    """
     time.sleep(2)
     num_required_topics = state.get("num_required_topics", NUM_REQUIRED_TOPICS)
     num_topics_so_far = len(state.get("topics_so_far", []))
@@ -208,11 +220,20 @@ def get_topic_feedback(state: State) -> tuple[dict, State]:
 
 @action(reads=["generated_topic"], writes=["topics_so_far"])
 def update_topics_so_far(state: State) -> State:
+    """
+    This is called if there is no feedback on the generated topic.
+    We assume that the user is happy with the generated topic and we add it to the list of topics generated so far.
+    This list will be incorporated in the prompt for the next topic.
+    """
     return state.append(topics_so_far=state["generated_topic"])
 
 
 @action(reads=["topics_so_far"], writes=[])
 def terminal(state: State) -> tuple[dict, State]:
+    """
+    This is the terminal state of the application.
+    We will reach this state when the required number of topics have been generated.
+    """
     return {"topics_so_far": state["topics_so_far"]}, state
 
 
@@ -227,19 +248,25 @@ def application(
         .with_actions(setup, creator, get_topic_feedback, update_topics_so_far, terminal)
         .with_transitions(
             ("setup", "creator"),
+            # go to creator again if the generated topic is None
             ("creator", "creator", expr("generated_topic is None")),  # type: ignore
+            # get feedback if the generated topic is not None
             ("creator", "get_topic_feedback"),
+            # if the feedback is empty, add the generated topic to the list of topics generated so far
             (
                 "get_topic_feedback",
                 "update_topics_so_far",
                 expr("topic_feedback is None"),  # type: ignore
             ),
+            # if the feedback is not empty, go back to creator and add the feedback as a user message
             ("get_topic_feedback", "creator"),
+            # if the number of topics generated so far is equal to the required number of topics, go to terminal
             (
                 "update_topics_so_far",
                 "terminal",
                 expr("len(topics_so_far) == num_required_topics"),  # type: ignore
             ),
+            # otherwise, go back to creator after updating the topics generated so far
             ("update_topics_so_far", "creator"),
         )
         .with_tracker("local", project=project)
