@@ -158,7 +158,7 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
           }
           {stateData !== undefined && (
             <StateButton
-              label="compare"
+              label="difference"
               selected={whichState === 'compare'}
               setSelected={() => {
                 setWhichState('compare');
@@ -210,19 +210,67 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
     </div>
   );
 };
-
-const diffJSON = (current: DataType, prior: DataType): DataType => {
-  const diff: DataType = {};
-  for (const key in current) {
-    if (!(key in prior)) {
-      diff[key] = current[key];
-    } else {
-      const eq = JSON.stringify(current[key]) === JSON.stringify(prior[key]);
-      if (!eq) {
-        diff[key] = current[key];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const primitive = (value: any): boolean => {
+  return (typeof value !== 'object' && typeof value !== 'function') || value === null;
+};
+/**
+ * Basic json diff -- will return the json object representing the diffs.
+ * Assumes arrays are compared by index -- nothing smarter than that.
+ *
+ * This has an entry for each difference -- e.g. everything that
+ * is in current and not prior or different in current and prior.
+ *
+ * @param current -- current object/primitive/array
+ * @param prior -- prior object/primitive/array
+ * @returns -- object representing the diff
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const diffJSON = (current: any, prior: any): any | undefined => {
+  // If the type doesn't match, they're not equal
+  if (typeof prior !== typeof current) {
+    return current;
+  }
+  // If they're both primitives, we can compare them directly
+  if (primitive(prior) || primitive(current)) {
+    return prior !== current ? current : undefined;
+  }
+  // If they're both arrays, we need to compare each element (recursively)
+  if (Array.isArray(prior) && Array.isArray(current)) {
+    const currentLength = current.length;
+    const arrayDiff = [];
+    for (let i = 0; i < currentLength; i++) {
+      if (i > prior.length - 1) {
+        arrayDiff[i] = current[i];
+        continue;
+      }
+      const result = diffJSON(current[i], prior[i]);
+      if (result !== undefined && (Object.keys(result).length !== 0 || primitive(result))) {
+        arrayDiff[i] = result;
       }
     }
+    if (arrayDiff.length > 0) {
+      return arrayDiff.filter((item) => item !== undefined);
+    } else {
+      return undefined;
+    }
   }
+  // If they're both objects, we need to compare each key (recursively)
+  const keys = new Set([...Object.keys(prior), ...Object.keys(current)]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const diff: any = {};
+  keys.forEach((key) => {
+    // key not in prior but in current
+    if (prior[key] === undefined && current[key] !== undefined) {
+      diff[key] = current[key];
+    } else {
+      // diff the objects
+      const result = diffJSON(current[key], prior[key]);
+      if (result !== undefined && (Object.keys(result).length !== 0 || primitive(result))) {
+        diff[key] = result;
+      }
+    }
+  });
   return diff;
 };
 
