@@ -98,7 +98,7 @@ def creation_template(
     topics_so_far_str = "<topics_so_far>\n"
     if topics_so_far:
         for i, topic in enumerate(topics_so_far):
-            topics_so_far_str += f"{i+1}/{num_required_topics}\n{topic}\n"
+            topics_so_far_str += f"{i + 1}/{num_required_topics}\n{topic}\n"
     topics_so_far_str = topics_so_far_str.strip() + "\n</topics_so_far>"
     prompt_strs.append(topics_so_far_str)
     prompt_strs.append("Generate the next topic.")
@@ -207,7 +207,7 @@ def get_topic_feedback(state: State) -> tuple[dict, State]:
     num_required_topics = state.get("num_required_topics", NUM_REQUIRED_TOPICS)
     num_topics_so_far = len(state.get("topics_so_far", []))
     generated_topic = state["generated_topic"]
-    generated_topic_str = f"{num_topics_so_far+1}/{num_required_topics}\n{generated_topic}"
+    generated_topic_str = f"{num_topics_so_far + 1}/{num_required_topics}\n{generated_topic}"
     feedback = (
         input(
             f"Give your feedback on this generated topic. Leave empty if it's perfect.\n\n{generated_topic_str}"
