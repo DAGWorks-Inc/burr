@@ -39,6 +39,8 @@ We just wasted all those tokens, minutes, dollars.
 
 That's where **Burr** comes in. By having the `creator` function as a node, we will ask the user for feedback on the generated topic. If the user is happy with the topic, we will move on to the next one. If not, we will use the feedback to generate the topic again. We will keep doing this until we've reached `n` topics that the user is happy with.
 
+![burr application](statemachine.png)
+
 ## How to run
 
 To run this example, you need to install the following dependencies:
