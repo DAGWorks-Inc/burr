@@ -46,6 +46,26 @@ MAX_COUNT_SESSION = 10  # max number of events collected per python process
 DEFAULT_CONFIG_LOCATION = os.path.expanduser("~/.burr.conf")
 
 
+def _detect_notebook():
+    env = os.environ
+
+    if "DATABRICKS_RUNTIME_VERSION" in env:
+        return "Databricks"
+    elif "COLAB_GPU" in env or "COLAB_TPU_ADDR" in env:
+        return "Google Colab"
+    elif "JPY_PARENT_PID" in env or "JUPYTERHUB_API_TOKEN" in env:
+        return "Jupyter"
+    elif "KAGGLE_KERNEL_RUN_TYPE" in env:
+        return "Kaggle"
+    elif "AWS_REGION" in env and "SAGEMAKER_PROGRAM" in env:
+        return "AWS SageMaker"
+    else:
+        return "Unknown environment"
+
+
+NOTEBOOK = _detect_notebook()
+
+
 def _load_config(config_location: str) -> configparser.ConfigParser:
     """Pulls config. Gets/sets default anonymous ID.
 
@@ -143,7 +163,8 @@ BASE_PROPERTIES = {
     "python_version": f"{platform.python_version()}/{platform.python_implementation()}",
     "distinct_id": g_anonymous_id,
     "burr_version": VERSION,
-    "telemetry_version": "0.0.1",
+    "notebook": NOTEBOOK,
+    "telemetry_version": "0.0.2",
 }
 
 
