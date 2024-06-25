@@ -165,3 +165,4 @@ Users who have contributed core functionality, integrations, or examples.
 Users who have contributed small docs fixes, design suggestions, and found bugs
 - [Luke Chadwick](https://github.com/vertis)
 - [Evans](https://github.com/sudoevans)
+- [Sasmitha Manathunga](https://github.com/mmz-001)
