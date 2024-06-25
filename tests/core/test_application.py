@@ -26,22 +26,19 @@ from burr.core.application import (
     Application,
     ApplicationBuilder,
     ApplicationContext,
-    Transition,
     _adjust_single_step_output,
     _arun_function,
     _arun_multi_step_streaming_action,
     _arun_single_step_action,
     _arun_single_step_streaming_action,
-    _assert_set,
     _run_function,
     _run_multi_step_streaming_action,
     _run_reducer,
     _run_single_step_action,
     _run_single_step_streaming_action,
-    _validate_actions,
     _validate_start,
-    _validate_transitions,
 )
+from burr.core.graph import Graph, Transition
 from burr.core.persistence import BaseStatePersister, DevNullPersister, PersistedStateData
 from burr.lifecycle import (
     PostRunStepHook,
@@ -869,13 +866,15 @@ def test_app_step():
     """Tests that we can run a step in an app"""
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        actions=[counter_action],
-        transitions=[Transition(counter_action, counter_action, default)],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action],
+            transitions=[Transition(counter_action, counter_action, default)],
+        ),
     )
     action, result, state = app.step()
     assert app.sequence_id == 1
@@ -888,13 +887,15 @@ def test_app_step_with_inputs():
     """Tests that we can run a step in an app"""
     counter_action = base_single_step_counter_with_inputs.with_name("counter")
     app = Application(
-        actions=[counter_action],
-        transitions=[Transition(counter_action, counter_action, default)],
         state=State({"count": 0, "tracker": []}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action],
+            transitions=[Transition(counter_action, counter_action, default)],
+        ),
     )
     action, result, state = app.step(inputs={"additional_increment": 1})
     assert action.name == "counter"
@@ -906,13 +907,15 @@ def test_app_step_with_inputs_missing():
     """Tests that we can run a step in an app"""
     counter_action = base_single_step_counter_with_inputs.with_name("counter")
     app = Application(
-        actions=[counter_action],
-        transitions=[Transition(counter_action, counter_action, default)],
         state=State({"count": 0, "tracker": []}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action],
+            transitions=[Transition(counter_action, counter_action, default)],
+        ),
     )
     with pytest.raises(ValueError, match="missing required inputs"):
         app.step(inputs={})
@@ -922,13 +925,15 @@ def test_app_step_broken(caplog):
     """Tests that we can run a step in an app"""
     broken_action = base_broken_action.with_name("broken_action_unique_name")
     app = Application(
-        actions=[broken_action],
-        transitions=[Transition(broken_action, broken_action, default)],
         state=State({}),
-        initial_step="broken_action_unique_name",
+        entrypoint="broken_action_unique_name",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[broken_action],
+            transitions=[Transition(broken_action, broken_action, default)],
+        ),
     )
     with caplog.at_level(logging.ERROR):  # it should say the name, that's the only contract for now
         with pytest.raises(BrokenStepException):
@@ -940,13 +945,15 @@ def test_app_step_done():
     """Tests that when we cannot run a step, we return None"""
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        actions=[counter_action],
-        transitions=[],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action],
+            transitions=[],
+        ),
     )
     app.step()
     assert app.step() is None
@@ -956,13 +963,15 @@ async def test_app_astep():
     """Tests that we can run an async step in an app"""
     counter_action = base_counter_action_async.with_name("counter_async")
     app = Application(
-        actions=[counter_action],
-        transitions=[Transition(counter_action, counter_action, default)],
         state=State({}),
-        initial_step="counter_async",
+        entrypoint="counter_async",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action],
+            transitions=[Transition(counter_action, counter_action, default)],
+        ),
     )
     action, result, state = await app.astep()
     assert app.sequence_id == 1
@@ -975,13 +984,15 @@ async def test_app_astep_with_inputs():
     """Tests that we can run an async step in an app"""
     counter_action = base_single_step_counter_with_inputs_async.with_name("counter_async")
     app = Application(
-        actions=[counter_action],
-        transitions=[Transition(counter_action, counter_action, default)],
         state=State({"count": 0, "tracker": []}),
-        initial_step="counter_async",
+        entrypoint="counter_async",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action],
+            transitions=[Transition(counter_action, counter_action, default)],
+        ),
     )
     action, result, state = await app.astep(inputs={"additional_increment": 1})
     assert action.name == "counter_async"
@@ -993,13 +1004,15 @@ async def test_app_astep_with_inputs_missing():
     """Tests that we can run an async step in an app"""
     counter_action = base_single_step_counter_with_inputs_async.with_name("counter_async")
     app = Application(
-        actions=[counter_action],
-        transitions=[Transition(counter_action, counter_action, default)],
         state=State({"count": 0, "tracker": []}),
-        initial_step="counter_async",
+        entrypoint="counter_async",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action],
+            transitions=[Transition(counter_action, counter_action, default)],
+        ),
     )
     with pytest.raises(ValueError, match="missing required inputs"):
         await app.astep(inputs={})
@@ -1009,13 +1022,15 @@ async def test_app_astep_broken(caplog):
     """Tests that we can run a step in an app"""
     broken_action = base_broken_action_async.with_name("broken_action_unique_name")
     app = Application(
-        actions=[broken_action],
-        transitions=[Transition(broken_action, broken_action, default)],
         state=State({}),
-        initial_step="broken_action_unique_name",
+        entrypoint="broken_action_unique_name",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[broken_action],
+            transitions=[Transition(broken_action, broken_action, default)],
+        ),
     )
     with caplog.at_level(logging.ERROR):  # it should say the name, that's the only contract for now
         with pytest.raises(BrokenStepException):
@@ -1027,13 +1042,15 @@ async def test_app_astep_done():
     """Tests that when we cannot run a step, we return None"""
     counter_action = base_counter_action_async.with_name("counter_async")
     app = Application(
-        actions=[counter_action],
-        transitions=[],
         state=State({}),
-        initial_step="counter_async",
+        entrypoint="counter_async",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action],
+            transitions=[],
+        ),
     )
     await app.astep()
     assert await app.astep() is None
@@ -1043,13 +1060,15 @@ async def test_app_astep_done():
 def test_app_many_steps():
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        actions=[counter_action],
-        transitions=[Transition(counter_action, counter_action, default)],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action],
+            transitions=[Transition(counter_action, counter_action, default)],
+        ),
     )
     action, result = None, None
     for i in range(100):
@@ -1061,13 +1080,15 @@ def test_app_many_steps():
 async def test_app_many_a_steps():
     counter_action = base_counter_action_async.with_name("counter_async")
     app = Application(
-        actions=[counter_action],
-        transitions=[Transition(counter_action, counter_action, default)],
         state=State({}),
-        initial_step="counter_async",
+        entrypoint="counter_async",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action],
+            transitions=[Transition(counter_action, counter_action, default)],
+        ),
     )
     action, result = None, None
     for i in range(100):
@@ -1080,16 +1101,18 @@ def test_iterate():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, counter_action, Condition.expr("count < 10")),
-            Transition(counter_action, result_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, counter_action, Condition.expr("count < 10")),
+                Transition(counter_action, result_action, default),
+            ],
+        ),
     )
     res = []
     gen = app.iterate(halt_after=["result"])
@@ -1118,16 +1141,18 @@ def test_iterate_with_inputs():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_with_inputs.with_name("counter")
     app = Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, counter_action, Condition.expr("count < 2")),
-            Transition(counter_action, result_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, counter_action, Condition.expr("count < 2")),
+                Transition(counter_action, result_action, default),
+            ],
+        ),
     )
     gen = app.iterate(
         halt_after=["result"], inputs={"additional_increment": 10}
@@ -1145,16 +1170,18 @@ async def test_aiterate():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_async.with_name("counter")
     app = Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, counter_action, Condition.expr("count < 10")),
-            Transition(counter_action, result_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, counter_action, Condition.expr("count < 10")),
+                Transition(counter_action, result_action, default),
+            ],
+        ),
     )
     gen = app.aiterate(halt_after=["result"])
     assert app.sequence_id == 0
@@ -1175,16 +1202,18 @@ async def test_aiterate_halt_before():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_async.with_name("counter")
     app = Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, counter_action, Condition.expr("count < 10")),
-            Transition(counter_action, result_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, counter_action, Condition.expr("count < 10")),
+                Transition(counter_action, result_action, default),
+            ],
+        ),
     )
     gen = app.aiterate(halt_before=["result"])
     counter = 0
@@ -1203,16 +1232,18 @@ async def test_app_aiterate_with_inputs():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_with_inputs_async.with_name("counter")
     app = Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, counter_action, Condition.expr("count < 10")),
-            Transition(counter_action, result_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, counter_action, Condition.expr("count < 10")),
+                Transition(counter_action, result_action, default),
+            ],
+        ),
     )
     gen = app.aiterate(halt_after=["result"], inputs={"additional_increment": 10})
     async for action_, result, state in gen:
@@ -1226,16 +1257,18 @@ def test_run():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, counter_action, Condition.expr("count < 10")),
-            Transition(counter_action, result_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, counter_action, Condition.expr("count < 10")),
+                Transition(counter_action, result_action, default),
+            ],
+        ),
     )
     action, result, state = app.run(halt_after=["result"])
     assert state["count"] == 10
@@ -1246,16 +1279,18 @@ def test_run_halt_before():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, counter_action, Condition.expr("count < 10")),
-            Transition(counter_action, result_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, counter_action, Condition.expr("count < 10")),
+                Transition(counter_action, result_action, default),
+            ],
+        ),
     )
     action, result, state = app.run(halt_before=["result"])
     assert state["count"] == 10
@@ -1267,16 +1302,18 @@ def test_run_with_inputs():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_with_inputs.with_name("counter")
     app = Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, counter_action, Condition.expr("count < 10")),
-            Transition(counter_action, result_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, counter_action, Condition.expr("count < 10")),
+                Transition(counter_action, result_action, default),
+            ],
+        ),
     )
     action_, result, state = app.run(halt_after=["result"], inputs={"additional_increment": 10})
     assert action_.name == "result"
@@ -1289,18 +1326,20 @@ def test_run_with_inputs_multiple_actions():
     counter_action1 = base_counter_action_with_inputs.with_name("counter1")
     counter_action2 = base_counter_action_with_inputs.with_name("counter2")
     app = Application(
-        actions=[counter_action1, counter_action2, result_action],
-        transitions=[
-            Transition(counter_action1, counter_action1, Condition.expr("count < 10")),
-            Transition(counter_action1, counter_action2, Condition.expr("count >= 10")),
-            Transition(counter_action2, counter_action2, Condition.expr("count < 20")),
-            Transition(counter_action2, result_action, default),
-        ],
         state=State({}),
-        initial_step="counter1",
+        entrypoint="counter1",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action1, counter_action2, result_action],
+            transitions=[
+                Transition(counter_action1, counter_action1, Condition.expr("count < 10")),
+                Transition(counter_action1, counter_action2, Condition.expr("count >= 10")),
+                Transition(counter_action2, counter_action2, Condition.expr("count < 20")),
+                Transition(counter_action2, result_action, default),
+            ],
+        ),
     )
     action_, result, state = app.run(halt_after=["result"], inputs={"additional_increment": 8})
     assert action_.name == "result"
@@ -1312,16 +1351,18 @@ async def test_arun():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_async.with_name("counter")
     app = Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, counter_action, Condition.expr("count < 10")),
-            Transition(counter_action, result_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, counter_action, Condition.expr("count < 10")),
+                Transition(counter_action, result_action, default),
+            ],
+        ),
     )
     action_, result, state = await app.arun(halt_after=["result"])
     assert state["count"] == result["count"] == 10
@@ -1332,16 +1373,18 @@ async def test_arun_halt_before():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_async.with_name("counter")
     app = Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, counter_action, Condition.expr("count < 10")),
-            Transition(counter_action, result_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, counter_action, Condition.expr("count < 10")),
+                Transition(counter_action, result_action, default),
+            ],
+        ),
     )
     action_, result, state = await app.arun(halt_before=["result"])
     assert state["count"] == 10
@@ -1353,16 +1396,18 @@ async def test_arun_with_inputs():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_with_inputs_async.with_name("counter")
     app = Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, counter_action, Condition.expr("count < 10")),
-            Transition(counter_action, result_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, counter_action, Condition.expr("count < 10")),
+                Transition(counter_action, result_action, default),
+            ],
+        ),
     )
     action_, result, state = await app.arun(
         halt_after=["result"], inputs={"additional_increment": 10}
@@ -1376,18 +1421,20 @@ async def test_arun_with_inputs_multiple_actions():
     counter_action1 = base_counter_action_with_inputs_async.with_name("counter1")
     counter_action2 = base_counter_action_with_inputs_async.with_name("counter2")
     app = Application(
-        actions=[counter_action1, counter_action2, result_action],
-        transitions=[
-            Transition(counter_action1, counter_action1, Condition.expr("count < 10")),
-            Transition(counter_action1, counter_action2, Condition.expr("count >= 10")),
-            Transition(counter_action2, counter_action2, Condition.expr("count < 20")),
-            Transition(counter_action2, result_action, default),
-        ],
         state=State({}),
-        initial_step="counter1",
+        entrypoint="counter1",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action1, counter_action2, result_action],
+            transitions=[
+                Transition(counter_action1, counter_action1, Condition.expr("count < 10")),
+                Transition(counter_action1, counter_action2, Condition.expr("count >= 10")),
+                Transition(counter_action2, counter_action2, Condition.expr("count < 20")),
+                Transition(counter_action2, result_action, default),
+            ],
+        ),
     )
     action_, result, state = await app.arun(
         halt_after=["result"], inputs={"additional_increment": 8}
@@ -1402,17 +1449,19 @@ async def test_app_a_run_async_and_sync():
     counter_action_sync = base_counter_action_async.with_name("counter_sync")
     counter_action_async = base_counter_action_async.with_name("counter_async")
     app = Application(
-        actions=[counter_action_sync, counter_action_async, result_action],
-        transitions=[
-            Transition(counter_action_sync, counter_action_async, Condition.expr("count < 20")),
-            Transition(counter_action_async, counter_action_sync, default),
-            Transition(counter_action_sync, result_action, default),
-        ],
         state=State({}),
-        initial_step="counter_sync",
+        entrypoint="counter_sync",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action_sync, counter_action_async, result_action],
+            transitions=[
+                Transition(counter_action_sync, counter_action_async, Condition.expr("count < 20")),
+                Transition(counter_action_async, counter_action_sync, default),
+                Transition(counter_action_sync, result_action, default),
+            ],
+        ),
     )
     action_, result, state = await app.arun(halt_after=["result"])
     assert state["count"] > 20
@@ -1424,15 +1473,17 @@ def test_stream_result_halt_after_unique_ordered_sequence_id():
     counter_action = base_streaming_counter.with_name("counter")
     counter_action_2 = base_streaming_counter.with_name("counter_2")
     app = Application(
-        actions=[counter_action, counter_action_2],
-        transitions=[
-            Transition(counter_action, counter_action_2, default),
-        ],
         state=State({"count": 0}),
-        initial_step="counter",
+        entrypoint="counter",
         adapter_set=LifecycleAdapterSet(action_tracker),
         partition_key="test",
         uid="test-123",
+        graph=Graph(
+            actions=[counter_action, counter_action_2],
+            transitions=[
+                Transition(counter_action, counter_action_2, default),
+            ],
+        ),
     )
     action_, streaming_container = app.stream_result(halt_after=["counter_2"])
     results = list(streaming_container)
@@ -1459,15 +1510,17 @@ async def test_astream_result_halt_after_unique_ordered_sequence_id():
     counter_action = base_streaming_counter_async.with_name("counter")
     counter_action_2 = base_streaming_counter_async.with_name("counter_2")
     app = Application(
-        actions=[counter_action, counter_action_2],
-        transitions=[
-            Transition(counter_action, counter_action_2, default),
-        ],
         state=State({"count": 0}),
-        initial_step="counter",
+        entrypoint="counter",
         adapter_set=LifecycleAdapterSet(action_tracker),
         partition_key="test",
         uid="test-123",
+        graph=Graph(
+            actions=[counter_action, counter_action_2],
+            transitions=[
+                Transition(counter_action, counter_action_2, default),
+            ],
+        ),
     )
     action_, streaming_async_container = await app.astream_result(halt_after=["counter_2"])
     results = [
@@ -1499,15 +1552,17 @@ def test_stream_result_halt_after_run_through_streaming():
     counter_action = base_streaming_single_step_counter.with_name("counter")
     counter_action_2 = base_streaming_single_step_counter.with_name("counter_2")
     app = Application(
-        actions=[counter_action, counter_action_2],
-        transitions=[
-            Transition(counter_action, counter_action_2, default),
-        ],
         state=State({"count": 0}),
-        initial_step="counter",
+        entrypoint="counter",
         adapter_set=LifecycleAdapterSet(action_tracker),
         partition_key="test",
         uid="test-123",
+        graph=Graph(
+            actions=[counter_action, counter_action_2],
+            transitions=[
+                Transition(counter_action, counter_action_2, default),
+            ],
+        ),
     )
     action_, streaming_container = app.stream_result(halt_after=["counter_2"])
     results = list(streaming_container)
@@ -1536,15 +1591,17 @@ async def test_astream_result_halt_after_run_through_streaming():
     assert counter_action.is_async()
     assert counter_action_2.is_async()
     app = Application(
-        actions=[counter_action, counter_action_2],
-        transitions=[
-            Transition(counter_action, counter_action_2, default),
-        ],
         state=State({"count": 0}),
-        initial_step="counter",
+        entrypoint="counter",
         adapter_set=LifecycleAdapterSet(action_tracker),
         partition_key="test",
         uid="test-123",
+        graph=Graph(
+            actions=[counter_action, counter_action_2],
+            transitions=[
+                Transition(counter_action, counter_action_2, default),
+            ],
+        ),
     )
     action_, streaming_container = await app.astream_result(halt_after=["counter_2"])
     results = [
@@ -1576,16 +1633,18 @@ def test_stream_result_halt_after_run_through_non_streaming():
     counter_streaming = base_streaming_single_step_counter.with_name("counter_streaming")
 
     app = Application(
-        actions=[counter_non_streaming, counter_streaming],
-        transitions=[
-            Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
-            Transition(counter_non_streaming, counter_streaming, default),
-        ],
         state=State({"count": 0}),
-        initial_step="counter_non_streaming",
+        entrypoint="counter_non_streaming",
         adapter_set=LifecycleAdapterSet(action_tracker),
         partition_key="test",
         uid="test-123",
+        graph=Graph(
+            actions=[counter_non_streaming, counter_streaming],
+            transitions=[
+                Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
+                Transition(counter_non_streaming, counter_streaming, default),
+            ],
+        ),
     )
     action_, streaming_container = app.stream_result(halt_after=["counter_streaming"])
     results = list(streaming_container)
@@ -1616,16 +1675,18 @@ async def test_astream_result_halt_after_run_through_non_streaming():
     counter_streaming = base_streaming_single_step_counter_async.with_name("counter_streaming")
 
     app = Application(
-        actions=[counter_non_streaming, counter_streaming],
-        transitions=[
-            Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
-            Transition(counter_non_streaming, counter_streaming, default),
-        ],
         state=State({"count": 0}),
-        initial_step="counter_non_streaming",
+        entrypoint="counter_non_streaming",
         adapter_set=LifecycleAdapterSet(action_tracker),
         partition_key="test",
         uid="test-123",
+        graph=Graph(
+            actions=[counter_non_streaming, counter_streaming],
+            transitions=[
+                Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
+                Transition(counter_non_streaming, counter_streaming, default),
+            ],
+        ),
     )
     action_, async_streaming_container = await app.astream_result(halt_after=["counter_streaming"])
     results = [
@@ -1659,16 +1720,18 @@ def test_stream_result_halt_after_run_through_final_non_streaming():
     counter_final_non_streaming = base_counter_action.with_name("counter_final_non_streaming")
 
     app = Application(
-        actions=[counter_non_streaming, counter_final_non_streaming],
-        transitions=[
-            Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
-            Transition(counter_non_streaming, counter_final_non_streaming, default),
-        ],
         state=State({"count": 0}),
-        initial_step="counter_non_streaming",
+        entrypoint="counter_non_streaming",
         adapter_set=LifecycleAdapterSet(action_tracker),
         partition_key="test",
         uid="test-123",
+        graph=Graph(
+            actions=[counter_non_streaming, counter_final_non_streaming],
+            transitions=[
+                Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
+                Transition(counter_non_streaming, counter_final_non_streaming, default),
+            ],
+        ),
     )
     action, streaming_container = app.stream_result(halt_after=["counter_final_non_streaming"])
     results = list(streaming_container)
@@ -1700,16 +1763,18 @@ async def test_astream_result_halt_after_run_through_final_streaming():
     counter_final_non_streaming = base_counter_action_async.with_name("counter_final_non_streaming")
 
     app = Application(
-        actions=[counter_non_streaming, counter_final_non_streaming],
-        transitions=[
-            Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
-            Transition(counter_non_streaming, counter_final_non_streaming, default),
-        ],
         state=State({"count": 0}),
-        initial_step="counter_non_streaming",
+        entrypoint="counter_non_streaming",
         adapter_set=LifecycleAdapterSet(action_tracker),
         partition_key="test",
         uid="test-123",
+        graph=Graph(
+            actions=[counter_non_streaming, counter_final_non_streaming],
+            transitions=[
+                Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
+                Transition(counter_non_streaming, counter_final_non_streaming, default),
+            ],
+        ),
     )
     action, streaming_container = await app.astream_result(
         halt_after=["counter_final_non_streaming"]
@@ -1744,16 +1809,18 @@ def test_stream_result_halt_before():
     counter_streaming = base_streaming_single_step_counter.with_name("counter_final")
 
     app = Application(
-        actions=[counter_non_streaming, counter_streaming],
-        transitions=[
-            Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
-            Transition(counter_non_streaming, counter_streaming, default),
-        ],
         state=State({"count": 0}),
-        initial_step="counter_non_streaming",
+        entrypoint="counter_non_streaming",
         partition_key="test",
         uid="test-123",
         adapter_set=LifecycleAdapterSet(action_tracker),
+        graph=Graph(
+            actions=[counter_non_streaming, counter_streaming],
+            transitions=[
+                Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
+                Transition(counter_non_streaming, counter_streaming, default),
+            ],
+        ),
     )
     action, streaming_container = app.stream_result(halt_after=[], halt_before=["counter_final"])
     results = list(streaming_container)
@@ -1776,16 +1843,18 @@ async def test_astream_result_halt_before():
     counter_streaming = base_streaming_single_step_counter_async.with_name("counter_final")
 
     app = Application(
-        actions=[counter_non_streaming, counter_streaming],
-        transitions=[
-            Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
-            Transition(counter_non_streaming, counter_streaming, default),
-        ],
         state=State({"count": 0}),
-        initial_step="counter_non_streaming",
+        entrypoint="counter_non_streaming",
         partition_key="test",
         uid="test-123",
         adapter_set=LifecycleAdapterSet(action_tracker),
+        graph=Graph(
+            actions=[counter_non_streaming, counter_streaming],
+            transitions=[
+                Transition(counter_non_streaming, counter_non_streaming, expr("count < 10")),
+                Transition(counter_non_streaming, counter_streaming, default),
+            ],
+        ),
     )
     action, streaming_container = await app.astream_result(
         halt_after=[], halt_before=["counter_final"]
@@ -1809,13 +1878,15 @@ async def test_astream_result_halt_before():
 def test_app_set_state():
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        actions=[counter_action],
-        transitions=[Transition(counter_action, counter_action, default)],
         state=State(),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action],
+            transitions=[Transition(counter_action, counter_action, default)],
+        ),
     )
     assert "counter" not in app.state  # initial value
     app.step()
@@ -1830,17 +1901,19 @@ def test_app_get_next_step():
     counter_action_2 = base_counter_action.with_name("counter_2")
     counter_action_3 = base_counter_action.with_name("counter_3")
     app = Application(
-        actions=[counter_action_1, counter_action_2, counter_action_3],
-        transitions=[
-            Transition(counter_action_1, counter_action_2, default),
-            Transition(counter_action_2, counter_action_3, default),
-            Transition(counter_action_3, counter_action_1, default),
-        ],
         state=State(),
-        initial_step="counter_1",
+        entrypoint="counter_1",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action_1, counter_action_2, counter_action_3],
+            transitions=[
+                Transition(counter_action_1, counter_action_2, default),
+                Transition(counter_action_2, counter_action_3, default),
+                Transition(counter_action_3, counter_action_1, default),
+            ],
+        ),
     )
     # uninitialized -- counter_1
     assert app.get_next_action().name == "counter_1"
@@ -1866,39 +1939,10 @@ def test_application_builder_complete():
         .with_entrypoint("counter")
         .build()
     )
-    assert len(app._actions) == 2
-    assert len(app._transitions) == 2
+    graph = app.graph
+    assert len(graph.actions) == 2
+    assert len(graph.transitions) == 2
     assert app.get_next_action().name == "counter"
-
-
-def test__validate_transitions_correct():
-    _validate_transitions(
-        [("counter", "counter", Condition.expr("count < 10")), ("counter", "result", default)],
-        {"counter", "result"},
-    )
-
-
-def test__validate_transitions_missing_action():
-    with pytest.raises(ValueError, match="not found"):
-        _validate_transitions(
-            [
-                ("counter", "counter", Condition.expr("count < 10")),
-                ("counter", "result", default),
-            ],
-            {"counter"},
-        )
-
-
-def test__validate_transitions_redundant_transition():
-    with pytest.raises(ValueError, match="redundant"):
-        _validate_transitions(
-            [
-                ("counter", "counter", Condition.expr("count < 10")),
-                ("counter", "result", default),
-                ("counter", "counter", default),  # this is unreachable as we already have a default
-            ],
-            {"counter", "result"},
-        )
 
 
 def test__validate_start_valid():
@@ -1908,15 +1952,6 @@ def test__validate_start_valid():
 def test__validate_start_not_found():
     with pytest.raises(ValueError, match="not found"):
         _validate_start("counter", {"result"})
-
-
-def test__validate_actions_valid():
-    _validate_actions([Result("test")])
-
-
-def test__validate_actions_empty():
-    with pytest.raises(ValueError, match="at least one"):
-        _validate_actions([])
 
 
 def test__adjust_single_step_output_result_and_state():
@@ -1943,15 +1978,6 @@ def test__adjust_single_step_output_errors_incorrect_result_type():
         _adjust_single_step_output((state, result), "test_action")
 
 
-def test__assert_set():
-    _assert_set("foo", "foo", "bar")
-
-
-def test__assert_set_unset():
-    with pytest.raises(ValueError, match="foo"):
-        _assert_set(None, "foo", "bar")
-
-
 def test_application_builder_unset():
     with pytest.raises(ValueError):
         ApplicationBuilder().build()
@@ -1962,17 +1988,19 @@ def test_application_run_step_hooks_sync():
     counter_action = base_counter_action.with_name("counter")
     result_action = Result("count").with_name("result")
     app = Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, result_action, Condition.expr("count >= 10")),
-            Transition(counter_action, counter_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         adapter_set=internal.LifecycleAdapterSet(tracker),
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, result_action, Condition.expr("count >= 10")),
+                Transition(counter_action, counter_action, default),
+            ],
+        ),
     )
     app.run(halt_after=["result"])
     assert set(dict(tracker.pre_called).keys()) == {"counter", "result"}
@@ -2007,17 +2035,19 @@ async def test_application_run_step_hooks_async():
     counter_action = base_counter_action.with_name("counter")
     result_action = Result("count").with_name("result")
     app = Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, result_action, Condition.expr("count >= 10")),
-            Transition(counter_action, counter_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         adapter_set=internal.LifecycleAdapterSet(tracker),
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, result_action, Condition.expr("count >= 10")),
+                Transition(counter_action, counter_action, default),
+            ],
+        ),
     )
     await app.arun(halt_after=["result"])
     assert set(dict(tracker.pre_called).keys()) == {"counter", "result"}
@@ -2049,16 +2079,18 @@ async def test_application_run_step_runs_hooks():
 
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        actions=[counter_action],
-        transitions=[
-            Transition(counter_action, counter_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         adapter_set=internal.LifecycleAdapterSet(*hooks),
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action],
+            transitions=[
+                Transition(counter_action, counter_action, default),
+            ],
+        ),
     )
     await app.astep()
     assert len(hooks[0].pre_called) == 1
@@ -2115,17 +2147,19 @@ def test_application_post_application_create_hook():
     counter_action = base_counter_action.with_name("counter")
     result_action = Result("count").with_name("result")
     Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, result_action, Condition.expr("count >= 10")),
-            Transition(counter_action, counter_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         adapter_set=internal.LifecycleAdapterSet(tracker),
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, result_action, Condition.expr("count >= 10")),
+                Transition(counter_action, counter_action, default),
+            ],
+        ),
     )
     assert "state" in tracker.called_args
     assert "application_graph" in tracker.called_args
@@ -2136,16 +2170,18 @@ async def test_application_gives_graph():
     counter_action = base_counter_action.with_name("counter")
     result_action = Result("count").with_name("result")
     app = Application(
-        actions=[counter_action, result_action],
-        transitions=[
-            Transition(counter_action, result_action, Condition.expr("count >= 10")),
-            Transition(counter_action, counter_action, default),
-        ],
         state=State({}),
-        initial_step="counter",
+        entrypoint="counter",
         partition_key="test",
         uid="test-123",
         sequence_id=0,
+        graph=Graph(
+            actions=[counter_action, result_action],
+            transitions=[
+                Transition(counter_action, result_action, Condition.expr("count >= 10")),
+                Transition(counter_action, counter_action, default),
+            ],
+        ),
     )
     graph = app.graph
     assert len(graph.actions) == 2

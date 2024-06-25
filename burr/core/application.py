@@ -1,8 +1,6 @@
-import collections
 import contextvars
 import dataclasses
 import functools
-import inspect
 import logging
 import pprint
 import uuid
@@ -25,7 +23,7 @@ from typing import (
 
 from burr import telemetry, visibility
 from burr.common import types as burr_types
-from burr.core import persistence
+from burr.core import persistence, validation
 from burr.core.action import (
     Action,
     AsyncStreamingAction,
@@ -37,11 +35,11 @@ from burr.core.action import (
     SingleStepStreamingAction,
     StreamingAction,
     StreamingResultContainer,
-    create_action,
-    default,
 )
+from burr.core.graph import Graph, GraphBuilder
 from burr.core.persistence import BaseStateLoader, BaseStateSaver
 from burr.core.state import State
+from burr.core.validation import BASE_ERROR_MESSAGE
 from burr.lifecycle.base import LifecycleAdapter
 from burr.lifecycle.internal import LifecycleAdapterSet
 
@@ -50,25 +48,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-
-@dataclasses.dataclass
-class Transition:
-    """Internal, utility class"""
-
-    from_: Action
-    to: Action
-    condition: Condition
-
-
 PRIOR_STEP = "__PRIOR_STEP"
 SEQUENCE_ID = "__SEQUENCE_ID"
-
-ERROR_MESSAGE = (
-    "-------------------------------------------------------------------\n"
-    "Oh no an error! Need help with Burr?\n"
-    "Join our discord and ask for help! https://discord.gg/4FxBMyzW5n\n"
-    "-------------------------------------------------------------------\n"
-)
 
 
 def _validate_result(result: dict, name: str) -> None:
@@ -81,7 +62,7 @@ def _validate_result(result: dict, name: str) -> None:
 
 def _raise_fn_return_validation_error(output: Any, action_name: str):
     raise ValueError(
-        ERROR_MESSAGE
+        BASE_ERROR_MESSAGE
         + f"Single step action: {action_name} must return either *just* the newly updated State or a tuple of (result: dict, state: State). "
         f"Got: {output} of type {type(output)} instead, which is not valid."
     )
@@ -223,9 +204,9 @@ def _create_dict_string(kwargs: dict) -> str:
     return input_string
 
 
-def _format_error_message(action: Action, input_state: State, inputs: dict) -> str:
+def _format_BASE_ERROR_MESSAGE(action: Action, input_state: State, inputs: dict) -> str:
     """Formats the error string, given that we're inside an action"""
-    message = ERROR_MESSAGE
+    message = BASE_ERROR_MESSAGE
     message += f"> Action: `{action.name}` encountered an error!"
     padding = " " * (80 - len(message) - 1)
     message += padding + "<"
@@ -381,7 +362,7 @@ async def _arun_single_step_action(
 
 
 @dataclasses.dataclass
-class ApplicationGraph:
+class ApplicationGraph(Graph):
     """User-facing representation of the state machine. This has
 
     #. All the action objects
@@ -389,8 +370,6 @@ class ApplicationGraph:
     #. The entrypoint action
     """
 
-    actions: List[Action]
-    transitions: List[Transition]
     entrypoint: Action
 
 
@@ -434,12 +413,11 @@ _application_context = contextvars.ContextVar[Optional[ApplicationContext]](
 class Application:
     def __init__(
         self,
-        actions: List[Action],
-        transitions: List[Transition],
+        graph: Graph,
         state: State,
-        initial_step: str,
         partition_key: Optional[str],
         uid: str,
+        entrypoint: str,
         sequence_id: Optional[int] = None,
         adapter_set: Optional[LifecycleAdapterSet] = None,
         builder: Optional["ApplicationBuilder"] = None,
@@ -462,14 +440,16 @@ class Application:
         """
         self._partition_key = partition_key
         self._uid = uid
-        self._action_map = {action.name: action for action in actions}
-        self._adjacency_map = Application._create_adjacency_map(transitions)
-        self._transitions = transitions
-        self._actions = actions
-        self._initial_step = initial_step
+        self.entrypoint = entrypoint
+
+        self._graph = graph
+        self._public_facing_graph = ApplicationGraph(
+            actions=graph.actions,
+            transitions=graph.transitions,
+            entrypoint=graph.get_action(entrypoint),
+        )
         self._state = state
         self._adapter_set = adapter_set if adapter_set is not None else LifecycleAdapterSet()
-        self._graph = self._create_graph()
         # TODO -- consider adding global inputs + global input factories to the builder
         self._tracker = tracker
 
@@ -487,7 +467,7 @@ class Application:
         self._adapter_set.call_all_lifecycle_hooks_sync(
             "post_application_create",
             state=self._state,
-            application_graph=self._graph,
+            application_graph=self._public_facing_graph,
             app_id=self._uid,
             partition_key=self._partition_key,
             parent_pointer=fork_parent_pointer,
@@ -564,7 +544,7 @@ class Application:
                 self._set_state(new_state)
             except Exception as e:
                 exc = e
-                logger.exception(_format_error_message(next_action, self._state, inputs))
+                logger.exception(_format_BASE_ERROR_MESSAGE(next_action, self._state, inputs))
                 raise e
             finally:
                 if _run_hooks:
@@ -598,7 +578,7 @@ class Application:
         starting_with_double_underscore = {key for key in inputs.keys() if key.startswith("__")}
         if len(starting_with_double_underscore) > 0:
             raise ValueError(
-                ERROR_MESSAGE
+                BASE_ERROR_MESSAGE
                 + f"Inputs starting with a double underscore ({starting_with_double_underscore}) "
                 f"are reserved for internal use/injected inputs."
                 "Please do not use keys"
@@ -703,7 +683,7 @@ class Application:
                 self._set_state(new_state)
             except Exception as e:
                 exc = e
-                logger.exception(_format_error_message(next_action, self._state, inputs))
+                logger.exception(_format_BASE_ERROR_MESSAGE(next_action, self._state, inputs))
                 raise e
             finally:
                 if _run_hooks:
@@ -743,13 +723,15 @@ class Application:
 
     def _validate_halt_conditions(self, halt_before: list[str], halt_after: list[str]) -> None:
         """Utility function to validate halt conditions"""
-        missing_actions = set(halt_before + halt_after) - set(self._action_map.keys())
+        missing_actions = set(halt_before + halt_after) - set(
+            action.name for action in self.graph.actions
+        )
         if len(missing_actions) > 0:
             raise ValueError(
-                ERROR_MESSAGE
+                BASE_ERROR_MESSAGE
                 + f"Halt conditions {missing_actions} are not registered actions. Please ensure that they have been "
                 f"registered as actions in the application and that you've spelled them correctly!"
-                f"Valid actions are: {self._action_map.keys()}"
+                f"Valid actions are: {[action.name for action in self.graph.actions]}"
             )
 
     def has_next_action(self) -> bool:
@@ -1391,77 +1373,20 @@ class Application:
         :param engine_kwargs: Additional kwargs to pass to the engine
         :return: The graphviz object
         """
-        if engine != "graphviz":
-            raise ValueError(f"Only graphviz is supported for now, not {engine}")
-        try:
-            import graphviz  # noqa: F401
-        except ModuleNotFoundError:
-            logger.exception(
-                " graphviz is required for visualizing the application graph. Install it with:"
-                '\n\n  pip install "burr[graphviz]" or pip install graphviz \n\n'
-            )
-            return
-        digraph_attr = dict(
-            graph_attr=dict(
-                rankdir="TB",
-                ranksep="0.4",
-                compound="false",
-                concentrate="false",
-            ),
+        return self.graph.visualize(
+            output_file_path=output_file_path,
+            include_conditions=include_conditions,
+            include_state=include_state,
+            view=view,
+            engine=engine,
+            **engine_kwargs,
         )
-        for g_key, g_value in engine_kwargs.items():
-            if isinstance(g_value, dict):
-                digraph_attr[g_key].update(**g_value)
-            else:
-                digraph_attr[g_key] = g_value
-        digraph = graphviz.Digraph(**digraph_attr)
-        for action in self._actions:
-            label = (
-                action.name
-                if not include_state
-                else f"{action.name}({', '.join(action.reads)}): {', '.join(action.writes)}"
-            )
-            digraph.node(action.name, label=label, shape="box", style="rounded")
-            required_inputs, optional_inputs = action.optional_and_required_inputs
-            for input_ in required_inputs | optional_inputs:
-                if input_.startswith("__"):
-                    # These are internally injected by the framework
-                    continue
-                input_name = f"input__{input_}"
-                digraph.node(input_name, shape="oval", style="dashed", label=f"input: {input_}")
-                digraph.edge(input_name, action.name)
-        for transition in self._transitions:
-            condition = transition.condition
-            digraph.edge(
-                transition.from_.name,
-                transition.to.name,
-                label=condition.name if include_conditions and condition is not default else None,
-                style="dashed" if transition.condition is not default else "solid",
-            )
-        if output_file_path:
-            digraph.render(output_file_path, view=view)
-        return digraph
-
-    @staticmethod
-    def _create_adjacency_map(transitions: List[Transition]) -> dict:
-        adjacency_map = collections.defaultdict(list)
-        for transition in transitions:
-            from_ = transition.from_
-            to = transition.to
-            adjacency_map[from_.name].append((to.name, transition.condition))
-        return adjacency_map
 
     def _set_state(self, new_state: State):
         self._state = new_state
 
     def get_next_action(self) -> Optional[Action]:
-        if PRIOR_STEP not in self._state:
-            return self._action_map[self._initial_step]
-        possibilities = self._adjacency_map[self._state[PRIOR_STEP]]
-        for next_action, condition in possibilities:
-            if condition.run(self._state)[Condition.KEY]:
-                return self._action_map[next_action]
-        return None
+        return self._graph.get_next_node(self._state.get(PRIOR_STEP), self._state, self.entrypoint)
 
     def update_state(self, new_state: State):
         """Updates state -- this is meant to be called if you need to do
@@ -1507,15 +1432,6 @@ class Application:
         """
         return self._spawning_parent_pointer
 
-    def _create_graph(self) -> ApplicationGraph:
-        """Internal-facing utility function for creating an ApplicationGraph"""
-        all_actions = {action.name: action for action in self._actions}
-        return ApplicationGraph(
-            actions=self._actions,
-            transitions=self._transitions,
-            entrypoint=all_actions[self._initial_step],
-        )
-
     @property
     def graph(self) -> ApplicationGraph:
         """Application graph object -- if you want to inspect, visualize, etc..
@@ -1523,7 +1439,7 @@ class Application:
 
         :return: The application graph object
         """
-        return self._graph
+        return self._public_facing_graph
 
     @property
     def sequence_id(self) -> Optional[int]:
@@ -1596,49 +1512,6 @@ class Application:
         return dot._repr_mimebundle_(include=include, exclude=exclude, **kwargs)
 
 
-def _assert_set(value: Optional[Any], field: str, method: str):
-    if value is None:
-        raise ValueError(
-            ERROR_MESSAGE
-            + f"Must set `{field}` before building application! Do so with ApplicationBuilder.{method}"
-        )
-
-
-def _validate_transitions(
-    transitions: Optional[List[Tuple[str, str, Condition]]], actions: Set[str]
-):
-    _assert_set(transitions, "_transitions", "with_transitions")
-    exhausted = {}  # items for which we have seen a default transition
-    for from_, to, condition in transitions:
-        if from_ not in actions:
-            raise ValueError(
-                f"Transition source: `{from_}` not found in actions! "
-                f"Please add to actions using with_actions({from_}=...)"
-            )
-        if to not in actions:
-            raise ValueError(
-                f"Transition target: `{to}` not found in actions! "
-                f"Please add to actions using with_actions({to}=...)"
-            )
-        if condition.name == "default":  # we have seen a default transition
-            if from_ in exhausted:
-                raise ValueError(
-                    f"Transition `{from_}` -> `{to}` is redundant -- "
-                    f"a default transition has already been set for `{from_}`"
-                )
-            exhausted[from_] = True
-    return True
-
-
-def _validate_start(start: Optional[str], actions: Set[str]):
-    _assert_set(start, "_start", "with_entrypoint")
-    if start not in actions:
-        raise ValueError(
-            f"Entrypoint: {start} not found in actions. Please add "
-            f"using with_actions({start}=...)"
-        )
-
-
 def _validate_app_id(app_id: Optional[str]):
     if app_id is None:
         raise ValueError(
@@ -1647,18 +1520,19 @@ def _validate_app_id(app_id: Optional[str]):
         )
 
 
-def _validate_actions(actions: Optional[List[Action]]):
-    _assert_set(actions, "_actions", "with_actions")
-    if len(actions) == 0:
-        raise ValueError("Must have at least one action in the application!")
+def _validate_start(start: Optional[str], actions: Set[str]):
+    validation.assert_set(start, "_start", "with_entrypoint")
+    if start not in actions:
+        raise ValueError(
+            f"Entrypoint: {start} not found in actions. Please add "
+            f"using with_actions({start}=...)"
+        )
 
 
 class ApplicationBuilder:
     def __init__(self):
+        self.start = None
         self.state: Optional[State] = None
-        self.transitions: Optional[List[Tuple[str, str, Condition]]] = None
-        self.actions: Optional[List[Action]] = None
-        self.start: Optional[str] = None
         self.lifecycle_adapters: List[LifecycleAdapter] = list()
         self.app_id: str = str(uuid.uuid4())
         self.partition_key: Optional[str] = None
@@ -1674,6 +1548,8 @@ class ApplicationBuilder:
         self.spawn_from_sequence_id: Optional[int] = None
         self.loaded_from_fork: bool = False
         self.tracker = None
+        self.graph_builder = None
+        self.prebuilt_graph = None
 
     def with_identifiers(
         self, app_id: str = None, partition_key: str = None, sequence_id: int = None
@@ -1706,7 +1582,7 @@ class ApplicationBuilder:
         """
         if self.initializer is not None:
             raise ValueError(
-                ERROR_MESSAGE + "You cannot set state if you are loading state"
+                BASE_ERROR_MESSAGE + "You cannot set state if you are loading state"
                 "the .initialize_from() API. Either allow the persister to set the "
                 "state, or set the state manually."
             )
@@ -1716,6 +1592,39 @@ class ApplicationBuilder:
             self.state = State(kwargs)
         return self
 
+    def with_graph(self, graph: Graph) -> "ApplicationBuilder":
+        """Adds a prebuilt graph -- this is an alternative to using the with_actions and with_transitions methods.
+        While you will likely use with_actions and with_transitions, you may want this in a few cases:
+
+        1. You want to reuse the same graph object for different applications
+        2. You want the logic that constructs the graph to be separate from that which constructs the application
+        3. You want to serialize/deserialize a graph object and run it in an application
+
+        :param graph: Graph object built with the :py:class:`GraphBuilder <burr.core.graph.GraphBuilder>`
+        :return: The application builder for future chaining.
+        """
+        if self.graph_builder is not None:
+            raise ValueError(
+                BASE_ERROR_MESSAGE
+                + "You have already called `with_actions`, or `with_transitions` -- you currently "
+                "cannot use the with_graph method along with that. Use `with_graph` or the other methods, not both"
+            )
+        self.prebuilt_graph = graph
+        return self
+
+    def _ensure_no_prebuilt_graph(self):
+        if self.prebuilt_graph is not None:
+            raise ValueError(
+                BASE_ERROR_MESSAGE + "You have already called `with_graph` -- you currently "
+                "cannot use the with_actions, or with_transitions method along with that. "
+                "Use `with_graph` or the other methods, not both."
+            )
+        return self
+
+    def _initialize_graph_builder(self):
+        if self.graph_builder is None:
+            self.graph_builder = GraphBuilder()
+
     def with_entrypoint(self, action: str) -> "ApplicationBuilder":
         """Adds an entrypoint to the application. This is the action that will be run first.
         This can only be called once.
@@ -1723,10 +1632,9 @@ class ApplicationBuilder:
         :param action: The name of the action to set as the entrypoint
         :return: The application builder for future chaining.
         """
-        # TODO -- validate only called once
         if self.start is not None:
             raise ValueError(
-                ERROR_MESSAGE
+                BASE_ERROR_MESSAGE
                 + "You cannot set the entrypoint if you are loading a persister using "
                 "the .initialize_from() API. Either allow the persister to set the "
                 "entrypoint/provide a default, or set the entrypoint + state manually."
@@ -1745,21 +1653,9 @@ class ApplicationBuilder:
         :param action_dict: Actions to add, keyed by name
         :return: The application builder for future chaining.
         """
-        if self.actions is None:
-            self.actions = []
-        for action_value in action_list:
-            if inspect.isfunction(action_value):
-                self.actions.append(create_action(action_value, action_value.__name__))
-            elif isinstance(action_value, Action):
-                if not action_value.name:
-                    raise ValueError(
-                        ERROR_MESSAGE + f"Action: {action_value} must have a name set. "
-                        "If you hit this, you should probably be using the "
-                        "**kwargs parameter (or call with_name(your_name) on the action)."
-                    )
-                self.actions.append(action_value)
-        for key, value in action_dict.items():
-            self.actions.append(create_action(value, key))
+        self._ensure_no_prebuilt_graph()
+        self._initialize_graph_builder()
+        self.graph_builder = self.graph_builder.with_actions(*action_list, **action_dict)
         return self
 
     def with_transitions(
@@ -1779,22 +1675,9 @@ class ApplicationBuilder:
         :param transitions: Transitions to add
         :return: The application builder for future chaining.
         """
-        if self.transitions is None:
-            self.transitions = []
-        for transition in transitions:
-            from_, to_, *conditions = transition
-            if len(conditions) > 0:
-                condition = conditions[0]
-            else:
-                condition = default
-            if not isinstance(from_, list):
-                from_ = [from_]
-            for action in from_:
-                if not isinstance(action, str):
-                    raise ValueError(f"Transition source must be a string, not {action}")
-                if not isinstance(to_, str):
-                    raise ValueError(f"Transition target must be a string, not {to_}")
-                self.transitions.append((action, to_, condition))
+        self._ensure_no_prebuilt_graph()
+        self._initialize_graph_builder()
+        self.graph_builder = self.graph_builder.with_transitions(*transitions)
         return self
 
     def with_hooks(self, *adapters: LifecycleAdapter) -> "ApplicationBuilder":
@@ -1879,13 +1762,13 @@ class ApplicationBuilder:
         """
         if self.start is not None or self.state is not None:
             raise ValueError(
-                ERROR_MESSAGE
+                BASE_ERROR_MESSAGE
                 + "Cannot call initialize_from if you have already set state or an entrypoint! "
                 "You can either use the initializer *or* set the state and entrypoint manually."
             )
         if not fork_from_app_id and (fork_from_partition_key or fork_from_sequence_id):
             raise ValueError(
-                ERROR_MESSAGE
+                BASE_ERROR_MESSAGE
                 + "If you set fork_from_partition_key or fork_from_sequence_id, you must also set fork_from_app_id. "
                 "See .initialize_from() documentation."
             )
@@ -1954,7 +1837,7 @@ class ApplicationBuilder:
         if self.fork_from_app_id is not None:
             if self.app_id == self.fork_from_app_id:
                 raise ValueError(
-                    ERROR_MESSAGE + "Cannot fork and save to the same app_id. "
+                    BASE_ERROR_MESSAGE + "Cannot fork and save to the same app_id. "
                     "Please update the app_id passed in via with_identifiers(), "
                     "or don't pass in a fork_from_app_id value to `initialize_from()`."
                 )
@@ -1984,7 +1867,7 @@ class ApplicationBuilder:
             self.loaded_from_fork = True
             if load_result["state"] is None:
                 raise ValueError(
-                    ERROR_MESSAGE
+                    BASE_ERROR_MESSAGE
                     + f"Error: {self.initializer.__class__.__name__} returned {load_result} for "
                     f"partition_key:{_partition_key}, app_id:{_app_id}, "
                     f"sequence_id:{_sequence_id}, "
@@ -2013,6 +1896,17 @@ class ApplicationBuilder:
     def reset_to_entrypoint(self):
         self.state = self.state.wipe(delete=[PRIOR_STEP])
 
+    def _get_built_graph(self) -> Graph:
+        if self.graph_builder is None and self.prebuilt_graph is None:
+            raise ValueError(
+                BASE_ERROR_MESSAGE
+                + "You must set the graph using with_graph, or use with_entrypoint, with_actions, and with_transitions"
+                "to build the graph."
+            )
+        if self.graph_builder is not None:
+            return self.graph_builder.build()
+        return self.prebuilt_graph
+
     @telemetry.capture_function_usage
     def build(self) -> Application:
         """Builds the application.
@@ -2021,33 +1915,22 @@ class ApplicationBuilder:
 
         :return: The application object
         """
-        _validate_actions(self.actions)
-        actions_by_name = {action.name: action for action in self.actions}
-        all_actions = set(actions_by_name.keys())
-        _validate_transitions(self.transitions, all_actions)
+
         _validate_app_id(self.app_id)
         if self.state is None:
             self.state = State()
         if self.initializer:
             # sets state, sequence_id, and maybe start
             self._load_from_persister()
-        _validate_start(self.start, all_actions)
-
+        graph = self._get_built_graph()
+        _validate_start(self.start, {action.name for action in graph.actions})
         return Application(
-            actions=self.actions,
-            transitions=[
-                Transition(
-                    from_=actions_by_name[from_],
-                    to=actions_by_name[to],
-                    condition=condition,
-                )
-                for from_, to, condition in self.transitions
-            ],
+            graph=graph,
             state=self.state,
-            initial_step=self.start,
             uid=self.app_id,
             partition_key=self.partition_key,
             sequence_id=self.sequence_id,
+            entrypoint=self.start,
             adapter_set=LifecycleAdapterSet(*self.lifecycle_adapters),
             builder=self,
             fork_parent_pointer=burr_types.ParentPointer(

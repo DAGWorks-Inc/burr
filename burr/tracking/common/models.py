@@ -3,7 +3,8 @@ from typing import Any, Dict, List, Literal, Optional
 
 from burr.common import types as burr_types
 from burr.core import Action
-from burr.core.application import ApplicationGraph, Transition
+from burr.core.application import ApplicationGraph
+from burr.core.graph import Transition
 from burr.integrations.base import require_plugin
 
 try:
