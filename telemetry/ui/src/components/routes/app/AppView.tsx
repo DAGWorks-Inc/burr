@@ -171,6 +171,11 @@ export const AppView = (props: {
   const stepsCopied = [...data.steps];
   const stepsSorted = stepsCopied.sort((a, b) => {
     // Parse dates to get time in milliseconds
+    const sequenceA = a.step_start_log.sequence_id;
+    const sequenceB = b.step_start_log.sequence_id;
+    if (sequenceA !== sequenceB) {
+      return sequenceB - sequenceA;
+    }
     const timeA = new Date(a.step_start_log.start_time).getTime();
     const timeB = new Date(b.step_start_log.start_time).getTime();
 
