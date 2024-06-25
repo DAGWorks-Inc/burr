@@ -141,6 +141,36 @@ In the async context, you can run ``arun``:
 These allow you to stream responses back. Note they work best with streaming actions.
 Read about them in the :ref:`streaming <streaming>` section.
 
+---------
+Graph API
+---------
+
+The application exposes a graph API, allowing you to specify it as a graph separate from application concerns.
+While you likely won't use this in your first few applications, it will become useful when you want ito run it
+in a web-server (create a graph once, application many times), import the graph from another context, or run it in multiple contexts.
+
+
+.. code-block:: python
+
+    from burr.core import ApplicationBuilder, default, expr
+    graph = (
+        GraphBuilder()
+        .with_actions(human_input, ai_response)
+        .with_transitions(
+            ("human_input", "ai_response"),
+            ("ai_response", "human_input")
+        ).build()
+    )
+    app = (
+        ApplicationBuilder()
+        .with_graph(graph)
+        with_state(chat_history=[])
+        .with_entrypoint("human_input")
+        .build()
+    )
+
+You can read more about it in the :py:class:`GraphBuilder docs <burr.core.graph.GraphBuilder>`.
+
 ----------
 Inspection
 ----------
