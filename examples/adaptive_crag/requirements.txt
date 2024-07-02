@@ -1,0 +1,7 @@
+burr[start]
+google-generativeai
+instructor
+pydantic
+python-dotenv
+lancedb
+exa_py
