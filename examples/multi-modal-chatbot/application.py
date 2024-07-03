@@ -4,7 +4,7 @@ from typing import List, Optional
 
 import openai
 
-from burr.core import Application, ApplicationBuilder, State, default, when
+from burr.core import Application, ApplicationBuilder, State, default, graph, when
 from burr.core.action import action
 from burr.lifecycle import LifecycleAdapter
 from burr.tracking import LocalTrackingClient
@@ -142,6 +142,43 @@ def response(state: State) -> State:
     return state.append(chat_history=result["chat_item"])
 
 
+base_graph = (
+    graph.GraphBuilder()
+    .with_actions(
+        prompt=process_prompt,
+        check_openai_key=check_openai_key,
+        check_safety=check_safety,
+        decide_mode=choose_mode,
+        generate_image=image_response,
+        generate_code=chat_response.bind(
+            prepend_prompt="Please respond with *only* code and no other text (at all) to the following:",
+        ),
+        answer_question=chat_response.bind(
+            prepend_prompt="Please answer the following question:",
+        ),
+        prompt_for_more=prompt_for_more,
+        response=response,
+    )
+    .with_transitions(
+        ("prompt", "check_openai_key", default),
+        ("check_openai_key", "check_safety", when(has_openai_key=True)),
+        ("check_openai_key", "response", default),
+        ("check_safety", "decide_mode", when(safe=True)),
+        ("check_safety", "response", default),
+        ("decide_mode", "generate_image", when(mode="generate_image")),
+        ("decide_mode", "generate_code", when(mode="generate_code")),
+        ("decide_mode", "answer_question", when(mode="answer_question")),
+        ("decide_mode", "prompt_for_more", default),
+        (
+            ["generate_image", "answer_question", "generate_code", "prompt_for_more"],
+            "response",
+        ),
+        ("response", "prompt", default),
+    )
+    .build()
+)
+
+
 def base_application(
     hooks: List[LifecycleAdapter],
     app_id: str,
@@ -155,37 +192,7 @@ def base_application(
     tracker = LocalTrackingClient(project=project_id, storage_dir=storage_dir)
     return (
         ApplicationBuilder()
-        .with_actions(
-            prompt=process_prompt,
-            check_openai_key=check_openai_key,
-            check_safety=check_safety,
-            decide_mode=choose_mode,
-            generate_image=image_response,
-            generate_code=chat_response.bind(
-                prepend_prompt="Please respond with *only* code and no other text (at all) to the following:",
-            ),
-            answer_question=chat_response.bind(
-                prepend_prompt="Please answer the following question:",
-            ),
-            prompt_for_more=prompt_for_more,
-            response=response,
-        )
-        .with_transitions(
-            ("prompt", "check_openai_key", default),
-            ("check_openai_key", "check_safety", when(has_openai_key=True)),
-            ("check_openai_key", "response", default),
-            ("check_safety", "decide_mode", when(safe=True)),
-            ("check_safety", "response", default),
-            ("decide_mode", "generate_image", when(mode="generate_image")),
-            ("decide_mode", "generate_code", when(mode="generate_code")),
-            ("decide_mode", "answer_question", when(mode="answer_question")),
-            ("decide_mode", "prompt_for_more", default),
-            (
-                ["generate_image", "answer_question", "generate_code", "prompt_for_more"],
-                "response",
-            ),
-            ("response", "prompt", default),
-        )
+        .with_graph(base_graph)
         # initializes from the tracking log if it does not already exist
         .initialize_from(
             tracker,

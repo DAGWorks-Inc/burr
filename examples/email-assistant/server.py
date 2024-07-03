@@ -1,5 +1,7 @@
 import functools
 
+from burr.tracking import LocalTrackingClient
+
 """
 This module contains the FastAPI code that interacts with the Burr application.
 """
@@ -11,7 +13,7 @@ from typing import Any, Dict, List, Literal, Optional
 import pydantic
 from fastapi import APIRouter, FastAPI
 
-from burr.core import Application
+from burr.core import Application, ApplicationBuilder
 
 email_assistant_application = importlib.import_module(
     "burr.examples.email-assistant.application"
@@ -65,7 +67,22 @@ class EmailAssistantState(pydantic.BaseModel):
 def _get_application(project_id: str, app_id: str) -> Application:
     """Utility to get the application. Depending on
     your use-case you might want to reload from state every time (or consider cache invalidation)"""
-    app = email_assistant_application.application(app_id=app_id, project=project_id)
+    # graph = email_assistant_application.application(app_id=app_id, project=project_id)
+    graph = email_assistant_application.graph
+    tracker = LocalTrackingClient(project=project_id)
+    builder = (
+        ApplicationBuilder()
+        .with_graph(graph)
+        .with_tracker(tracker := LocalTrackingClient(project=project_id))
+        .with_identifiers(app_id=app_id)
+        .initialize_from(
+            tracker,
+            resume_at_next_action=True,
+            default_state={"draft_history": []},
+            default_entrypoint="process_input",
+        )
+    )
+    return builder.build()
     return app
 
 

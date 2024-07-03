@@ -5,7 +5,8 @@ from typing import List, Literal
 import pydantic
 from fastapi import APIRouter
 
-from burr.core import Application
+from burr.core import Application, ApplicationBuilder
+from burr.tracking import LocalTrackingClient
 
 """This file represents a simple chatbot API backed with Burr.
 We manage an application, write to it with post endpoints, and read with
@@ -24,6 +25,8 @@ chat_application = importlib.import_module(
 
 router = APIRouter()
 
+graph = chat_application.base_graph
+
 
 class ChatItem(pydantic.BaseModel):
     """Pydantic model for a chat item. This is used to render the chat history."""
@@ -36,8 +39,21 @@ class ChatItem(pydantic.BaseModel):
 @functools.lru_cache(maxsize=128)
 def _get_application(project_id: str, app_id: str) -> Application:
     """Quick tool to get the application -- caches it"""
-    chat_app = chat_application.application(app_id=app_id, project_id=project_id)
-    return chat_app
+    tracker = LocalTrackingClient(project=project_id, storage_dir="~/.burr")
+    return (
+        ApplicationBuilder()
+        .with_graph(graph)
+        # initializes from the tracking log if it does not already exist
+        .initialize_from(
+            tracker,
+            resume_at_next_action=False,  # always resume from entrypoint in the case of failure
+            default_state={"chat_history": []},
+            default_entrypoint="prompt",
+        )
+        .with_tracker(tracker)
+        .with_identifiers(app_id=app_id)
+        .build()
+    )
 
 
 @router.post("/response/{{project_id}}/{{app_id}}", response_model=List[ChatItem])
@@ -78,7 +94,7 @@ async def create_new_application(project_id: str, app_id: str) -> str:
     :return: The app ID
     """
     # side-effect of this persists it -- see the application function for details
-    chat_application.application(app_id=app_id, project_id=project_id)
+    _get_application(app_id=app_id, project_id=project_id)
     return app_id  # just return it for now
 
 
