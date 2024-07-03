@@ -5,6 +5,7 @@ from typing import Tuple
 import openai
 
 from burr.core import Application, ApplicationBuilder, State, action, expr
+from burr.core.graph import GraphBuilder
 from burr.tracking import LocalTrackingClient
 
 
@@ -142,33 +143,39 @@ def final_result(state: State) -> Tuple[dict, State]:
     return result, state.update(final_draft=result["final_draft"])
 
 
+graph = (
+    GraphBuilder()
+    .with_actions(
+        process_input,
+        determine_clarifications,
+        clarify_instructions,
+        formulate_draft,
+        process_feedback,
+        final_result,
+    )
+    .with_transitions(
+        ("process_input", "determine_clarifications"),
+        (
+            "determine_clarifications",
+            "clarify_instructions",
+            expr("len(clarification_questions) > 0"),
+        ),
+        ("determine_clarifications", "formulate_draft"),
+        ("clarify_instructions", "formulate_draft"),
+        ("formulate_draft", "process_feedback"),
+        ("process_feedback", "formulate_draft", expr("len(feedback) > 0")),
+        ("process_feedback", "final_result"),
+    )
+).build()
+
+
 def application(
     app_id: str = None, project: str = "demo_email_assistant", username: str = None
 ) -> Application:
     tracker = LocalTrackingClient(project=project)
     builder = (
         ApplicationBuilder()
-        .with_actions(
-            process_input,
-            determine_clarifications,
-            clarify_instructions,
-            formulate_draft,
-            process_feedback,
-            final_result,
-        )
-        .with_transitions(
-            ("process_input", "determine_clarifications"),
-            (
-                "determine_clarifications",
-                "clarify_instructions",
-                expr("len(clarification_questions) > 0"),
-            ),
-            ("determine_clarifications", "formulate_draft"),
-            ("clarify_instructions", "formulate_draft"),
-            ("formulate_draft", "process_feedback"),
-            ("process_feedback", "formulate_draft", expr("len(feedback) > 0")),
-            ("process_feedback", "final_result"),
-        )
+        .with_graph(graph)
         .with_tracker("local", project=project)
         .with_identifiers(app_id=app_id, partition_key=username)
         .initialize_from(
