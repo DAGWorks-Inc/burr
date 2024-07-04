@@ -1013,10 +1013,10 @@ class FunctionRepresentingAction(Protocol[C]):
 
 def copy_func(f: types.FunctionType) -> types.FunctionType:
     """Copies a function. This is used internally to bind parameters to a function
-    so we don't accidentally overwrite them
+    so we don't accidentally overwrite them.
 
-    :param f:
-    :return:
+    :param f: Function to copy
+    :return: The copied function
     """
     fn = types.FunctionType(f.__code__, f.__globals__, f.__name__, f.__defaults__, f.__closure__)
     fn.__dict__.update(f.__dict__)

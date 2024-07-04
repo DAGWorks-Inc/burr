@@ -8,6 +8,7 @@ import { AppContainer } from './components/nav/appcontainer';
 import { ChatbotWithTelemetry } from './examples/Chatbot';
 import { Counter } from './examples/Counter';
 import { EmailAssistantWithTelemetry } from './examples/EmailAssistant';
+import { StreamingChatbotWithTelemetry } from './examples/StreamingChatbot';
 
 /**
  * Basic application. We have an AppContainer -- this has a breadcrumb and a sidebar.
@@ -36,6 +37,7 @@ const App = () => {
             <Route path="/project/:projectId/:appId" element={<AppViewContainer />} />
             <Route path="/demos/counter" element={<Counter />} />
             <Route path="/demos/chatbot" element={<ChatbotWithTelemetry />} />
+            <Route path="/demos/streaming-chatbot" element={<StreamingChatbotWithTelemetry />} />
             <Route path="/demos/email-assistant" element={<EmailAssistantWithTelemetry />} />
             <Route path="*" element={<Navigate to="/projects" />} />
           </Routes>

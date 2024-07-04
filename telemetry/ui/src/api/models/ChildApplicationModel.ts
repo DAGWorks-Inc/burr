@@ -12,7 +12,7 @@ export type ChildApplicationModel = {
   child: PointerModel;
   event_time: string;
   event_type: ChildApplicationModel.event_type;
-  sequence_id: number;
+  sequence_id: number | null;
 };
 export namespace ChildApplicationModel {
   export enum event_type {
