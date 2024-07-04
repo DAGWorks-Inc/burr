@@ -1011,6 +1011,18 @@ class FunctionRepresentingAction(Protocol[C]):
         ...
 
 
+def copy_func(f: types.FunctionType) -> types.FunctionType:
+    """Copies a function. This is used internally to bind parameters to a function
+    so we don't accidentally overwrite them
+
+    :param f:
+    :return:
+    """
+    fn = types.FunctionType(f.__code__, f.__globals__, f.__name__, f.__defaults__, f.__closure__)
+    fn.__dict__.update(f.__dict__)
+    return fn
+
+
 def bind(self: FunctionRepresentingAction, **kwargs: Any) -> FunctionRepresentingAction:
     """Binds an action to the given parameters. This is functionally equivalent to
     functools.partial, but is more explicit and is meant to be used in the API. This only works with
@@ -1028,6 +1040,7 @@ def bind(self: FunctionRepresentingAction, **kwargs: Any) -> FunctionRepresentin
     :param kwargs: The keyword arguments to bind
     :return: The decorated function with the given parameters bound
     """
+    self = copy_func(self)  # we have to bind to a copy of the function, otherwise it will override
     self.action_function = self.action_function.with_params(**kwargs)
     return self
 
@@ -1092,6 +1105,7 @@ def streaming_action(
     """
 
     def wrapped(fn) -> FunctionRepresentingAction:
+        fn = copy_func(fn)
         setattr(
             fn,
             FunctionBasedAction.ACTION_FUNCTION,
