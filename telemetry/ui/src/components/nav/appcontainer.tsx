@@ -93,6 +93,12 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
           href: '/demos/email-assistant',
           current: false,
           linkType: 'internal'
+        },
+        {
+          name: 'streaming-chatbot',
+          href: '/demos/streaming-chatbot',
+          current: false,
+          linkType: 'internal'
         }
       ]
     },

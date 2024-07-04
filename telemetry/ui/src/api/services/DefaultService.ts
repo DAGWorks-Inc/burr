@@ -97,6 +97,18 @@ export class DefaultService {
     });
   }
   /**
+   * Version
+   * Returns the burr version
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static versionApiV0VersionGet(): CancelablePromise<Record<string, any>> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v0/version'
+    });
+  }
+  /**
    * Chat Response
    * Chat response endpoint. User passes in a prompt and the system returns the
    * full chat history, so its easier to render.
@@ -348,6 +360,98 @@ export class DefaultService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/api/v0/email_assistant/validate/{project_id}/{app_id}'
+    });
+  }
+  /**
+   * Chat Response
+   * Chat response endpoint. User passes in a prompt and the system returns the
+   * full chat history, so its easier to render.
+   *
+   * :param project_id: Project ID to run
+   * :param app_id: Application ID to run
+   * :param prompt: Prompt to send to the chatbot
+   * :return:
+   * @param projectId
+   * @param appId
+   * @param prompt
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static chatResponseApiV0StreamingChatbotResponseProjectIdAppIdPost(
+    projectId: string,
+    appId: string,
+    prompt: string
+  ): CancelablePromise<any> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v0/streaming_chatbot/response/{project_id}/{app_id}',
+      path: {
+        project_id: projectId,
+        app_id: appId
+      },
+      query: {
+        prompt: prompt
+      },
+      errors: {
+        422: `Validation Error`
+      }
+    });
+  }
+  /**
+   * Chat History
+   * Endpoint to get chat history. Gets the application and returns the chat history from state.
+   *
+   * :param project_id: Project ID
+   * :param app_id: App ID.
+   * :return: The list of chat items in the state
+   * @param projectId
+   * @param appId
+   * @returns ChatItem Successful Response
+   * @throws ApiError
+   */
+  public static chatHistoryApiV0StreamingChatbotHistoryProjectIdAppIdGet(
+    projectId: string,
+    appId: string
+  ): CancelablePromise<Array<ChatItem>> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v0/streaming_chatbot/history/{project_id}/{app_id}',
+      path: {
+        project_id: projectId,
+        app_id: appId
+      },
+      errors: {
+        422: `Validation Error`
+      }
+    });
+  }
+  /**
+   * Create New Application
+   * Endpoint to create a new application -- used by the FE when
+   * the user types in a new App ID
+   *
+   * :param project_id: Project ID
+   * :param app_id: App ID
+   * :return: The app ID
+   * @param projectId
+   * @param appId
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static createNewApplicationApiV0StreamingChatbotCreateProjectIdAppIdPost(
+    projectId: string,
+    appId: string
+  ): CancelablePromise<string> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v0/streaming_chatbot/create/{project_id}/{app_id}',
+      path: {
+        project_id: projectId,
+        app_id: appId
+      },
+      errors: {
+        422: `Validation Error`
+      }
     });
   }
   /**

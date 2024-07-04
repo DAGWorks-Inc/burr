@@ -470,9 +470,9 @@ export const StepList = (props: {
   const displaySpansCol = props.steps.some((step) => step.spans.length > 0);
   const displayLinksCol = props.links.length > 0;
   const linksBySequenceID = props.links.reduce((acc, child) => {
-    const existing = acc.get(child.sequence_id) || [];
+    const existing = acc.get(child.sequence_id || -1) || [];
     existing.push(child);
-    acc.set(child.sequence_id, existing);
+    acc.set(child.sequence_id || -1, existing);
     return acc;
   }, new Map<number, ChildApplicationModel[]>());
   return (
