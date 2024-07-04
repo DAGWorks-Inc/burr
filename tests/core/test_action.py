@@ -236,6 +236,34 @@ def test_function_based_action_with_inputs():
     assert result == {"output_variable": 111}
 
 
+def test_function_based_action_multiple_binds():
+    # This ensures that bind doesn't impact the original function
+    @action(reads=["input_variable"], writes=["output_variable"])
+    def my_action(state: State, bound_input: int, unbound_input: int) -> Tuple[dict, State]:
+        res = state["input_variable"] + bound_input + unbound_input
+        return {"output_variable": res}, state.update(output_variable=res)
+
+    # The binding has to happen before the actions are created
+    # Otherwise it'll get the right value
+    # This simulates how the ApplicationBuilder creates them
+    bound_1 = my_action.bind(bound_input=10)
+    bound_2 = my_action.bind(bound_input=20)
+
+    fn_based_action = cast(SingleStepAction, create_action(bound_1, name="my_action"))
+    fn_based_action_2 = cast(SingleStepAction, create_action(bound_2, name="my_action"))
+    assert fn_based_action.inputs == (["unbound_input"], [])
+    result, state = fn_based_action.run_and_update(State({"input_variable": 1}), unbound_input=100)
+    assert state.get_all() == {"input_variable": 1, "output_variable": 111}
+    assert result == {"output_variable": 111}
+
+    assert fn_based_action_2.inputs == (["unbound_input"], [])
+    result, state = fn_based_action_2.run_and_update(
+        State({"input_variable": 1}), unbound_input=100
+    )
+    assert state.get_all() == {"input_variable": 1, "output_variable": 121}
+    assert result == {"output_variable": 121}
+
+
 def test_function_based_action_with_defaults():
     @action(reads=["input_variable"], writes=["output_variable"])
     def my_action(
