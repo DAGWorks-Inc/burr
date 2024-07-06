@@ -132,6 +132,13 @@ def build_application(partition_key, app_id):
 
 
 if __name__ == "__main__":
+    """
+    Note: if you try to use the test case creation commandline from the result
+    of running this application using the code below it will
+    fail because the above SERDE classes were registered/run as the `__main__`
+    module. You can either move the SERDE classes to a separate module so
+    that you could import them directly, or run the code below, but in another file (e.g. run.py).
+    """
     import pprint
     import uuid
 

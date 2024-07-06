@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import os
 import shutil
@@ -8,6 +9,7 @@ import time
 import webbrowser
 from contextlib import contextmanager
 from importlib.resources import files
+from types import ModuleType
 
 from burr import system, telemetry
 from burr.core.persistence import PersistedStateData
@@ -215,8 +217,8 @@ from burr.testing import pytest_generate_tests  # noqa: F401
 @pytest.mark.file_name("{FILE_NAME}")
 def test_{ACTION_NAME}(input_state, expected_state):
     \"\"\"Function for testing the action\"\"\"
-    input_state = state.State(input_state)
-    expected_state = state.State(expected_state)
+    input_state = state.State.deserialize(input_state)
+    expected_state = state.State.deserialize(expected_state)
     _, output_state = {ACTION_NAME}(input_state)  # exercise the action
     # TODO: choose appropriate way to evaluate the output
     # e.g. exact match, fuzzy match, LLM grade, etc.
@@ -228,9 +230,29 @@ def test_{ACTION_NAME}(input_state, expected_state):
 """
 
 
+def import_from_file(file_path: str) -> ModuleType:
+    """Import a module from a file path.
+
+    :param file_path: file path. Assume it exists.
+    :return:
+    """
+    # Extract the module name and directory from the file path
+    module_name = os.path.basename(file_path).replace(".py", "")
+    module_dir = os.path.dirname(file_path)
+
+    # Add the module directory to sys.path if not already included
+    if module_dir not in sys.path:
+        sys.path.append(module_dir)
+
+    # Import the module
+    module = importlib.import_module(module_name)
+
+    return module
+
+
 @click.command()
 @click.option("--project-name", required=True, help="Name of the project")
-@click.option("--partition-key", required=True, help="Partition key to look at")
+@click.option("--partition-key", required=False, help="Partition key to look at")
 @click.option("--app-id", required=True, help="App ID to pull from.")
 @click.option("--sequence-id", required=True, help="Sequence ID to pull.")
 @click.option(
@@ -238,12 +260,18 @@ def test_{ACTION_NAME}(input_state, expected_state):
     required=False,
     help="What file to write the data to. Else print to console.",
 )
+@click.option(
+    "--serde-module",
+    required=False,
+    help="Python file or fully qualified python module to import for custom serialization/deserialization.",
+)
 def create_test_case(
     project_name: str,
-    partition_key: str,
+    partition_key: str,  # will be None if not passed in.
     app_id: str,
     sequence_id: str,
     target_file_name: str = None,
+    serde_module: str = None,
 ):
     """Create a test case from a persisted state.
 
@@ -254,7 +282,21 @@ def create_test_case(
 
     See examples/test-case-creation/notebook.ipynb for example usage.
     See examples/test-case-creation/test_application.py for details.
+
+    If you have custom serialization/deserialization then pass in the name of a
+    python module, or a path to a python file, to import with your custom serialization/deserialization
+    registration functions. This will be imported so that they can be registered.
     """
+    if serde_module:
+        if os.path.exists(serde_module):
+            print(f"Importing from file {serde_module}")
+            import_from_file(serde_module)
+        else:
+            print(f"Importing module {serde_module}")
+            import importlib
+
+            importlib.import_module(serde_module)
+
     # TODO: make this handle instantiating/using a persister other than local tracker
     from burr.tracking.client import LocalTrackingClient
 
@@ -265,7 +307,7 @@ def create_test_case(
     if not data:
         print(f"No data found for {app_id} in {project_name} with sequence {sequence_id}")
         return
-    state_dict = data["state"].get_all()
+    state_dict = data["state"].serialize()
     print("Found data for action: ", data["position"])
     # test case json
     tc_json = _transform_state_to_test_case(

@@ -53,8 +53,8 @@ def test_prompt_for_more():
 @pytest.mark.file_name("prompt_for_more.json")
 def test_prompt_for_more_from_file(input_state, expected_state):
     """Function for testing the action"""
-    input_state = state.State(input_state)
-    expected_state = state.State(expected_state)
+    input_state = state.State.deserialize(input_state)
+    expected_state = state.State.deserialize(expected_state)
     _, output_state = prompt_for_more(input_state)  # exercising the action
     # TODO: choose appropriate way to evaluate the output
     # e.g. exact match, fuzzy match, LLM grade, etc.
