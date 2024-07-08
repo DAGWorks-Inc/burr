@@ -188,6 +188,7 @@ class Condition(Function):
 
     def __init__(self, keys: List[str], resolver: Callable[[State], bool], name: str = None):
         """Base condition class. Chooses keys to read from the state and a resolver function.
+        If you want a condition that defaults to true, use Condition.default or just default.
 
         Note that you can use a few fundamental operators to build more complex conditions:
 
@@ -278,16 +279,6 @@ class Condition(Function):
     def __repr__(self):
         return f"condition: {self._name}"
 
-    @classmethod
-    @property
-    def default(self) -> "Condition":
-        """Returns a default condition that always resolves to True.
-        You can also refer to this as ``from burr.core import default`` in the API.
-
-        :return: A default condition that always resolves to True
-        """
-        return Condition([], lambda _: True, name="default")
-
     @property
     def name(self) -> str:
         return self._name
@@ -344,13 +335,11 @@ class Condition(Function):
         return Condition(self._keys, lambda state: not self._resolver(state), name=f"~{self._name}")
 
 
-# Annotated inline as linters don't understand classmethods + properties
-# These, however, are allowed up until python 3.13
-# We're only keeping them as methods for documentation
-# TODO -- remove the static methods and make them
-default: Condition = Condition.default
-when: Condition = Condition.when
-expr: Condition = Condition.expr
+Condition.default = Condition([], lambda _: True, name="default")
+
+default = Condition.default
+when = Condition.when
+expr = Condition.expr
 
 
 class Result(Action):
