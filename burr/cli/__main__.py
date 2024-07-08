@@ -289,10 +289,10 @@ def create_test_case(
     """
     if serde_module:
         if os.path.exists(serde_module):
-            print(f"Importing from file {serde_module}")
+            logger.info(f"Importing from file {serde_module}")
             import_from_file(serde_module)
         else:
-            print(f"Importing module {serde_module}")
+            logger.info(f"Importing module {serde_module}")
             import importlib
 
             importlib.import_module(serde_module)

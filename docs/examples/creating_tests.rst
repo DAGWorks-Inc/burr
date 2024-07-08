@@ -51,6 +51,8 @@ Steps:
 See `github repository example <https://github.com/DAGWorks-Inc/burr/tree/main/examples/test-case-creation>`_
 for an example.
 
+Note that, if you have custom serialization/deserialization logic, you will want to pass in `--serde-module` to the
+test case with the module name of your serialization logic.
 
 Future Work
 -----------
