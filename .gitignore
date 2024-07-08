@@ -171,3 +171,4 @@ burr/tracking/server/build
 # statemachine images
 examples/*/statemachine
 examples/*/*/statemachine
+.vscode

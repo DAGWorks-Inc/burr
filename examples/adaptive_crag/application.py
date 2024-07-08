@@ -4,16 +4,18 @@ from typing import Iterable, Literal
 import google.generativeai as genai
 import instructor
 import lancedb
-from burr.core import Application, ApplicationBuilder, State, expr, when
-from burr.core.action import action
-from burr.tracking import LocalTrackingClient
 from dotenv import load_dotenv
 from exa_py.api import Exa
+from instructor.exceptions import InstructorRetryException
 from lancedb.db import DBConnection
 from lancedb.embeddings import get_registry
 from lancedb.pydantic import LanceModel, Vector
 from lancedb.table import Table
 from pydantic import BaseModel, Field
+
+from burr.core import Application, ApplicationBuilder, State, expr, when
+from burr.core.action import action
+from burr.tracking import LocalTrackingClient
 
 load_dotenv()  # load your GOOGLE_API_KEY and EXA_API_KEY from a .env file
 
@@ -55,7 +57,6 @@ def merge_short_docs(
     Merge short documents into longer ones for better performance.
     `file_name` is the name of the file the documents came from. It's just for metadata.
     """
-    print(f"Merging {len(docs)} docs")
     merged_docs = [{"text": docs[0], "file_name": file_name}]
     for doc in docs[1:]:
         last_text = merged_docs[-1]["text"]
@@ -63,7 +64,6 @@ def merge_short_docs(
             merged_docs[-1]["text"] = last_text.strip() + "\n" + doc
         else:
             merged_docs.append({"text": doc, "file_name": file_name})
-    print(f"Merged to {len(merged_docs)} docs\n")
     return merged_docs
 
 
@@ -85,10 +85,7 @@ def load_burr_docs(
     docs = []
     for file in files_iter:
         docs += merge_short_docs(
-            docs=(burr_docs_dir / Path(file).name)
-            .with_suffix(".txt")
-            .read_text()
-            .split("\n\n"),
+            docs=(burr_docs_dir / Path(file).name).with_suffix(".txt").read_text().split("\n\n"),
             file_name=Path(file).stem,
             doc_thresh=doc_thresh,
         )
@@ -243,9 +240,7 @@ def get_user_query() -> str:
 
 
 @action(reads=["db", "chat_history"], writes=["query", "route"])
-def router(
-    state: State, query: str, attempts: int = ATTEMPTS
-) -> tuple[dict[str, str], State]:
+def router(state: State, query: str, attempts: int = ATTEMPTS) -> tuple[dict[str, str], State]:
     """
     Route the user `query` to the appropriate place for an answer.
     If the `query` is directly related to a table in the database, return the table name.
@@ -268,9 +263,7 @@ def router(
         route = ask_gemini.create(
             messages=[
                 user_message(
-                    route_template(
-                        table_names=table_names, query=query, chat_history=chat_history
-                    )
+                    route_template(table_names=table_names, query=query, chat_history=chat_history)
                 )  # type: ignore
             ],
             response_model=routes,  # type: ignore
@@ -303,9 +296,7 @@ def rewrite_query_for_lancedb(
     return {"lancedb_query": query}, state.update(lancedb_query=query)
 
 
-@action(
-    reads=["db", "route", "lancedb_query", "docs_limit"], writes=["lancedb_results"]
-)
+@action(reads=["db", "route", "lancedb_query", "docs_limit"], writes=["lancedb_results"])
 def search_lancedb(state: State) -> tuple[dict[str, list[str]], State]:
     db: DBConnection = state["db"]
     try:
@@ -319,9 +310,7 @@ def search_lancedb(state: State) -> tuple[dict[str, list[str]], State]:
     except Exception as e:
         print(f"Error in search_lancedb: {e}")
         lancedb_results = []
-    return {"lancedb_results": lancedb_results}, state.update(
-        lancedb_results=lancedb_results
-    )
+    return {"lancedb_results": lancedb_results}, state.update(lancedb_results=lancedb_results)
 
 
 @action(reads=["query", "lancedb_results"], writes=["lancedb_results"])
@@ -341,9 +330,7 @@ def remove_irrelevant_lancedb_results(
             is_relevant = ask_gemini.create(
                 messages=[
                     user_message(
-                        evaluator_template(
-                            query=state["query"], document=lancedb_result
-                        )
+                        evaluator_template(query=state["query"], document=lancedb_result)
                     )  # type: ignore
                 ],
                 response_model=bool,  # type: ignore
@@ -354,9 +341,7 @@ def remove_irrelevant_lancedb_results(
             is_relevant = True
         if is_relevant:
             filtered_results.append(lancedb_result)
-    return {"lancedb_results": filtered_results}, state.update(
-        lancedb_results=filtered_results
-    )
+    return {"lancedb_results": filtered_results}, state.update(lancedb_results=filtered_results)
 
 
 @action(reads=["query"], writes=["exa_search_keywords"])
@@ -407,9 +392,7 @@ def search_exa(state: State) -> tuple[dict[str, list[str]], State]:
     reads=["query", "lancedb_results", "exa_search_results", "chat_history"],
     writes=["chat_history", "lancedb_results", "exa_search_results"],
 )
-def ask_assistant(
-    state: State, attempts: int = ATTEMPTS
-) -> tuple[dict[str, str], State]:
+def ask_assistant(state: State, attempts: int = ATTEMPTS) -> tuple[dict[str, str], State]:
     """
     Combine the `chat_history`, `query`, `lancedb_results`, and `exa_search_results` to ask the assistant for an answer.
     `chat_history`, `lancedb_results`, and `exa_search_results` are used as context for the assistant and can be empty lists.
@@ -421,26 +404,21 @@ def ask_assistant(
     context = lancedb_results + exa_search_results
     if context:
         context = "\n".join(context)
-        query = (
-            query.strip()
-            + "\n<additional_context>\n"
-            + context
-            + "\n</additional_context>"
-        )
+        query = query.strip() + "\n<additional_context>\n" + context + "\n</additional_context>"
     messages.append({"role": "user", "content": query.strip()})
     try:
-        response = ask_gemini.create(
-            messages=messages, response_model=str, max_retries=attempts
-        )
-    except Exception as e:
+        response = ask_gemini.create(messages=messages, response_model=str, max_retries=attempts)
+    except InstructorRetryException as e:
         print(f"Error in ask_assistant: {e}")
         response = "Sorry, please try again."
+    # lancedb_results and exa_search_results have very specific additional context that's relevant only for the latest query
+    # that specific context is no longer needed after the assistant responds, so we clear it
+    # the assistant will still have the chat_history as overall context
+    # chat_history has the user messages and the assistant responses, so it's more than enough
     return (
         {"assistant_response": response},  # type: ignore
         state.append(chat_history=user_message(query))
-        .append(
-            chat_history=assistant_message(response)  # type: ignore
-        )
+        .append(chat_history=assistant_message(response))  # type: ignore
         .update(lancedb_results=[], exa_search_results=[]),
     )
 
@@ -509,11 +487,7 @@ def application(
 
 
 if __name__ == "__main__":
-    lance_model = (
-        get_registry()
-        .get("sentence-transformers")
-        .create(name=EMS_MODEL, device=DEVICE)
-    )
+    lance_model = get_registry().get("sentence-transformers").create(name=EMS_MODEL, device=DEVICE)
 
     # define the schema of your data using Pydantic
     class LanceDoc(LanceModel):
@@ -524,9 +498,7 @@ if __name__ == "__main__":
     lance_db = lancedb.connect(LANCE_URI)
 
     burr_docs = load_burr_docs(burr_docs_dir=BURR_DOCS_DIR)
-    burr_table = add_table(
-        db=lance_db, table_name="burr_docs", data=burr_docs, schema=LanceDoc
-    )
+    burr_table = add_table(db=lance_db, table_name="burr_docs", data=burr_docs, schema=LanceDoc)
 
     app = application(db=lance_db)
     app.visualize(
