@@ -61,7 +61,7 @@ def test_directory_name(directory):
     if "_" in directory:
         assert (
             False
-        ), f"Example Directory '{directory}' should not contain underscores, only dashes!."
+        ), f"Example Directory '{directory}' should contain dashes, not underscores! It should be: {os.path.basename(directory).replace('_', '-')}."
 
 
 def test_directory_contents(directory):
