@@ -146,8 +146,8 @@ class LanceDBQuery(BaseModel):
         return ", ".join(self.keywords) + ", " + self.query
 
 
-def lancedb_query_template(query: str) -> str:
-    return f"""\
+def lancedb_query_template(query: str, chat_history: list[dict[str, str]]) -> str:
+    prompt = f"""\
 <task>
 You are a world-class researcher with access to a vector database that can be one of or similar to ChromaDB, Weaviate, LanceDB, VertexAI, etc.
 Given a user query, rewrite the query to find the most relevant information in the vector database.
@@ -160,6 +160,13 @@ Split the query into a list of keywords and a string query.
 {query}
 </query>
 """
+
+    if chat_history:
+        chat_history_str = "\n".join(
+            [f"{msg['role']}: {msg['content']}" for msg in chat_history]
+        ).strip()
+        prompt += f"\n<chat_history>\n{chat_history_str}\n</chat_history>"
+    return prompt
 
 
 # used to get a structured response from the assistant when extracting keywords for a web search
@@ -275,7 +282,7 @@ def router(state: State, query: str, attempts: int = ATTEMPTS) -> tuple[dict[str
     return {"route": route}, state.update(query=query, route=route)  # type: ignore
 
 
-@action(reads=["query"], writes=["lancedb_query"])
+@action(reads=["query", "chat_history"], writes=["lancedb_query"])
 def rewrite_query_for_lancedb(
     state: State, rewrite_attempts: int = ATTEMPTS
 ) -> tuple[dict[str, str], State]:
@@ -283,10 +290,15 @@ def rewrite_query_for_lancedb(
     Rewrite the user `query` to find the most relevant information in the LanceDB vector database.
     """
     query = state["query"]
+    chat_history = state["chat_history"]
     try:
         query = str(
             ask_gemini.create(
-                messages=[user_message(lancedb_query_template(query=query))],  # type: ignore
+                messages=[
+                    user_message(
+                        lancedb_query_template(query=query, chat_history=chat_history)  # type: ignore
+                    )
+                ],
                 response_model=LanceDBQuery,
                 max_retries=rewrite_attempts,
             )
