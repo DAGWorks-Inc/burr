@@ -203,7 +203,6 @@ def get_topic_feedback(state: State) -> tuple[dict, State]:
     If the user is happy with the generated topic, they can leave the feedback empty.
     This feedback will be added as a user message to the chat history.
     """
-    time.sleep(2)
     num_required_topics = state.get("num_required_topics", NUM_REQUIRED_TOPICS)
     num_topics_so_far = len(state.get("topics_so_far", []))
     generated_topic = state["generated_topic"]
