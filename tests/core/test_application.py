@@ -31,6 +31,8 @@ from burr.core.application import (
     _arun_multi_step_streaming_action,
     _arun_single_step_action,
     _arun_single_step_streaming_action,
+    _pre_apply_read_defaults,
+    _pre_apply_write_defaults,
     _run_function,
     _run_multi_step_streaming_action,
     _run_reducer,
@@ -60,6 +62,8 @@ class PassedInAction(Action):
         fn: Callable[..., dict],
         update_fn: Callable[[dict, State], State],
         inputs: list[str],
+        default_reads: Optional[Dict[str, Any]] = None,
+        default_writes: Optional[Dict[str, Any]] = None,
     ):
         super(PassedInAction, self).__init__()
         self._reads = reads
@@ -67,6 +71,8 @@ class PassedInAction(Action):
         self._fn = fn
         self._update_fn = update_fn
         self._inputs = inputs
+        self._default_reads = default_reads if default_reads is not None else {}
+        self._default_writes = default_writes if default_writes is not None else {}
 
     def run(self, state: State, **run_kwargs) -> dict:
         return self._fn(state, **run_kwargs)
@@ -74,6 +80,14 @@ class PassedInAction(Action):
     @property
     def inputs(self) -> list[str]:
         return self._inputs
+
+    @property
+    def default_reads(self) -> Dict[str, Any]:
+        return self._default_reads
+
+    @property
+    def default_writes(self) -> Dict[str, Any]:
+        return self._default_writes
 
     def update(self, result: dict, state: State) -> State:
         return self._update_fn(result, state)
@@ -95,8 +109,18 @@ class PassedInActionAsync(PassedInAction):
         fn: Callable[..., Awaitable[dict]],
         update_fn: Callable[[dict, State], State],
         inputs: list[str],
+        default_reads: Optional[Dict[str, Any]] = None,
+        default_writes: Optional[Dict[str, Any]] = None,
     ):
-        super().__init__(reads=reads, writes=writes, fn=fn, update_fn=update_fn, inputs=inputs)  # type: ignore
+        super().__init__(
+            reads=reads,
+            writes=writes,
+            fn=fn,
+            update_fn=update_fn,
+            inputs=inputs,
+            default_reads=default_reads,
+            default_writes=default_writes,
+        )  # type: ignore
 
     async def run(self, state: State, **run_kwargs) -> dict:
         return await self._fn(state, **run_kwargs)
@@ -105,7 +129,7 @@ class PassedInActionAsync(PassedInAction):
 base_counter_action = PassedInAction(
     reads=["count"],
     writes=["count"],
-    fn=lambda state: {"count": state.get("count", 0) + 1},
+    fn=lambda state: {"count": state["count"] + 1},
     update_fn=lambda result, state: state.update(**result),
     inputs=[],
 )
@@ -113,11 +137,19 @@ base_counter_action = PassedInAction(
 base_counter_action_with_inputs = PassedInAction(
     reads=["count"],
     writes=["count"],
-    fn=lambda state, additional_increment: {
-        "count": state.get("count", 0) + 1 + additional_increment
-    },
+    fn=lambda state, additional_increment: {"count": state["count"] + 1 + additional_increment},
     update_fn=lambda result, state: state.update(**result),
     inputs=["additional_increment"],
+)
+
+base_counter_action_with_defaults = PassedInAction(
+    reads=["count"],
+    writes=["count", "error"],
+    fn=lambda state: {"count": state["count"] + 1},
+    update_fn=lambda result, state: state.update(**result),
+    inputs=[],
+    default_reads={"count": 0},
+    default_writes={"error": None},
 )
 
 
@@ -172,7 +204,7 @@ class ActionTrackerAsync(PreRunStepHookAsync, PostRunStepHookAsync):
 async def _counter_update_async(state: State, additional_increment: int = 0) -> dict:
     await asyncio.sleep(0.0001)  # just so we can make this *truly* async
     # does not matter, but more accurately simulates an async function
-    return {"count": state.get("count", 0) + 1 + additional_increment}
+    return {"count": state["count"] + 1 + additional_increment}
 
 
 base_counter_action_async = PassedInActionAsync(
@@ -191,6 +223,16 @@ base_counter_action_with_inputs_async = PassedInActionAsync(
     ),
     update_fn=lambda result, state: state.update(**result),
     inputs=["additional_increment"],
+)
+
+base_counter_action_async_with_defaults = PassedInActionAsync(
+    reads=["count"],
+    writes=["count", "error"],
+    fn=_counter_update_async,
+    update_fn=lambda result, state: state.update(**result),
+    inputs=[],
+    default_reads={"count": 0},
+    default_writes={"error": None},
 )
 
 
@@ -236,18 +278,46 @@ base_action_incorrect_result_type_async = PassedInActionAsync(
 )
 
 
+def test__pre_read_apply_defaults():
+    state = State({"in_state": 0})
+    defaults = {"in_state": 1, "not_in_state": 2}
+    result = _pre_apply_read_defaults(state, defaults)
+    assert result["in_state"] == 0
+    assert result["not_in_state"] == 2
+
+
+def test__pre_write_apply_defaults():
+    # Write defaults should always be applied,
+    # they'll be overwritten by the reducer
+    state = State({"in_state": 0, "to_be_overwritten": 0})
+    defaults = {"in_state": 1, "not_in_state": 2, "to_be_overwritten": 3}
+    result = _pre_apply_write_defaults(state, defaults)
+    assert result["in_state"] == 1
+    assert result["not_in_state"] == 2
+    assert result["to_be_overwritten"] == 3
+
+
 def test__run_function():
     """Tests that we can run a function"""
     action = base_counter_action
-    state = State({})
+    state = State({"count": 0})
     result = _run_function(action, state, inputs={}, name=action.name)
     assert result == {"count": 1}
+
+
+def test__run_function_defaults():
+    action = base_counter_action_with_defaults
+    state = State({})
+    result = _run_function(action, state, inputs={}, name=action.name)
+    assert result == {
+        "count": 1
+    }  # default read is applied, write is not as it is a reducer capability, and is not part of the result
 
 
 def test__run_function_with_inputs():
     """Tests that we can run a function"""
     action = base_counter_action_with_inputs
-    state = State({})
+    state = State({"count": 0})
     result = _run_function(action, state, inputs={"additional_increment": 1}, name=action.name)
     assert result == {"count": 2}
 
@@ -255,7 +325,7 @@ def test__run_function_with_inputs():
 def test__run_function_cant_run_async():
     """Tests that we can't run an async function"""
     action = base_counter_action_async
-    state = State({})
+    state = State({"count": 0})
     with pytest.raises(ValueError, match="async"):
         _run_function(action, state, inputs={}, name=action.name)
 
@@ -263,9 +333,17 @@ def test__run_function_cant_run_async():
 def test__run_function_incorrect_result_type():
     """Tests that we can run an async function"""
     action = base_action_incorrect_result_type
-    state = State({})
+    state = State({"count": 0})
     with pytest.raises(ValueError, match="returned a non-dict"):
         _run_function(action, state, inputs={}, name=action.name)
+
+
+def test__run_reducer_applies_defaults():
+    """Tests that we can run a reducer and it behaves as expected"""
+    reducer = base_counter_action_with_defaults
+    state = State({"count": 0})
+    state = _run_reducer(reducer, state, {"count": 1}, "reducer")
+    assert state.get_all() == {"count": 1, "error": None}
 
 
 def test__run_reducer_modifies_state():
@@ -299,6 +377,14 @@ def test__run_reducer_deletes_state():
 async def test__arun_function():
     """Tests that we can run an async function"""
     action = base_counter_action_async
+    state = State({"count": 0})
+    result = await _arun_function(action, state, inputs={}, name=action.name)
+    assert result == {"count": 1}
+
+
+async def test__arun_function_with_defaults():
+    """Tests that we can run an async function"""
+    action = base_counter_action_async_with_defaults
     state = State({})
     result = await _arun_function(action, state, inputs={}, name=action.name)
     assert result == {"count": 1}
@@ -315,7 +401,7 @@ async def test__arun_function_incorrect_result_type():
 async def test__arun_function_with_inputs():
     """Tests that we can run an async function"""
     action = base_counter_action_with_inputs_async
-    state = State({})
+    state = State({"count": 0})
     result = await _arun_function(
         action, state, inputs={"additional_increment": 1}, name=action.name
     )
@@ -447,6 +533,9 @@ def test_run_multi_step_streaming_action_errors_missing_write():
 
 
 class SingleStepCounter(SingleStepAction):
+    def __init__(self):
+        super(SingleStepCounter, self).__init__()
+
     def run_and_update(self, state: State, **run_kwargs) -> Tuple[dict, State]:
         result = {"count": state["count"] + 1 + sum([0] + list(run_kwargs.values()))}
         return result, state.update(**result).append(tracker=result["count"])
@@ -464,6 +553,23 @@ class SingleStepCounterWithInputs(SingleStepCounter):
     @property
     def inputs(self) -> list[str]:
         return ["additional_increment"]
+
+
+class SingleStepCounterWithDefaults(SingleStepCounter):
+    def __init__(self):
+        super(SingleStepCounterWithDefaults, self).__init__()
+
+    @property
+    def default_reads(self) -> dict[str, Any]:
+        return {"count": 0}
+
+    @property
+    def default_writes(self) -> dict[str, Any]:
+        return {"error": None}
+
+    @property
+    def writes(self) -> list[str]:
+        return super().writes + ["error"]
 
 
 class SingleStepActionIncorrectResultType(SingleStepAction):
@@ -498,6 +604,20 @@ class SingleStepCounterAsync(SingleStepCounter):
         return ["count", "tracker"]
 
 
+class SingleStepCounterWithDefaultsAsync(SingleStepCounterAsync):
+    @property
+    def default_reads(self) -> dict[str, Any]:
+        return {"count": 0}
+
+    @property
+    def default_writes(self) -> dict[str, Any]:
+        return {"error": None}
+
+    @property
+    def writes(self) -> list[str]:
+        return super().writes + ["error"]
+
+
 class SingleStepCounterWithInputsAsync(SingleStepCounterAsync):
     @property
     def inputs(self) -> list[str]:
@@ -527,6 +647,20 @@ class StreamingCounter(StreamingAction):
         return state.update(**result).append(tracker=result["count"])
 
 
+class StreamingCounterWithDefaults(StreamingCounter):
+    @property
+    def default_reads(self) -> dict[str, Any]:
+        return {"count": 0}
+
+    @property
+    def default_writes(self) -> dict[str, Any]:
+        return {"error": None}
+
+    @property
+    def writes(self) -> list[str]:
+        return super().writes + ["error"]
+
+
 class AsyncStreamingCounter(AsyncStreamingAction):
     async def stream_run(self, state: State, **run_kwargs) -> AsyncGenerator[dict, None]:
         if "steps_per_count" in run_kwargs:
@@ -552,6 +686,20 @@ class AsyncStreamingCounter(AsyncStreamingAction):
         return state.update(**result).append(tracker=result["count"])
 
 
+class StreamingCounterWithDefaultsAsync(AsyncStreamingCounter):
+    @property
+    def default_reads(self) -> dict[str, Any]:
+        return {"count": 0}
+
+    @property
+    def default_writes(self) -> dict[str, Any]:
+        return {"error": None}
+
+    @property
+    def writes(self) -> list[str]:
+        return super().writes + ["error"]
+
+
 class SingleStepStreamingCounter(SingleStepStreamingAction):
     def stream_run_and_update(
         self, state: State, **run_kwargs
@@ -569,6 +717,20 @@ class SingleStepStreamingCounter(SingleStepStreamingAction):
     @property
     def writes(self) -> list[str]:
         return ["count", "tracker"]
+
+
+class SingleStepStreamingCounterWithDefaults(SingleStepStreamingCounter):
+    @property
+    def default_reads(self) -> dict[str, Any]:
+        return {"count": 0}
+
+    @property
+    def default_writes(self) -> dict[str, Any]:
+        return {"error": None}
+
+    @property
+    def writes(self) -> list[str]:
+        return super().writes + ["error"]
 
 
 class SingleStepStreamingCounterAsync(SingleStepStreamingAction):
@@ -590,6 +752,20 @@ class SingleStepStreamingCounterAsync(SingleStepStreamingAction):
     @property
     def writes(self) -> list[str]:
         return ["count", "tracker"]
+
+
+class SingleStepStreamingCounterWithDefaultsAsync(SingleStepStreamingCounterAsync):
+    @property
+    def default_reads(self) -> dict[str, Any]:
+        return {"count": 0}
+
+    @property
+    def default_writes(self) -> dict[str, Any]:
+        return {"error": None}
+
+    @property
+    def writes(self) -> list[str]:
+        return super().writes + ["error"]
 
 
 class StreamingActionIncorrectResultType(StreamingAction):
@@ -662,12 +838,20 @@ base_single_step_counter = SingleStepCounter()
 base_single_step_counter_async = SingleStepCounterAsync()
 base_single_step_counter_with_inputs = SingleStepCounterWithInputs()
 base_single_step_counter_with_inputs_async = SingleStepCounterWithInputsAsync()
+base_single_step_counter_with_defaults = SingleStepCounterWithDefaults()
+base_single_step_counter_with_defaults_async = SingleStepCounterWithDefaultsAsync()
 
 base_streaming_counter = StreamingCounter()
+base_streaming_counter_with_defaults = StreamingCounterWithDefaults()
 base_streaming_single_step_counter = SingleStepStreamingCounter()
+base_streaming_single_step_counter_with_defaults = SingleStepStreamingCounterWithDefaults()
 
 base_streaming_counter_async = AsyncStreamingCounter()
+base_streaming_counter_with_defaults_async = StreamingCounterWithDefaultsAsync()
 base_streaming_single_step_counter_async = SingleStepStreamingCounterAsync()
+base_streaming_single_step_counter_with_defaults_async = (
+    SingleStepStreamingCounterWithDefaultsAsync()
+)
 
 base_single_step_action_incorrect_result_type = SingleStepActionIncorrectResultType()
 base_single_step_action_incorrect_result_type_async = SingleStepActionIncorrectResultTypeAsync()
@@ -709,6 +893,18 @@ def test__run_single_step_action_with_inputs():
     assert state.subset("count", "tracker").get_all() == {"count": 4, "tracker": [2, 4]}
 
 
+def test__run_single_step_action_with_defaults():
+    action = base_single_step_counter_with_defaults.with_name("counter")
+    state = State({})
+    result, state = _run_single_step_action(action, state, {})
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker", "error").get_all() == {
+        "count": 1,
+        "tracker": [1],
+        "error": None,
+    }
+
+
 async def test__arun_single_step_action():
     action = base_single_step_counter_async.with_name("counter")
     state = State({"count": 0, "tracker": []})
@@ -733,6 +929,18 @@ async def test__arun_single_step_action_with_inputs():
     )
     assert result == {"count": 4}
     assert state.subset("count", "tracker").get_all() == {"count": 4, "tracker": [2, 4]}
+
+
+async def test__arun_single_step_action_with_defaults():
+    action = base_single_step_counter_with_defaults_async.with_name("counter")
+    state = State({})
+    result, state = await _arun_single_step_action(action, state, {})
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker", "error").get_all() == {
+        "count": 1,
+        "tracker": [1],
+        "error": None,
+    }
 
 
 class SingleStepActionWithDeletion(SingleStepAction):
@@ -770,7 +978,26 @@ def test__run_multistep_streaming_action():
     assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
 
 
-async def test__run_multistep_streaming_action_async():
+def test__run_multistep_streaming_action_default():
+    action = base_streaming_counter_with_defaults.with_name("counter")
+    state = State({})
+    generator = _run_multi_step_streaming_action(action, state, inputs={})
+    last_result = -1
+    result = None
+    for result, state in generator:
+        if last_result < 1:
+            # Otherwise you hit floating poit comparison problems
+            assert result["count"] > last_result
+        last_result = result["count"]
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker", "error").get_all() == {
+        "count": 1,
+        "tracker": [1],
+        "error": None,
+    }
+
+
+async def test__arun_multistep_streaming_action():
     action = base_streaming_counter_async.with_name("counter")
     state = State({"count": 0, "tracker": []})
     generator = _arun_multi_step_streaming_action(action, state, inputs={})
@@ -785,6 +1012,25 @@ async def test__run_multistep_streaming_action_async():
     assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
 
 
+async def test__arun_multistep_streaming_action_with_defaults():
+    action = base_streaming_counter_with_defaults_async.with_name("counter")
+    state = State({})
+    generator = _arun_multi_step_streaming_action(action, state, inputs={})
+    last_result = -1
+    result = None
+    async for result, state in generator:
+        if last_result < 1:
+            # Otherwise you hit floating poit comparison problems
+            assert result["count"] > last_result
+        last_result = result["count"]
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker", "error").get_all() == {
+        "count": 1,
+        "tracker": [1],
+        "error": None,
+    }
+
+
 def test__run_streaming_action_incorrect_result_type():
     action = StreamingActionIncorrectResultType()
     state = State()
@@ -793,7 +1039,7 @@ def test__run_streaming_action_incorrect_result_type():
         collections.deque(gen, maxlen=0)  # exhaust the generator
 
 
-async def test__run_streaming_action_incorrect_result_type_async():
+async def test__arun_streaming_action_incorrect_result_type():
     action = StreamingActionIncorrectResultTypeAsync()
     state = State()
     with pytest.raises(ValueError, match="returned a non-dict"):
@@ -810,7 +1056,7 @@ def test__run_single_step_streaming_action_incorrect_result_type():
         collections.deque(gen, maxlen=0)  # exhaust the generator
 
 
-async def test__run_single_step_streaming_action_incorrect_result_type_async():
+async def test__arun_single_step_streaming_action_incorrect_result_type():
     action = StreamingSingleStepActionIncorrectResultTypeAsync()
     state = State()
     with pytest.raises(ValueError, match="returned a non-dict"):
@@ -834,7 +1080,27 @@ def test__run_single_step_streaming_action():
     assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
 
 
-async def test__run_single_step_streaming_action_async():
+def test__run_single_step_streaming_with_defaults():
+    action = base_streaming_single_step_counter_with_defaults.with_name("counter")
+    state = State()
+    generator = _run_single_step_streaming_action(action, state, inputs={})
+    last_result = -1
+    result, state = None, None
+    for result, state in generator:
+        if last_result < 1:
+            # Otherwise you hit comparison issues
+            # This is because we get to the last one, which is the final result
+            assert result["count"] > last_result
+        last_result = result["count"]
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker", "error").get_all() == {
+        "count": 1,
+        "tracker": [1],
+        "error": None,
+    }
+
+
+async def test__arun_single_step_streaming_action():
     async_action = base_streaming_single_step_counter_async.with_name("counter")
     state = State({"count": 0, "tracker": []})
     generator = _arun_single_step_streaming_action(async_action, state, inputs={})
@@ -848,6 +1114,26 @@ async def test__run_single_step_streaming_action_async():
         last_result = result["count"]
     assert result == {"count": 1}
     assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+
+
+async def test__arun_single_step_streaming_action_with_defaults():
+    async_action = base_streaming_single_step_counter_with_defaults_async.with_name("counter")
+    state = State({})
+    generator = _arun_single_step_streaming_action(async_action, state, inputs={})
+    last_result = -1
+    result, state = None, None
+    async for result, state in generator:
+        if last_result < 1:
+            # Otherwise you hit comparison issues
+            # This is because we get to the last one, which is the final result
+            assert result["count"] > last_result
+        last_result = result["count"]
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker", "error").get_all() == {
+        "count": 1,
+        "tracker": [1],
+        "error": None,
+    }
 
 
 class SingleStepActionWithDeletionAsync(SingleStepActionWithDeletion):
@@ -866,7 +1152,7 @@ def test_app_step():
     """Tests that we can run a step in an app"""
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -945,7 +1231,7 @@ def test_app_step_done():
     """Tests that when we cannot run a step, we return None"""
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -963,7 +1249,7 @@ async def test_app_astep():
     """Tests that we can run an async step in an app"""
     counter_action = base_counter_action_async.with_name("counter_async")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter_async",
         partition_key="test",
         uid="test-123",
@@ -1022,7 +1308,7 @@ async def test_app_astep_broken(caplog):
     """Tests that we can run a step in an app"""
     broken_action = base_broken_action_async.with_name("broken_action_unique_name")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="broken_action_unique_name",
         partition_key="test",
         uid="test-123",
@@ -1042,7 +1328,7 @@ async def test_app_astep_done():
     """Tests that when we cannot run a step, we return None"""
     counter_action = base_counter_action_async.with_name("counter_async")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter_async",
         partition_key="test",
         uid="test-123",
@@ -1060,7 +1346,7 @@ async def test_app_astep_done():
 def test_app_many_steps():
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -1080,7 +1366,7 @@ def test_app_many_steps():
 async def test_app_many_a_steps():
     counter_action = base_counter_action_async.with_name("counter_async")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter_async",
         partition_key="test",
         uid="test-123",
@@ -1101,7 +1387,7 @@ def test_iterate():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -1141,7 +1427,7 @@ def test_iterate_with_inputs():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_with_inputs.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -1170,7 +1456,7 @@ async def test_aiterate():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_async.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -1202,7 +1488,7 @@ async def test_aiterate_halt_before():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_async.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -1232,7 +1518,7 @@ async def test_app_aiterate_with_inputs():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_with_inputs_async.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -1257,7 +1543,7 @@ def test_run():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -1279,7 +1565,7 @@ def test_run_halt_before():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -1302,7 +1588,7 @@ def test_run_with_inputs():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_with_inputs.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -1326,7 +1612,7 @@ def test_run_with_inputs_multiple_actions():
     counter_action1 = base_counter_action_with_inputs.with_name("counter1")
     counter_action2 = base_counter_action_with_inputs.with_name("counter2")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter1",
         partition_key="test",
         uid="test-123",
@@ -1351,7 +1637,7 @@ async def test_arun():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_async.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -1373,7 +1659,7 @@ async def test_arun_halt_before():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_async.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -1396,7 +1682,7 @@ async def test_arun_with_inputs():
     result_action = Result("count").with_name("result")
     counter_action = base_counter_action_with_inputs_async.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -1421,7 +1707,7 @@ async def test_arun_with_inputs_multiple_actions():
     counter_action1 = base_counter_action_with_inputs_async.with_name("counter1")
     counter_action2 = base_counter_action_with_inputs_async.with_name("counter2")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter1",
         partition_key="test",
         uid="test-123",
@@ -1449,7 +1735,7 @@ async def test_app_a_run_async_and_sync():
     counter_action_sync = base_counter_action_async.with_name("counter_sync")
     counter_action_async = base_counter_action_async.with_name("counter_async")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter_sync",
         partition_key="test",
         uid="test-123",
@@ -1878,7 +2164,7 @@ async def test_astream_result_halt_before():
 def test_app_set_state():
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        state=State(),
+        state=State({"count": 0}),
         entrypoint="counter",
         partition_key="test",
         uid="test-123",
@@ -1901,7 +2187,7 @@ def test_app_get_next_step():
     counter_action_2 = base_counter_action.with_name("counter_2")
     counter_action_3 = base_counter_action.with_name("counter_3")
     app = Application(
-        state=State(),
+        state=State({"count": 0}),
         entrypoint="counter_1",
         partition_key="test",
         uid="test-123",
@@ -1988,7 +2274,7 @@ def test_application_run_step_hooks_sync():
     counter_action = base_counter_action.with_name("counter")
     result_action = Result("count").with_name("result")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         adapter_set=internal.LifecycleAdapterSet(tracker),
         partition_key="test",
@@ -2035,7 +2321,7 @@ async def test_application_run_step_hooks_async():
     counter_action = base_counter_action.with_name("counter")
     result_action = Result("count").with_name("result")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         adapter_set=internal.LifecycleAdapterSet(tracker),
         partition_key="test",
@@ -2079,7 +2365,7 @@ async def test_application_run_step_runs_hooks():
 
     counter_action = base_counter_action.with_name("counter")
     app = Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         adapter_set=internal.LifecycleAdapterSet(*hooks),
         partition_key="test",
@@ -2147,7 +2433,7 @@ def test_application_post_application_create_hook():
     counter_action = base_counter_action.with_name("counter")
     result_action = Result("count").with_name("result")
     Application(
-        state=State({}),
+        state=State({"count": 0}),
         entrypoint="counter",
         adapter_set=internal.LifecycleAdapterSet(tracker),
         partition_key="test",

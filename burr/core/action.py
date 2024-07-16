@@ -6,6 +6,7 @@ import inspect
 import sys
 import types
 import typing
+from abc import ABC
 from typing import (
     Any,
     AsyncGenerator,
@@ -41,6 +42,16 @@ class Function(abc.ABC):
         :return: A list of keys
         """
         pass
+
+    @property
+    def default_reads(self) -> Dict[str, Any]:
+        """Default values to read from state if they are not there already.
+        This just fills out the gaps in state. This must be a subset
+        of the ``reads`` value.
+
+        :return:
+        """
+        return {}
 
     @abc.abstractmethod
     def run(self, state: State, **run_kwargs) -> dict:
@@ -122,17 +133,67 @@ class Reducer(abc.ABC):
         """
         pass
 
+    @property
+    def default_writes(self) -> Dict[str, Any]:
+        """Default state writes for the reducer. If nothing writes this field from within
+        the reducer, then this will be written. Note that this is not (currently)
+        intended to work with append/increment operations.
+
+        This must be a subset of the ``writes`` value.
+
+        :return: A key/value dictionary of default writes.
+        """
+        return {}
+
     @abc.abstractmethod
     def update(self, result: dict, state: State) -> State:
         pass
 
 
-class Action(Function, Reducer, abc.ABC):
+class _PostValidator(abc.ABCMeta):
+    """Metaclass to allow for __post_init__ to be called after __init__.
+    While this is general we're keeping it here for now as it is only used
+    by the Action class. This enables us to ensure that the default_reads are correct.
+    """
+
+    def __call__(cls, *args, **kwargs):
+        instance = super().__call__(*args, **kwargs)
+        if post := getattr(cls, "__post_init__", None):
+            post(instance)
+        return instance
+
+
+class Action(Function, Reducer, ABC, metaclass=_PostValidator):
     def __init__(self):
         """Represents an action in a state machine. This is the base class from which
         actions extend. Note that this class needs to have a name set after the fact.
         """
         self._name = None
+
+    def __post_init__(self):
+        self._validate_defaults()
+
+    def _validate_defaults(self):
+        reads = set(self.reads)
+        missing_default_reads = {key for key in self.default_reads.keys() if key not in reads}
+        if missing_default_reads:
+            raise ValueError(
+                f"The following default state reads are not in the set of reads for action: {self}: {', '.join(missing_default_reads)}. "
+                f"Every read in default_reads must be in the reads list."
+            )
+        writes = self.writes
+        missing_default_writes = {key for key in self.default_writes.keys() if key not in writes}
+        if missing_default_writes:
+            raise ValueError(
+                f"The following default state writes are not in the set of writes for action: {self}: {', '.join(missing_default_writes)}. "
+                f"Every write in default_writes must be in the writes list."
+            )
+        default_writes_also_in_reads = {key for key in self.default_writes.keys() if key in reads}
+        if default_writes_also_in_reads:
+            raise ValueError(
+                f"The following default state writes are also in the reads for action: {self}: {', '.join(default_writes_also_in_reads)}. "
+                f"Every write in default_writes must not be in the reads list -- this leads to undefined behavior."
+            )
 
     def with_name(self, name: str) -> Self:
         """Returns a copy of the given action with the given name. Why do we need this?
@@ -484,6 +545,8 @@ class FunctionBasedAction(SingleStepAction):
         fn: Callable,
         reads: List[str],
         writes: List[str],
+        default_reads: Dict[str, Any] = None,
+        default_writes: Dict[str, Any] = None,
         bound_params: dict = None,
     ):
         """Instantiates a function-based action with the given function, reads, and writes.
@@ -499,10 +562,20 @@ class FunctionBasedAction(SingleStepAction):
         self._writes = writes
         self._bound_params = bound_params if bound_params is not None else {}
         self._inputs = _get_inputs(self._bound_params, self._fn)
+        self._default_reads = default_reads if default_reads is not None else {}
+        self._default_writes = default_writes if default_writes is not None else {}
 
     @property
     def fn(self) -> Callable:
         return self._fn
+
+    @property
+    def default_reads(self) -> Dict[str, Any]:
+        return self._default_reads
+
+    @property
+    def default_writes(self) -> Dict[str, Any]:
+        return self._default_writes
 
     @property
     def reads(self) -> list[str]:
@@ -526,7 +599,12 @@ class FunctionBasedAction(SingleStepAction):
         :return:
         """
         return FunctionBasedAction(
-            self._fn, self._reads, self._writes, {**self._bound_params, **kwargs}
+            self._fn,
+            self._reads,
+            self._writes,
+            self.default_reads,
+            self._default_writes,
+            {**self._bound_params, **kwargs},
         )
 
     def run_and_update(self, state: State, **run_kwargs) -> tuple[dict, State]:
@@ -918,6 +996,8 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         ],
         reads: List[str],
         writes: List[str],
+        default_reads: Optional[Dict[str, Any]] = None,
+        default_writes: Optional[Dict[str, Any]] = None,
         bound_params: dict = None,
     ):
         """Instantiates a function-based streaming action with the given function, reads, and writes.
@@ -931,6 +1011,8 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         self._fn = fn
         self._reads = reads
         self._writes = writes
+        self._default_reads = default_reads if default_reads is not None else {}
+        self._default_writes = default_writes if default_writes is not None else {}
         self._bound_params = bound_params if bound_params is not None else {}
 
     async def _a_stream_run_and_update(
@@ -958,6 +1040,14 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         return self._writes
 
     @property
+    def default_writes(self) -> Dict[str, Any]:
+        return self._default_writes
+
+    @property
+    def default_reads(self) -> Dict[str, Any]:
+        return self._default_reads
+
+    @property
     def streaming(self) -> bool:
         return True
 
@@ -969,7 +1059,12 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         :return:
         """
         return FunctionBasedStreamingAction(
-            self._fn, self._reads, self._writes, {**self._bound_params, **kwargs}
+            self._fn,
+            self._reads,
+            self._writes,
+            self._default_reads,
+            self._default_writes,
+            {**self._bound_params, **kwargs},
         )
 
     @property
@@ -999,7 +1094,10 @@ class FunctionRepresentingAction(Protocol[C]):
         ...
 
 
-def copy_func(f: types.FunctionType) -> types.FunctionType:
+T = TypeVar("T", bound=types.FunctionType)
+
+
+def copy_func(f: T) -> T:
     """Copies a function. This is used internally to bind parameters to a function
     so we don't accidentally overwrite them.
 
@@ -1033,7 +1131,12 @@ def bind(self: FunctionRepresentingAction, **kwargs: Any) -> FunctionRepresentin
     return self
 
 
-def action(reads: List[str], writes: List[str]) -> Callable[[Callable], FunctionRepresentingAction]:
+def action(
+    reads: List[str],
+    writes: List[str],
+    default_reads: Dict[str, Any] = None,
+    default_writes: Dict[str, Any] = None,
+) -> Callable[[Callable], FunctionRepresentingAction]:
     """Decorator to create a function-based action. This is user-facing.
     Note that, in the future, with typed state, we may not need this for
     all cases.
@@ -1044,11 +1147,27 @@ def action(reads: List[str], writes: List[str]) -> Callable[[Callable], Function
 
     :param reads: Items to read from the state
     :param writes: Items to write to the state
+    :param default_reads: Default values for reads. If nothing upstream produces these, they will
+        be filled automatically. This is equivalent to adding
+        ``state = state.update(**{key: value for key, value in default_reads.items() if key not in state})``
+        at the beginning of your function.
+    :param default_writes: Default values for writes. If the action's state update does not write to this,
+        they will be filled automatically with the default values. Leaving blank will have no default values.
+        This is equivalent to adding state = state.update(***deafult_writes) at the beginning of the function.
+        Note that this will not work as intended with append/increment operations, so be careful.
     :return: The decorator to assign the function as an action
     """
+    default_reads = default_reads if default_reads is not None else {}
+    default_writes = default_writes if default_writes is not None else {}
 
     def decorator(fn) -> FunctionRepresentingAction:
-        setattr(fn, FunctionBasedAction.ACTION_FUNCTION, FunctionBasedAction(fn, reads, writes))
+        setattr(
+            fn,
+            FunctionBasedAction.ACTION_FUNCTION,
+            FunctionBasedAction(
+                fn, reads, writes, default_reads=default_reads, default_writes=default_writes
+            ),
+        )
         setattr(fn, "bind", types.MethodType(bind, fn))
         return fn
 
@@ -1056,7 +1175,10 @@ def action(reads: List[str], writes: List[str]) -> Callable[[Callable], Function
 
 
 def streaming_action(
-    reads: List[str], writes: List[str]
+    reads: List[str],
+    writes: List[str],
+    default_reads: Optional[Dict[str, Any]] = None,
+    default_writes: Optional[Dict[str, Any]] = None,
 ) -> Callable[[Callable], FunctionRepresentingAction]:
     """Decorator to create a streaming function-based action. This is user-facing.
 
@@ -1090,14 +1212,28 @@ def streaming_action(
             # return the final result
             return {'response': full_response}, state.update(response=full_response)
 
+    :param reads: Items to read from the state
+    :param writes: Items to write to the state
+    :param default_reads: Default values for reads. If nothing upstream produces these, they will
+        be filled automatically. This is equivalent to adding
+        ``state = state.update(**{key: value for key, value in default_reads.items() if key not in state})``
+        at the beginning of your function.
+    :param default_writes: Default values for writes. If the action's state update does not write to this,
+        they will be filled automatically with the default values. Leaving blank will have no default values.
+        This is equivalent to adding state = state.update(***deafult_writes) at the beginning of the function.
+        Note that this will not work as intended with append/increment operations, so be careful.
+    :return: The decorator to assign the function as an action
+
     """
+    default_reads = default_reads if default_reads is not None else {}
+    default_writes = default_writes if default_writes is not None else {}
 
     def wrapped(fn) -> FunctionRepresentingAction:
         fn = copy_func(fn)
         setattr(
             fn,
             FunctionBasedAction.ACTION_FUNCTION,
-            FunctionBasedStreamingAction(fn, reads, writes),
+            FunctionBasedStreamingAction(fn, reads, writes, default_reads, default_writes),
         )
         setattr(fn, "bind", types.MethodType(bind, fn))
         return fn
