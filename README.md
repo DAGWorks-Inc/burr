@@ -1,6 +1,7 @@
 # 🧊 Burr
-<div>
+<div align="center">
 <a href="https://discord.gg/6Zy2DwP4f3" target="_blank"><img src="https://img.shields.io/badge/Join-Burr_Discord-brightgreen?logo=discord" alt="Burr Discord"/></a>
+<img src="https://github.com/user-attachments/assets/2ab9b499-7ca2-4ae9-af72-ccc775f30b4e" width=200 height=200/>
 </div>
 
 Burr makes it easy to develop applications that make decisions (chatbots, agents, simulations, etc...) from simple python building blocks.
