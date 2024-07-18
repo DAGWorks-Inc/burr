@@ -39,7 +39,8 @@ def main():
             inputs={"prompt": prompt}, halt_after=["response"]
         ):
             if action.name in ["prompt", "response"]:
-                render_chat_message(result["chat_item"])
+                last_chat_item = state.get("chat_history", [])[-1]
+                render_chat_message(last_chat_item)
 
 
 if __name__ == "__main__":
