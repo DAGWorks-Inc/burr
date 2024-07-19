@@ -1085,7 +1085,7 @@ def streaming_action(
                 delta = chunk.choices[0].delta.content
                 buffer.append(delta)
                 # yield partial results
-                yield {'response': delta}
+                yield {'response': delta}, None
             full_response = ''.join(buffer)
             # return the final result
             return {'response': full_response}, state.update(response=full_response)
