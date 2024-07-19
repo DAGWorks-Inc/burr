@@ -2,7 +2,7 @@
 
 This example demonstrates how to stream data from Burr's streaming mode through FastAPI.
 
-This is gone over in more detail in our blog post (coming soon). This README will go over the main code + roles and how to run the example.
+This is gone over in more detail in [our blog post](https://blog.dagworks.io/p/streaming-chatbot-with-burr-fastapi). This README will go over the main code + roles and how to run the example.
 
 This uses Server Sent Events (SSE) to stream data from FastAPI to the frontend. This also uses Async Generators to ensure optimal performance.
 
