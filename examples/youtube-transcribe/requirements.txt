@@ -1,0 +1,7 @@
+burr[start]
+lancedb
+pydantic
+pytube
+sentence-transformers
+sf-hamilton[visualization]
+transformers
