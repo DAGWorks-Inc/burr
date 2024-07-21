@@ -26,6 +26,11 @@ and you want to store the state of the process after each action, and then reloa
 
 ``Burr`` provides a few simple interfaces to do this with minimal changes. Let's walk through a simple chatbot example as we're explaining concepts:
 
+Two notable assumptions:
+
+1. for library provided persisters, state needs to ultimately be JSON serializable. If it's not, you can use the :doc:`serde` API to customize serialization and deserialization.
+2. your general assumption should be that strings are/will be encoded as UTF-8, however this is dependent on the persister you use.
+
 State Keys
 ----------
 Burr `applications` are, by default, keyed on two entities:
