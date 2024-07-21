@@ -354,3 +354,110 @@ def test_application_tracks_link_from_spawning_parent(tmpdir: str):
     children_parsed = [ChildApplicationModel.model_validate(child) for child in children]
     assert set(child.child.app_id for child in children_parsed) == set(spawned_children)
     assert all(child.event_type == "spawn_start" for child in children_parsed)
+
+
+def test_that_we_fail_on_non_unicode_characters(tmp_path):
+    """This is a test to log expected behavior.
+
+    Right now it is on the developer to ensure that state can be encoded into UTF-8.
+
+    This test is here to capture this assumption.
+    """
+
+    @action(reads=["test"], writes=["test"])
+    def state_1(state: State) -> State:
+        return state.update(test="test")
+
+    @action(reads=["test"], writes=["test"])
+    def state_2(state: State) -> State:
+        return state.update(test="\uD800")  # Invalid UTF-8 byte sequence
+
+    tracker = LocalTrackingClient(project="test", storage_dir=tmp_path)
+    app: Application = (
+        ApplicationBuilder()
+        .with_actions(state_1, state_2)
+        .with_transitions(("state_1", "state_2"), ("state_2", "state_1"))
+        .with_tracker(tracker=tracker)
+        .initialize_from(
+            initializer=tracker,
+            resume_at_next_action=False,
+            default_entrypoint="state_1",
+            default_state={},
+        )
+        .with_identifiers(app_id="3")
+        .build()
+    )
+
+    with pytest.raises(ValueError):
+        app.run(halt_after=["state_2"])
+
+
+def test_that_we_can_read_write_local_tracker(tmp_path):
+    """Integration like test to ensure we can write and then read what was written"""
+
+    @action(
+        reads=[],
+        writes=[
+            "text",
+            "greek",
+            "cyrillic",
+            "hebrew",
+            "arabic",
+            "hindi",
+            "chinese",
+            "japanese",
+            "korean",
+            "emoji",
+        ],
+    )
+    def state_1(state: State) -> State:
+        text = "á, é, í, ó, ú, ñ, ü"
+        greek = "α, β, γ, δ"
+        cyrillic = "ж, ы, б, ъ"
+        hebrew = "א, ב, ג, ד"
+        arabic = "خ, د, ذ, ر"
+        hindi = "अ, आ, इ, ई"
+        chinese = "中, 国, 文"
+        japanese = "日, 本, 語"
+        korean = "한, 국, 어"
+        emoji = "😀, 👍, 🚀, 🌍"
+        return state.update(
+            text=text,
+            greek=greek,
+            cyrillic=cyrillic,
+            hebrew=hebrew,
+            arabic=arabic,
+            hindi=hindi,
+            chinese=chinese,
+            japanese=japanese,
+            korean=korean,
+            emoji=emoji,
+        )
+
+    @action(reads=["text"], writes=["text"])
+    def state_2(state: State) -> State:
+        return state.update(text="\x9d")  # encode-able UTF-8 sequence
+
+    tracker = LocalTrackingClient(
+        project="test",
+        storage_dir=tmp_path,
+    )
+
+    for i in range(2):
+        # reloads from log.jsonl in the second run and errors
+        app: Application = (
+            ApplicationBuilder()
+            .with_actions(state_1, state_2)
+            .with_transitions(("state_1", "state_2"), ("state_2", "state_1"))
+            .with_tracker(tracker=tracker)
+            .initialize_from(
+                initializer=tracker,
+                resume_at_next_action=False,
+                default_entrypoint="state_1",
+                default_state={},
+            )
+            .with_identifiers(app_id="3")
+            .build()
+        )
+
+        app.run(halt_after=["state_2"])
