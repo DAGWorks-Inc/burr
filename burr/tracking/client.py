@@ -221,7 +221,7 @@ class LocalTrackingClient(
             # currently we write start events, so it really won't matter
             # but in the future we'll write end events, but we'll parse it in a
             # way that allows them to be interwoven
-            with open(parent_children_list_path, "a") as f:
+            with open(parent_children_list_path, "a", errors="replace", encoding="utf-8") as f:
                 fileno = f.fileno()
                 try:
                     fcntl.flock(fileno, fcntl.LOCK_EX)
@@ -257,7 +257,7 @@ class LocalTrackingClient(
         path = os.path.join(cls.get_storage_path(project, storage_dir), app_id, cls.LOG_FILENAME)
         if not os.path.exists(path):
             return False
-        lines = open(path, "r").readlines()
+        lines = open(path, "r", errors="replace", encoding="utf-8").readlines()
         if len(lines) == 0:
             return False
         return True
@@ -292,7 +292,7 @@ class LocalTrackingClient(
         path = os.path.join(cls.get_storage_path(project, storage_dir), app_id, cls.LOG_FILENAME)
         if not os.path.exists(path):
             raise ValueError(f"No logs found for {project}/{app_id} under {storage_dir}")
-        with open(path, "r") as f:
+        with open(path, "r", errors="replace", encoding="utf-8") as f:
             json_lines = f.readlines()
         # load as JSON
         json_lines = [json.loads(js_line) for js_line in json_lines]
@@ -369,7 +369,7 @@ class LocalTrackingClient(
             parent_pointer=PointerModel.from_pointer(parent_pointer),
             spawning_parent_pointer=PointerModel.from_pointer(spawning_parent_pointer),
         ).model_dump()
-        with open(metadata_path, "w", errors="replace") as f:
+        with open(metadata_path, "w", errors="replace", encoding="utf-8") as f:
             json.dump(metadata, f)
 
         # Append to the parents of this the pointer to this, now
@@ -471,7 +471,7 @@ class LocalTrackingClient(
         path = os.path.join(self.storage_dir, app_id, self.LOG_FILENAME)
         if not os.path.exists(path):
             return None
-        with open(path, "r") as f:
+        with open(path, "r", errors="replace", encoding="utf-8") as f:
             json_lines = f.readlines()
         if len(json_lines) == 0:
             return None  # in this case we have not logged anything yet
