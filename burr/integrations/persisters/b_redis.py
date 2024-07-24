@@ -24,7 +24,13 @@ class RedisPersister(persistence.BaseStatePersister):
     """
 
     def __init__(
-        self, host: str, port: int, db: int, password: str = None, serde_kwargs: dict = None
+        self,
+        host: str,
+        port: int,
+        db: int,
+        password: str = None,
+        serde_kwargs: dict = None,
+        redis_client_kwargs: dict = None,
     ):
         """Initializes the RedisPersister class.
 
@@ -32,8 +38,14 @@ class RedisPersister(persistence.BaseStatePersister):
         :param port:
         :param db:
         :param password:
+        :param serde_kwargs:
+        :param redis_client_kwargs: Additional keyword arguments to pass to the redis.Redis client.
         """
-        self.connection = redis.Redis(host=host, port=port, db=db, password=password)
+        if redis_client_kwargs is None:
+            redis_client_kwargs = {}
+        self.connection = redis.Redis(
+            host=host, port=port, db=db, password=password, **redis_client_kwargs
+        )
         self.serde_kwargs = serde_kwargs or {}
 
     def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
