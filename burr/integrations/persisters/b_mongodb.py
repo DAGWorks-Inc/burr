@@ -36,9 +36,12 @@ class MongoDBPersister(persistence.BaseStatePersister):
         db_name="mydatabase",
         collection_name="mystates",
         serde_kwargs: dict = None,
+        mongo_client_kwargs: dict = None,
     ):
         """Initializes the MongoDBPersister class."""
-        self.client = MongoClient(uri)
+        if mongo_client_kwargs is None:
+            mongo_client_kwargs = {}
+        self.client = MongoClient(uri, **mongo_client_kwargs)
         self.db = self.client[db_name]
         self.collection = self.db[collection_name]
         self.serde_kwargs = serde_kwargs or {}
