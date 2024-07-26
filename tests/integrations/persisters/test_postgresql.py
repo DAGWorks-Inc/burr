@@ -19,6 +19,7 @@ def postgresql_persister():
         port=5432,
         table_name="testtable",
     )
+    persister.initialize()
     yield persister
     persister.connection.close()
 
