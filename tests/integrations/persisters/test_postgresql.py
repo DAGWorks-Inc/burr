@@ -12,9 +12,9 @@ if not os.environ.get("BURR_CI_INTEGRATION_TESTS") == "true":
 @pytest.fixture
 def postgresql_persister():
     persister = PostgreSQLPersister.from_values(
-        db_name="testdb",
-        user="testuser",
-        password="testpassword",
+        db_name="postgres",
+        user="postgres",
+        password="postgres",
         host="localhost",
         port=5432,
         table_name="testtable",
