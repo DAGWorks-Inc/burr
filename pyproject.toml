@@ -57,8 +57,10 @@ tests = [
   "langchain_core",
   "langchain_community",
   "pandas",
+  "psycopg2",
   "pydantic",
   "pyarrow",
+  "redis",
 ]
 
 documentation = [
