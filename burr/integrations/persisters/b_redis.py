@@ -53,10 +53,10 @@ class RedisPersister(persistence.BaseStatePersister):
 
     def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
         """List the app ids for a given partition key."""
-        if self.namespace:
-            app_ids = self.connection.zrevrange(f"{self.namespace}:{partition_key}", 0, -1)
-        else:
-            app_ids = self.connection.zrevrange(partition_key, 0, -1)
+        namespaced_partition_key = (
+            f"{self.namespace}:{partition_key}" if self.namespace else partition_key
+        )
+        app_ids = self.connection.zrevrange(namespaced_partition_key, 0, -1)
         return [app_id.decode() for app_id in app_ids]
 
     def load(
@@ -72,11 +72,11 @@ class RedisPersister(persistence.BaseStatePersister):
         :param kwargs:
         :return: Value or None.
         """
+        namespaced_partition_key = (
+            f"{self.namespace}:{partition_key}" if self.namespace else partition_key
+        )
         if sequence_id is None:
-            if self.namespace:
-                sequence_id = self.connection.zscore(f"{self.namespace}:{partition_key}", app_id)
-            else:
-                sequence_id = self.connection.zscore(partition_key, app_id)
+            sequence_id = self.connection.zscore(namespaced_partition_key, app_id)
             if sequence_id is None:
                 return None
             sequence_id = int(sequence_id)
@@ -140,10 +140,10 @@ class RedisPersister(persistence.BaseStatePersister):
                 "created_at": datetime.now(timezone.utc).isoformat(),
             },
         )
-        if self.namespace:
-            self.connection.zadd(f"{self.namespace}:{partition_key}", {app_id: sequence_id})
-        else:
-            self.connection.zadd(partition_key, {app_id: sequence_id})
+        namespaced_partition_key = (
+            f"{self.namespace}:{partition_key}" if self.namespace else partition_key
+        )
+        self.connection.zadd(namespaced_partition_key, {app_id: sequence_id})
 
     def __del__(self):
         self.connection.close()
