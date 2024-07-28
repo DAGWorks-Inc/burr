@@ -142,16 +142,26 @@ class SQLLitePersister(BaseStatePersister):
 
     PARTITION_KEY_DEFAULT = ""
 
-    def __init__(self, db_path: str, table_name: str = "burr_state", serde_kwargs: dict = None):
+    def __init__(
+        self,
+        db_path: str,
+        table_name: str = "burr_state",
+        serde_kwargs: dict = None,
+        connect_kwargs: dict = None,
+    ):
         """Constructor
 
         :param db_path: the path the DB will be stored.
         :param table_name: the table name to store things under.
         :param serde_kwargs: kwargs for state serialization/deserialization.
+        :param connect_kwargs: kwargs to pass to the sqlite3.connect method.
+            Use check_same_thread=False to enable use ina  multithreaded context
         """
         self.db_path = db_path
         self.table_name = table_name
-        self.connection = sqlite3.connect(db_path)
+        self.connection = sqlite3.connect(
+            db_path, **connect_kwargs if connect_kwargs is not None else {}
+        )
         self.serde_kwargs = serde_kwargs or {}
 
     def create_table_if_not_exists(self, table_name: str):

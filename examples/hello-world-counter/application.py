@@ -24,7 +24,7 @@ def application(
     storage_dir: Optional[str] = "~/.burr",
     hooks: Optional[List[LifecycleAdapter]] = None,
 ) -> Application:
-    persister = SQLLitePersister("demos.db", "counter")
+    persister = SQLLitePersister("demos.db", "counter", connect_kwargs={"check_same_thread": False})
     persister.initialize()
     logger.info(
         f"{partition_key} has these prior invocations: {persister.list_app_ids(partition_key)}"
