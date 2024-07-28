@@ -561,7 +561,8 @@ class Application:
             return next_action, result, new_state
 
     def reset_to_entrypoint(self) -> None:
-        """Resets the state machine to the entrypoint action."""
+        """Resets the state machine to the entrypoint action -- you probably want to consider having a loop
+        in your graph, but this will do the trick if you need it!"""
         self._set_state(self._state.wipe(delete=[PRIOR_STEP]))
 
     def _update_internal_state_value(self, new_state: State, next_action: Action) -> State:
