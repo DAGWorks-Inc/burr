@@ -31,6 +31,7 @@ class RedisPersister(persistence.BaseStatePersister):
         password: str = None,
         serde_kwargs: dict = None,
         redis_client_kwargs: dict = None,
+        namespace: str = None,
     ):
         """Initializes the RedisPersister class.
 
@@ -40,6 +41,7 @@ class RedisPersister(persistence.BaseStatePersister):
         :param password:
         :param serde_kwargs:
         :param redis_client_kwargs: Additional keyword arguments to pass to the redis.Redis client.
+        :param namespace: The name of the project to optionally use in the key prefix.
         """
         if redis_client_kwargs is None:
             redis_client_kwargs = {}
@@ -47,10 +49,14 @@ class RedisPersister(persistence.BaseStatePersister):
             host=host, port=port, db=db, password=password, **redis_client_kwargs
         )
         self.serde_kwargs = serde_kwargs or {}
+        self.namespace = namespace if namespace else ""
 
     def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
         """List the app ids for a given partition key."""
-        app_ids = self.connection.zrevrange(partition_key, 0, -1)
+        namespaced_partition_key = (
+            f"{self.namespace}:{partition_key}" if self.namespace else partition_key
+        )
+        app_ids = self.connection.zrevrange(namespaced_partition_key, 0, -1)
         return [app_id.decode() for app_id in app_ids]
 
     def load(
@@ -66,8 +72,11 @@ class RedisPersister(persistence.BaseStatePersister):
         :param kwargs:
         :return: Value or None.
         """
+        namespaced_partition_key = (
+            f"{self.namespace}:{partition_key}" if self.namespace else partition_key
+        )
         if sequence_id is None:
-            sequence_id = self.connection.zscore(partition_key, app_id)
+            sequence_id = self.connection.zscore(namespaced_partition_key, app_id)
             if sequence_id is None:
                 return None
             sequence_id = int(sequence_id)
@@ -88,7 +97,10 @@ class RedisPersister(persistence.BaseStatePersister):
 
     def create_key(self, app_id, partition_key, sequence_id):
         """Create a key for the Redis database."""
-        key = f"{partition_key}:{app_id}:{sequence_id}"
+        if self.namespace:
+            key = f"{self.namespace}:{partition_key}:{app_id}:{sequence_id}"
+        else:
+            key = f"{partition_key}:{app_id}:{sequence_id}"
         return key
 
     def save(
@@ -128,7 +140,10 @@ class RedisPersister(persistence.BaseStatePersister):
                 "created_at": datetime.now(timezone.utc).isoformat(),
             },
         )
-        self.connection.zadd(partition_key, {app_id: sequence_id})
+        namespaced_partition_key = (
+            f"{self.namespace}:{partition_key}" if self.namespace else partition_key
+        )
+        self.connection.zadd(namespaced_partition_key, {app_id: sequence_id})
 
     def __del__(self):
         self.connection.close()

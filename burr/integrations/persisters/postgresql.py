@@ -95,7 +95,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         cursor.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {table_name} (
-                partition_key TEXT DEFAULT {self.PARTITION_KEY_DEFAULT},
+                partition_key TEXT DEFAULT '{self.PARTITION_KEY_DEFAULT}',
                 app_id TEXT NOT NULL,
                 sequence_id INTEGER NOT NULL,
                 position TEXT NOT NULL,
