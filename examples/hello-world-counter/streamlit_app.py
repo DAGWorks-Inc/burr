@@ -22,6 +22,7 @@ def counter_view(app_state: AppState):
             set_slider_to_current()
         else:
             application.update_state(application.state.update(counter=0))
+            application.reset_to_entrypoint()
             action, result, state = application.step()
             app_state.history.append(Record(state.get_all(), action.name, result))
 
