@@ -65,3 +65,18 @@ class ApplicationLogs(pydantic.BaseModel):
     steps: List[Step]
     parent_pointer: Optional[PointerModel] = None
     spawning_parent_pointer: Optional[PointerModel] = None
+
+
+class ApplicationIDs(pydantic.BaseModel):
+    partition_key: str
+    app_ids: List[str]
+
+
+class PersistedStateData(pydantic.BaseModel):
+    partition_key: Optional[str]
+    app_id: str
+    sequence_id: int
+    position: str
+    state: dict
+    created_at: str
+    status: str
