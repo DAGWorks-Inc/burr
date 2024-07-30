@@ -5,7 +5,7 @@
 
 Burr makes it easy to develop applications that make decisions (chatbots, agents, simulations, etc...) from simple python building blocks.
 
-Burr works well for any application that uses LLMs, and can integrate with any of your favorite frameworks. Burr includes a UI that can track/monitor your system in real time.
+Burr works well for any application that uses LLMs, and can integrate with any of your favorite frameworks. Burr includes a UI that can track/monitor/trace your system in real time.
 
 Link to [documentation](https://burr.dagworks.io/). Quick (<3min) video intro [here](https://www.loom.com/share/a10f163428b942fea55db1a84b1140d8?sid=1512863b-f533-4a42-a2f3-95b13deb07c9).
 Longer [video intro & walkthrough](https://www.youtube.com/watch?v=rEZ4oDN0GdU). Blog post [here](https://blog.dagworks.io/p/burr-develop-stateful-ai-applications).
@@ -117,7 +117,7 @@ While Burr is attempting something (somewhat) unique, there are a variety of too
 | Framework-agnostic                        | ✅  |      ✅    |    ✅    |     ✅    |     ❌     |   ✅     |
 | Asynchronous event-based orchestration    | ❌  |      ❌    |    ✅    |     ❌    |     ❌     |   ❌     |
 | Built for core web-service logic          | ✅  |      ✅    |    ❌    |     ✅    |     ✅     |   ✅     |
-| Open-source user-interface for monitoring | ✅  |      ❌    |    ❌    |     ❌    |     ❌     |   ✅     |
+| Open-source user-interface for monitoring/tracing | ✅  |      ❌    |    ❌    |     ❌    |     ❌     |   ✅     |
 | Works with non-LLM use-cases              | ✅  |      ❌    |    ❌    |     ❌    |     ❌     |   ✅     |
 
 ## 🌯 Why the name Burr?
