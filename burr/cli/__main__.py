@@ -102,12 +102,19 @@ def build_ui():
         _build_ui()
 
 
-def _run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: bool, initial_page=""):
+def _run_server(
+    port: int,
+    dev_mode: bool,
+    no_open: bool,
+    no_copy_demo_data: bool,
+    initial_page="",
+    host: str = "127.0.0.1",
+):
     _telemetry_if_enabled("run_server")
     # TODO: Implement server running logic here
     # Example: Start a web server, configure ports, etc.
     logger.info(f"Starting server on port {port}")
-    cmd = f"uvicorn burr.tracking.server.run:app --port {port}"
+    cmd = f"uvicorn burr.tracking.server.run:app --port {port} --host {host}"
     if dev_mode:
         cmd += " --reload"
     base_dir = os.path.expanduser("~/.burr")
@@ -143,8 +150,14 @@ def _run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: boo
 @click.option("--dev-mode", is_flag=True, help="Run the server in development mode")
 @click.option("--no-open", is_flag=True, help="Run the server without opening it")
 @click.option("--no-copy-demo_data", is_flag=True, help="Don't copy demo data over.")
-def run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: bool):
-    _run_server(port, dev_mode, no_open, no_copy_demo_data)
+@click.option(
+    "--host",
+    default="127.0.0.1",
+    help="Host to run the server on -- use 0.0.0.0 if you want "
+    "to expose it to the network (E.G. in a docker image)",
+)
+def run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: bool, host: str):
+    _run_server(port, dev_mode, no_open, no_copy_demo_data, host=host)
 
 
 @cli.command()
