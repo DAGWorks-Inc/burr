@@ -7,6 +7,7 @@ import openai
 from burr.core import ApplicationBuilder, State, default, when
 from burr.core.action import action, streaming_action
 from burr.core.graph import GraphBuilder
+from burr.tracking.s3client import S3TrackingClient
 
 MODES = [
     "answer_question",
@@ -173,7 +174,12 @@ def application(app_id: Optional[str] = None):
         .with_entrypoint("prompt")
         .with_state(chat_history=[])
         .with_graph(graph)
-        .with_tracker(project="demo_chatbot_streaming")
+        # .with_tracker(project="demo_chatbot_streaming")
+        .with_tracker(
+            tracker=S3TrackingClient(
+                bucket="burr-prod-test", project="demo_chatbot_streaming", non_blocking=True
+            )
+        )
         .with_identifiers(app_id=app_id)
         .build()
     )

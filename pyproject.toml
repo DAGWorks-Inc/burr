@@ -80,11 +80,17 @@ tracking-client = [
   "pydantic"
 ]
 
+tracking-client-s3 = [
+  "burr[tracking-client]",
+  "aiobotocore"
+]
+
 tracking-server = [
   "click",
   "fastapi",
   "uvicorn",
   "pydantic",
+  "pydantic-settings",
   "fastapi-pagination",
   "aiofiles",
   "requests",
@@ -106,6 +112,15 @@ start = [
   "burr[learn]"
 ]
 
+# All the bloatware from various LLM demos
+# In the future most people will be relying on simple APIs, not this
+# But its good for demos!
+bloat = [
+  "langchain",
+  "langchain-community",
+  "langchain-openai"
+]
+
 # just install everything for developers
 developer = [
   "burr[streamlit]",
@@ -113,6 +128,7 @@ developer = [
   "burr[tracking]",
   "burr[tests]",
   "burr[documentation]",
+  "burr[bloat]",
   "build",
   "twine",
   "pre-commit",
@@ -131,6 +147,11 @@ burr = [
   "burr/tracking/server/demo_data/**/*"
 ]
 
+
+[tool.aerich]
+tortoise_orm = "burr.tracking.server.s3.settings.TORTOISE_ORM"
+location = "./burr/tracking/server/s3/migrations"
+src_folder = "./."
 [project.urls]
 Homepage = "https://github.com/dagworks-inc/burr"
 Documentation = "https://github.com/dagworks-inc/burr"

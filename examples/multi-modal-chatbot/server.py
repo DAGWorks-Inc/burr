@@ -25,7 +25,7 @@ chat_application = importlib.import_module(
 
 router = APIRouter()
 
-graph = chat_application.base_graph
+graph = chat_application.graph
 
 
 class ChatItem(pydantic.BaseModel):

@@ -4,6 +4,7 @@ import openai
 
 from burr.core import Application, ApplicationBuilder, State, default, when
 from burr.core.action import action
+from burr.core.graph import GraphBuilder
 from burr.visibility import TracerFactory
 
 MODES = {
@@ -146,42 +147,49 @@ def response(state: State, __tracer: TracerFactory) -> Tuple[dict, State]:
     return result, state.append(chat_history=result["chat_item"])
 
 
+graph = (
+    GraphBuilder()
+    .with_actions(
+        prompt=process_prompt,
+        check_safety=check_safety,
+        decide_mode=choose_mode,
+        generate_image=image_response,
+        generate_code=chat_response.bind(
+            prepend_prompt="Please respond with *only* code and no other text (at all) to the following:",
+        ),
+        answer_question=chat_response.bind(
+            prepend_prompt="Please answer the following question:",
+        ),
+        prompt_for_more=prompt_for_more,
+        response=response,
+    )
+    .with_transitions(
+        ("prompt", "check_safety", default),
+        ("check_safety", "decide_mode", when(safe=True)),
+        ("check_safety", "response", default),
+        ("decide_mode", "generate_image", when(mode="generate_image")),
+        ("decide_mode", "generate_code", when(mode="generate_code")),
+        ("decide_mode", "answer_question", when(mode="answer_question")),
+        ("decide_mode", "prompt_for_more", default),
+        (
+            ["generate_image", "answer_question", "generate_code", "prompt_for_more"],
+            "response",
+        ),
+        ("response", "prompt", default),
+    )
+    .build()
+)
+
+
 def application(
     app_id: Optional[str] = None,
     storage_dir: Optional[str] = "~/.burr",
 ) -> Application:
     return (
         ApplicationBuilder()
-        .with_actions(
-            prompt=process_prompt,
-            check_safety=check_safety,
-            decide_mode=choose_mode,
-            generate_image=image_response,
-            generate_code=chat_response.bind(
-                prepend_prompt="Please respond with *only* code and no other text (at all) to the following:",
-            ),
-            answer_question=chat_response.bind(
-                prepend_prompt="Please answer the following question:",
-            ),
-            prompt_for_more=prompt_for_more,
-            response=response,
-        )
         .with_entrypoint("prompt")
         .with_state(chat_history=[])
-        .with_transitions(
-            ("prompt", "check_safety", default),
-            ("check_safety", "decide_mode", when(safe=True)),
-            ("check_safety", "response", default),
-            ("decide_mode", "generate_image", when(mode="generate_image")),
-            ("decide_mode", "generate_code", when(mode="generate_code")),
-            ("decide_mode", "answer_question", when(mode="answer_question")),
-            ("decide_mode", "prompt_for_more", default),
-            (
-                ["generate_image", "answer_question", "generate_code", "prompt_for_more"],
-                "response",
-            ),
-            ("response", "prompt", default),
-        )
+        .with_graph(graph)
         .with_tracker(project="demo_tracing", params={"storage_dir": storage_dir})
         .with_identifiers(app_id=app_id)
         .build()

@@ -6,6 +6,7 @@ from hamilton import dataflows, driver
 import burr.core
 from burr.core import Action, Application, ApplicationBuilder, State, default, expr
 from burr.core.action import action
+from burr.core.graph import GraphBuilder
 from burr.lifecycle import LifecycleAdapter, PostRunStepHook, PreRunStepHook
 
 # create the pipeline
@@ -70,12 +71,7 @@ def human_converse(state: State, user_question: str) -> Tuple[dict, State]:
     return {"question": user_question}, state
 
 
-def application(
-    app_id: Optional[str] = None,
-    storage_dir: Optional[str] = "~/.burr",
-    hooks: Optional[List[LifecycleAdapter]] = None,
-) -> Application:
-    # our initial knowledge base
+def graph():
     input_text = [
         "harrison worked at kensho",
         "stefan worked at Stitch Fix",
@@ -87,14 +83,8 @@ def application(
         "stefan likes to bake sourdough",
     ]
     vector_store = bootstrap_vector_db(conversational_rag_driver, input_text)
-    app = (
-        ApplicationBuilder()
-        .with_state(
-            **{
-                "question": "",
-                "chat_history": [],
-            }
-        )
+    return (
+        GraphBuilder()
         .with_actions(
             # bind the vector store to the AI conversational step
             ai_converse=ai_converse.bind(vector_store=vector_store),
@@ -106,6 +96,26 @@ def application(
             ("human_converse", "terminal", expr("'exit' in question")),
             ("human_converse", "ai_converse", default),
         )
+        .build()
+    )
+
+
+def application(
+    app_id: Optional[str] = None,
+    storage_dir: Optional[str] = "~/.burr",
+    hooks: Optional[List[LifecycleAdapter]] = None,
+) -> Application:
+    # our initial knowledge base
+
+    app = (
+        ApplicationBuilder()
+        .with_state(
+            **{
+                "question": "",
+                "chat_history": [],
+            }
+        )
+        .with_graph(graph())
         .with_entrypoint("human_converse")
         .with_tracker(project="demo_conversational-rag", params={"storage_dir": storage_dir})
         .with_identifiers(app_id=app_id, partition_key="sample_user")
