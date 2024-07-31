@@ -96,6 +96,11 @@ class StateDelta(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def deletes(self) -> list[str]:
+        """Returns the keys that this state delta deletes"""
+        pass
+
+    @abc.abstractmethod
     def apply_mutate(self, inputs: dict):
         """Applies the state delta to the inputs"""
         pass
@@ -117,6 +122,9 @@ class SetFields(StateDelta):
     def writes(self) -> list[str]:
         return list(self.values.keys())
 
+    def deletes(self) -> list[str]:
+        return []
+
     def apply_mutate(self, inputs: dict):
         inputs.update(self.values)
 
@@ -137,13 +145,21 @@ class AppendFields(StateDelta):
     def writes(self) -> list[str]:
         return list(self.values.keys())
 
+    def deletes(self) -> list[str]:
+        return []
+
     def apply_mutate(self, inputs: dict):
         for key, value in self.values.items():
             if key not in inputs:
                 inputs[key] = []
             if not isinstance(inputs[key], list):
                 raise ValueError(f"Cannot append to non-list value {key}={inputs[self.key]}")
-            inputs[key].append(value)
+            inputs[key] = [
+                *inputs[key],
+                value,
+            ]  # Not as efficient but safer, so we don't mutate the original list
+            # we're doing this to avoid a copy.deepcopy() call, so it is already more efficient than it was before
+            # That said, if one modifies prior values in the list, it is on them, and undefined behavior
 
     def validate(self, input_state: Dict[str, Any]):
         incorrect_types = {}
@@ -170,6 +186,9 @@ class IncrementFields(StateDelta):
 
     def writes(self) -> list[str]:
         return list(self.values.keys())
+
+    def deletes(self) -> list[str]:
+        return []
 
     def validate(self, input_state: Dict[str, Any]):
         incorrect_types = {}
@@ -201,10 +220,13 @@ class DeleteField(StateDelta):
         return "delete"
 
     def reads(self) -> list[str]:
-        return list(self.keys)
+        return []
 
     def writes(self) -> list[str]:
         return []
+
+    def deletes(self) -> list[str]:
+        return list(self.keys)
 
     def apply_mutate(self, inputs: dict):
         for key in self.keys:
@@ -221,11 +243,12 @@ class State(Mapping):
 
     def apply_operation(self, operation: StateDelta) -> "State":
         """Applies a given operation to the state, returning a new state"""
-        new_state = copy.deepcopy(self._state)  # TODO -- restrict to just the read keys
+        new_state = copy.copy(self._state)  # TODO -- restrict to just the read keys
         operation.validate(new_state)
         operation.apply_mutate(
             new_state
         )  # todo -- validate that the write keys are the only different ones
+        # we want to carry this on for now
         return State(new_state)
 
     def get_all(self) -> Dict[str, Any]:
@@ -331,7 +354,9 @@ class State(Mapping):
 
     def subset(self, *keys: str, ignore_missing: bool = True) -> "State":
         """Returns a subset of the state, with only the given keys"""
-        return State({key: self[key] for key in keys if key in self or not ignore_missing})
+        return State(
+            {key: self[key] for key in keys if key in self or not ignore_missing},
+        )
 
     def __getitem__(self, __k: str) -> Any:
         return self._state[__k]

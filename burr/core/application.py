@@ -83,6 +83,33 @@ def _adjust_single_step_output(output: Union[State, Tuple[dict, State]], action_
     _raise_fn_return_validation_error(output, action_name)
 
 
+def _pre_apply_read_defaults(
+    state: State,
+    default_reads: Dict[str, Any],
+):
+    """Applies default values to the state prior to execution.
+    This just applies them to the state so the action can overwrite them.
+    """
+    state_update = {}
+    for key, value in default_reads.items():
+        if key not in state:
+            state_update[key] = value
+    return state.update(**state_update)
+
+
+def _pre_apply_write_defaults(
+    state: State,
+    default_writes: Dict[str, Any],
+) -> State:
+    """Applies default values to the state prior to execution.
+    This just applies them to the state so the action can overwrite them.
+    """
+    state_update = {}
+    for key, value in default_writes.items():
+        state_update[key] = value
+    return state.update(**state_update)
+
+
 def _run_function(function: Function, state: State, inputs: Dict[str, Any], name: str) -> dict:
     """Runs a function, returning the result of running the function.
     Note this restricts the keys in the state to only those that the
@@ -100,6 +127,7 @@ def _run_function(function: Function, state: State, inputs: Dict[str, Any], name
             "instead...)"
         )
     state_to_use = state.subset(*function.reads)
+    state_to_use = _pre_apply_read_defaults(state_to_use, function.default_reads)
     function.validate_inputs(inputs)
     result = function.run(state_to_use, **inputs)
     _validate_result(result, name)
@@ -112,6 +140,7 @@ async def _arun_function(
     """Runs a function, returning the result of running the function.
     Async version of the above."""
     state_to_use = state.subset(*function.reads)
+    state_to_use = _pre_apply_read_defaults(state_to_use, function.default_reads)
     function.validate_inputs(inputs)
     result = await function.run(state_to_use, **inputs)
     _validate_result(result, name)
@@ -168,7 +197,8 @@ def _run_reducer(reducer: Reducer, state: State, result: dict, name: str) -> Sta
     :return:
     """
     # TODO -- better guarding on state reads/writes
-    new_state = reducer.update(result, state)
+    state_with_defaults = _pre_apply_write_defaults(state, reducer.default_writes)
+    new_state = reducer.update(result, state_with_defaults)
     keys_in_new_state = set(new_state.keys())
     new_keys = keys_in_new_state - set(state.keys())
     extra_keys = new_keys - set(reducer.writes)
@@ -216,6 +246,22 @@ def _format_BASE_ERROR_MESSAGE(action: Action, input_state: State, inputs: dict)
     return "\n" + border + "\n" + message + "\n" + border
 
 
+def _prep_state_single_step_action(state: State, action: SingleStepAction):
+    """Runs default application for single step action.
+    First applies read defaults, then applies write defaults. Note write defaults
+    will blogger read
+
+    :param state:
+    :param action:
+    :return:
+    """
+    # first apply read defaults
+    state = _pre_apply_read_defaults(state, action.default_reads)
+    # then apply write defaults so if the action doesn't write it will be in state
+    state = _pre_apply_write_defaults(state, action.default_writes)
+    return state
+
+
 def _run_single_step_action(
     action: SingleStepAction, state: State, inputs: Optional[Dict[str, Any]]
 ) -> Tuple[Dict[str, Any], State]:
@@ -229,6 +275,7 @@ def _run_single_step_action(
     """
     # TODO -- guard all reads/writes with a subset of the state
     action.validate_inputs(inputs)
+    state = _prep_state_single_step_action(state, action)
     result, new_state = _adjust_single_step_output(
         action.run_and_update(state, **inputs), action.name
     )
@@ -245,6 +292,7 @@ def _run_single_step_streaming_action(
     """Runs a single step streaming action. This API is internal-facing.
     This normalizes + validates the output."""
     action.validate_inputs(inputs)
+    state = _prep_state_single_step_action(state, action)
     generator = action.stream_run_and_update(state, **inputs)
     result = None
     state_update = None
@@ -269,11 +317,26 @@ def _run_single_step_streaming_action(
     yield result, state_update
 
 
+async def _arun_single_step_action(
+    action: SingleStepAction, state: State, inputs: Optional[Dict[str, Any]]
+) -> Tuple[dict, State]:
+    """Runs a single step action in async. See the synchronous version for more details."""
+    state_to_use = _prep_state_single_step_action(state, action)
+    action.validate_inputs(inputs)
+    result, new_state = _adjust_single_step_output(
+        await action.run_and_update(state_to_use, **inputs), action.name
+    )
+    _validate_result(result, action.name)
+    _validate_reducer_writes(action, new_state, action.name)
+    return result, _state_update(state, new_state)
+
+
 async def _arun_single_step_streaming_action(
     action: SingleStepStreamingAction, state: State, inputs: Optional[Dict[str, Any]]
 ) -> AsyncGenerator[Tuple[dict, Optional[State]], None]:
     """Runs a single step streaming action in async. See the synchronous version for more details."""
     action.validate_inputs(inputs)
+    state = _prep_state_single_step_action(state, action)
     generator = action.stream_run_and_update(state, **inputs)
     result = None
     state_update = None
@@ -310,6 +373,7 @@ def _run_multi_step_streaming_action(
     This peeks ahead by one so we know when this is done (and when to validate).
     """
     action.validate_inputs(inputs)
+    state = _pre_apply_read_defaults(state, action.default_reads)
     generator = action.stream_run(state, **inputs)
     result = None
     for item in generator:
@@ -331,6 +395,7 @@ async def _arun_multi_step_streaming_action(
 ) -> AsyncGenerator[Tuple[dict, Optional[State]], None]:
     """Runs a multi-step streaming action in async. See the synchronous version for more details."""
     action.validate_inputs(inputs)
+    state = _pre_apply_read_defaults(state, action.default_reads)
     generator = action.stream_run(state, **inputs)
     result = None
     async for item in generator:
@@ -345,20 +410,6 @@ async def _arun_multi_step_streaming_action(
     _validate_result(result, action.name)
     _validate_reducer_writes(action, state_update, action.name)
     yield result, state_update
-
-
-async def _arun_single_step_action(
-    action: SingleStepAction, state: State, inputs: Optional[Dict[str, Any]]
-) -> Tuple[dict, State]:
-    """Runs a single step action in async. See the synchronous version for more details."""
-    state_to_use = state
-    action.validate_inputs(inputs)
-    result, new_state = _adjust_single_step_output(
-        await action.run_and_update(state_to_use, **inputs), action.name
-    )
-    _validate_result(result, action.name)
-    _validate_reducer_writes(action, new_state, action.name)
-    return result, _state_update(state, new_state)
 
 
 @dataclasses.dataclass
@@ -640,7 +691,6 @@ class Application:
         return out
 
     async def _astep(self, inputs: Optional[Dict[str, Any]], _run_hooks: bool = True):
-        # we want to increment regardless of failure
         with self.context:
             next_action = self.get_next_action()
             if next_action is None:

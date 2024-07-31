@@ -1,5 +1,5 @@
 import asyncio
-from typing import AsyncGenerator, Generator, Optional, Tuple, cast
+from typing import Any, AsyncGenerator, Dict, Generator, Optional, Tuple, cast
 
 import pytest
 
@@ -719,3 +719,81 @@ def test_streaming_result_callback_error_async():
     ((result, state, error),) = called
     assert state["foo"] == "bar"
     assert result is None
+
+
+def test_action_subclass_validate_defaults_fails_incorrect_writes():
+    """Tests that the initialization of subclass hook validates as intended"""
+
+    class IncorrectReads(Action):
+        @property
+        def reads(self) -> list[str]:
+            return ["foo"]
+
+        @property
+        def writes(self) -> list[str]:
+            return ["bar"]
+
+        @property
+        def default_reads(self) -> Dict[str, Any]:
+            return {"qux": None}
+
+        def run(self, state: State) -> dict:
+            raise ValueError("This should never be called")
+
+        def update(self, result: dict, state: State) -> State:
+            raise ValueError("This should never be called")
+
+    with pytest.raises(ValueError):
+        IncorrectReads()
+
+
+def test_action_subclass_validate_defaults_fails_incorrect_reads():
+    """Tests that the initialiation of subclass hook validates as intended"""
+
+    class IncorrectWrites(Action):
+        @property
+        def reads(self) -> list[str]:
+            return ["foo"]
+
+        @property
+        def writes(self) -> list[str]:
+            return ["bar"]
+
+        @property
+        def default_writes(self) -> Dict[str, Any]:
+            return {"qux": None}
+
+        def run(self, state: State) -> dict:
+            raise ValueError("This should never be called")
+
+        def update(self, result: dict, state: State) -> State:
+            raise ValueError("This should never be called")
+
+    with pytest.raises(ValueError):
+        IncorrectWrites()
+
+
+def test_action_subclass_validate_defaults_fails_reads_in_default_writes():
+    """Tests that the initialiation of subclass hook validates as intended"""
+
+    class IncorrectWrites(Action):
+        @property
+        def reads(self) -> list[str]:
+            return ["foo"]
+
+        @property
+        def writes(self) -> list[str]:
+            return ["bar"]
+
+        @property
+        def default_writes(self) -> Dict[str, Any]:
+            return {"foo": None}
+
+        def run(self, state: State) -> dict:
+            raise ValueError("This should never be called")
+
+        def update(self, result: dict, state: State) -> State:
+            raise ValueError("This should never be called")
+
+    with pytest.raises(ValueError):
+        IncorrectWrites()

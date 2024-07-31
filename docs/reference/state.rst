@@ -1,6 +1,6 @@
-=================
+=====
 State
-=================
+=====
 
 Use the state API to manipulate the state of the application.
 
