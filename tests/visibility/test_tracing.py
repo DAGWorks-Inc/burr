@@ -26,6 +26,8 @@ def test_action_span_tracer_correct_span_count(request):
         sequence_id=0,
         lifecycle_adapters=LifecycleAdapterSet(),
         _context_var=context_var,
+        app_id="test_app_id",
+        partition_key=None,
     )
     assert context_var.get() is None  # nothing to start
     assert tracer_factory.top_level_span_count == 0  # and thus no top-level spans
@@ -54,6 +56,8 @@ async def test_action_span_tracer_correct_span_count_async(request):
         sequence_id=0,
         lifecycle_adapters=LifecycleAdapterSet(),
         _context_var=context_var,
+        app_id="test_app_id",
+        partition_key=None,
     )
     assert context_var.get() is None  # nothing to start
     assert tracer_factory.top_level_span_count == 0  # and thus no top-level spans
@@ -82,6 +86,8 @@ def test_action_span_tracer_correct_span_count_nested(request):
         sequence_id=0,
         lifecycle_adapters=LifecycleAdapterSet(),
         _context_var=context_var,
+        app_id="test_app_id",
+        partition_key=None,
     )
 
     with tracer_factory("0") as outside_span_0:
@@ -119,6 +125,8 @@ async def test_action_span_tracer_correct_span_count_nested_async(request):
         sequence_id=0,
         lifecycle_adapters=LifecycleAdapterSet(),
         _context_var=context_var,
+        app_id="test_app_id",
+        partition_key=None,
     )
 
     async with tracer_factory("0") as outside_span_0:
@@ -188,6 +196,8 @@ def test_pre_span_lifecycle_hooks_called(request):
         sequence_id=0,
         lifecycle_adapters=adapter_set,
         _context_var=context_var,
+        app_id="test_app_id",
+        partition_key=None,
     )
     # 0:0
     with tracer_factory_0("0"):
@@ -212,6 +222,8 @@ def test_pre_span_lifecycle_hooks_called(request):
         sequence_id=tracer_factory_0.action_sequence_id + 1,
         lifecycle_adapters=adapter_set,
         _context_var=context_var,
+        app_id="test_app_id",
+        partition_key=None,
     )
     # 1:0
     with tracer_factory_1("2"):
@@ -283,6 +295,8 @@ async def test_pre_span_lifecycle_hooks_called_async(request):
         sequence_id=0,
         lifecycle_adapters=adapter_set,
         _context_var=context_var,
+        app_id="test_app_id",
+        partition_key=None,
     )
     # 0:0
     async with tracer_factory_0("0"):
@@ -307,6 +321,8 @@ async def test_pre_span_lifecycle_hooks_called_async(request):
         sequence_id=tracer_factory_0.action_sequence_id + 1,
         lifecycle_adapters=adapter_set,
         _context_var=context_var,
+        app_id="test_app_id",
+        partition_key=None,
     )
     # 1:0
     async with tracer_factory_1("2"):

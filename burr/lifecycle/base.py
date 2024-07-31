@@ -167,6 +167,8 @@ class PreStartSpanHook(abc.ABC):
         action_sequence_id: int,
         span: "ActionSpan",
         span_dependencies: list[str],
+        app_id: str,
+        partition_key: Optional[str],
         **future_kwargs: Any,
     ):
         pass
@@ -182,6 +184,8 @@ class PreStartSpanHookAsync(abc.ABC):
         action_sequence_id: int,
         span: "ActionSpan",
         span_dependencies: list[str],
+        app_id: str,
+        partition_key: Optional[str],
         **future_kwargs: Any,
     ):
         pass
@@ -200,6 +204,8 @@ class PostEndSpanHook(abc.ABC):
         action_sequence_id: int,
         span: "ActionSpan",
         span_dependencies: list[str],
+        app_id: str,
+        partition_key: Optional[str],
         **future_kwargs: Any,
     ):
         pass
@@ -215,6 +221,8 @@ class PostEndSpanHookAsync(abc.ABC):
         action_sequence_id: int,
         span: "ActionSpan",
         span_dependencies: list[str],
+        app_id: str,
+        partition_key: Optional[str],
         **future_kwargs: Any,
     ):
         pass

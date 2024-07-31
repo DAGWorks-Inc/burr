@@ -103,6 +103,8 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
         action_sequence_id: int,
         span_name: str,
         lifecycle_adapters: LifecycleAdapterSet,
+        app_id: str,
+        partition_key: Optional[str],
         span_dependencies: List[str],
         top_level_span_count: int = 0,
         context_var=execution_context_var,
@@ -122,6 +124,8 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
         self.span_dependencies = span_dependencies
         self.top_level_span_count = top_level_span_count
         self.context_var = context_var
+        self.app_id = app_id
+        self.partition_key = partition_key
 
     def _sync_hooks_enter(self, context: ActionSpan):
         self.lifecycle_adapters.call_all_lifecycle_hooks_sync(
@@ -130,6 +134,8 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
             span=context,
             span_dependencies=self.span_dependencies,
             sequence_id=self.action_sequence_id,
+            app_id=self.app_id,
+            partition_key=self.partition_key,
         )
 
     async def _async_hooks_enter(self, context: ActionSpan):
@@ -139,6 +145,8 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
             span=context,
             span_dependencies=self.span_dependencies,
             sequence_id=self.action_sequence_id,
+            app_id=self.app_id,
+            partition_key=self.partition_key,
         )
 
     async def _async_hooks_exit(self, context: ActionSpan):
@@ -148,6 +156,8 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
             span=context,
             span_dependencies=self.span_dependencies,
             sequence_id=self.action_sequence_id,
+            app_id=self.app_id,
+            partition_key=self.partition_key,
         )
 
     def _enter(self):
@@ -178,6 +188,8 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
             span=context,
             span_dependencies=self.span_dependencies,
             sequence_id=self.action_sequence_id,
+            app_id=self.app_id,
+            partition_key=self.partition_key,
         )
 
     def __enter__(self):
@@ -241,14 +253,14 @@ class TracerFactory:
             context_manager: ActionSpanTracer = __tracer("my_span_name")
             with context_manager:
                 ...
-
-
     """
 
     def __init__(
         self,
         action: str,
         sequence_id: int,
+        app_id: str,
+        partition_key: str,
         lifecycle_adapters: LifecycleAdapterSet,
         _context_var: ContextVar[Optional[ActionSpan]] = execution_context_var,
     ):
@@ -263,6 +275,8 @@ class TracerFactory:
         self.context_var = _context_var
         self.top_level_span_count = 0
         self.action_sequence_id = sequence_id
+        self.app_id = app_id
+        self.partition_key = partition_key
 
     def __call__(
         self, span_name: str, span_dependencies: Optional[List[str]] = None
@@ -279,4 +293,6 @@ class TracerFactory:
             span_dependencies=span_dependencies,
             context_var=self.context_var,
             top_level_span_count=self.top_level_span_count,
+            app_id=self.app_id,
+            partition_key=self.partition_key,
         )
