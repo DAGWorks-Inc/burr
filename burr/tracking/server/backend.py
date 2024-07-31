@@ -1,11 +1,15 @@
 import abc
+import importlib
 import json
 import os.path
-from typing import Sequence, TypeVar
+import sys
+from typing import Any, Optional, Sequence, Type, TypeVar
 
 import aiofiles
 import aiofiles.os as aiofilesos
 import fastapi
+from fastapi import FastAPI
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from burr.tracking.common import models
 from burr.tracking.common.models import (
@@ -20,7 +24,6 @@ from burr.tracking.server.schema import ApplicationLogs, ApplicationSummary
 
 T = TypeVar("T")
 
-
 # The following is a backend for the server.
 # Note this is not a fixed API yet, and thus not documented (in Burr's documentation)
 # Specifically, this does not have:
@@ -29,7 +32,42 @@ T = TypeVar("T")
 # - Authentication/Authorization
 
 
+if sys.version_info <= (3, 11):
+    Self = Any
+else:
+    from typing import Self
+
+
+class BurrSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="burr_")
+
+
+class IndexingBackendMixin(abc.ABC):
+    """Base mixin for an indexing backend -- one that index from
+    logs (E.G. s3)"""
+
+    @abc.abstractmethod
+    async def update(self):
+        """Updates the index"""
+        pass
+
+    @abc.abstractmethod
+    async def update_interval_milliseconds(self) -> Optional[int]:
+        """Returns the update interval in milliseconds"""
+        pass
+
+    @abc.abstractmethod
+    async def indexing_jobs(
+        self, offset: int = 0, limit: int = 100, filter_empty: bool = True
+    ) -> Sequence[schema.IndexingJob]:
+        """Returns the indexing jobs"""
+        pass
+
+
 class BackendBase(abc.ABC):
+    async def lifespan(self, app: FastAPI):
+        yield
+
     @abc.abstractmethod
     async def list_projects(self, request: fastapi.Request) -> Sequence[schema.Project]:
         """Lists out all projects -- this relies on the paginate function to work properly.
@@ -63,6 +101,39 @@ class BackendBase(abc.ABC):
         """
         pass
 
+    @classmethod
+    @abc.abstractmethod
+    def settings_model(cls) -> Type[BaseSettings]:
+        """Gives a settings model that tells us how to configure the backend.
+        This is a class of pydantic BaseSettings type
+
+        :return:  the settings model
+        """
+        pass
+
+    @classmethod
+    def from_settings(cls, settings_model: BaseSettings) -> Self:
+        """Creates a backend from settings, of the type of settings_model above
+        This defaults to assuming the constructor takes in settings parameters
+
+        :param settings_model:
+        :return:
+        """
+        return cls(**settings_model.dict())
+
+    @classmethod
+    def create_from_env(cls, dotenv_path: Optional[str] = None) -> Self:
+        cls_path = os.environ.get("BURR_BACKEND_IMPL", "burr.tracking.server.backend.LocalBackend")
+        mod_path = ".".join(cls_path.split(".")[:-1])
+        mod = importlib.import_module(mod_path)
+        cls_name = cls_path.split(".")[-1]
+        if not hasattr(mod, cls_name):
+            raise ValueError(f"Could not find {cls_name} in {mod_path}")
+        cls = getattr(mod, cls_name)
+        return cls.from_settings(
+            cls.settings_model()(_env_file=dotenv_path, _env_file_encoding="utf-8")
+        )
+
 
 def safe_json_load(line: bytes):
     # Every once in a while we'll hit a non-utf-8 character
@@ -80,11 +151,13 @@ def get_uri(project_id: str) -> str:
     return project_id_map.get(project_id, "")
 
 
+DEFAULT_PATH = os.path.expanduser("~/.burr")
+
+
 class LocalBackend(BackendBase):
     """Quick implementation of a local backend for testing purposes. This is not a production backend."""
 
     # TODO -- make this configurable through an env variable
-    DEFAULT_PATH = os.path.expanduser("~/.burr")
 
     def __init__(self, path: str = DEFAULT_PATH):
         self.path = path
@@ -180,6 +253,7 @@ class LocalBackend(BackendBase):
             str_graph = await f.read()
         steps_by_sequence_id = {}
         spans_by_id = {}
+        # TODO -- use the Step.from_logs method
         if os.path.exists(log_file):
             async with aiofiles.open(log_file, "rb") as f:
                 for line in await f.readlines():
@@ -206,6 +280,7 @@ class LocalBackend(BackendBase):
                         span = spans_by_id[end_span.span_id]
                         span.end_entry = end_span
         for span in spans_by_id.values():
+            # They should have one, the other, or both set
             step = steps_by_sequence_id[span.begin_entry.action_sequence_id]
             step.spans.append(span)
         children = []
@@ -223,3 +298,14 @@ class LocalBackend(BackendBase):
             spawning_parent_pointer=metadata.spawning_parent_pointer,
             children=children,
         )
+
+    class BackendSettings(BurrSettings):
+        path: str = DEFAULT_PATH
+
+    @classmethod
+    def settings_model(cls) -> Type[BurrSettings]:
+        return cls.BackendSettings
+
+    @classmethod
+    def from_settings(cls, settings_model: BurrSettings) -> Self:
+        return cls(**settings_model.dict())

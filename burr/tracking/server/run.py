@@ -1,19 +1,32 @@
 import importlib
+import logging
 import os
+from contextlib import asynccontextmanager
 from importlib.resources import files
 from typing import Sequence
 
-from burr.integrations.base import require_plugin
+# TODO -- remove this, just for testing
+from hamilton.log_setup import setup_logging
+from starlette import status
+
+from burr.tracking.server.backend import BackendBase, IndexingBackendMixin
+
+setup_logging(logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 try:
     import uvicorn
-    from fastapi import FastAPI, Request
+    from fastapi import FastAPI, HTTPException, Request
     from fastapi.staticfiles import StaticFiles
+    from fastapi_utils.tasks import repeat_every
     from starlette.templating import Jinja2Templates
 
-    from burr.tracking.server import backend as backend_module
     from burr.tracking.server import schema
-    from burr.tracking.server.schema import ApplicationLogs
+
+    # from burr.tracking.server import backend as backend_module
+    # from burr.tracking.server.s3 import backend as s3_backend
+    from burr.tracking.server.schema import ApplicationLogs, BackendSpec, IndexingJob
 
     # dynamic importing due to the dashes (which make reading the examples on github easier)
     email_assistant = importlib.import_module("burr.examples.email-assistant.server")
@@ -21,26 +34,87 @@ try:
     streaming_chatbot = importlib.import_module("burr.examples.streaming-fastapi.server")
 
 except ImportError as e:
-    require_plugin(
-        e,
-        [
-            "click",
-            "fastapi",
-            "uvicorn",
-            "pydantic",
-            "fastapi-pagination",
-            "aiofiles",
-            "requests",
-            "jinja2",
-        ],
-        "tracking",
-    )
-
-app = FastAPI()
+    raise e
+    # require_plugin(
+    #     e,
+    #     [
+    #         "click",
+    #         "fastapi",
+    #         "uvicorn",
+    #         "pydantic",
+    #         "fastapi-pagination",
+    #         "aiofiles",
+    #         "requests",
+    #         "jinja2",
+    #     ],
+    #     "tracking",
+    # )
 
 SERVE_STATIC = os.getenv("BURR_SERVE_STATIC", "true").lower() == "true"
 
-backend = backend_module.LocalBackend()
+# TODO -- get based on a config
+# backend = backend_module.LocalBackend()
+# backend = s3_backend.S3Backend(
+#     bucket="burr-prod-test",
+# )
+
+backend = BackendBase.create_from_env()
+
+
+# if it is an indexing backend we want to expose a few endpoints
+
+
+# TODO -- add a health check for intialization
+
+
+async def update():
+    if app_spec.indexing:
+        logger.info("Updating backend")
+        await backend.update()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # No yield from allowed
+    await backend.lifespan(app).__anext__()
+    await update()  # this will trigger the repeat every N seconds
+    yield
+    await backend.lifespan(app).__anext__()
+
+
+app = FastAPI(lifespan=lifespan)
+
+
+@app.get("/api/v0/metadata/app_spec", response_model=BackendSpec)
+def get_app_spec():
+    is_indexing_backend = isinstance(backend, IndexingBackendMixin)
+    return BackendSpec(indexing=is_indexing_backend)
+
+
+app_spec = get_app_spec()
+
+logger = logging.getLogger(__name__)
+
+# @repeat_every(
+#     seconds=update_interval if update_interval is not None else float("inf"),
+#     wait_first=True,
+#     logger=logger,
+# )
+
+
+if app_spec.indexing:
+    update_interval = backend.update_interval_milliseconds() / 1000 if app_spec.indexing else None
+    update = repeat_every(
+        seconds=backend.update_interval_milliseconds() / 1000,
+        wait_first=True,
+        logger=logger,
+    )(update)
+
+
+@app.on_event("startup")
+async def startup_event():
+    if app_spec.indexing:
+        await update()
 
 
 @app.get("/api/v0/projects", response_model=Sequence[schema.Project])
@@ -72,7 +146,7 @@ async def get_application_logs(request: Request, project_id: str, app_id: str) -
 
     :param request: FastAPI
     :param project_id: ID of the project
-    :param app_id: ID of the associated application
+    :param app_id: ID of the assIndociated application
     :return: A list of steps with all associated step data
     """
     return await backend.get_application_logs(request, project_id=project_id, app_id=app_id)
@@ -81,6 +155,18 @@ async def get_application_logs(request: Request, project_id: str, app_id: str) -
 @app.get("/api/v0/ready")
 async def ready() -> bool:
     return True
+
+
+@app.get("/api/v0/indexing_jobs", response_model=Sequence[IndexingJob])
+async def get_indexing_jobs(
+    offset: int = 0, limit: int = 100, filter_empty: bool = True
+) -> Sequence[IndexingJob]:
+    if not app_spec.indexing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="This backend does not support indexing jobs.",
+        )
+    return await backend.indexing_jobs(offset=offset, limit=limit, filter_empty=filter_empty)
 
 
 @app.get("/api/v0/version")
@@ -99,7 +185,6 @@ async def version() -> dict:
 app.include_router(chatbot.router, prefix="/api/v0/chatbot")
 app.include_router(email_assistant.router, prefix="/api/v0/email_assistant")
 app.include_router(streaming_chatbot.router, prefix="/api/v0/streaming_chatbot")
-
 
 if SERVE_STATIC:
     BASE_ASSET_DIRECTORY = str(files("burr").joinpath("tracking/server/build"))

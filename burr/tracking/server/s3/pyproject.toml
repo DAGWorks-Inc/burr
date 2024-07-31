@@ -1,0 +1,4 @@
+[tool.aerich]
+tortoise_orm = "burr.tracking.server.s3.settings.TORTOISE_ORM"
+location = "./burr/tracking/server/s3/migrations"
+src_folder = "./."

@@ -175,6 +175,10 @@ class BeginSpanModel(IdentifyingModel):
     span_dependencies: list[str]
     type: str = "begin_span"
 
+    @property
+    def sequence_id(self) -> int:
+        return self.action_sequence_id
+
 
 class EndSpanModel(IdentifyingModel):
     """Pydantic model that represents an entry for the end of a span"""
@@ -183,3 +187,7 @@ class EndSpanModel(IdentifyingModel):
     action_sequence_id: int
     span_id: str  # unique among the application
     type: str = "end_span"
+
+    @property
+    def sequence_id(self) -> int:
+        return self.action_sequence_id
