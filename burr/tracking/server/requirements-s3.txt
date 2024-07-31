@@ -1,0 +1,4 @@
+aerich
+aiobotocore
+fastapi-utils
+tortoise-orm[accel, asyncmy]

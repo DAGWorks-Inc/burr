@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import logging
 import os
 import shutil
 import subprocess
@@ -27,21 +28,46 @@ except ImportError as e:
     )
 
 
+class InterceptHandler(logging.Handler):
+    def emit(self, record):
+        # Get corresponding Loguru level if it exists
+        try:
+            level = logger.level(record.levelname).name
+        except ValueError:
+            level = record.levelno
+
+        # Find caller from where originated the log message
+        frame, depth = logging.currentframe(), 2
+        while frame.f_code.co_filename == logging.__file__:
+            frame = frame.f_back
+            depth += 1
+
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
+
+# Clear default handlers
+logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO)
+
+
 # TODO -- add this as a general callback to the CLI
 def _telemetry_if_enabled(event: str):
     if telemetry.is_telemetry_enabled():
         telemetry.create_and_send_cli_event(event)
 
 
-def _command(command: str, capture_output: bool) -> str:
+def _command(command: str, capture_output: bool, addl_env: dict = None) -> str:
     """Runs a simple command"""
+    if addl_env is None:
+        addl_env = {}
+    env = os.environ.copy()
+    env.update(addl_env)
     logger.info(f"Running command: {command}")
     if isinstance(command, str):
         command = command.split(" ")
         if capture_output:
             try:
                 return (
-                    subprocess.check_output(command, stderr=subprocess.PIPE, shell=False)
+                    subprocess.check_output(command, stderr=subprocess.PIPE, shell=False, env=env)
                     .decode()
                     .strip()
                 )
@@ -49,7 +75,7 @@ def _command(command: str, capture_output: bool) -> str:
                 print(e.stdout.decode())
                 print(e.stderr.decode())
                 raise e
-        subprocess.run(command, shell=False, check=True)
+        subprocess.run(command, shell=False, check=True, env=env)
 
 
 def _get_git_root() -> str:
@@ -102,6 +128,12 @@ def build_ui():
         _build_ui()
 
 
+BACKEND_MODULES = {
+    "local": "burr.tracking.server.backend.LocalBackend",
+    "s3": "burr.tracking.server.s3.backend.S3Backend",
+}
+
+
 def _run_server(
     port: int,
     dev_mode: bool,
@@ -109,6 +141,7 @@ def _run_server(
     no_copy_demo_data: bool,
     initial_page="",
     host: str = "127.0.0.1",
+    backend: str = "local",
 ):
     _telemetry_if_enabled("run_server")
     # TODO: Implement server running logic here
@@ -142,7 +175,10 @@ def _run_server(
             daemon=True,
         )
         thread.start()
-    _command(cmd, capture_output=False)
+    env = {
+        "BURR_BACKEND_IMPL": BACKEND_MODULES[backend],
+    }
+    _command(cmd, capture_output=False, addl_env=env)
 
 
 @cli.command()
@@ -156,8 +192,16 @@ def _run_server(
     help="Host to run the server on -- use 0.0.0.0 if you want "
     "to expose it to the network (E.G. in a docker image)",
 )
-def run_server(port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: bool, host: str):
-    _run_server(port, dev_mode, no_open, no_copy_demo_data, host=host)
+@click.option(
+    "--backend",
+    default="local",
+    help="Backend to use for the server.",
+    type=click.Choice(["local", "s3"]),
+)
+def run_server(
+    port: int, dev_mode: bool, no_open: bool, no_copy_demo_data: bool, host: str, backend: str
+):
+    _run_server(port, dev_mode, no_open, no_copy_demo_data, host=host, backend=backend)
 
 
 @cli.command()
@@ -186,7 +230,17 @@ def build_and_publish(prod: bool, no_wipe_dist: bool):
 
 
 @cli.command(help="generate demo data for the UI")
-def generate_demo_data():
+@click.option(
+    "--s3-bucket", help="S3 URI to save to, will use the s3 tracker, not local mode", required=False
+)
+@click.option(
+    "--data-dir",
+    help="Local directory to save to",
+    required=False,
+    default="burr/tracking/server/demo_data",
+)
+@click.option("--unique-app-names", help="Use unique app names", is_flag=True)
+def generate_demo_data(s3_bucket, data_dir, unique_app_names: bool):
     _telemetry_if_enabled("generate_demo_data")
     git_root = _get_git_root()
     # We need to add the examples directory to the path so we have all the imports
@@ -194,10 +248,14 @@ def generate_demo_data():
     sys.path.extend([git_root, f"{git_root}/examples/multi-modal-chatbot"])
     from burr.cli.demo_data import generate_all
 
-    with cd(git_root):
-        logger.info("Removing old demo data")
-        shutil.rmtree("burr/tracking/server/demo_data", ignore_errors=True)
-        generate_all("burr/tracking/server/demo_data")
+    # local mode
+    if s3_bucket is None:
+        with cd(git_root):
+            logger.info("Removing old demo data")
+            shutil.rmtree(data_dir, ignore_errors=True)
+            generate_all(data_dir=data_dir, unique_app_names=unique_app_names)
+    else:
+        generate_all(s3_bucket=s3_bucket, unique_app_names=unique_app_names)
 
 
 def _transform_state_to_test_case(state: dict, action_name: str, test_name: str) -> dict:
