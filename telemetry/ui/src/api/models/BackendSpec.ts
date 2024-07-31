@@ -2,11 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type Project = {
-  name: string;
-  id: string;
-  last_written: string;
-  created: string;
-  num_apps: number;
-  uri: string;
+/**
+ * Generic link for indexing job -- can be exposed in 'admin mode' in the UI
+ */
+export type BackendSpec = {
+  indexing: boolean;
 };

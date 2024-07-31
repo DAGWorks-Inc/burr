@@ -2,11 +2,6 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type Project = {
-  name: string;
-  id: string;
-  last_written: string;
-  created: string;
-  num_apps: number;
-  uri: string;
+export type PromptInput = {
+  prompt: string;
 };

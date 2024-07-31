@@ -4,11 +4,14 @@
 /* eslint-disable */
 import type { ApplicationLogs } from '../models/ApplicationLogs';
 import type { ApplicationSummary } from '../models/ApplicationSummary';
+import type { BackendSpec } from '../models/BackendSpec';
 import type { ChatItem } from '../models/ChatItem';
 import type { DraftInit } from '../models/DraftInit';
 import type { EmailAssistantState } from '../models/EmailAssistantState';
 import type { Feedback } from '../models/Feedback';
+import type { IndexingJob } from '../models/IndexingJob';
 import type { Project } from '../models/Project';
+import type { PromptInput } from '../models/PromptInput';
 import type { QuestionAnswers } from '../models/QuestionAnswers';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -94,6 +97,43 @@ export class DefaultService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/api/v0/ready'
+    });
+  }
+  /**
+   * Get App Spec
+   * @returns BackendSpec Successful Response
+   * @throws ApiError
+   */
+  public static getAppSpecApiV0MetadataAppSpecGet(): CancelablePromise<BackendSpec> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v0/metadata/app_spec'
+    });
+  }
+  /**
+   * Get Indexing Jobs
+   * @param offset
+   * @param limit
+   * @param filterEmpty
+   * @returns IndexingJob Successful Response
+   * @throws ApiError
+   */
+  public static getIndexingJobsApiV0IndexingJobsGet(
+    offset?: number,
+    limit: number = 100,
+    filterEmpty: boolean = true
+  ): CancelablePromise<Array<IndexingJob>> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v0/indexing_jobs',
+      query: {
+        offset: offset,
+        limit: limit,
+        filter_empty: filterEmpty
+      },
+      errors: {
+        422: `Validation Error`
+      }
     });
   }
   /**
@@ -373,14 +413,14 @@ export class DefaultService {
    * :return:
    * @param projectId
    * @param appId
-   * @param prompt
+   * @param requestBody
    * @returns any Successful Response
    * @throws ApiError
    */
   public static chatResponseApiV0StreamingChatbotResponseProjectIdAppIdPost(
     projectId: string,
     appId: string,
-    prompt: string
+    requestBody: PromptInput
   ): CancelablePromise<any> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -389,9 +429,8 @@ export class DefaultService {
         project_id: projectId,
         app_id: appId
       },
-      query: {
-        prompt: prompt
-      },
+      body: requestBody,
+      mediaType: 'application/json',
       errors: {
         422: `Validation Error`
       }
