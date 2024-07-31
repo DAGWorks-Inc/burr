@@ -142,7 +142,7 @@ def response(state: State) -> State:
     return state.append(chat_history=result["chat_item"])
 
 
-base_graph = (
+graph = (
     graph.GraphBuilder()
     .with_actions(
         prompt=process_prompt,
@@ -192,7 +192,7 @@ def base_application(
     tracker = LocalTrackingClient(project=project_id, storage_dir=storage_dir)
     return (
         ApplicationBuilder()
-        .with_graph(base_graph)
+        .with_graph(graph)
         # initializes from the tracking log if it does not already exist
         .initialize_from(
             tracker,

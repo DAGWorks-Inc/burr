@@ -1,11 +1,15 @@
 import asyncio
+import logging
 import uuid
 
 import application as chatbot_application
 import streamlit as st
+from hamilton.log_setup import setup_logging
 
 import burr.core
 from burr.core.action import AsyncStreamingResultContainer
+
+setup_logging(logging.INFO)
 
 
 def render_chat_message(chat_item: dict):
