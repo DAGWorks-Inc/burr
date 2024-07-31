@@ -525,6 +525,7 @@ class Application:
                     sequence_id=self.sequence_id,
                     app_id=self._uid,
                     partition_key=self._partition_key,
+                    _ProxyClassHook__tracer=self.dependency_factory["__tracer"],
                 )
             exc = None
             result = None
