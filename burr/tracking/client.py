@@ -428,7 +428,7 @@ class LocalTrackingClient(
         span_dependencies: list[str],
         **future_kwargs: Any,
     ):
-        being_span_model = BeginSpanModel(
+        begin_span_model = BeginSpanModel(
             start_time=datetime.datetime.now(),
             action_sequence_id=sequence_id,
             span_id=span.uid,
@@ -436,7 +436,7 @@ class LocalTrackingClient(
             span_dependencies=span_dependencies,
             span_name=span.name,
         )
-        self._append_write_line(being_span_model)
+        self._append_write_line(begin_span_model)
 
     def post_end_span(
         self,

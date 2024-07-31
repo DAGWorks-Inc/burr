@@ -459,7 +459,10 @@ class Application:
         self._parent_pointer = fork_parent_pointer
         self.dependency_factory = {
             "__tracer": functools.partial(
-                visibility.tracing.TracerFactory, lifecycle_adapters=self._adapter_set
+                visibility.tracing.TracerFactory,
+                lifecycle_adapters=self._adapter_set,
+                app_id=self._uid,
+                partition_key=self._partition_key,
             ),
             "__context": self._context_factory,
         }
