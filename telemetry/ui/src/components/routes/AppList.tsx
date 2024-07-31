@@ -29,6 +29,10 @@ const StepCountHeader = (props: {
   );
 };
 
+const isNullPartitionKey = (partitionKey: string | null) => {
+  return partitionKey === null || partitionKey === '__none__';
+};
+
 const getForkID = (app: ApplicationSummary) => {
   if (app.parent_pointer) {
     return app.parent_pointer.app_id;
@@ -77,7 +81,9 @@ const AppSubList = (props: {
         }}
       >
         {props.displayPartitionKey && (
-          <TableCell className="text-gray-600 font-sans">{app.partition_key}</TableCell>
+          <TableCell className="text-gray-600 font-sans">
+            {isNullPartitionKey(app.partition_key) ? '' : app.partition_key}
+          </TableCell>
         )}
         <TableCell className="font-semibold text-gray-700">
           <div className="flex flex-row gap-1 items-center md:min-w-[21rem] md:max-w-none max-w-24">
@@ -174,7 +180,9 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
 
   // Display the parents no matter what
   const rootAppsToDisplay = appsToDisplay.filter((app) => app.spawning_parent_pointer === null);
-  const anyHavePartitionKey = rootAppsToDisplay.some((app) => app.partition_key !== null);
+  const anyHavePartitionKey = rootAppsToDisplay.some(
+    (app) => !isNullPartitionKey(app.partition_key)
+  );
 
   return (
     <Table dense={1}>

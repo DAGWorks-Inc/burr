@@ -16,6 +16,8 @@ import { BreadCrumb } from './breadcrumb';
 import { Link } from 'react-router-dom';
 import { classNames } from '../../utils/tailwind';
 import React from 'react';
+import { DefaultService } from '../../api';
+import { useQuery } from 'react-query';
 
 // Define your GitHub logo SVG as a React component
 const GithubLogo = () => (
@@ -64,6 +66,11 @@ const ToggleOpenButton = (props: { open: boolean; toggleSidebar: () => void }) =
 export const AppContainer = (props: { children: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [smallSidebarOpen, setSmallSidebarOpen] = useState(false);
+  const { data: backendSpec } = useQuery(['backendSpec'], () =>
+    DefaultService.getAppSpecApiV0MetadataAppSpecGet().then((response) => {
+      return response;
+    })
+  );
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
@@ -128,6 +135,15 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
       linkType: 'external'
     }
   ];
+
+  if (backendSpec?.indexing) {
+    navigation.push({
+      name: 'Admin',
+      href: '/admin',
+      icon: ListBulletIcon,
+      linkType: 'internal'
+    });
+  }
 
   const isCurrent = (href: string, linkType: string) => {
     if (linkType === 'external') {
