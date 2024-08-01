@@ -1,11 +1,12 @@
-# 🧊 Burr
+# <img src="https://github.com/user-attachments/assets/2ab9b499-7ca2-4ae9-af72-ccc775f30b4e" width=25 height=25/> Burr
 <div>
 <a href="https://discord.gg/6Zy2DwP4f3" target="_blank"><img src="https://img.shields.io/badge/Join-Burr_Discord-brightgreen?logo=discord" alt="Burr Discord"/></a>
 </div>
 
 Burr makes it easy to develop applications that make decisions (chatbots, agents, simulations, etc...) from simple python building blocks.
 
-Burr works well for any application that uses LLMs, and can integrate with any of your favorite frameworks. Burr includes a UI that can track/monitor/trace your system in real time.
+Burr works well for any application that uses LLMs, and can integrate with any of your favorite frameworks. Burr includes a UI that can track/monitor/trace your system in real time, along with
+pluggable persisters (e.g. for memory) to save & load application state.
 
 Link to [documentation](https://burr.dagworks.io/). Quick (<3min) video intro [here](https://www.loom.com/share/a10f163428b942fea55db1a84b1140d8?sid=1512863b-f533-4a42-a2f3-95b13deb07c9).
 Longer [video intro & walkthrough](https://www.youtube.com/watch?v=rEZ4oDN0GdU). Blog post [here](https://blog.dagworks.io/p/burr-develop-stateful-ai-applications).
@@ -141,6 +142,7 @@ While Burr is stable and well-tested, we have quite a few tools/features on our 
    4. Capturing & surfacing extra metadata, e.g. annotations for particular point in time, that you can then pull out for fine-tuning, etc.
 4. Tooling for hosted execution of state machines, integrating with your infrastructure (Ray, modal, FastAPI + EC2, etc...)
 5. Storage integrations. More integrations with technologies like Redis, MongoDB, MySQL, etc. so you can run Burr on top of what you have available.
+6. More out of the box plugins for fine-grained tracing, e.g. decorators for your functions, LLM clients, etc.
 
 If you want to avoid self-hosting the above solutions we're building Burr Cloud. To let us know you're interested
  sign up [here](https://forms.gle/w9u2QKcPrztApRedA) for the waitlist to get access.
