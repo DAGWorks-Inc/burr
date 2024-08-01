@@ -64,8 +64,35 @@ class IndexingBackendMixin(abc.ABC):
         pass
 
 
+class SnapshottingBackendMixin(abc.ABC):
+    """Mixin for backend that conducts snapshotting -- e.g. saves
+    the data to a file or database."""
+
+    @abc.abstractmethod
+    async def load_snapshot(self):
+        """Loads the snapshot if it exists.
+
+        :return:
+        """
+        pass
+
+    @abc.abstractmethod
+    async def snapshot(self):
+        """Snapshots the data"""
+        pass
+
+    @abc.abstractmethod
+    def snapshot_interval_milliseconds(self) -> Optional[int]:
+        """Returns the snapshot interval in milliseconds"""
+        pass
+
+
 class BackendBase(abc.ABC):
     async def lifespan(self, app: FastAPI):
+        """Quick tool to allow plugin to the app's lifecycle.
+        This is fine given that it's an internal API, but if we open it up more
+        we should make this less flexible. For now this allows us to do clever
+        initializations in the right order."""
         yield
 
     @abc.abstractmethod

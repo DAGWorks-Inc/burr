@@ -72,7 +72,7 @@ class Step(pydantic.BaseModel):
     @staticmethod
     def from_logs(log_lines: List[bytes]) -> List["Step"]:
         steps_by_sequence_id = collections.defaultdict(PartialStep)
-        spans_by_id = collections.defaultdict(Span)
+        spans_by_id = collections.defaultdict(PartialSpan)
         for line in log_lines:
             json_line = safe_json_load(line)
             # TODO -- make these into constants
@@ -84,7 +84,7 @@ class Step(pydantic.BaseModel):
                 steps_by_sequence_id[step_end_log.sequence_id].step_end_log = step_end_log
             elif json_line["type"] == "begin_span":
                 span = BeginSpanModel.parse_obj(json_line)
-                spans_by_id[span.span_id] = Span(
+                spans_by_id[span.span_id] = PartialSpan(
                     begin_entry=span,
                     end_entry=None,
                 )
@@ -102,7 +102,12 @@ class Step(pydantic.BaseModel):
                 steps_by_sequence_id[sequence_id] if sequence_id in steps_by_sequence_id else None
             )
             if step is not None:
-                step.spans.append(span)
+                if span.begin_entry is not None:
+                    full_span = Span(
+                        begin_entry=span.begin_entry,
+                        end_entry=span.end_entry,
+                    )
+                    step.spans.append(full_span)
         # filter out all the non-null start steps
         return [
             Step(
@@ -145,3 +150,4 @@ class BackendSpec(pydantic.BaseModel):
     """Generic link for indexing job -- can be exposed in 'admin mode' in the UI"""
 
     indexing: bool
+    snapshotting: bool
