@@ -9,7 +9,7 @@ from typing import Sequence
 from hamilton.log_setup import setup_logging
 from starlette import status
 
-from burr.tracking.server.backend import BackendBase, IndexingBackendMixin
+from burr.tracking.server.backend import BackendBase, IndexingBackendMixin, SnapshottingBackendMixin
 
 setup_logging(logging.INFO)
 
@@ -52,11 +52,6 @@ except ImportError as e:
 
 SERVE_STATIC = os.getenv("BURR_SERVE_STATIC", "true").lower() == "true"
 
-# TODO -- get based on a config
-# backend = backend_module.LocalBackend()
-# backend = s3_backend.S3Backend(
-#     bucket="burr-prod-test",
-# )
 
 backend = BackendBase.create_from_env()
 
@@ -67,17 +62,46 @@ backend = BackendBase.create_from_env()
 # TODO -- add a health check for intialization
 
 
-async def update():
+async def sync_index():
     if app_spec.indexing:
-        logger.info("Updating backend")
+        logger.info("Updating backend index...")
         await backend.update()
+        logger.info("Updated backend index...")
+
+
+async def download_snapshot():
+    if app_spec.snapshotting:
+        logger.info("Downloading snapshot of DB for backend to use")
+        await backend.load_snapshot()
+        logger.info("Downloaded snapshot of DB for backend to use")
+
+
+first_snapshot = True
+
+
+async def save_snapshot():
+    # is_first is due to the weirdness of the repeat_every decorator
+    # It has to be called but we don't want this to run every time
+    # So we just skip the first
+    global first_snapshot
+    if first_snapshot:
+        first_snapshot = False
+        return
+    if app_spec.snapshotting:
+        logger.info("Saving snapshot of DB for recovery")
+        await backend.snapshot()
+        logger.info("Saved snapshot of DB for recovery")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Download if it does it
+    # For now we do this before the lifespan
+    await download_snapshot()
     # No yield from allowed
     await backend.lifespan(app).__anext__()
-    await update()  # this will trigger the repeat every N seconds
+    await sync_index()  # this will trigger the repeat every N seconds
+    await save_snapshot()  # this will trigger the repeat every N seconds
     yield
     await backend.lifespan(app).__anext__()
 
@@ -88,7 +112,8 @@ app = FastAPI(lifespan=lifespan)
 @app.get("/api/v0/metadata/app_spec", response_model=BackendSpec)
 def get_app_spec():
     is_indexing_backend = isinstance(backend, IndexingBackendMixin)
-    return BackendSpec(indexing=is_indexing_backend)
+    is_snapshotting_backend = isinstance(backend, SnapshottingBackendMixin)
+    return BackendSpec(indexing=is_indexing_backend, snapshotting=is_snapshotting_backend)
 
 
 app_spec = get_app_spec()
@@ -104,17 +129,21 @@ logger = logging.getLogger(__name__)
 
 if app_spec.indexing:
     update_interval = backend.update_interval_milliseconds() / 1000 if app_spec.indexing else None
-    update = repeat_every(
+    sync_index = repeat_every(
         seconds=backend.update_interval_milliseconds() / 1000,
         wait_first=True,
         logger=logger,
-    )(update)
+    )(sync_index)
 
-
-@app.on_event("startup")
-async def startup_event():
-    if app_spec.indexing:
-        await update()
+if app_spec.snapshotting:
+    snapshot_interval = (
+        backend.snapshot_interval_milliseconds() / 1000 if app_spec.snapshotting else None
+    )
+    save_snapshot = repeat_every(
+        seconds=backend.snapshot_interval_milliseconds() / 1000,
+        wait_first=True,
+        logger=logger,
+    )(save_snapshot)
 
 
 @app.get("/api/v0/projects", response_model=Sequence[schema.Project])

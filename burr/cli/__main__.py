@@ -130,7 +130,7 @@ def build_ui():
 
 BACKEND_MODULES = {
     "local": "burr.tracking.server.backend.LocalBackend",
-    "s3": "burr.tracking.server.s3.backend.S3Backend",
+    "s3": "burr.tracking.server.s3.backend.SQLiteS3Backend",
 }
 
 

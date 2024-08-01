@@ -5,6 +5,7 @@ import itertools
 import json
 import logging
 import operator
+import os.path
 import uuid
 from collections import Counter
 from typing import List, Literal, Optional, Sequence, Tuple, Type, TypeVar, Union
@@ -20,7 +21,12 @@ from tortoise.expressions import Q
 
 from burr.tracking.common.models import ApplicationModel
 from burr.tracking.server import schema
-from burr.tracking.server.backend import BackendBase, BurrSettings, IndexingBackendMixin
+from burr.tracking.server.backend import (
+    BackendBase,
+    BurrSettings,
+    IndexingBackendMixin,
+    SnapshottingBackendMixin,
+)
 from burr.tracking.server.s3 import settings, utils
 from burr.tracking.server.s3.models import (
     Application,
@@ -113,19 +119,95 @@ class S3Settings(BurrSettings):
     s3_bucket: str
     update_interval_milliseconds: int = 60_000
     aws_max_concurrency: int = 100
+    snapshot_interval_milliseconds: int = 3_600_000
+    load_snapshot_on_start: bool = True
+    prior_snapshots_to_keep: int = 5
 
 
-class S3Backend(BackendBase, IndexingBackendMixin):
-    @classmethod
-    def settings_model(cls) -> Type[BaseSettings]:
-        return S3Settings
+def timestamp_to_reverse_alphabetical(timestamp: datetime) -> str:
+    # Get the inverse of the timestamp
+    epoch = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+    total_seconds = int((timestamp - epoch).total_seconds())
 
-    def __init__(self, s3_bucket: str, update_interval_milliseconds: int, aws_max_concurrency: int):
-        self._backend_id = datetime.datetime.utcnow().isoformat() + str(uuid.uuid4())
+    # Invert the seconds (latest timestamps become smallest values)
+    inverted_seconds = 2**32 - total_seconds
+
+    # Convert the inverted seconds to a zero-padded string
+    inverted_str = str(inverted_seconds).zfill(10)
+
+    return inverted_str + "-" + timestamp.isoformat()
+
+
+class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixin):
+    def __init__(
+        self,
+        s3_bucket: str,
+        update_interval_milliseconds: int,
+        aws_max_concurrency: int,
+        snapshot_interval_milliseconds: int,
+        load_snapshot_on_start: bool,
+        prior_snapshots_to_keep: int,
+    ):
+        self._backend_id = datetime.datetime.now(datetime.UTC).isoformat() + str(uuid.uuid4())
         self._bucket = s3_bucket
         self._session = session.get_session()
         self._update_interval_milliseconds = update_interval_milliseconds
         self._aws_max_concurrency = aws_max_concurrency
+        self._snapshot_interval_milliseconds = snapshot_interval_milliseconds
+        self._data_prefix = "data"
+        self._snapshot_prefix = "snapshots"
+        self._load_snapshot_on_start = load_snapshot_on_start
+        self._snapshot_key_history = []
+        self._prior_snapshots_to_keep = prior_snapshots_to_keep
+
+    async def load_snapshot(self):
+        if not self._load_snapshot_on_start:
+            return
+        path = settings.DB_PATH
+        # if it already exists then return
+        if os.path.exists(path):
+            return
+        async with self._session.create_client("s3") as client:
+            objects = await client.list_objects_v2(
+                Bucket=self._bucket, Prefix=self._snapshot_prefix, MaxKeys=1
+            )
+            # nothing there
+            # TODO --
+            if len(objects["Contents"]) == 0:
+                return
+            # get the latest snapshot -- it's organized by alphabetical order
+            latest_snapshot = objects["Contents"][0]
+            # download the snapshot
+            response = await client.get_object(Bucket=self._bucket, Key=latest_snapshot["Key"])
+            async with response["Body"] as stream:
+                with open(path, "wb") as file:
+                    file.write(await stream.read())
+
+    def snapshot_interval_milliseconds(self) -> Optional[int]:
+        return self._snapshot_interval_milliseconds
+
+    @classmethod
+    def settings_model(cls) -> Type[BaseSettings]:
+        return S3Settings
+
+    async def snapshot(self):
+        path = settings.DB_PATH
+        timestamp = timestamp_to_reverse_alphabetical(datetime.datetime.now(datetime.UTC))
+        # latest
+        s3_key = f"{self._snapshot_prefix}/{timestamp}/{self._backend_id}/snapshot.db"
+        # TODO -- copy the path at snapshot_path to s3 using aiobotocore
+        session = self._session
+        logger.info(f"Saving db snapshot at: {s3_key}")
+        async with session.create_client("s3") as s3_client:
+            with open(path, "rb") as file_data:
+                await s3_client.put_object(Bucket=self._bucket, Key=s3_key, Body=file_data)
+
+        self._snapshot_key_history.append(s3_key)
+        if len(self._snapshot_key_history) > 5:
+            old_snapshot_to_remove = self._snapshot_key_history.pop(0)
+            logger.info(f"Removing old snapshot: {old_snapshot_to_remove}")
+            async with session.create_client("s3") as s3_client:
+                await s3_client.delete_object(Bucket=self._bucket, Key=old_snapshot_to_remove)
 
     def update_interval_milliseconds(self) -> Optional[int]:
         return self._update_interval_milliseconds
@@ -134,7 +216,10 @@ class S3Backend(BackendBase, IndexingBackendMixin):
         async with self._session.create_client("s3") as client:
             paginator = client.get_paginator("list_objects_v2")
             async for result in paginator.paginate(
-                Bucket=self._bucket, Prefix=f"data/{project_id}/", Delimiter="/", MaxKeys=1
+                Bucket=self._bucket,
+                Prefix=f"{self._data_prefix}/{project_id}/",
+                Delimiter="/",
+                MaxKeys=1,
             ):
                 if "Contents" in result:
                     first_object = result["Contents"][0]
@@ -150,7 +235,7 @@ class S3Backend(BackendBase, IndexingBackendMixin):
         async with self._session.create_client("s3") as client:
             paginator = client.get_paginator("list_objects_v2")
             async for result in paginator.paginate(
-                Bucket=self._bucket, Prefix="data/", Delimiter="/"
+                Bucket=self._bucket, Prefix=f"{self._data_prefix}/", Delimiter="/"
             ):
                 for prefix in result.get("CommonPrefixes", []):
                     project_name = prefix.get("Prefix").split("/")[-2]
@@ -247,7 +332,7 @@ class S3Backend(BackendBase, IndexingBackendMixin):
             paginator = client.get_paginator("list_objects_v2")
             async for result in paginator.paginate(
                 Bucket=self._bucket,
-                Prefix=f"data/{project.name}/",
+                Prefix=f"{self._data_prefix}/{project.name}/",
                 StartAfter=high_watermark_s3_path,
             ):
                 for content in result.get("Contents", []):
@@ -557,3 +642,14 @@ class S3Backend(BackendBase, IndexingBackendMixin):
                 )
             )
         return out
+
+
+if __name__ == "__main__":
+    os.environ["BURR_LOAD_SNAPSHOT_ON_START"] = "True"
+    import asyncio
+
+    be = SQLiteS3Backend.from_settings(S3Settings())
+    # coro = be.snapshot()  # save to s3
+    # asyncio.run(coro)
+    coro = be.load_snapshot()  # load from s3
+    asyncio.run(coro)
