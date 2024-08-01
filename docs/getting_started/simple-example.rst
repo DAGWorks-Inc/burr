@@ -51,6 +51,7 @@ We define two actions:
 
 .. code-block:: python
 
+    # Note: you can replace this with your favorite LLM Client
     client = openai.Client()
 
     @action(reads=[], writes=["prompt", "chat_history"])
@@ -145,11 +146,11 @@ If you want to copy/paste, you can open up the following code block and add to a
 
         import uuid
 
-        import openai
+        import openai  # replace with your LLM library
 
         from burr.core import action, State, ApplicationBuilder
 
-        client = openai.Client()
+        client = openai.Client()  # replace this if not using OpenAI
 
         @action(reads=[], writes=["prompt", "chat_history"])
         def human_input(state: State, prompt: str) -> State:

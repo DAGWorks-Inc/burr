@@ -1,6 +1,6 @@
 from typing import Tuple
 
-import openai
+import openai  # replace this with your favorite LLM client library
 
 from burr.core import ApplicationBuilder, State, action, when
 
@@ -23,7 +23,7 @@ def human_input(state: State, prompt: str) -> Tuple[dict, State]:
 def ai_response(state: State) -> Tuple[dict, State]:
     """Queries OpenAI with the chat. You could easily use langchain, etc... to handle this,
     but we wanted to keep it simple to demonstrate"""
-    client = openai.Client()
+    client = openai.Client()  # replace this with your favorite LLM client library
     content = (
         client.chat.completions.create(
             model="gpt-3.5-turbo",
