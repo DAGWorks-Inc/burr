@@ -3,7 +3,6 @@ import { DefaultService, Project } from '../../api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../common/table';
 import { Loading } from '../common/loading';
 import { DateDisplay } from '../common/dates';
-import { Button } from '../common/button';
 import { Chip } from '../common/chip';
 import { LinkText } from '../common/href';
 import { useNavigate } from 'react-router-dom';
