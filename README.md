@@ -162,6 +162,7 @@ Users who have contributed core functionality, integrations, or examples.
 - [Nandani Thakur](https://github.com/NandaniThakur)
 - [Thierry Jean](https://github.com/zilto)
 - [Hamza Farhan](https://github.com/HamzaFarhan)
+- [Abdul Rafay](https://github.com/proftorch)
 
 ### Bug hunters/special mentions
 Users who have contributed small docs fixes, design suggestions, and found bugs
