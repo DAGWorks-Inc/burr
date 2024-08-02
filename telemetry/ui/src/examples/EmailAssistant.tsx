@@ -385,7 +385,7 @@ export const EmailAssistantAppSelector = (props: {
   const { projectId, setApp } = props;
   const { data, refetch } = useQuery(
     ['apps', projectId],
-    () => DefaultService.getAppsApiV0ProjectIdAppsGet(projectId as string),
+    () => DefaultService.getAppsApiV0ProjectIdPartitionKeyAppsGet(projectId as string, '__none__'),
     { enabled: projectId !== undefined }
   );
   const createAndUpdateMutation = useMutation(

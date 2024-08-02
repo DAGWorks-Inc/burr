@@ -106,20 +106,21 @@ class BackendBase(abc.ABC):
 
     @abc.abstractmethod
     async def list_apps(
-        self, request: fastapi.Request, project_id: str
+        self, request: fastapi.Request, project_id: str, partition_key: Optional[str]
     ) -> Sequence[schema.ApplicationSummary]:
         """Lists out all apps (continual state machine runs with shared state) for a given project.
 
         :param request: The request object, used for authentication/authorization if needed
-        :param project_id:
-        :return:
+        :param project_id: filter by project id
+        :param partition_key: filter by partition key
+        :return: A list of apps
         """
         pass
 
     @abc.abstractmethod
     async def get_application_logs(
-        self, request: fastapi.Request, project_id: str, app_id: str
-    ) -> Sequence[schema.Step]:
+        self, request: fastapi.Request, project_id: str, app_id: str, partition_key: Optional[str]
+    ) -> ApplicationLogs:
         """Lists out all steps for a given app.
 
         :param request: The request object, used for authentication/authorization if needed
@@ -228,7 +229,7 @@ class LocalBackend(BackendBase):
         return models.ApplicationMetadataModel()
 
     async def list_apps(
-        self, request: fastapi.Request, project_id: str
+        self, request: fastapi.Request, project_id: str, partition_key: Optional[str]
     ) -> Sequence[ApplicationSummary]:
         project_filepath = os.path.join(self.path, project_id)
         if not os.path.exists(project_filepath):
@@ -244,6 +245,13 @@ class LocalBackend(BackendBase):
             log_path = os.path.join(full_path, "log.jsonl")
             if os.path.isdir(full_path):
                 metadata = await self._load_metadata(metadata_path)
+                app_partition_key = metadata.partition_key
+                # quick, hacky way to do it -- we should really have this be part of the path
+                # But we load it up anyway. TODO -- add partition key to the path
+                # If this is slow you'll want to use the s3-based storage system
+                # Which has an actual index
+                if partition_key is not None and partition_key != app_partition_key:
+                    continue
                 out.append(
                     schema.ApplicationSummary(
                         app_id=entry,
@@ -259,8 +267,10 @@ class LocalBackend(BackendBase):
         return out
 
     async def get_application_logs(
-        self, request: fastapi.Request, project_id: str, app_id: str
+        self, request: fastapi.Request, project_id: str, app_id: str, partition_key: Optional[str]
     ) -> ApplicationLogs:
+        # TODO -- handle partition key here
+        # This currently assumes uniqueness
         app_filepath = os.path.join(self.path, project_id, app_id)
         if not os.path.exists(app_filepath):
             raise fastapi.HTTPException(

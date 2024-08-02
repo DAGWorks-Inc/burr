@@ -35,7 +35,8 @@ const App = () => {
             <Route path="/" element={<Navigate to="/projects" />} />
             <Route path="/projects" element={<ProjectList />} />
             <Route path="/project/:projectId" element={<AppList />} />
-            <Route path="/project/:projectId/:appId" element={<AppViewContainer />} />
+            <Route path="/project/:projectId/:partitionKey" element={<AppList />} />
+            <Route path="/project/:projectId/:partitionKey/:appId" element={<AppViewContainer />} />
             <Route path="/demos/counter" element={<Counter />} />
             <Route path="/demos/chatbot" element={<ChatbotWithTelemetry />} />
             <Route path="/demos/streaming-chatbot" element={<StreamingChatbotWithTelemetry />} />

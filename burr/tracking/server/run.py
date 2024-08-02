@@ -52,6 +52,8 @@ except ImportError as e:
 
 SERVE_STATIC = os.getenv("BURR_SERVE_STATIC", "true").lower() == "true"
 
+SENTINEL_PARTITION_KEY = "__none__"
+
 
 backend = BackendBase.create_from_env()
 
@@ -156,19 +158,27 @@ async def get_projects(request: Request) -> Sequence[schema.Project]:
     return await backend.list_projects(request)
 
 
-@app.get("/api/v0/{project_id}/apps", response_model=Sequence[schema.ApplicationSummary])
-async def get_apps(request: Request, project_id: str) -> Sequence[schema.ApplicationSummary]:
+@app.get(
+    "/api/v0/{project_id}/{partition_key}/apps", response_model=Sequence[schema.ApplicationSummary]
+)
+async def get_apps(
+    request: Request, project_id: str, partition_key: str
+) -> Sequence[schema.ApplicationSummary]:
     """Gets all apps visible by the user
 
     :param request: FastAPI request
     :param project_id: project name
     :return: a list of projects visible by the user
     """
-    return await backend.list_apps(request, project_id)
+    if partition_key == SENTINEL_PARTITION_KEY:
+        partition_key = None
+    return await backend.list_apps(request, project_id, partition_key=partition_key)
 
 
-@app.get("/api/v0/{project_id}/{app_id}/apps")
-async def get_application_logs(request: Request, project_id: str, app_id: str) -> ApplicationLogs:
+@app.get("/api/v0/{project_id}/{app_id}/{partition_key}/apps")
+async def get_application_logs(
+    request: Request, project_id: str, app_id: str, partition_key: str
+) -> ApplicationLogs:
     """Lists steps for a given App.
     TODO: add streaming capabilities for bi-directional communication
     TODO: add pagination for quicker loading
@@ -178,7 +188,11 @@ async def get_application_logs(request: Request, project_id: str, app_id: str) -
     :param app_id: ID of the assIndociated application
     :return: A list of steps with all associated step data
     """
-    return await backend.get_application_logs(request, project_id=project_id, app_id=app_id)
+    if partition_key == SENTINEL_PARTITION_KEY:
+        partition_key = None
+    return await backend.get_application_logs(
+        request, project_id=project_id, app_id=app_id, partition_key=partition_key
+    )
 
 
 @app.get("/api/v0/ready")

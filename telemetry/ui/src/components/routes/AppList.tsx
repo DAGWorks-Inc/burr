@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { DateTimeDisplay } from '../common/dates';
 import { useState } from 'react';
 import { FunnelIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MdForkRight } from 'react-icons/md';
 import { RiCornerDownRightLine } from 'react-icons/ri';
 
@@ -77,12 +77,25 @@ const AppSubList = (props: {
         key={props.app.app_id}
         className={`cursor-pointer ${isHighlighted ? 'bg-gray-50' : ''}`}
         onClick={() => {
-          props.navigate(`/project/${props.projectId}/${app.app_id}`);
+          props.navigate(`/project/${props.projectId}/${app.partition_key}/${app.app_id}`);
         }}
       >
         {props.displayPartitionKey && (
           <TableCell className="text-gray-600 font-sans">
-            {isNullPartitionKey(app.partition_key) ? '' : app.partition_key}
+            {isNullPartitionKey(app.partition_key) ? (
+              <></>
+            ) : (
+              <Link
+                to={`/project/${props.projectId}/${app.partition_key}`}
+                className="hover:underline"
+                onClick={(e) => {
+                  props.navigate(`/project/${props.projectId}/${app.partition_key}`);
+                  e.stopPropagation();
+                }}
+              >
+                {app.partition_key}
+              </Link>
+            )}
           </TableCell>
         )}
         <TableCell className="font-semibold text-gray-700">
@@ -223,10 +236,14 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
  * List of applications. This fetches data from the BE and passes it to the table
  */
 export const AppList = () => {
-  const { projectId } = useParams();
+  const { projectId, partitionKey } = useParams();
   const { data, error } = useQuery(
-    ['apps', projectId],
-    () => DefaultService.getAppsApiV0ProjectIdAppsGet(projectId as string),
+    ['apps', projectId, partitionKey],
+    () =>
+      DefaultService.getAppsApiV0ProjectIdPartitionKeyAppsGet(
+        projectId as string,
+        partitionKey ? partitionKey : '__none__'
+      ),
     { enabled: projectId !== undefined }
   );
   if (projectId === undefined) {

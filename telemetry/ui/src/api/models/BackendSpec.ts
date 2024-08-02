@@ -7,4 +7,5 @@
  */
 export type BackendSpec = {
   indexing: boolean;
+  snapshotting: boolean;
 };
