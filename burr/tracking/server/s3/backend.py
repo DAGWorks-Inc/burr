@@ -167,12 +167,12 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
         # if it already exists then return
         if os.path.exists(path):
             return
+        if not os.path.exists(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path))
         async with self._session.create_client("s3") as client:
             objects = await client.list_objects_v2(
                 Bucket=self._bucket, Prefix=self._snapshot_prefix, MaxKeys=1
             )
-            # nothing there
-            # TODO --
             if len(objects["Contents"]) == 0:
                 return
             # get the latest snapshot -- it's organized by alphabetical order

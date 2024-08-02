@@ -5,10 +5,10 @@ from contextlib import asynccontextmanager
 from importlib.resources import files
 from typing import Sequence
 
-# TODO -- remove this, just for testing
-from hamilton.log_setup import setup_logging
 from starlette import status
 
+# TODO -- remove this, just for testing
+from burr.log_setup import setup_logging
 from burr.tracking.server.backend import BackendBase, IndexingBackendMixin, SnapshottingBackendMixin
 
 setup_logging(logging.INFO)
