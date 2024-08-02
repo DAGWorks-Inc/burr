@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "burr"
-version = "0.25.0"
+version = "0.26.0rc4"
 dependencies = [] # yes, there are none
 requires-python = ">=3.9"
 authors = [
@@ -83,6 +83,16 @@ tracking-client = [
 tracking-client-s3 = [
   "burr[tracking-client]",
   "aiobotocore"
+]
+
+tracking-server-s3 = [
+  "aerich",
+  "aiobotocore",
+  "fastapi-utils",
+  "fastapi",
+  "tortoise-orm[accel, asyncmy]",
+  "burr[tracking-server]",
+  "typing-inspect"
 ]
 
 tracking-server = [
