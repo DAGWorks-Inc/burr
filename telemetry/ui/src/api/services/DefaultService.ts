@@ -18,6 +18,17 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class DefaultService {
   /**
+   * Get App Spec
+   * @returns BackendSpec Successful Response
+   * @throws ApiError
+   */
+  public static getAppSpecApiV0MetadataAppSpecGet(): CancelablePromise<BackendSpec> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v0/metadata/app_spec'
+    });
+  }
+  /**
    * Get Projects
    * Gets all projects visible by the user.
    *
@@ -40,17 +51,20 @@ export class DefaultService {
    * :param project_id: project name
    * :return: a list of projects visible by the user
    * @param projectId
+   * @param partitionKey
    * @returns ApplicationSummary Successful Response
    * @throws ApiError
    */
-  public static getAppsApiV0ProjectIdAppsGet(
-    projectId: string
+  public static getAppsApiV0ProjectIdPartitionKeyAppsGet(
+    projectId: string,
+    partitionKey: string
   ): CancelablePromise<Array<ApplicationSummary>> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/api/v0/{project_id}/apps',
+      url: '/api/v0/{project_id}/{partition_key}/apps',
       path: {
-        project_id: projectId
+        project_id: projectId,
+        partition_key: partitionKey
       },
       errors: {
         422: `Validation Error`
@@ -65,23 +79,26 @@ export class DefaultService {
    *
    * :param request: FastAPI
    * :param project_id: ID of the project
-   * :param app_id: ID of the associated application
+   * :param app_id: ID of the assIndociated application
    * :return: A list of steps with all associated step data
    * @param projectId
    * @param appId
+   * @param partitionKey
    * @returns ApplicationLogs Successful Response
    * @throws ApiError
    */
-  public static getApplicationLogsApiV0ProjectIdAppIdAppsGet(
+  public static getApplicationLogsApiV0ProjectIdAppIdPartitionKeyAppsGet(
     projectId: string,
-    appId: string
+    appId: string,
+    partitionKey: string
   ): CancelablePromise<ApplicationLogs> {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/api/v0/{project_id}/{app_id}/apps',
+      url: '/api/v0/{project_id}/{app_id}/{partition_key}/apps',
       path: {
         project_id: projectId,
-        app_id: appId
+        app_id: appId,
+        partition_key: partitionKey
       },
       errors: {
         422: `Validation Error`
@@ -97,17 +114,6 @@ export class DefaultService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/api/v0/ready'
-    });
-  }
-  /**
-   * Get App Spec
-   * @returns BackendSpec Successful Response
-   * @throws ApiError
-   */
-  public static getAppSpecApiV0MetadataAppSpecGet(): CancelablePromise<BackendSpec> {
-    return __request(OpenAPI, {
-      method: 'GET',
-      url: '/api/v0/metadata/app_spec'
     });
   }
   /**

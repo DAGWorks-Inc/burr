@@ -90,6 +90,7 @@ const NUM_PREVIOUS_ACTIONS = 6;
 export const AppView = (props: {
   projectId: string;
   appId: string;
+  partitionKey?: string;
   orientation: 'stacked_vertical' | 'stacked_horizontal';
   defaultAutoRefresh?: boolean;
 }) => {
@@ -102,9 +103,10 @@ export const AppView = (props: {
   const { data, error } = useQuery(
     ['steps', appId],
     () =>
-      DefaultService.getApplicationLogsApiV0ProjectIdAppIdAppsGet(
+      DefaultService.getApplicationLogsApiV0ProjectIdAppIdPartitionKeyAppsGet(
         projectId as string,
-        appId as string
+        appId as string,
+        props.partitionKey !== undefined ? props.partitionKey : '__none__'
       ),
     {
       refetchInterval: autoRefresh ? REFRESH_INTERVAL : false,
@@ -250,9 +252,16 @@ export const AppView = (props: {
 };
 
 export const AppViewContainer = () => {
-  const { projectId, appId } = useParams();
+  const { projectId, appId, partitionKey } = useParams();
   if (projectId === undefined || appId === undefined) {
     return <div>Invalid URL</div>;
   }
-  return <AppView projectId={projectId} appId={appId} orientation={'stacked_horizontal'} />;
+  return (
+    <AppView
+      projectId={projectId}
+      appId={appId}
+      partitionKey={partitionKey}
+      orientation={'stacked_horizontal'}
+    />
+  );
 };

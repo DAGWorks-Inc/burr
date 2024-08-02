@@ -542,13 +542,24 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
         return out
 
     async def list_apps(
-        self, request: fastapi.Request, project_id: str, limit: int = 100, offset: int = 0
+        self,
+        request: fastapi.Request,
+        project_id: str,
+        partition_key: Optional[str],
+        limit: int = 100,
+        offset: int = 0,
     ) -> Sequence[schema.ApplicationSummary]:
         # TODO -- distinctify between project name and project ID
         # Currently they're the same in the UI but we'll want to have them decoupled
+        app_query = (
+            Application.filter(project__name=project_id)
+            if partition_key is None
+            else Application.filter(project__name=project_id, partition_key=partition_key)
+        )
+
         applications = (
-            await Application.filter(project__name=project_id)
-            .annotate(
+            # Sentinel value for partition_key is __none__ -- passing it in required makes querying easier
+            await app_query.annotate(
                 latest_logfile_created_at=functions.Max("log_files__created_at"),
                 logfile_count=functions.Max("log_files__max_sequence_id"),
             )
@@ -577,10 +588,17 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
         return out
 
     async def get_application_logs(
-        self, request: fastapi.Request, project_id: str, app_id: str
+        self, request: fastapi.Request, project_id: str, app_id: str, partition_key: str
     ) -> ApplicationLogs:
         # TODO -- handle partition keys
-        applications = await Application.filter(name=app_id, project__name=project_id).all()
+        query = (
+            Application.filter(name=app_id, project__name=project_id)
+            if partition_key is None
+            else Application.filter(
+                name=app_id, project__name=project_id, partition_key=partition_key
+            )
+        )
+        applications = await query.all()
         application = applications[0]
         application_logs = await LogFile.filter(application__id=application.id).order_by(
             "-created_at"
