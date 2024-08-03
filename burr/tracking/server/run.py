@@ -23,9 +23,6 @@ try:
     from starlette.templating import Jinja2Templates
 
     from burr.tracking.server import schema
-
-    # from burr.tracking.server import backend as backend_module
-    # from burr.tracking.server.s3 import backend as s3_backend
     from burr.tracking.server.schema import ApplicationLogs, BackendSpec, IndexingJob
 
     # dynamic importing due to the dashes (which make reading the examples on github easier)
@@ -121,13 +118,6 @@ def get_app_spec():
 app_spec = get_app_spec()
 
 logger = logging.getLogger(__name__)
-
-# @repeat_every(
-#     seconds=update_interval if update_interval is not None else float("inf"),
-#     wait_first=True,
-#     logger=logger,
-# )
-
 
 if app_spec.indexing:
     update_interval = backend.update_interval_milliseconds() / 1000 if app_spec.indexing else None
