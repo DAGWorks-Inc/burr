@@ -130,12 +130,6 @@ def generate_counter_data(
             .with_entrypoint("counter")
             .build()
         )
-        # app = counter_application.application(
-        #     count_up_to=count,
-        #     app_id=f"count-to-{count}",
-        #     storage_dir=data_dir,
-        #     partition_key=f"user_{i}",
-        # )
         app.run(halt_after=["result"])
 
 

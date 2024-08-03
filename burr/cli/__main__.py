@@ -28,6 +28,7 @@ except ImportError as e:
     )
 
 
+# Quick trick to use loguru for everything so it's all the same color
 class InterceptHandler(logging.Handler):
     def emit(self, record):
         # Get corresponding Loguru level if it exists
