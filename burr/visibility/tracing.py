@@ -210,9 +210,22 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
         return None
 
     def log_attribute(self, key: str, value: Any):
+        """Logs a single attribute to the UI. Note that this must
+        be paired with a tracker or a tracking hook to be useful, otherwise it
+        will be a no-op.
+
+        :param key: Name of the attribute (must be unique per action/span)
+        :param value: Value of the attribute.
+        """
         self.log_attributes(**{key: value})
 
     def log_attributes(self, **attributes):
+        """Logs a set of attributes to the UI. Note that this must
+        be paired with a tracker or a tracking hook to be useful, otherwise it
+        will be a no-op.
+
+        :param attributes: Attributes to log
+        """
         self.lifecycle_adapters.call_all_lifecycle_hooks_sync(
             "do_log_attributes",
             attributes=attributes,
