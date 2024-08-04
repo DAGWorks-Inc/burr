@@ -191,6 +191,44 @@ class PreStartSpanHookAsync(abc.ABC):
         pass
 
 
+@lifecycle.base_hook("do_log_attributes")
+class DoLogAttributeHook(abc.ABC):
+    """Hook that is responsible for logging attributes,
+    called by the tracer."""
+
+    @abc.abstractmethod
+    def do_log_attributes(
+        self,
+        *,
+        attributes: Dict[str, Any],
+        action: str,
+        action_sequence_id: int,
+        span: Optional["ActionSpan"],
+        tags: dict,
+        **future_kwargs: Any,
+    ):
+        pass
+
+
+@lifecycle.base_hook("do_log_attributes")
+class DoLogAttributeHookAsync(abc.ABC):
+    """Hook that runs after a span is ended in the tracing API.
+    This can be either a context manager or a logger."""
+
+    @abc.abstractmethod
+    async def do_log_attributes(
+        self,
+        *,
+        attributes: Dict[str, Any],
+        action: str,
+        action_sequence_id: int,
+        span: "ActionSpan",
+        tags: dict,
+        **future_kwargs: Any,
+    ):
+        pass
+
+
 @lifecycle.base_hook("post_end_span")
 class PostEndSpanHook(abc.ABC):
     """Hook that runs after a span is ended in the tracing API.
