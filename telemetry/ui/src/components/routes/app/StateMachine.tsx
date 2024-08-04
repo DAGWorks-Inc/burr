@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { ApplicationModel, Step } from '../../../api';
 import { Tabs } from '../../common/tabs';
 import { DataView } from './DataView';
@@ -11,10 +10,11 @@ export const AppStateView = (props: {
   highlightedActions: Step[] | undefined;
   hoverAction: Step | undefined;
   currentSequenceID: number | undefined;
-  displayGraphAsTab: boolean; // for sideways view
+  currentTab: string;
+  setCurrentTab: (tab: string) => void;
+  displayGraphAsTab: boolean;
 }) => {
-  const defaultTab = props.displayGraphAsTab ? 'graph' : 'data';
-  const [currentTab, setCurrentTab] = useState(defaultTab);
+  const { currentTab, setCurrentTab } = props;
   const currentStep = props.steps.find(
     (step) => step.step_start_log.sequence_id === props.currentSequenceID
   );

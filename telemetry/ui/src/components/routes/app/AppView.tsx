@@ -1,11 +1,11 @@
 import { Navigate, useParams } from 'react-router';
-import { DefaultService, Step } from '../../../api';
+import { AttributeModel, DefaultService, Step } from '../../../api';
 import { useQuery } from 'react-query';
 import { Loading } from '../../common/loading';
 import { StepList } from './StepList';
 import { TwoColumnLayout, TwoRowLayout } from '../../common/layout';
 import { AppStateView } from './StateMachine';
-import { useEffect, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
 import { Status } from '../../../utils';
 import { GraphView } from './GraphView';
 
@@ -82,6 +82,18 @@ export const backgroundColorsForIndex = (index: number, status: Status) => {
 // Default number of previous actions to show
 const NUM_PREVIOUS_ACTIONS = 6;
 
+export type HighlightState = {
+  attributesHighlighted: AttributeModel[];
+  setAttributesHighlighted: (attributes: AttributeModel[]) => void;
+  setTab: (tab: string) => void;
+};
+
+export const AppViewHighlightContext = createContext<HighlightState>({
+  attributesHighlighted: [],
+  setAttributesHighlighted: () => {},
+  setTab: () => {}
+});
+
 /**
  * View for the "Application" page. This has two columns:
  * 1. A list of steps
@@ -100,6 +112,10 @@ export const AppView = (props: {
   const [autoRefresh, setAutoRefresh] = useState(props.defaultAutoRefresh || false);
   const shouldQuery = projectId !== undefined && appId !== undefined;
   const [minimizedTable, setMinimizedTable] = useState(false);
+  const [highlightedAttributes, setHighlightedAttributes] = useState<AttributeModel[]>([]);
+  const displayGraphAsTabs = props.orientation === 'stacked_vertical';
+  const defaultTab = displayGraphAsTabs ? 'graph' : 'data';
+  const [currentTab, setCurrentTab] = useState(defaultTab);
   const { data, error } = useQuery(
     ['steps', appId],
     () =>
@@ -201,53 +217,63 @@ export const AppView = (props: {
     ? stepsSorted.find((step) => step.step_start_log.sequence_id === hoverSequenceID)
     : undefined;
   return (
-    <Layout
-      mode={minimizedTable ? 'first-minimal' : 'half'}
-      firstItem={
-        <div className="w-full h-full flex flex-col">
-          <div
-            className={`overflow-y-scroll hide-scrollbar  w-full ${props.orientation === 'stacked_vertical' ? 'h-full' : 'h-1/2'}`}
-          >
-            <StepList
-              steps={stepsSorted}
-              currentHoverIndex={hoverSequenceID}
-              setCurrentHoverIndex={setHoverSequenceID}
-              currentSelectedIndex={currentActionIndex}
-              setCurrentSelectedIndex={setCurrentActionIndex}
-              numPriorIndices={NUM_PREVIOUS_ACTIONS}
-              autoRefresh={autoRefresh}
-              setAutoRefresh={setAutoRefresh}
-              minimized={minimizedTable}
-              setMinimized={setMinimizedTable}
-              projectId={projectId}
-              parentPointer={data?.parent_pointer || undefined}
-              spawningParentPointer={data?.spawning_parent_pointer || undefined}
-              links={data.children || []}
-            />
-          </div>
-          {props.orientation === 'stacked_horizontal' && (
-            <div className="h-1/2 w-[full]">
-              <GraphView
-                stateMachine={data.application}
-                currentAction={currentStep}
-                highlightedActions={previousActions}
-                hoverAction={hoverAction}
+    <AppViewHighlightContext.Provider
+      value={{
+        attributesHighlighted: highlightedAttributes,
+        setAttributesHighlighted: setHighlightedAttributes,
+        setTab: setCurrentTab
+      }}
+    >
+      <Layout
+        mode={minimizedTable ? 'first-minimal' : 'half'}
+        firstItem={
+          <div className="w-full h-full flex flex-col">
+            <div
+              className={`overflow-y-scroll hide-scrollbar  w-full ${props.orientation === 'stacked_vertical' ? 'h-full' : 'h-1/2'}`}
+            >
+              <StepList
+                steps={stepsSorted}
+                currentHoverIndex={hoverSequenceID}
+                setCurrentHoverIndex={setHoverSequenceID}
+                currentSelectedIndex={currentActionIndex}
+                setCurrentSelectedIndex={setCurrentActionIndex}
+                numPriorIndices={NUM_PREVIOUS_ACTIONS}
+                autoRefresh={autoRefresh}
+                setAutoRefresh={setAutoRefresh}
+                minimized={minimizedTable}
+                setMinimized={setMinimizedTable}
+                projectId={projectId}
+                parentPointer={data?.parent_pointer || undefined}
+                spawningParentPointer={data?.spawning_parent_pointer || undefined}
+                links={data.children || []}
               />
             </div>
-          )}
-        </div>
-      }
-      secondItem={
-        <AppStateView
-          steps={stepsSorted}
-          stateMachine={data.application}
-          highlightedActions={previousActions}
-          hoverAction={hoverAction}
-          currentSequenceID={currentActionIndex}
-          displayGraphAsTab={props.orientation === 'stacked_vertical'} // in this case we want the graph as a tab
-        />
-      }
-    />
+            {props.orientation === 'stacked_horizontal' && (
+              <div className="h-1/2 w-[full]">
+                <GraphView
+                  stateMachine={data.application}
+                  currentAction={currentStep}
+                  highlightedActions={previousActions}
+                  hoverAction={hoverAction}
+                />
+              </div>
+            )}
+          </div>
+        }
+        secondItem={
+          <AppStateView
+            steps={stepsSorted}
+            stateMachine={data.application}
+            highlightedActions={previousActions}
+            hoverAction={hoverAction}
+            currentSequenceID={currentActionIndex}
+            displayGraphAsTab={displayGraphAsTabs} // in this case we want the graph as a tab
+            currentTab={currentTab}
+            setCurrentTab={setCurrentTab}
+          />
+        }
+      />
+    </AppViewHighlightContext.Provider>
   );
 };
 

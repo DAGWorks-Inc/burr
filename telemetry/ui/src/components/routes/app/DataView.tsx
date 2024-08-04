@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Step } from '../../../api';
+import React, { useContext, useEffect, useState } from 'react';
+import { AttributeModel, Step } from '../../../api';
 import JsonView from '@uiw/react-json-view';
 import { Button } from '../../common/button';
 import { Switch, SwitchField } from '../../common/switch';
 import { Label } from '../../common/fieldset';
 import { classNames } from '../../../utils/tailwind';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid';
+import { getUniqueAttributeID } from '../../../utils';
+import { AppViewHighlightContext } from './AppView';
 
 /**
  * Common JSON view so we can make everything look the same.
@@ -116,6 +118,8 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
   const [allResultExpanded, setAllResultExpanded] = useState(true);
   const [allInputExpanded, setAllInputExpanded] = useState(true);
 
+  const attributes = stepToExamine?.attributes || [];
+
   return (
     <div className="pl-1 flex flex-col gap-2 hide-scrollbar">
       <div className="flex flex-row justify-between sticky top-0 z-20 bg-white">
@@ -205,6 +209,24 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
           />
           <InputsView inputs={inputs} isExpanded={allInputExpanded} viewRawData={viewRawData} />
           {/* <FormRenderer data={inputs as DataType} isDefaultExpanded={allInputExpanded} /> */}
+        </>
+      )}
+      {attributes && attributes.length > 0 && (
+        <>
+          <SectionHeaderWithExpand
+            name="Attributes"
+            defaultExpanded={allInputExpanded}
+            setDefaultExpanded={setAllInputExpanded}
+            enableExpansion={viewRawData === 'render'}
+          />
+          {attributes.map((attribute, i) => (
+            <AttributeView
+              key={i}
+              attribute={attribute}
+              isExpanded={allInputExpanded}
+              viewRawData={viewRawData}
+            />
+          ))}
         </>
       )}
     </div>
@@ -319,6 +341,37 @@ export const ResultView = (props: {
   );
 };
 
+export const AttributeView = (props: {
+  attribute: AttributeModel;
+  viewRawData: 'render' | 'raw';
+  isExpanded: boolean;
+}) => {
+  const { attribute, viewRawData, isExpanded } = props;
+  const attributeAsObject = { [attribute.key]: attribute.value };
+  const { attributesHighlighted } = useContext(AppViewHighlightContext);
+  const uniqueID = getUniqueAttributeID(attribute);
+  const attributeHighlighted = attributesHighlighted
+    .map((item) => getUniqueAttributeID(item))
+    .includes(uniqueID);
+  return (
+    <div
+      id={getUniqueAttributeID(attribute)}
+      className={`${attributeHighlighted ? 'bg-pink-100' : ''}`}
+    >
+      {viewRawData === 'render' && (
+        <>
+          <FormRenderer data={attributeAsObject} isDefaultExpanded={isExpanded} />
+        </>
+      )}
+      {viewRawData === 'raw' && (
+        <>
+          <CommonJsonView value={attributeAsObject} />{' '}
+        </>
+      )}
+    </div>
+  );
+};
+
 export const InputsView = (props: {
   inputs: object;
   isExpanded: boolean;
@@ -368,7 +421,7 @@ const Header = (props: {
   );
 };
 const RenderedField = (props: {
-  value: string | number | boolean | object;
+  value: string | number | boolean | object | null;
   keyName: string;
   level: number;
   defaultExpanded: boolean;
@@ -459,7 +512,7 @@ const RenderedField = (props: {
 };
 
 interface FormRendererProps {
-  data: Record<string, string | number | boolean | object>;
+  data: Record<string, string | number | boolean | object | null>;
   isDefaultExpanded: boolean;
 }
 

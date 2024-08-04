@@ -11,6 +11,7 @@ export type { ActionModel } from './models/ActionModel';
 export type { ApplicationLogs } from './models/ApplicationLogs';
 export type { ApplicationModel } from './models/ApplicationModel';
 export type { ApplicationSummary } from './models/ApplicationSummary';
+export type { AttributeModel } from './models/AttributeModel';
 export type { BackendSpec } from './models/BackendSpec';
 export type { BeginEntryModel } from './models/BeginEntryModel';
 export type { BeginSpanModel } from './models/BeginSpanModel';
