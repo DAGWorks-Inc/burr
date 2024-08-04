@@ -17,8 +17,9 @@ MODES = {
 
 @action(reads=[], writes=["chat_history", "prompt"])
 def process_prompt(state: State, prompt: str, __tracer: TracerFactory) -> Tuple[dict, State]:
-    with __tracer("process_prompt"):
+    with __tracer("process_prompt") as tracer:
         result = {"chat_item": {"role": "user", "content": prompt, "type": "text"}}
+        tracer.log_attributes(prompt=prompt)
     return result, state.wipe(keep=["prompt", "chat_history"]).append(
         chat_history=result["chat_item"]
     ).update(prompt=prompt)
@@ -49,13 +50,19 @@ def choose_mode(state: State, __tracer: TracerFactory) -> Tuple[dict, State]:
     with __tracer("query_openai", span_dependencies=["generate_prompt"]):
         with __tracer("create_openai_client"):
             client = _get_openai_client()
-        with __tracer("query_openai"):
+        with __tracer("query_openai") as tracer:
             result = client.chat.completions.create(
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant"},
                     {"role": "user", "content": prompt},
                 ],
+            )
+            tracer.log_attributes(
+                response=result.choices[0].message.content,
+                prompt_tokens=result.usage.prompt_tokens,
+                total_tokens=result.usage.total_tokens,
+                completion_tokens=result.usage.completion_tokens,
             )
     with __tracer("process_openai_response", span_dependencies=["query_openai"]):
         content = result.choices[0].message.content
@@ -85,6 +92,7 @@ def chat_response(
     __tracer: TracerFactory,
     model: str = "gpt-3.5-turbo",
 ) -> Tuple[dict, State]:
+    __tracer.log_attributes(model=model, prepend_prompt=prepend_prompt)
     with __tracer("process_chat_history"):
         chat_history = state["chat_history"].copy()
         chat_history[-1]["content"] = f"{prepend_prompt}: {chat_history[-1]['content']}"
@@ -98,10 +106,16 @@ def chat_response(
     with __tracer("query_openai", span_dependencies=["change_chat_history"]):
         with __tracer("create_openai_client"):
             client = _get_openai_client()
-        with __tracer("query_openai", span_dependencies=["create_openai_client"]):
+        with __tracer("query_openai", span_dependencies=["create_openai_client"]) as tracer:
             result = client.chat.completions.create(
                 model=model,
                 messages=chat_history_api_format,
+            )
+            tracer.log_attributes(
+                response=result.choices[0].message.content,
+                prompt_tokens=result.usage.prompt_tokens,
+                total_tokens=result.usage.total_tokens,
+                completion_tokens=result.usage.completion_tokens,
             )
     with __tracer("process_openai_response", span_dependencies=["query_openai"]):
         response = result.choices[0].message.content
@@ -115,6 +129,7 @@ def chat_response(
 def image_response(
     state: State, __tracer: TracerFactory, model: str = "dall-e-2"
 ) -> Tuple[dict, State]:
+    __tracer.log_attributes(model=model)
     with __tracer("create_openai_client"):
         client = _get_openai_client()
     with __tracer("query_openai_image", span_dependencies=["create_openai_client"]):
@@ -126,6 +141,7 @@ def image_response(
         result = {
             "response": {"content": response, "type": MODES[state["mode"]], "role": "assistant"}
         }
+        __tracer.log_attributes(response=response)
     return result, state.update(**result)
 
 
