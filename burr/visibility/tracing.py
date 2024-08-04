@@ -209,11 +209,17 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
         self._sync_hooks_exit(prior_execution_context)
         return None
 
-    def log_artifact(self, name: str, value: Any):
-        raise NotImplementedError(
-            "Logging artifacts is not yet implemented. See "
-            "(and comment on) the following issue for more details: "
-            "https://github.com/DAGWorks-Inc/burr/issues/46"
+    def log_attribute(self, key: str, value: Any):
+        self.log_attributes(**{key: value})
+
+    def log_attributes(self, **attributes):
+        self.lifecycle_adapters.call_all_lifecycle_hooks_sync(
+            "do_log_attributes",
+            attributes=attributes,
+            action=self.action,
+            action_sequence_id=self.action_sequence_id,
+            span=self.context_var.get(),
+            tags={},  # TODO -- add tags
         )
 
     async def __aenter__(self) -> "ActionSpanTracer":
@@ -236,7 +242,7 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
         return None
 
 
-class TracerFactory:
+class TracerFactory(ActionSpanTracer):
     """Represents a tracer factory to create tracer instances. User never instantiates this
     directly. Rather, this gets injected by the application. This gives a new span.
 
@@ -270,13 +276,17 @@ class TracerFactory:
         :param lifecycle_adapters: Lifecycle adapters
         :param _context_var: Context var to use for the action span
         """
-        self.action = action
-        self.lifecycle_adapters = lifecycle_adapters
-        self.context_var = _context_var
-        self.top_level_span_count = 0
-        self.action_sequence_id = sequence_id
-        self.app_id = app_id
-        self.partition_key = partition_key
+        super(TracerFactory, self).__init__(
+            action=action,
+            action_sequence_id=sequence_id,
+            span_name="root",
+            lifecycle_adapters=lifecycle_adapters,
+            app_id=app_id,
+            partition_key=partition_key,
+            span_dependencies=[],
+            top_level_span_count=0,
+            context_var=_context_var,
+        )
 
     def __call__(
         self, span_name: str, span_dependencies: Optional[List[str]] = None
