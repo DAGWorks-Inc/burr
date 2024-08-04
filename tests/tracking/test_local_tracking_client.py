@@ -14,6 +14,7 @@ from burr.tracking.client import _allowed_project_name
 from burr.tracking.common.models import (
     ApplicationMetadataModel,
     ApplicationModel,
+    AttributeModel,
     BeginEntryModel,
     BeginSpanModel,
     ChildApplicationModel,
@@ -25,8 +26,9 @@ from burr.visibility import TracerFactory
 
 @action(reads=["counter", "break_at"], writes=["counter"])
 def counter(state: State, __tracer: TracerFactory) -> Tuple[dict, State]:
-    with __tracer("increment"):
+    with __tracer("increment") as t:
         result = {"counter": state["counter"] + 1}
+        t.log_attributes(counter=result["counter"])
     if state["break_at"] == result["counter"]:
         raise ValueError("Broken")
     return result, state.update(**result)
@@ -93,11 +95,15 @@ def test_application_tracks_end_to_end(tmpdir: str):
     span_end_model = [
         EndSpanModel.model_validate(line) for line in log_contents if line["type"] == "end_span"
     ]
+    attributes = [
+        AttributeModel.model_validate(line) for line in log_contents if line["type"] == "attribute"
+    ]
     assert len(pre_run) == 3
     assert len(post_run) == 3
     assert len(span_start_model) == 2  # two custom-defined spans
     assert len(span_end_model) == 2  # ditto
     assert not any(item.exception for item in post_run)
+    assert len(attributes) == 2  # two attributes logged
 
 
 def test_application_tracks_end_to_end_broken(tmpdir: str):
