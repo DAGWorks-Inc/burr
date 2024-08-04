@@ -1,6 +1,8 @@
 import abc
 import datetime
 
+from burr.lifecycle.base import DoLogAttributeHook
+
 # this is a quick hack to get it to work on windows
 # we'll have to implement a proper lock later
 # but its better that it works than breaks on import
@@ -45,6 +47,7 @@ from burr.lifecycle import (
 from burr.tracking.common.models import (
     ApplicationMetadataModel,
     ApplicationModel,
+    AttributeModel,
     BeginEntryModel,
     BeginSpanModel,
     ChildApplicationModel,
@@ -95,6 +98,7 @@ class SyncTrackingClient(
     PostRunStepHook,
     PreStartSpanHook,
     PostEndSpanHook,
+    DoLogAttributeHook,
     ABC,
 ):
     @abc.abstractmethod
@@ -453,6 +457,26 @@ class LocalTrackingClient(
             span_id=span.uid,
         )
         self._append_write_line(end_span_model)
+
+    def do_log_attributes(
+        self,
+        *,
+        attributes: Dict[str, Any],
+        tags: dict,
+        action: str,
+        action_sequence_id: int,
+        span: Optional["ActionSpan"],
+        **future_kwargs: Any,
+    ):
+        for attribute_name, attribute in attributes.items():
+            attribute_model = AttributeModel(
+                key=attribute_name,
+                action_sequence_id=action_sequence_id,
+                span_id=span.uid if span is not None else None,
+                value=serde.serialize(attribute, **self.serde_kwargs),
+                tags=tags,
+            )
+            self._append_write_line(attribute_model)
 
     def __del__(self):
         if self.f is not None:

@@ -7,6 +7,7 @@ from pydantic import fields
 
 from burr.tracking.common.models import (
     ApplicationModel,
+    AttributeModel,
     BeginEntryModel,
     BeginSpanModel,
     ChildApplicationModel,
@@ -68,6 +69,7 @@ class Step(pydantic.BaseModel):
     step_start_log: BeginEntryModel
     step_end_log: Optional[EndEntryModel]
     spans: List[Span]
+    attributes: List[AttributeModel]
 
     @staticmethod
     def from_logs(log_lines: List[bytes]) -> List["Step"]:

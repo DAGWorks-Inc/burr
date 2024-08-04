@@ -1,5 +1,5 @@
 import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from burr.common import types as burr_types
 from burr.core import Action
@@ -191,3 +191,16 @@ class EndSpanModel(IdentifyingModel):
     @property
     def sequence_id(self) -> int:
         return self.action_sequence_id
+
+
+class AttributeModel(IdentifyingModel):
+    """Represents a logged artifact"""
+
+    key: str
+    action_sequence_id: int
+    span_id: Optional[
+        str
+    ]  # It doesn't have to relate to a span, it can be at the level of an action as well
+    value: Union[dict, str, int, float, bool, list, None]
+    tags: Dict[str, str]
+    type: str = "attribute"
