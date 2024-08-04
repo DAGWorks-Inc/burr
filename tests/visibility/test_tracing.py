@@ -1,8 +1,9 @@
 import asyncio
 from contextvars import ContextVar
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from burr.lifecycle.base import (
+    DoLogAttributeHook,
     PostEndSpanHook,
     PostEndSpanHookAsync,
     PreStartSpanHook,
@@ -359,4 +360,96 @@ async def test_pre_span_lifecycle_hooks_called_async(request):
         "1:0.0",
         "1:0.1",
         "1:0",
+    ]
+
+
+async def test_log_attributes_called(request):
+    class AttributeHook(DoLogAttributeHook):
+        def do_log_attributes(
+            self,
+            *,
+            attributes: Dict[str, Any],
+            action: str,
+            action_sequence_id: int,
+            span: Optional["ActionSpan"],
+            tags: dict,
+            **future_kwargs: Any,
+        ):
+            self.artifacts.append(
+                (attributes, action, action_sequence_id, span.uid if span is not None else None)
+            )
+
+        def __init__(self):
+            self.artifacts = []
+
+    hook = AttributeHook()
+    adapter_set = LifecycleAdapterSet(hook)
+    context_var: ContextVar[Optional[ActionSpan]] = ContextVar(request.node.name, default=None)
+    tracer_factory_0 = TracerFactory(
+        action="test_action",
+        sequence_id=0,
+        lifecycle_adapters=adapter_set,
+        _context_var=context_var,
+        app_id="test_app_id",
+        partition_key=None,
+    )
+    # 0:0
+    tracer_factory_0.log_attributes(key="root:0")
+    async with tracer_factory_0("0") as t:
+        t.log_attributes(key="0:0")
+        # 0:0.0
+        async with tracer_factory_0("0.0") as t:
+            t.log_attributes(key="0.0:0")
+            t.log_attributes(key="0.0:1")
+        # 0:0.1
+        async with tracer_factory_0("0.1") as t:
+            t.log_attributes(key="0:0.1")
+    # 0:1
+    async with tracer_factory_0("1") as t:
+        t.log_attributes(key="1:0")
+        t.log_attributes(key="1:1")
+        # 0:1.0
+        async with tracer_factory_0("1.0") as t:
+            t.log_attributes(key="1.0:0")
+            t.log_attributes(key="1.0:1")
+            # 0:1.0.0
+            async with tracer_factory_0("1.0.0") as t:
+                t.log_attributes(key="1.0.0:0")
+                t.log_attributes(key="1.0.0:1")
+            # 0:1.0.1
+            async with tracer_factory_0("1.0.1") as t:
+                t.log_attributes(key="1.0.1:0")
+                t.log_attributes(key="1.0.1:1")
+    tracer_factory_1 = TracerFactory(
+        action="test_action",
+        sequence_id=tracer_factory_0.action_sequence_id + 1,
+        lifecycle_adapters=adapter_set,
+        _context_var=context_var,
+        app_id="test_app_id",
+        partition_key=None,
+    )
+    # 1:0
+    async with tracer_factory_1("2"):
+        # 1:0.0
+        async with tracer_factory_1("2.0"):
+            pass
+        # 1:0.1
+        async with tracer_factory_1("2.1"):
+            pass
+
+    # order of this is exactly as expected -- in order traversal
+    assert hook.artifacts == [
+        ({"key": "root:0"}, "test_action", 0, None),
+        ({"key": "0:0"}, "test_action", 0, "0:0"),
+        ({"key": "0.0:0"}, "test_action", 0, "0:0.0"),
+        ({"key": "0.0:1"}, "test_action", 0, "0:0.0"),
+        ({"key": "0:0.1"}, "test_action", 0, "0:0.1"),
+        ({"key": "1:0"}, "test_action", 0, "0:1"),
+        ({"key": "1:1"}, "test_action", 0, "0:1"),
+        ({"key": "1.0:0"}, "test_action", 0, "0:1.0"),
+        ({"key": "1.0:1"}, "test_action", 0, "0:1.0"),
+        ({"key": "1.0.0:0"}, "test_action", 0, "0:1.0.0"),
+        ({"key": "1.0.0:1"}, "test_action", 0, "0:1.0.0"),
+        ({"key": "1.0.1:0"}, "test_action", 0, "0:1.0.1"),
+        ({"key": "1.0.1:1"}, "test_action", 0, "0:1.0.1"),
     ]
