@@ -1,11 +1,16 @@
-import { ChildApplicationModel, PointerModel, Span, Step } from '../../../api';
+import { AttributeModel, ChildApplicationModel, PointerModel, Span, Step } from '../../../api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../common/table';
 import { DateTimeDisplay, DurationDisplay, TimeDisplay } from '../../common/dates';
-import { backgroundColorsForIndex, backgroundColorsForStatus } from './AppView';
-import { Status, getActionStatus } from '../../../utils';
+import {
+  AppViewHighlightContext,
+  backgroundColorsForIndex,
+  backgroundColorsForStatus
+} from './AppView';
+import { Status, getActionStatus, getUniqueAttributeID } from '../../../utils';
 import { Chip } from '../../common/chip';
-import { useRef, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 import { TbGrillFork } from 'react-icons/tb';
+import { FiEye } from 'react-icons/fi';
 
 import {
   ArrowPathIcon,
@@ -138,6 +143,7 @@ const ActionTableRow = (props: {
     sequenceID >= props.currentSelectedIndex - props.numPriorIndices;
   const TraceExpandIcon = props.isTracesExpanded ? MinusIcon : PlusIcon;
   const LinkExpandIcon = props.isLinksExpanded ? MinusIcon : PlusIcon;
+  const attributes = props.step.attributes || [];
   return (
     <CommonTableRow
       sequenceID={sequenceID}
@@ -149,7 +155,7 @@ const ActionTableRow = (props: {
       setCurrentSelectedIndex={props.setCurrentSelectedIndex}
     >
       <TableCell className="text-gray-500 w-12 max-w-12 min-w-12">{sequenceID}</TableCell>
-      <TableCell className="truncate w-48 min-w-48">{props.step.step_start_log.action}</TableCell>
+      <TableCell className="truncate w-40 min-w-40">{props.step.step_start_log.action}</TableCell>
       {!props.minimized && (
         <>
           <TableCell>
@@ -166,21 +172,27 @@ const ActionTableRow = (props: {
           {props.displaySpansCol && (
             <TableCell>
               {spanCount > 0 ? (
-                <div className="flex gap-1 items-center">
-                  <TraceExpandIcon
-                    className="h-4 w-4 text-gray-600 hover:scale-110 cursor-pointer"
-                    onClick={(e) => {
-                      props.toggleTraceExpanded(sequenceID);
-                      e.stopPropagation();
-                    }}
-                  />
-                  <span className="text-gray-600">{spanCount}</span>
+                <div className="flex flex-row justify-between items-center">
+                  <div className="flex gap-1 items-center">
+                    <TraceExpandIcon
+                      className="h-4 w-4 text-gray-600 hover:scale-110 cursor-pointer"
+                      onClick={(e) => {
+                        props.toggleTraceExpanded(sequenceID);
+                        e.stopPropagation();
+                      }}
+                    />
+                    <span className="text-gray-600">{spanCount}</span>
+                  </div>
+                  {/* {attributes.length > 0 ? <AttributeLink attributes={attributes} /> : <></>} */}
                 </div>
               ) : (
                 <span></span>
               )}
             </TableCell>
           )}
+          <TableCell className="w-5 min-w-5">
+            {attributes.length > 0 ? <AttributeLink attributes={attributes} /> : <></>}
+          </TableCell>
           {props.displayLinksCol && (
             <TableCell>
               {childCount > 0 ? (
@@ -277,6 +289,35 @@ const LinkSubTable = (props: {
   );
 };
 
+const scrollToAttribute = (attribute: AttributeModel) => {
+  const element = document.getElementById(getUniqueAttributeID(attribute));
+  if (element) {
+    const scroll = () => {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+    };
+    scroll();
+    const observer = new ResizeObserver(() => {
+      scroll();
+    });
+    observer.observe(element);
+    setTimeout(() => observer.disconnect(), 1000); // Adjust timeout as needed
+  }
+};
+
+const AttributeLink = (props: { attributes: AttributeModel[] }) => {
+  const { setAttributesHighlighted, setTab } = useContext(AppViewHighlightContext);
+  return (
+    <FiEye
+      className="text-xl cursor-pointer hover:scale-125"
+      onClick={() => {
+        scrollToAttribute(props.attributes[0]);
+        setAttributesHighlighted(props.attributes);
+        setTab('data');
+      }}
+    />
+  );
+};
+
 const TraceSubTable = (props: {
   spans: Span[];
   step: Step;
@@ -305,6 +346,9 @@ const TraceSubTable = (props: {
           sequenceID >= props.currentSelectedIndex - props.numPriorIndices;
         const lightText = 'text-gray-300';
         const normalText = shouldBeHighlighted ? 'text-gray-100' : 'text-gray-400';
+        const attrsForSpan = props.step.attributes.filter(
+          (attr) => attr.span_id === span.begin_entry.span_id
+        );
         return (
           <CommonTableRow
             key={`${span.begin_entry.span_id}-trace-table-row`}
@@ -342,12 +386,17 @@ const TraceSubTable = (props: {
                   />
                 </TableCell>
                 <TableCell colSpan={1} className="h-full">
-                  <WaterfallPiece
-                    step={props.step}
-                    span={span}
-                    bgColor={backgroundColorsForStatus(getActionStatus(props.step))}
-                    isHighlighted={shouldBeHighlighted}
-                  />
+                  <div className="flex flex-row justify-between">
+                    <WaterfallPiece
+                      step={props.step}
+                      span={span}
+                      bgColor={backgroundColorsForStatus(getActionStatus(props.step))}
+                      isHighlighted={shouldBeHighlighted}
+                    />
+                  </div>
+                </TableCell>
+                <TableCell className="w-5 min-w-5">
+                  {attrsForSpan.length > 0 ? <AttributeLink attributes={attrsForSpan} /> : <></>}
                 </TableCell>
                 <TableCell />
               </>
@@ -527,6 +576,8 @@ export const StepList = (props: {
                   </div>
                 </TableHeader>
               )}
+              <TableHeader className="w-5"></TableHeader>
+
               {displayLinksCol && (
                 <TableHeader>
                   <div className="flex flex-row items-center gap-2">

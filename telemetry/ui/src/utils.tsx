@@ -1,4 +1,4 @@
-import { Step } from './api';
+import { AttributeModel, Step } from './api';
 
 export type Status = 'success' | 'failure' | 'running';
 /*
@@ -13,4 +13,8 @@ export const getActionStatus = (action: Step) => {
     return 'failure';
   }
   return 'success';
+};
+
+export const getUniqueAttributeID = (attribute: AttributeModel) => {
+  return `${attribute.action_sequence_id}-${attribute.span_id}`;
 };
