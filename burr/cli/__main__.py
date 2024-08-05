@@ -15,6 +15,7 @@ from types import ModuleType
 from burr import system, telemetry
 from burr.core.persistence import PersistedStateData
 from burr.integrations.base import require_plugin
+from burr.log_setup import setup_logging
 
 try:
     import click
@@ -27,27 +28,8 @@ except ImportError as e:
         "start",
     )
 
-
-# Quick trick to use loguru for everything so it's all the same color
-class InterceptHandler(logging.Handler):
-    def emit(self, record):
-        # Get corresponding Loguru level if it exists
-        try:
-            level = logger.level(record.levelname).name
-        except ValueError:
-            level = record.levelno
-
-        # Find caller from where originated the log message
-        frame, depth = logging.currentframe(), 2
-        while frame.f_code.co_filename == logging.__file__:
-            frame = frame.f_back
-            depth += 1
-
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
-
-
 # Clear default handlers
-logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO)
+setup_logging(logging.INFO)
 
 
 # TODO -- add this as a general callback to the CLI

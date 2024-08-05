@@ -173,7 +173,6 @@ def application(app_id: Optional[str] = None):
         .with_entrypoint("prompt")
         .with_state(chat_history=[])
         .with_graph(graph)
-        # .with_tracker(project="demo_chatbot_streaming")
         .with_tracker(project="demo_chatbot_streaming")
         .with_identifiers(app_id=app_id)
         .build()
