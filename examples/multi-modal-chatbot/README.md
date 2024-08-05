@@ -53,3 +53,9 @@ can build a more sophisticated UI around the Burr application.
 
 ## Tracing
 To see a tracing example see this [example](../tracing-and-spans).
+
+
+## Burr Demo Notebook showing state persistence & time travel
+
+`burr_demo.ipynb` is a notebook demonstrating persistence and time travel with Burr using a
+multi-modal agent example.  Watch [this video](https://youtu.be/hqutVJyd3TI) for a guided walkthrough.
