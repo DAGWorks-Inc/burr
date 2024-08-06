@@ -117,7 +117,7 @@ class DataFile:
 
 class S3Settings(BurrSettings):
     s3_bucket: str
-    update_interval_milliseconds: int = 60_000
+    update_interval_milliseconds: int = 120_000
     aws_max_concurrency: int = 100
     snapshot_interval_milliseconds: int = 3_600_000
     load_snapshot_on_start: bool = True
