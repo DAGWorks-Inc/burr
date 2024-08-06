@@ -2,6 +2,7 @@ import collections
 import dataclasses
 import inspect
 import logging
+import pathlib
 from typing import Any, Callable, List, Literal, Optional, Set, Tuple, Union
 
 from burr import telemetry
@@ -100,11 +101,12 @@ class Graph:
     @telemetry.capture_function_usage
     def visualize(
         self,
-        output_file_path: Optional[str] = None,
+        output_file_path: Optional[Union[str, pathlib.Path]] = None,
         include_conditions: bool = False,
         include_state: bool = False,
         view: bool = False,
         engine: Literal["graphviz"] = "graphviz",
+        keep_dot: bool = False,
         **engine_kwargs: Any,
     ) -> Optional["graphviz.Digraph"]:  # noqa: F821
         """Visualizes the graph using graphviz. This will render the graph.
@@ -115,6 +117,7 @@ class Graph:
         :param include_state: Whether to indicate the action "signature" (reads/writes) on the nodes
         :param view: Whether to bring up a view
         :param engine: The engine to use -- only graphviz is supported for now
+        :param keep_dot: If True, produce a graphviz dot file
         :param engine_kwargs: Additional kwargs to pass to the engine
         :return: The graphviz object
         """
@@ -134,6 +137,9 @@ class Graph:
                 ranksep="0.4",
                 compound="false",
                 concentrate="false",
+            ),
+            node_attr=dict(
+                fontname="Helvetica",
             ),
         )
         for g_key, g_value in engine_kwargs.items():
@@ -155,7 +161,7 @@ class Graph:
                     # These are internally injected by the framework
                     continue
                 input_name = f"input__{input_}"
-                digraph.node(input_name, shape="oval", style="dashed", label=f"input: {input_}")
+                digraph.node(input_name, shape="rect", style="dashed", label=f"input: {input_}")
                 digraph.edge(input_name, action.name)
         for transition in self.transitions:
             condition = transition.condition
@@ -165,8 +171,37 @@ class Graph:
                 label=condition.name if include_conditions and condition is not default else None,
                 style="dashed" if transition.condition is not default else "solid",
             )
+
+        # the default format is png if nothing else is specified
+        render_kwargs = {"format": "png", "view": view}
         if output_file_path:
-            digraph.render(output_file_path, view=view)
+            output_file_path = pathlib.Path(output_file_path)
+            suffix = output_file_path.suffix
+            path_without_suffix = pathlib.Path(output_file_path.parent, output_file_path.stem)
+
+            # infer format from path
+            if suffix != "":
+                # extract the `png` format from the `.png` suffix
+                inferred_format = suffix.partition(".")[-1]
+                render_kwargs.update(format=inferred_format)
+
+            # use `.render()` to generate DOT file; use `.pipe()` to skip it
+            # the two methods have slightly different APIs that we need to account for
+
+            # if view=True, we must use `.render()` because `.pipe()` doesn't accept a `view` kwarg
+            if keep_dot or view:
+                # `.render()` appends the `format` kwarg to the filename
+                # i.e., we need to pass `/my/filepath` to generate `/my/filepath.png`
+                # otherwise, passing `/my/filepath.png` will generate `/my/filepath.png.png`
+                digraph.render(path_without_suffix, **render_kwargs)
+
+            else:
+                # `.pipe()` doesn't have a `view` kwarg
+                render_kwargs.pop("view", None)
+                # `.pipe()` doesn't append the format to the filename, so we do it explicitly
+                output_file_path = f"{path_without_suffix}.{render_kwargs['format']}"
+                # pipe the digraph to a file
+                pathlib.Path(output_file_path).write_bytes(digraph.pipe(**render_kwargs))
         return digraph
 
 
