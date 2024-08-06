@@ -21,7 +21,7 @@ const RecordsHeader = (props: {
           props.setDisplayZeroCount(!props.displayZeroCount);
         }}
       />
-      <span>Seq ID</span>
+      <span>Records Processed</span>
     </div>
   );
 };
