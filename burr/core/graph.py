@@ -140,6 +140,8 @@ class Graph:
             ),
             node_attr=dict(
                 fontname="Helvetica",
+                margin="0.15",
+                fillcolor="#b4d8e4",
             ),
         )
         for g_key, g_value in engine_kwargs.items():
@@ -154,7 +156,7 @@ class Graph:
                 if not include_state
                 else f"{action.name}({', '.join(action.reads)}): {', '.join(action.writes)}"
             )
-            digraph.node(action.name, label=label, shape="box", style="rounded")
+            digraph.node(action.name, label=label, shape="box", style="rounded,filled")
             required_inputs, optional_inputs = action.optional_and_required_inputs
             for input_ in required_inputs | optional_inputs:
                 if input_.startswith("__"):
