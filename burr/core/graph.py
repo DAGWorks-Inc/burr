@@ -206,6 +206,16 @@ class Graph:
                 pathlib.Path(output_file_path).write_bytes(digraph.pipe(**render_kwargs))
         return digraph
 
+    def _repr_mimebundle_(self, include=None, exclude=None, **kwargs):
+        """Attribute read by notebook renderers
+        This returns the attribute of the `graphviz.Digraph` returned by `self.display_all_functions()`
+
+        The parameters `include`, `exclude`, and `**kwargs` are required, but not explicitly used
+        ref: https://ipython.readthedocs.io/en/stable/config/integrating.html
+        """
+        dot = self.visualize(include_conditions=True, include_state=False)
+        return dot._repr_mimebundle_(include=include, exclude=exclude, **kwargs)
+
 
 class GraphBuilder:
     """GraphBuilder class. This allows you to construct a graph without considering application concerns.
