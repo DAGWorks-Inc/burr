@@ -3,7 +3,7 @@ from burr.integrations import base
 try:
     import psycopg2
 except ImportError as e:
-    base.require_plugin(e, ["psycopg2"], "postgresql")
+    base.require_plugin(e, "postgresql")
 
 import json
 import logging

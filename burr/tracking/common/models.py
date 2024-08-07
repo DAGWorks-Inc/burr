@@ -12,7 +12,6 @@ try:
 except ImportError as e:
     require_plugin(
         e,
-        ["pydantic"],
         "tracking",
     )
 
