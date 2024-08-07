@@ -34,7 +34,6 @@ try:
 except ImportError as e:
     require_plugin(
         e,
-        ["boto3"],
         "tracking-s3",
     )
 

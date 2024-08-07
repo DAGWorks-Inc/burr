@@ -19,6 +19,8 @@ Install from `pypi`:
 pip install "burr[start]"
 ```
 
+(see [the docs](https://burr.dagworks.io/getting_started/install/) if you're using poetry)
+
 Then run the UI server:
 
 ```bash

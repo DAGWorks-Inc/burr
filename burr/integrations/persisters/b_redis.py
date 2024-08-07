@@ -4,7 +4,7 @@ try:
     import redis  # can't name module redis because this import wouldn't work.
 
 except ImportError as e:
-    base.require_plugin(e, ["redis"], "redis")
+    base.require_plugin(e, "redis")
 
 import json
 import logging
