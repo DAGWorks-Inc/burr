@@ -1,4 +1,3 @@
-import time
 from copy import deepcopy
 from typing import Annotated
 
@@ -180,14 +179,7 @@ def creator(
         max_retries=attempts,
         temperature=TEMPERATURE,
     )
-    try:
-        res = ask_gemini.create(**create_kwargs)  # type: ignore
-    except Exception as e:
-        print(f"ERROR in creator: {e}")
-        # if the model fails to generate a response even after multiple attempts, we will return None
-        # creator will be called again until a valid response is generated
-        return {"generated_topic": None}, state.update(generated_topic=None)
-    # add the user message and the generated topic to the chat history
+    res = ask_gemini.create(**create_kwargs)
     return {"generated_topic": res}, state.update(generated_topic=res).append(
         chat_history={"role": "user", "content": user_message}
     ).append(chat_history={"role": "assistant", "content": str(res)})
@@ -203,7 +195,6 @@ def get_topic_feedback(state: State) -> tuple[dict, State]:
     If the user is happy with the generated topic, they can leave the feedback empty.
     This feedback will be added as a user message to the chat history.
     """
-    time.sleep(2)
     num_required_topics = state.get("num_required_topics", NUM_REQUIRED_TOPICS)
     num_topics_so_far = len(state.get("topics_so_far", []))
     generated_topic = state["generated_topic"]
@@ -248,8 +239,6 @@ def application(
         .with_actions(setup, creator, get_topic_feedback, update_topics_so_far, terminal)
         .with_transitions(
             ("setup", "creator"),
-            # go to creator again if the generated topic is None
-            ("creator", "creator", expr("generated_topic is None")),  # type: ignore
             # get feedback if the generated topic is not None
             ("creator", "get_topic_feedback"),
             # if the feedback is empty, add the generated topic to the list of topics generated so far
