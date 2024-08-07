@@ -34,6 +34,20 @@ and add instances to the application builder to customize your state machines's 
 .. autoclass:: burr.lifecycle.base.PostEndSpanHookAsync
     :members:
 
+.. autoclass:: burr.lifecycle.base.ExecuteMethod
+    :members:
+
+.. autoclass:: burr.lifecycle.base.PreApplicationExecuteCallHook
+    :members:
+
+.. autoclass:: burr.lifecycle.base.PreApplicationExecuteCallHookAsync
+    :members:
+
+.. autoclass:: burr.lifecycle.base.PostApplicationExecuteCallHook
+    :members:
+
+.. autoclass:: burr.lifecycle.base.PostApplicationExecuteCallHookAsync
+    :members:
 
 These hooks are available for you to use:
 
