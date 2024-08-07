@@ -47,7 +47,14 @@ from burr.lifecycle import (
     PreRunStepHookAsync,
     internal,
 )
-from burr.lifecycle.base import PostApplicationCreateHook
+from burr.lifecycle.base import (
+    ExecuteMethod,
+    PostApplicationCreateHook,
+    PostApplicationExecuteCallHook,
+    PostApplicationExecuteCallHookAsync,
+    PreApplicationExecuteCallHook,
+    PreApplicationExecuteCallHookAsync,
+)
 from burr.lifecycle.internal import LifecycleAdapterSet
 from burr.tracking.base import SyncTrackingClient
 
@@ -121,10 +128,14 @@ base_counter_action_with_inputs = PassedInAction(
 )
 
 
-class ActionTracker(PreRunStepHook, PostRunStepHook):
+class ActionTracker(
+    PreRunStepHook, PostRunStepHook, PreApplicationExecuteCallHook, PostApplicationExecuteCallHook
+):
     def __init__(self):
         self.pre_called = []
         self.post_called = []
+        self.pre_run_execute_calls = []
+        self.post_run_execute_calls = []
 
     def pre_run_step(
         self,
@@ -151,8 +162,61 @@ class ActionTracker(PreRunStepHook, PostRunStepHook):
         exception: Exception,
         **future_kwargs: Any,
     ):
-        locals()
         self.post_called.append((action.name, locals()))
+
+    def pre_run_execute_call(
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        state: "State",
+        method: ExecuteMethod,
+        **future_kwargs: Any,
+    ):
+        self.pre_run_execute_calls.append(("pre", locals()))
+
+    def post_run_execute_call(
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        state: "State",
+        method: ExecuteMethod,
+        exception: Optional[Exception],
+        **future_kwargs,
+    ):
+        self.post_run_execute_calls.append(("post", locals()))
+
+
+class ExecuteMethodTrackerAsync(
+    PreApplicationExecuteCallHookAsync, PostApplicationExecuteCallHookAsync
+):
+    def __init__(self):
+        self.pre_run_execute_calls = []
+        self.post_run_execute_calls = []
+
+    async def pre_run_execute_call(
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        state: "State",
+        method: ExecuteMethod,
+        **future_kwargs: Any,
+    ):
+        self.pre_run_execute_calls.append(("pre", locals()))
+
+    async def post_run_execute_call(
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        state: "State",
+        method: ExecuteMethod,
+        exception: Optional[Exception],
+        **future_kwargs,
+    ):
+        self.post_run_execute_calls.append(("post", locals()))
 
 
 class ActionTrackerAsync(PreRunStepHookAsync, PostRunStepHookAsync):
@@ -1503,6 +1567,9 @@ def test_stream_result_halt_after_unique_ordered_sequence_id():
         0,
         1,
     ]  # ensure sequence ID is respected
+    # One post call/one pre-call, as we call stream_result once
+    assert len(action_tracker.post_run_execute_calls) == 1
+    assert len(action_tracker.pre_run_execute_calls) == 1
 
 
 async def test_astream_result_halt_after_unique_ordered_sequence_id():
@@ -1543,6 +1610,8 @@ async def test_astream_result_halt_after_unique_ordered_sequence_id():
         0,
         1,
     ]  # ensure sequence ID is respected
+    assert len(action_tracker.post_run_execute_calls) == 1
+    assert len(action_tracker.pre_run_execute_calls) == 1
 
 
 def test_stream_result_halt_after_run_through_streaming():
@@ -1582,6 +1651,8 @@ def test_stream_result_halt_after_run_through_streaming():
         0,
         1,
     ]  # ensure sequence ID is respected
+    assert len(action_tracker.post_run_execute_calls) == 1
+    assert len(action_tracker.pre_run_execute_calls) == 1
 
 
 async def test_astream_result_halt_after_run_through_streaming():
@@ -1623,6 +1694,8 @@ async def test_astream_result_halt_after_run_through_streaming():
         0,
         1,
     ]  # ensure sequence ID is respected
+    assert len(action_tracker.post_run_execute_calls) == 1
+    assert len(action_tracker.pre_run_execute_calls) == 1
 
 
 def test_stream_result_halt_after_run_through_non_streaming():
@@ -1667,6 +1740,8 @@ def test_stream_result_halt_after_run_through_non_streaming():
     assert [item["sequence_id"] for _, item in action_tracker.post_called] == list(
         range(0, 11)
     )  # ensure sequence ID is respected
+    assert len(action_tracker.post_run_execute_calls) == 1
+    assert len(action_tracker.pre_run_execute_calls) == 1
 
 
 async def test_astream_result_halt_after_run_through_non_streaming():
@@ -1711,6 +1786,8 @@ async def test_astream_result_halt_after_run_through_non_streaming():
     assert [item["sequence_id"] for _, item in action_tracker.post_called] == list(
         range(0, 11)
     )  # ensure sequence ID is respected
+    assert len(action_tracker.post_run_execute_calls) == 1
+    assert len(action_tracker.pre_run_execute_calls) == 1
 
 
 def test_stream_result_halt_after_run_through_final_non_streaming():
@@ -1754,6 +1831,8 @@ def test_stream_result_halt_after_run_through_final_non_streaming():
     assert [item["sequence_id"] for _, item in action_tracker.post_called] == list(
         range(0, 11)
     )  # ensure sequence ID is respected
+    assert len(action_tracker.pre_run_execute_calls) == 1
+    assert len(action_tracker.post_run_execute_calls) == 1
 
 
 async def test_astream_result_halt_after_run_through_final_streaming():
@@ -1801,6 +1880,8 @@ async def test_astream_result_halt_after_run_through_final_streaming():
     assert [item["sequence_id"] for _, item in action_tracker.post_called] == list(
         range(0, 11)
     )  # ensure sequence ID is respected
+    assert len(action_tracker.post_run_execute_calls) == 1
+    assert len(action_tracker.pre_run_execute_calls) == 1
 
 
 def test_stream_result_halt_before():
@@ -1835,6 +1916,8 @@ def test_stream_result_halt_before():
     assert [item["sequence_id"] for _, item in action_tracker.post_called] == list(
         range(0, 10)
     )  # ensure sequence ID is respected
+    assert len(action_tracker.post_run_execute_calls) == 1
+    assert len(action_tracker.pre_run_execute_calls) == 1
 
 
 async def test_astream_result_halt_before():
@@ -1873,6 +1956,8 @@ async def test_astream_result_halt_before():
     assert [item["sequence_id"] for _, item in action_tracker.post_called] == list(
         range(0, 10)
     )  # ensure sequence ID is respected
+    assert len(action_tracker.post_run_execute_calls) == 1
+    assert len(action_tracker.pre_run_execute_calls) == 1
 
 
 def test_app_set_state():
@@ -1984,13 +2069,13 @@ def test_application_builder_unset():
 
 
 def test_application_run_step_hooks_sync():
-    tracker = ActionTracker()
+    action_tracker = ActionTracker()
     counter_action = base_counter_action.with_name("counter")
     result_action = Result("count").with_name("result")
     app = Application(
         state=State({}),
         entrypoint="counter",
-        adapter_set=internal.LifecycleAdapterSet(tracker),
+        adapter_set=internal.LifecycleAdapterSet(action_tracker),
         partition_key="test",
         uid="test-123",
         sequence_id=0,
@@ -2003,11 +2088,11 @@ def test_application_run_step_hooks_sync():
         ),
     )
     app.run(halt_after=["result"])
-    assert set(dict(tracker.pre_called).keys()) == {"counter", "result"}
-    assert set(dict(tracker.post_called).keys()) == {"counter", "result"}
+    assert set(dict(action_tracker.pre_called).keys()) == {"counter", "result"}
+    assert set(dict(action_tracker.post_called).keys()) == {"counter", "result"}
     # assert sequence id is incremented
-    assert tracker.pre_called[0][1]["sequence_id"] == 1
-    assert tracker.post_called[0][1]["sequence_id"] == 1
+    assert action_tracker.pre_called[0][1]["sequence_id"] == 1
+    assert action_tracker.post_called[0][1]["sequence_id"] == 1
     assert {
         "action",
         "sequence_id",
@@ -2015,7 +2100,7 @@ def test_application_run_step_hooks_sync():
         "inputs",
         "app_id",
         "partition_key",
-    }.issubset(set(tracker.pre_called[0][1].keys()))
+    }.issubset(set(action_tracker.pre_called[0][1].keys()))
     assert {
         "sequence_id",
         "result",
@@ -2023,11 +2108,15 @@ def test_application_run_step_hooks_sync():
         "exception",
         "app_id",
         "partition_key",
-    }.issubset(set(tracker.post_called[0][1].keys()))
-    assert len(tracker.pre_called) == 11
-    assert len(tracker.post_called) == 11
+    }.issubset(set(action_tracker.post_called[0][1].keys()))
+    assert len(action_tracker.pre_called) == 11
+    assert len(action_tracker.post_called) == 11
     # quick inclusion to ensure that the action is not called when we're done running
+    assert len(action_tracker.post_run_execute_calls) == 1
+    assert len(action_tracker.pre_run_execute_calls) == 1
     assert app.step() is None  # should be None
+    assert len(action_tracker.post_run_execute_calls) == 2
+    assert len(action_tracker.pre_run_execute_calls) == 2
 
 
 async def test_application_run_step_hooks_async():
@@ -2131,6 +2220,8 @@ async def test_application_run_step_runs_hooks():
     }.issubset(set(hooks[1].post_called[0][1].keys()))
     assert len(hooks[1].pre_called) == 1
     assert len(hooks[1].post_called) == 1
+    assert len(hooks[0].post_run_execute_calls) == 1
+    assert len(hooks[0].pre_run_execute_calls) == 1
 
 
 def test_application_post_application_create_hook():

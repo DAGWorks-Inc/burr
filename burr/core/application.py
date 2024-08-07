@@ -1,6 +1,7 @@
 import contextvars
 import dataclasses
 import functools
+import inspect
 import logging
 import pprint
 import uuid
@@ -17,6 +18,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    TypeVar,
     Union,
     cast,
 )
@@ -40,7 +42,7 @@ from burr.core.graph import Graph, GraphBuilder
 from burr.core.persistence import BaseStateLoader, BaseStateSaver
 from burr.core.state import State
 from burr.core.validation import BASE_ERROR_MESSAGE
-from burr.lifecycle.base import LifecycleAdapter
+from burr.lifecycle.base import ExecuteMethod, LifecycleAdapter
 from burr.lifecycle.internal import LifecycleAdapterSet
 
 if TYPE_CHECKING:
@@ -409,6 +411,94 @@ _application_context = contextvars.ContextVar[Optional[ApplicationContext]](
     "application_context", default=None
 )
 
+_run_call_var = contextvars.ContextVar[Optional[object]]("run_call_var", default=None)
+
+CallableT = TypeVar("CallableT")
+
+
+class _call_execute_method_pre_post:
+    """Wrapper class to ensure that the lifecycle hooks are called before/after application calls.
+    This is not called for streaming as there is special logic involved "post-return" that we need to handle.
+    We will likely add additional hooks for streaming as well, but for now these just decorate the function.
+    This is not a publicly exposed API -- it is used internally to ensure that the lifecycle hooks are called.
+    """
+
+    def __init__(self, method: ExecuteMethod):
+        self.method = method
+        self.sentinel = object()  # unique object to ensure we only call once
+
+    def call_pre(self, app) -> bool:
+        if should_run_hooks := (_run_call_var.get() is None):
+            _run_call_var.set(self.sentinel)
+            app._adapter_set.call_all_lifecycle_hooks_sync(
+                "pre_run_execute_call",
+                app_id=app._uid,
+                partition_key=app._partition_key,
+                state=app.state,
+                method=self.method,
+            )
+        return should_run_hooks
+
+    def call_post(self, app, exc) -> bool:
+        if should_run_hooks := (_run_call_var.get() is self.sentinel):
+            app._adapter_set.call_all_lifecycle_hooks_sync(
+                "post_run_execute_call",
+                app_id=app._uid,
+                partition_key=app._partition_key,
+                state=app.state,
+                method=self.method,
+                exception=exc,
+            )
+            _run_call_var.set(None)
+        return should_run_hooks
+
+    async def acall_pre(self, app) -> bool:
+        if should_run_hooks := (_run_call_var.get() is None):
+            _run_call_var.set(self.sentinel)
+            await app._adapter_set.call_all_lifecycle_hooks_sync_and_async(
+                "pre_run_execute_call",
+                app_id=app._uid,
+                partition_key=app._partition_key,
+                state=app.state,
+                method=self.method,
+            )
+        return should_run_hooks
+
+    async def acall_post(self, app, exc) -> bool:
+        if should_run_hooks := (_run_call_var.get() is self.sentinel):
+            await app._adapter_set.call_all_lifecycle_hooks_sync_and_async(
+                "post_run_execute_call",
+                app_id=app._uid,
+                partition_key=app._partition_key,
+                state=app.state,
+                method=self.method,
+                exception=exc,
+            )
+            _run_call_var.set(None)
+        return should_run_hooks
+
+    def __call__(self, fn: CallableT) -> CallableT:
+        @functools.wraps(fn)
+        async def wrapper_async(app_self, *args, **kwargs):
+            # We only run at the top level, so we decorate it if we're there
+            await self.acall_pre(app_self)
+            exc = None
+            try:
+                return await fn(app_self, *args, **kwargs)
+            finally:
+                await self.acall_post(app_self, exc)
+
+        @functools.wraps(fn)
+        def wrapper_sync(app_self, *args, **kwargs):
+            self.call_pre(app_self)
+            exc = None
+            try:
+                return fn(app_self, *args, **kwargs)
+            finally:
+                self.call_post(app_self, exc)
+
+        return wrapper_async if inspect.iscoroutinefunction(fn) else wrapper_sync
+
 
 class Application:
     def __init__(
@@ -479,6 +569,7 @@ class Application:
 
     # @telemetry.capture_function_usage # todo -- capture usage when we break this up into one that isn't called internally
     # This will be doable when we move sequence ID to the beginning of the function https://github.com/DAGWorks-Inc/burr/pull/73
+    @_call_execute_method_pre_post(ExecuteMethod.step)
     def step(self, inputs: Optional[Dict[str, Any]] = None) -> Optional[Tuple[Action, dict, State]]:
         """Performs a single step, advancing the state machine along.
         This returns a tuple of the action that was run, the result of running
@@ -630,6 +721,7 @@ class Application:
 
     # @telemetry.capture_function_usage
     # ditto with step()
+    @_call_execute_method_pre_post(ExecuteMethod.astep)
     async def astep(self, inputs: Dict[str, Any] = None) -> Optional[Tuple[Action, dict, State]]:
         """Asynchronous version of step.
 
@@ -791,6 +883,7 @@ class Application:
         return prior_action, result, self._state
 
     @telemetry.capture_function_usage
+    @_call_execute_method_pre_post(ExecuteMethod.iterate)
     def iterate(
         self,
         *,
@@ -828,6 +921,7 @@ class Application:
         return self._return_value_iterate(halt_before, halt_after, prior_action, result)
 
     @telemetry.capture_function_usage
+    @_call_execute_method_pre_post(ExecuteMethod.aiterate)
     async def aiterate(
         self,
         *,
@@ -857,6 +951,7 @@ class Application:
                 break
 
     @telemetry.capture_function_usage
+    @_call_execute_method_pre_post(ExecuteMethod.run)
     def run(
         self,
         *,
@@ -878,9 +973,11 @@ class Application:
             try:
                 next(gen)
             except StopIteration as e:
-                return e.value
+                result = e.value
+                return result
 
     @telemetry.capture_function_usage
+    @_call_execute_method_pre_post(ExecuteMethod.arun)
     async def arun(
         self,
         *,
@@ -896,6 +993,7 @@ class Application:
         :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world
         :return: The final state, and the results of running the actions in the order that they were specified.
         """
+
         prior_action = None
         result = None
         halt_before, halt_after, inputs = self._clean_iterate_params(
@@ -1015,6 +1113,8 @@ class Application:
                 result, state = output.get()
                 print(format(result['response'], color))
         """
+        call_execute_method_wrapper = _call_execute_method_pre_post(ExecuteMethod.stream_result)
+        call_execute_method_wrapper.call_pre(self)
         halt_before, halt_after, inputs = self._clean_iterate_params(
             halt_before, halt_after, inputs
         )
@@ -1035,6 +1135,7 @@ class Application:
             # For context, this is specifically for the case in which you want to have
             # multiple terminal points with a unified API, where some are streaming, and some are not.
             if next_action.name in halt_before and next_action.name not in halt_after:
+                call_execute_method_wrapper.call_post(self, None)
                 return next_action, StreamingResultContainer.pass_through(
                     results=results, final_state=state
                 )
@@ -1072,6 +1173,7 @@ class Application:
                     sequence_id=self.sequence_id,
                     exception=exc,
                 )
+                call_execute_method_wrapper.call_post(self, exc)
 
             action_inputs = self._process_inputs(inputs, next_action)
             if not next_action.streaming:
@@ -1088,9 +1190,11 @@ class Application:
                     sequence_id=self.sequence_id,
                     exception=None,
                 )
-                return action, StreamingResultContainer.pass_through(
+                out = action, StreamingResultContainer.pass_through(
                     results=result, final_state=state
                 )
+                call_execute_method_wrapper.call_post(self, None)
+                return out
             if next_action.single_step:
                 next_action = cast(SingleStepStreamingAction, next_action)
                 generator = _run_single_step_streaming_action(
@@ -1118,6 +1222,7 @@ class Application:
                 sequence_id=self.sequence_id,
                 exception=e,
             )
+            call_execute_method_wrapper.call_post(self, e)
             raise
         return next_action, StreamingResultContainer(
             generator, self._state, process_result, callback
@@ -1233,6 +1338,8 @@ class Application:
                 result, state = await output.get()
                 print(format(result['response'], color))
         """
+        call_execute_method_wrapper = _call_execute_method_pre_post(ExecuteMethod.stream_result)
+        await call_execute_method_wrapper.acall_pre(self)
         halt_before, halt_after, inputs = self._clean_iterate_params(
             halt_before, halt_after, inputs
         )
@@ -1253,6 +1360,7 @@ class Application:
             # For context, this is specifically for the case in which you want to have
             # multiple terminal points with a unified API, where some are streaming, and some are not.
             if next_action.name in halt_before and next_action.name not in halt_after:
+                await call_execute_method_wrapper.acall_post(self, None)
                 return next_action, AsyncStreamingResultContainer.pass_through(
                     results=results, final_state=state
                 )
@@ -1288,12 +1396,12 @@ class Application:
                     sequence_id=self.sequence_id,
                     exception=exc,
                 )
+                await call_execute_method_wrapper.acall_post(self, exc)
 
             action_inputs = self._process_inputs(inputs, next_action)
             if not next_action.streaming:
                 # In this case we are halting at a non-streaming condition
                 # This is allowed as we want to maintain a more consistent API
-                # TODO -- get this to work with async. Figure out how to run the async step...
                 action, result, state = await self._astep(inputs=inputs, _run_hooks=False)
                 await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
                     "post_run_step",
@@ -1305,6 +1413,7 @@ class Application:
                     sequence_id=self.sequence_id,
                     exception=None,
                 )
+                await call_execute_method_wrapper.acall_post(self, None)
                 return action, AsyncStreamingResultContainer.pass_through(
                     results=result, final_state=state
                 )
@@ -1351,6 +1460,7 @@ class Application:
                 sequence_id=self.sequence_id,
                 exception=e,
             )
+            await call_execute_method_wrapper.acall_post(self, None, e)
             raise
         return next_action, AsyncStreamingResultContainer(
             generator, self._state, process_result, callback

@@ -1,4 +1,5 @@
 import abc
+import enum
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import burr.common.types as burr_types
@@ -251,6 +252,8 @@ class PostEndSpanHook(abc.ABC):
 
 @lifecycle.base_hook("post_end_span")
 class PostEndSpanHookAsync(abc.ABC):
+    """Hook that runs at the end of an async span"""
+
     @abc.abstractmethod
     async def post_end_span(
         self,
@@ -266,53 +269,86 @@ class PostEndSpanHookAsync(abc.ABC):
         pass
 
 
-# THESE ARE NOT IN USE
-# TODO -- implement/decide how to use them
-@lifecycle.base_hook("pre_run_application")
-class PreRunApplicationHook(abc.ABC):
+class ExecuteMethod(enum.Enum):
+    """A set of the application methods the user can call.
+    These correspond to interface methods in application.py, and
+    allow us to say *which* method is being called for the following hooks."""
+
+    step = "step"
+    astep = "astep"
+    iterate = "iterate"
+    aiterate = "aiterate"
+    run = "run"
+    arun = "arun"
+    stream_result = "stream_result"
+    astream_result = "astream_result"
+
+
+@lifecycle.base_hook("pre_run_execute_call")
+class PreApplicationExecuteCallHook(abc.ABC):
+    """Hook that runs before an application method (step/iterate/run/stream...) is called."""
+
     @abc.abstractmethod
-    def pre_run_application(
-        self, *, app_id: str, partition_key: str, state: "State", **future_kwargs: Any
-    ):
-        pass
-
-
-@lifecycle.base_hook("pre_run_application")
-class PreRunApplicationHookAsync(abc.ABC):
-    @abc.abstractmethod
-    async def pre_run_application(
-        self, *, app_id: str, partition_key: str, state: "State", **future_kwargs
-    ):
-        pass
-
-
-@lifecycle.base_hook("post_run_application")
-class PostRunApplicationHook(abc.ABC):
-    @abc.abstractmethod
-    def post_run_application(
+    def pre_run_execute_call(
         self,
         *,
         app_id: str,
         partition_key: str,
         state: "State",
-        until: list[str],
-        results: list[dict],
+        method: ExecuteMethod,
+        **future_kwargs: Any,
+    ):
+        pass
+
+
+@lifecycle.base_hook("pre_run_execute_call")
+class PreApplicationExecuteCallHookAsync(abc.ABC):
+    """Hook that runs before an async application method (step/iterate/run/stream...) is called."""
+
+    @abc.abstractmethod
+    async def pre_run_execute_call(
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        state: "State",
+        method: ExecuteMethod,
         **future_kwargs,
     ):
         pass
 
 
-@lifecycle.base_hook("post_run_application")
-class PostRunApplicationHookAsync(abc.ABC):
+@lifecycle.base_hook("post_run_execute_call")
+class PostApplicationExecuteCallHook(abc.ABC):
+    """Hook that runs after an application method (step/iterate/run/stream...) is called."""
+
     @abc.abstractmethod
-    async def post_run_application(
+    def post_run_execute_call(
         self,
         *,
         app_id: str,
         partition_key: str,
         state: "State",
-        until: list[str],
-        results: list[dict],
+        method: ExecuteMethod,
+        exception: Optional[Exception],
+        **future_kwargs,
+    ):
+        pass
+
+
+@lifecycle.base_hook("post_run_execute_call")
+class PostApplicationExecuteCallHookAsync(abc.ABC):
+    """Hook that runs after an async application method (step/iterate/run/stream...) is called."""
+
+    @abc.abstractmethod
+    async def post_run_execute_call(
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        state: "State",
+        method: ExecuteMethod,
+        exception: Optional[Exception],
         **future_kwargs,
     ):
         pass
@@ -325,10 +361,10 @@ LifecycleAdapter = Union[
     PreRunStepHookAsync,
     PostRunStepHook,
     PostRunStepHookAsync,
-    PreRunApplicationHook,
-    PreRunApplicationHookAsync,
-    PostRunApplicationHook,
-    PostRunApplicationHookAsync,
+    PreApplicationExecuteCallHook,
+    PreApplicationExecuteCallHookAsync,
+    PostApplicationExecuteCallHook,
+    PostApplicationExecuteCallHookAsync,
     PostApplicationCreateHook,
     PreStartSpanHook,
     PreStartSpanHookAsync,
