@@ -51,7 +51,6 @@ SERVE_STATIC = os.getenv("BURR_SERVE_STATIC", "true").lower() == "true"
 
 SENTINEL_PARTITION_KEY = "__none__"
 
-
 backend = BackendBase.create_from_env()
 
 
@@ -92,6 +91,9 @@ async def save_snapshot():
         logger.info("Saved snapshot of DB for recovery")
 
 
+initialized = False
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Download if it does it
@@ -101,11 +103,22 @@ async def lifespan(app: FastAPI):
     await backend.lifespan(app).__anext__()
     await sync_index()  # this will trigger the repeat every N seconds
     await save_snapshot()  # this will trigger the repeat every N seconds
+    global initialized
+    initialized = True
     yield
     await backend.lifespan(app).__anext__()
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+@app.get("/ready")
+def is_ready():
+    if not initialized:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Backend is not ready yet."
+        )
+    return {"ready": True}
 
 
 @app.get("/api/v0/metadata/app_spec", response_model=BackendSpec)

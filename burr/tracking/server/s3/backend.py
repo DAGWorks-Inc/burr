@@ -6,6 +6,7 @@ import json
 import logging
 import operator
 import os.path
+import sys
 import uuid
 from collections import Counter
 from typing import List, Literal, Optional, Sequence, Tuple, Type, TypeVar, Union
@@ -43,6 +44,11 @@ logger = logging.getLogger(__name__)
 FileType = Literal["log", "metadata", "graph"]
 
 ContentsModel = TypeVar("ContentsModel", bound=pydantic.BaseModel)
+
+if sys.version_info >= (3, 11):
+    utc = datetime.UTC
+else:
+    utc = datetime.timezone.utc
 
 
 async def _query_s3_file(
@@ -148,7 +154,7 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
         load_snapshot_on_start: bool,
         prior_snapshots_to_keep: int,
     ):
-        self._backend_id = datetime.datetime.now(datetime.UTC).isoformat() + str(uuid.uuid4())
+        self._backend_id = datetime.datetime.now(utc).isoformat() + str(uuid.uuid4())
         self._bucket = s3_bucket
         self._session = session.get_session()
         self._update_interval_milliseconds = update_interval_milliseconds
@@ -173,7 +179,7 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
             objects = await client.list_objects_v2(
                 Bucket=self._bucket, Prefix=self._snapshot_prefix, MaxKeys=1
             )
-            if len(objects["Contents"]) == 0:
+            if objects["KeyCount"] == 0:
                 return
             # get the latest snapshot -- it's organized by alphabetical order
             latest_snapshot = objects["Contents"][0]
@@ -517,6 +523,8 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
         await self._scan_and_update_db()
 
     async def lifespan(self, app: FastAPI):
+        if not os.path.exists(dirname := os.path.dirname(settings.DB_PATH)):
+            os.mkdir(dirname)
         async with RegisterTortoise(app, config=settings.TORTOISE_ORM, add_exception_handlers=True):
             yield
 

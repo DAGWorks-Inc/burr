@@ -75,6 +75,7 @@ class Step(pydantic.BaseModel):
     def from_logs(log_lines: List[bytes]) -> List["Step"]:
         steps_by_sequence_id = collections.defaultdict(PartialStep)
         spans_by_id = collections.defaultdict(PartialSpan)
+        attributes_by_step: dict[int, List[AttributeModel]] = collections.defaultdict(list)
         for line in log_lines:
             json_line = safe_json_load(line)
             # TODO -- make these into constants
@@ -94,6 +95,9 @@ class Step(pydantic.BaseModel):
                 end_span = EndSpanModel.parse_obj(json_line)
                 span = spans_by_id[end_span.span_id]
                 span.end_entry = end_span
+            elif json_line["type"] == "attribute":
+                attribute = AttributeModel.parse_obj(json_line)
+                attributes_by_step[attribute.action_sequence_id].append(attribute)
         for span in spans_by_id.values():
             sequence_id = (
                 span.begin_entry.action_sequence_id
@@ -116,6 +120,7 @@ class Step(pydantic.BaseModel):
                 step_start_log=value.step_start_log,
                 step_end_log=value.step_end_log,
                 spans=[Span(**span.dict()) for span in value.spans if span.begin_entry is not None],
+                attributes=attributes_by_step[key],
             )
             for key, value in sorted(steps_by_sequence_id.items())
             if value.step_start_log is not None

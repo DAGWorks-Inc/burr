@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from tortoise import Tortoise
+from tortoise import Tortoise, run_async
 
 from burr.tracking.server.s3 import settings
 
@@ -17,12 +17,12 @@ async def connect():
 
 
 #
-# async def first_time_init():
-#     await connect()
-#     # Generate the schema
-#     await Tortoise.generate_schemas()
-#
-#
-# if __name__ == '__main__':
-#     # db_path = sys.argv[1]
-#     run_async(first_time_init())
+async def first_time_init():
+    await connect()
+    # Generate the schema
+    await Tortoise.generate_schemas()
+
+
+if __name__ == "__main__":
+    # db_path = sys.argv[1]
+    run_async(first_time_init())
