@@ -106,7 +106,7 @@ class Graph:
         include_state: bool = False,
         view: bool = False,
         engine: Literal["graphviz"] = "graphviz",
-        keep_dot: bool = False,
+        write_dot: bool = False,
         **engine_kwargs: Any,
     ) -> Optional["graphviz.Digraph"]:  # noqa: F821
         """Visualizes the graph using graphviz. This will render the graph.
@@ -117,7 +117,7 @@ class Graph:
         :param include_state: Whether to indicate the action "signature" (reads/writes) on the nodes
         :param view: Whether to bring up a view
         :param engine: The engine to use -- only graphviz is supported for now
-        :param keep_dot: If True, produce a graphviz dot file
+        :param write_dot: If True, produce a graphviz dot file
         :param engine_kwargs: Additional kwargs to pass to the engine
         :return: The graphviz object
         """
@@ -191,7 +191,7 @@ class Graph:
             # the two methods have slightly different APIs that we need to account for
 
             # if view=True, we must use `.render()` because `.pipe()` doesn't accept a `view` kwarg
-            if keep_dot or view:
+            if write_dot or view:
                 # `.render()` appends the `format` kwarg to the filename
                 # i.e., we need to pass `/my/filepath` to generate `/my/filepath.png`
                 # otherwise, passing `/my/filepath.png` will generate `/my/filepath.png.png`
