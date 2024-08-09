@@ -54,6 +54,39 @@ def _validate_transitions(
     return True
 
 
+def _render_graphviz(
+    graphviz_obj,
+    output_file_path: Union[str, pathlib.Path],
+    view: bool = False,
+    write_dot: bool = False,
+) -> None:
+    """Generate an image file for the graphviz object.
+
+    Use graphviz's `.render()` to produce a dot file or open the image
+    on the OS (i.e., `view` arg)
+    Use .pipe()` to not produce a not file; can't open the image
+    """
+    output_file_path = pathlib.Path(output_file_path)
+
+    if output_file_path.suffix != "":
+        # infer format from path; i.e., extract `svg` from the `.svg` suffix
+        format = output_file_path.suffix.partition(".")[-1]
+    else:
+        format = "png"
+
+    path_without_suffix = pathlib.Path(output_file_path.parent, output_file_path.stem)
+    if write_dot or view:
+        # `.render()` appends the `format` kwarg to the filename
+        # i.e., we need to pass `/my/filepath` to generate `/my/filepath.png`
+        # otherwise, passing `/my/filepath.png` will generate `/my/filepath.png.png`
+        graphviz_obj.render(path_without_suffix, format=format, view=view)
+    else:
+        # `.pipe()` doesn't append the format to the filename, so we do it explicitly
+        pathlib.Path(f"{path_without_suffix}.{format}").write_bytes(
+            graphviz_obj.pipe(format=format)
+        )
+
+
 @dataclasses.dataclass
 class Graph:
     """Graph class allows you to specify actions and transitions between them.
@@ -174,36 +207,14 @@ class Graph:
                 style="dashed" if transition.condition is not default else "solid",
             )
 
-        # the default format is png if nothing else is specified
-        render_kwargs = {"format": "png", "view": view}
         if output_file_path:
-            output_file_path = pathlib.Path(output_file_path)
-            suffix = output_file_path.suffix
-            path_without_suffix = pathlib.Path(output_file_path.parent, output_file_path.stem)
+            _render_graphviz(
+                graphviz_obj=digraph,
+                output_file_path=output_file_path,
+                view=view,
+                write_dot=write_dot,
+            )
 
-            # infer format from path
-            if suffix != "":
-                # extract the `png` format from the `.png` suffix
-                inferred_format = suffix.partition(".")[-1]
-                render_kwargs.update(format=inferred_format)
-
-            # use `.render()` to generate DOT file; use `.pipe()` to skip it
-            # the two methods have slightly different APIs that we need to account for
-
-            # if view=True, we must use `.render()` because `.pipe()` doesn't accept a `view` kwarg
-            if write_dot or view:
-                # `.render()` appends the `format` kwarg to the filename
-                # i.e., we need to pass `/my/filepath` to generate `/my/filepath.png`
-                # otherwise, passing `/my/filepath.png` will generate `/my/filepath.png.png`
-                digraph.render(path_without_suffix, **render_kwargs)
-
-            else:
-                # `.pipe()` doesn't have a `view` kwarg
-                render_kwargs.pop("view", None)
-                # `.pipe()` doesn't append the format to the filename, so we do it explicitly
-                output_file_path = f"{path_without_suffix}.{render_kwargs['format']}"
-                # pipe the digraph to a file
-                pathlib.Path(output_file_path).write_bytes(digraph.pipe(**render_kwargs))
         return digraph
 
     def _repr_mimebundle_(self, include=None, exclude=None, **kwargs):
