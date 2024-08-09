@@ -29,19 +29,19 @@ def graph(base_counter_action):
 
 
 @pytest.mark.parametrize(
-    "filename, keep_dot", [("app", False), ("app.png", False), ("app", True), ("app.png", True)]
+    "filename, write_dot", [("app", False), ("app.png", False), ("app", True), ("app.png", True)]
 )
-def test_visualize_dot_output(graph, tmp_path: pathlib.Path, filename: str, keep_dot: bool):
+def test_visualize_dot_output(graph, tmp_path: pathlib.Path, filename: str, write_dot: bool):
     """Handle file generation with `graph.Digraph` `.render()` and `.pipe()`"""
     output_file_path = f"{tmp_path}/{filename}"
 
     graph.visualize(
         output_file_path=output_file_path,
-        keep_dot=keep_dot,
+        write_dot=write_dot,
     )
 
     # assert pathlib.Path(tmp_path, "app.png").exists()
-    assert pathlib.Path(tmp_path, "app").exists() == keep_dot
+    assert pathlib.Path(tmp_path, "app").exists() == write_dot
 
 
 def test_visualize_no_dot_output(graph, tmp_path: pathlib.Path):
