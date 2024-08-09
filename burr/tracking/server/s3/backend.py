@@ -179,7 +179,7 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
             objects = await client.list_objects_v2(
                 Bucket=self._bucket, Prefix=self._snapshot_prefix, MaxKeys=1
             )
-            if len(objects["Contents"]) == 0:
+            if objects["KeyCount"] == 0:
                 return
             # get the latest snapshot -- it's organized by alphabetical order
             latest_snapshot = objects["Contents"][0]
@@ -523,6 +523,8 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
         await self._scan_and_update_db()
 
     async def lifespan(self, app: FastAPI):
+        if not os.path.exists(dirname := os.path.dirname(settings.DB_PATH)):
+            os.mkdir(dirname)
         async with RegisterTortoise(app, config=settings.TORTOISE_ORM, add_exception_handlers=True):
             yield
 
