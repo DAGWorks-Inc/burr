@@ -1474,6 +1474,7 @@ class Application:
         include_state: bool = False,
         view: bool = False,
         engine: Literal["graphviz"] = "graphviz",
+        write_dot: bool = False,
         **engine_kwargs: Any,
     ) -> Optional["graphviz.Digraph"]:  # noqa: F821
         """Visualizes the application graph using graphviz. This will render the graph.
@@ -1484,6 +1485,7 @@ class Application:
         :param include_state: Whether to indicate the action "signature" (reads/writes) on the nodes
         :param view: Whether to bring up a view
         :param engine: The engine to use -- only graphviz is supported for now
+        :param write_dot: If True, produce a graphviz dot file
         :param engine_kwargs: Additional kwargs to pass to the engine
         :return: The graphviz object
         """
@@ -1493,6 +1495,7 @@ class Application:
             include_state=include_state,
             view=view,
             engine=engine,
+            write_dot=write_dot,
             **engine_kwargs,
         )
 
