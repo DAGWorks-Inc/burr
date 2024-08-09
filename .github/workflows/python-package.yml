@@ -15,8 +15,10 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+
       - uses: pre-commit/action@v3.0.0
 
   test:
@@ -27,14 +29,17 @@ jobs:
         python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install dependencies
         run: |
           python -m pip install -e ".[tests,tracking-client]"
+
       - name: Run tests
         run: |
           python -m pytest tests --ignore=tests/integrations/persisters
@@ -42,11 +47,14 @@ jobs:
   validate-examples:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+
       - name: Install dependencies
         run: |
           python -m pip install -e ".[tests]"
+
       - name: Validate examples
         working-directory: ./examples
         run: |
@@ -75,14 +83,17 @@ jobs:
         python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install dependencies
         run: |
           python -m pip install -e ".[tests,tracking-client]"
+
       - name: Run tests
         run: |
           BURR_CI_INTEGRATION_TESTS=true python -m pytest tests/integrations/persisters/
