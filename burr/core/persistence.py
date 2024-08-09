@@ -170,7 +170,7 @@ class SQLLitePersister(BaseStatePersister):
         cursor.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {table_name} (
-                partition_key TEXT DEFAULT '{self.PARTITION_KEY_DEFAULT}',
+                partition_key TEXT DEFAULT '{SQLLitePersister.PARTITION_KEY_DEFAULT}',
                 app_id TEXT NOT NULL,
                 sequence_id INTEGER NOT NULL,
                 position TEXT NOT NULL,
@@ -192,7 +192,11 @@ class SQLLitePersister(BaseStatePersister):
         # Usage
         self.create_table_if_not_exists(self.table_name)
 
-    def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
+    def list_app_ids(self, partition_key: Optional[str], **kwargs) -> list[str]:
+        partition_key = (
+            partition_key if partition_key is not None else SQLLitePersister.PARTITION_KEY_DEFAULT
+        )
+
         cursor = self.connection.cursor()
         cursor.execute(
             f"SELECT DISTINCT app_id FROM {self.table_name} "
@@ -216,8 +220,9 @@ class SQLLitePersister(BaseStatePersister):
         :param sequence_id:
         :return:
         """
-        if partition_key is None:
-            partition_key = self.PARTITION_KEY_DEFAULT
+        partition_key = (
+            partition_key if partition_key is not None else SQLLitePersister.PARTITION_KEY_DEFAULT
+        )
         logger.debug("Loading %s, %s, %s", partition_key, app_id, sequence_id)
         cursor = self.connection.cursor()
         if app_id is None:
@@ -291,8 +296,9 @@ class SQLLitePersister(BaseStatePersister):
             state,
             status,
         )
-        if partition_key is None:
-            partition_key = self.PARTITION_KEY_DEFAULT
+        partition_key = (
+            partition_key if partition_key is not None else SQLLitePersister.PARTITION_KEY_DEFAULT
+        )
         cursor = self.connection.cursor()
         json_state = json.dumps(state.serialize(**self.serde_kwargs))
         cursor.execute(
