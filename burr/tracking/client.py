@@ -426,14 +426,14 @@ class LocalTrackingClient(
         self,
         *,
         action: str,
-        sequence_id: int,
+        action_sequence_id: int,
         span: ActionSpan,
         span_dependencies: list[str],
         **future_kwargs: Any,
     ):
         begin_span_model = BeginSpanModel(
             start_time=datetime.datetime.now(),
-            action_sequence_id=sequence_id,
+            action_sequence_id=action_sequence_id,
             span_id=span.uid,
             parent_span_id=span.parent.uid if span.parent else None,
             span_dependencies=span_dependencies,
@@ -445,14 +445,14 @@ class LocalTrackingClient(
         self,
         *,
         action: str,
-        sequence_id: int,
+        action_sequence_id: int,
         span: ActionSpan,
         span_dependencies: list[str],
         **future_kwargs: Any,
     ):
         end_span_model = EndSpanModel(
             end_time=datetime.datetime.now(),
-            action_sequence_id=sequence_id,
+            action_sequence_id=action_sequence_id,
             span_id=span.uid,
         )
         self._append_write_line(end_span_model)

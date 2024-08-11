@@ -133,7 +133,7 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
             action=self.action,
             span=context,
             span_dependencies=self.span_dependencies,
-            sequence_id=self.action_sequence_id,
+            action_sequence_id=self.action_sequence_id,
             app_id=self.app_id,
             partition_key=self.partition_key,
         )
@@ -144,7 +144,7 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
             action=self.action,
             span=context,
             span_dependencies=self.span_dependencies,
-            sequence_id=self.action_sequence_id,
+            action_sequence_id=self.action_sequence_id,
             app_id=self.app_id,
             partition_key=self.partition_key,
         )
@@ -155,7 +155,7 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
             action=self.action,
             span=context,
             span_dependencies=self.span_dependencies,
-            sequence_id=self.action_sequence_id,
+            action_sequence_id=self.action_sequence_id,
             app_id=self.app_id,
             partition_key=self.partition_key,
         )
@@ -187,7 +187,7 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
             action=self.action,
             span=context,
             span_dependencies=self.span_dependencies,
-            sequence_id=self.action_sequence_id,
+            action_sequence_id=self.action_sequence_id,
             app_id=self.app_id,
             partition_key=self.partition_key,
         )
