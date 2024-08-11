@@ -2482,6 +2482,9 @@ def test_application_builder_initialize_fork_app_id_happy_pth():
 
 
 class NoOpTracker(SyncTrackingClient):
+    def do_log_attributes(self, **future_kwargs: Any):
+        pass
+
     def __init__(self, unique_id: str):
         self.unique_id = unique_id
 
