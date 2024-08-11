@@ -208,7 +208,11 @@ class SQLLitePersister(BaseStatePersister):
         return app_ids
 
     def load(
-        self, partition_key: Optional[str], app_id: str, sequence_id: int = None, **kwargs
+        self,
+        partition_key: Optional[str],
+        app_id: Optional[str],
+        sequence_id: Optional[int] = None,
+        **kwargs,
     ) -> Optional[PersistedStateData]:
         """Loads state for a given partition id.
 
@@ -262,7 +266,7 @@ class SQLLitePersister(BaseStatePersister):
 
     def save(
         self,
-        partition_key: str,
+        partition_key: Optional[str],
         app_id: str,
         sequence_id: int,
         position: str,

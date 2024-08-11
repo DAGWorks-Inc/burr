@@ -33,3 +33,31 @@ def test_persistence_lists_app_ids(persistence):
     persistence.save("partition_key", "app_id2", 1, "position", State({"key": "value"}), "status")
     app_ids = persistence.list_app_ids("partition_key")
     assert set(app_ids) == set(["app_id1", "app_id2"])
+
+
+@pytest.mark.parametrize(
+    "method_name,kwargs",
+    [
+        ("list_app_ids", {"partition_key": None}),
+        ("load", {"partition_key": None, "app_id": "foo"}),
+        (
+            "save",
+            {
+                "partition_key": None,
+                "app_id": "foo",
+                "sequence_id": 1,
+                "position": "position",
+                "state": State({"key": "value"}),
+                "status": "status",
+            },
+        ),
+    ],
+)
+def test_persister_methods_none_partition_key(persistence, method_name: str, kwargs: dict):
+    persistence.initialize()
+    method = getattr(persistence, method_name)
+    # method can be executed with `partition_key=None`
+    method(**kwargs)
+    # this doesn't guarantee that the results of `partition_key=None` and
+    # `partition_key=persistence.PARTITION_KEY_DEFAULT`. This is hard to test because
+    # these operations are stateful (i.e., read/write to a db)
