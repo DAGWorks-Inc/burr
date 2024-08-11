@@ -4,7 +4,7 @@ import importlib
 import json
 import os.path
 import sys
-from typing import Any, List, Optional, Sequence, Type, TypeVar
+from typing import Any, Optional, Sequence, Type, TypeVar
 
 import aiofiles
 import aiofiles.os as aiofilesos
@@ -13,16 +13,9 @@ from fastapi import FastAPI
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from burr.tracking.common import models
-from burr.tracking.common.models import (
-    AttributeModel,
-    BeginEntryModel,
-    BeginSpanModel,
-    ChildApplicationModel,
-    EndEntryModel,
-    EndSpanModel,
-)
+from burr.tracking.common.models import ChildApplicationModel
 from burr.tracking.server import schema
-from burr.tracking.server.schema import ApplicationLogs, ApplicationSummary
+from burr.tracking.server.schema import ApplicationLogs, ApplicationSummary, Step
 
 T = TypeVar("T")
 
@@ -290,46 +283,49 @@ class LocalBackend(BackendBase):
             )
         async with aiofiles.open(graph_file) as f:
             str_graph = await f.read()
-        steps_by_sequence_id = {}
-        spans_by_id = {}
         # TODO -- use the Step.from_logs method
-        attributes_by_step: dict[int, List[AttributeModel]] = collections.defaultdict(list)
+        collections.defaultdict(list)
         if os.path.exists(log_file):
             async with aiofiles.open(log_file, "rb") as f:
-                for line in await f.readlines():
-                    json_line = safe_json_load(line)
-                    # TODO -- make these into constants
-                    if json_line["type"] == "begin_entry":
-                        begin_step = BeginEntryModel.parse_obj(json_line)
-                        steps_by_sequence_id[begin_step.sequence_id] = schema.Step(
-                            step_start_log=begin_step, step_end_log=None, spans=[], attributes=[]
-                        )
-                    elif json_line["type"] == "end_entry":
-                        # this assumes they'll be in order
-                        step_end_log = EndEntryModel.parse_obj(json_line)
-                        step = steps_by_sequence_id[step_end_log.sequence_id]
-                        step.step_end_log = step_end_log
-                    elif json_line["type"] == "begin_span":
-                        span = BeginSpanModel.parse_obj(json_line)
-                        spans_by_id[span.span_id] = schema.Span(
-                            begin_entry=span,
-                            end_entry=None,
-                        )
-                    elif json_line["type"] == "end_span":
-                        end_span = EndSpanModel.parse_obj(json_line)
-                        span = spans_by_id[end_span.span_id]
-                        span.end_entry = end_span
-                    elif json_line["type"] == "attribute":
-                        attribute = models.AttributeModel.parse_obj(json_line)
-                        attributes_by_step[attribute.action_sequence_id].append(attribute)
-        for span in spans_by_id.values():
-            # They should have one, the other, or both set
-            step = steps_by_sequence_id[span.begin_entry.action_sequence_id]
-            step.spans.append(span)
-
-        for action_sequence_id, attributes in attributes_by_step.items():
-            step = steps_by_sequence_id[action_sequence_id]
-            step.attributes = attributes
+                lines = await f.readlines()
+                steps = Step.from_logs(lines)
+        #
+        #         for line in await f.readlines():
+        #             json_line = safe_json_load(line)
+        #             # TODO -- make these into constants
+        #             if json_line["type"] == "begin_entry":
+        #                 begin_step = BeginEntryModel.parse_obj(json_line)
+        #                 steps_by_sequence_id[begin_step.sequence_id] = schema.Step(
+        #                     step_start_log=begin_step, step_end_log=None, spans=[], attributes=[]
+        #                 )
+        #             elif json_line["type"] == "end_entry":
+        #                 # this assumes they'll be in order
+        #                 step_end_log = EndEntryModel.parse_obj(json_line)
+        #                 step = steps_by_sequence_id[step_end_log.sequence_id]
+        #                 step.step_end_log = step_end_log
+        #             elif json_line["type"] == "begin_span":
+        #                 span = BeginSpanModel.parse_obj(json_line)
+        #                 spans_by_id[span.span_id] = schema.Span(
+        #                     begin_entry=span,
+        #                     end_entry=None,
+        #                 )
+        #             elif json_line["type"] == "end_span":
+        #                 end_span = EndSpanModel.parse_obj(json_line)
+        #                 import pdb
+        #                 pdb.set_trace()
+        #                 span = spans_by_id[end_span.span_id]
+        #                 span.end_entry = end_span
+        #             elif json_line["type"] == "attribute":
+        #                 attribute = models.AttributeModel.parse_obj(json_line)
+        #                 attributes_by_step[attribute.action_sequence_id].append(attribute)
+        # for span in spans_by_id.values():
+        #     # They should have one, the other, or both set
+        #     step = steps_by_sequence_id[span.begin_entry.action_sequence_id]
+        #     step.spans.append(span)
+        #
+        # for action_sequence_id, attributes in attributes_by_step.items():
+        #     step = steps_by_sequence_id[action_sequence_id]
+        #     step.attributes = attributes
 
         children = []
         if os.path.exists(children_file):
@@ -341,7 +337,7 @@ class LocalBackend(BackendBase):
 
         return ApplicationLogs(
             application=schema.ApplicationModel.parse_raw(str_graph),
-            steps=list(steps_by_sequence_id.values()),
+            steps=steps,
             parent_pointer=metadata.parent_pointer,
             spawning_parent_pointer=metadata.spawning_parent_pointer,
             children=children,
