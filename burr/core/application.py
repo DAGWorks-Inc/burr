@@ -1812,6 +1812,7 @@ class ApplicationBuilder:
         tracker: Union[Literal["local"], "TrackingClient"] = "local",
         project: str = "default",
         params: Dict[str, Any] = None,
+        use_otel_tracing: bool = False,
     ):
         """Adds a "tracker" to the application. The tracker specifies
         a project name (used for disambiguating groups of tracers), and plugs into the
@@ -1826,6 +1827,8 @@ class ApplicationBuilder:
         :param tracker: Tracker to use. ``local`` creates one, else pass one in.
         :param project: Project name -- used if the tracker is string-specified (local).
         :param params: Parameters to pass to the tracker if it's string-specified (local).
+        :param use_otel_tracing: Whether to log opentelemetry traces to the Burr UI. This is experimental but we will be adding
+            full support shortly. This requires burr[opentelemetry] installed. Note you can also log burr to OpenTelemetry using the OpenTelemetry adapter
         :return: The application builder for future chaining.
         """
         # if it's a lifecycle adapter, just add it
@@ -1839,15 +1842,18 @@ class ApplicationBuilder:
                 kwargs = {"project": project}
                 kwargs.update(params)
                 instantiated_tracker = LocalTrackingClient(**kwargs)
-                self.lifecycle_adapters.append(instantiated_tracker)
             else:
                 raise ValueError(f"Tracker {tracker}:{project} not supported")
         else:
-            self.lifecycle_adapters.append(instantiated_tracker)
             if params is not None:
                 raise ValueError(
                     "Params are not supported for object-specified trackers, these are already initialized!"
                 )
+        if use_otel_tracing:
+            from burr.integrations.opentelemetry import OpenTelemetryTracker
+
+            instantiated_tracker = OpenTelemetryTracker(burr_tracker=instantiated_tracker)
+        self.lifecycle_adapters.append(instantiated_tracker)
         self.tracker = instantiated_tracker
         return self
 

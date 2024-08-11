@@ -144,6 +144,10 @@ developer = [
   "pre-commit",
 ]
 
+opentelemetry = [
+  "opentelemetry-api",
+  "opentelemetry-sdk",
+]
 [tool.setuptools]
 include-package-data = true
 
