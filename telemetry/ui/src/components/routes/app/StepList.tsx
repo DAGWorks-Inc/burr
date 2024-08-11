@@ -420,6 +420,7 @@ const WaterfallPiece: React.FC<{
     new Date(props.step.step_start_log.start_time).getTime();
 
   const spanStartMilliseconds = new Date(props.span.begin_entry.start_time).getTime();
+
   const spanEndMilliseconds = new Date(props.span.end_entry?.end_time || new Date()).getTime();
   const bgColor = props.isHighlighted ? 'bg-white' : props.bgColor;
   return (
@@ -427,7 +428,7 @@ const WaterfallPiece: React.FC<{
       <div
         className={`${bgColor} opacity-50`}
         style={{
-          width: `${Math.max(((spanEndMilliseconds - spanStartMilliseconds) / totalTimeMilliseconds) * 100, 1)}%`,
+          width: `${Math.min(((spanEndMilliseconds - spanStartMilliseconds) / totalTimeMilliseconds) * 100, 100)}%`,
           position: 'relative',
           height: '100%',
           left: `${((spanStartMilliseconds - new Date(props.step.step_start_log.start_time).getTime()) / totalTimeMilliseconds) * 100}%`
