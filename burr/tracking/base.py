@@ -7,6 +7,7 @@ from burr.lifecycle import (
     PreRunStepHook,
     PreStartSpanHook,
 )
+from burr.lifecycle.base import DoLogAttributeHook
 
 
 class SyncTrackingClient(
@@ -15,6 +16,7 @@ class SyncTrackingClient(
     PostRunStepHook,
     PreStartSpanHook,
     PostEndSpanHook,
+    DoLogAttributeHook,
     abc.ABC,
 ):
     """Base class for synchronous tracking clients. All tracking clients must implement from this

@@ -66,16 +66,20 @@ def generate_chatbot_data(
 
     def _run_conversation(app_id, prompts):
         tracker = (
-            LocalTrackingClient(project=project_id, storage_dir=data_dir)
+            LocalTrackingClient(project=project_id + "_otel", storage_dir=data_dir)
             if not s3_bucket
             else S3TrackingClient(project=project_id, bucket=s3_bucket)
         )
+        from opentelemetry.instrumentation.openai import OpenAIInstrumentor
+
+        # TODO -- get this auto-registered
+        OpenAIInstrumentor().instrument()
         graph = (chatbot_application_with_traces if use_traces else chatbot_application).graph
         app = (
             ApplicationBuilder()
             .with_graph(graph)
             .with_identifiers(app_id=app_id)
-            .with_tracker(tracker)
+            .with_tracker(tracker, use_otel_tracing=True)
             .with_entrypoint("prompt")
             .build()
         )
@@ -201,6 +205,3 @@ def generate_all(
     generate_counter_data(data_dir=data_dir, s3_bucket=s3_bucket, unique_app_names=unique_app_names)
     logger.info("Generating RAG data")
     generate_rag_data(data_dir=data_dir, s3_bucket=s3_bucket, unique_app_names=unique_app_names)
-
-
-#
