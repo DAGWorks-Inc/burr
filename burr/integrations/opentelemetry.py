@@ -119,7 +119,7 @@ def _enter_span(name: str, tracer: trace.Tracer):
     return span
 
 
-class OpenTelemetryAdapter(
+class OpenTelemetryBridge(
     PreApplicationExecuteCallHook,
     PostApplicationExecuteCallHook,
     PreRunStepHook,
@@ -429,16 +429,14 @@ class BurrTrackingSpanProcessor(SpanProcessor):
                 )
 
 
-class BurrTrackingTracerProvider(TracerProvider):
-    def __init__(self, *args, **kwargs):
-        super(BurrTrackingTracerProvider, self).__init__(*args, **kwargs)
-        self.add_span_processor(BurrTrackingSpanProcessor())
-
-
 initialized = False
 
 
 def initialize_tracer():
+    """Initializes the tracer for OpenTel. Note this sets it globally.
+    TODO -- ensure that it is initialized properly/do this in a cleaner manner.
+    OpenTel does not make this easy as it's all global state.
+    """
     global initialized
     if initialized:
         return

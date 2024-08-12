@@ -18,6 +18,10 @@ counter_application = importlib.import_module("examples.hello-world-counter.appl
 chatbot_application = importlib.import_module("examples.multi-modal-chatbot.application")
 chatbot_application_with_traces = importlib.import_module("examples.tracing-and-spans.application")
 
+from opentelemetry.instrumentation.openai import OpenAIInstrumentor
+
+OpenAIInstrumentor().instrument()
+
 
 def generate_chatbot_data(
     data_dir: Optional[str] = None,
@@ -70,10 +74,7 @@ def generate_chatbot_data(
             if not s3_bucket
             else S3TrackingClient(project=project_id, bucket=s3_bucket)
         )
-        from opentelemetry.instrumentation.openai import OpenAIInstrumentor
 
-        # TODO -- get this auto-registered
-        OpenAIInstrumentor().instrument()
         graph = (chatbot_application_with_traces if use_traces else chatbot_application).graph
         app = (
             ApplicationBuilder()
