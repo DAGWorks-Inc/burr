@@ -8,6 +8,7 @@ import { classNames } from '../../../utils/tailwind';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid';
 import { getUniqueAttributeID } from '../../../utils';
 import { AppViewHighlightContext } from './AppView';
+import { MinusIcon } from '@heroicons/react/24/outline';
 
 /**
  * Common JSON view so we can make everything look the same.
@@ -73,36 +74,72 @@ export const ErrorView = (props: { error: string }) => {
     </>
   );
 };
+
+type DUAL_TOGGLE = 'default_expanded' | 'all_hidden';
+type EXPANDED_TOGGLE = DUAL_TOGGLE | 'default_collapsed';
+// type EXPANDED_TOGGLE = 'default_expanded' | 'default_collapsed' | 'all_hidden';
+const cycleExpanded = (expanded: EXPANDED_TOGGLE): EXPANDED_TOGGLE => {
+  switch (expanded) {
+    case 'default_expanded':
+      return 'default_collapsed';
+    case 'default_collapsed':
+      return 'all_hidden';
+    case 'all_hidden':
+      return 'default_expanded';
+  }
+};
+
+const cycleExpandedDual = (expanded: DUAL_TOGGLE): DUAL_TOGGLE => {
+  switch (expanded) {
+    case 'default_expanded':
+      return 'all_hidden';
+    case 'all_hidden':
+      return 'default_expanded';
+  }
+};
+
 /**
  * Section header that allows for exapnsion/contraction of all subcomponents
  */
 const SectionHeaderWithExpand = (props: {
   name: string;
-  defaultExpanded?: boolean;
-  setDefaultExpanded?: (expanded: boolean) => void;
-  enableExpansion: boolean;
+  defaultExpanded?: EXPANDED_TOGGLE;
+  setDefaultExpanded?: (expanded: EXPANDED_TOGGLE) => void;
+  dualToggle?: boolean;
 }) => {
-  const MinimizeMaximizeIcon = props.defaultExpanded ? ChevronUpIcon : ChevronDownIcon;
+  let expandedState = props.defaultExpanded || 'default_expanded';
+  const cycle = props.dualToggle ? cycleExpandedDual : cycleExpanded;
+  if (props.dualToggle) {
+    if (expandedState === 'default_collapsed') {
+      expandedState = 'all_hidden';
+    }
+  }
+  const MinimizeMaximizeIcon =
+    props.defaultExpanded === 'default_expanded'
+      ? ChevronUpIcon
+      : props.defaultExpanded === 'default_collapsed'
+        ? MinusIcon
+        : ChevronDownIcon;
   return (
     <div className="flex flex-row items-center gap-1">
       <h1 className="text-2xl text-gray-900 font-semibold">{props.name}</h1>
-      {props.enableExpansion && (
-        <MinimizeMaximizeIcon
-          className={classNames(
-            'text-gray-500',
-            'h-5 w-5 rounded-md hover:cursor-pointer hover:scale-105'
-          )}
-          aria-hidden="true"
-          onClick={() => {
-            if (props.setDefaultExpanded) {
-              props.setDefaultExpanded(!props.defaultExpanded);
-            }
-          }}
-        />
-      )}
+      <MinimizeMaximizeIcon
+        className={classNames(
+          'text-gray-500',
+          'h-5 w-5 rounded-md hover:cursor-pointer hover:scale-105'
+        )}
+        aria-hidden="true"
+        onClick={() => {
+          if (props.setDefaultExpanded) {
+            // @ts-ignore
+            props.setDefaultExpanded(cycle(expandedState || 'default_expanded'));
+          }
+        }}
+      />
     </div>
   );
 };
+
 export const DataView = (props: { currentStep: Step | undefined; priorStep: Step | undefined }) => {
   const [whichState, setWhichState] = useState<'after' | 'before' | 'compare'>('after');
   const stepToExamine = whichState !== 'before' ? props.currentStep : props.priorStep;
@@ -114,9 +151,11 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
   const error = props.currentStep?.step_end_log?.exception;
   const [viewRawData, setViewRawData] = useState<'raw' | 'render'>('render');
 
-  const [allStateExpanded, setAllStateExpanded] = useState(true);
-  const [allResultExpanded, setAllResultExpanded] = useState(true);
-  const [allInputExpanded, setAllInputExpanded] = useState(true);
+  const [allStateExpanded, setAllStateExpanded] = useState<EXPANDED_TOGGLE>('default_expanded');
+  const [allResultExpanded, setAllResultExpanded] = useState<EXPANDED_TOGGLE>('default_expanded');
+  const [allInputExpanded, setAllInputExpanded] = useState<EXPANDED_TOGGLE>('default_expanded');
+  const [allAttributeExpanded, setAllAttributeExpanded] =
+    useState<EXPANDED_TOGGLE>('default_expanded');
 
   const attributes = stepToExamine?.attributes || [];
 
@@ -127,7 +166,7 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
           name="State"
           defaultExpanded={allStateExpanded}
           setDefaultExpanded={setAllStateExpanded}
-          enableExpansion={viewRawData === 'render'}
+          dualToggle={viewRawData === 'raw'}
         />
         <div className="flex flex-row justify-end gap-2 pr-2">
           <SwitchField>
@@ -172,12 +211,14 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
         </div>
       </div>
 
-      <StateView
-        stateData={stateData}
-        viewRawData={viewRawData}
-        isExpanded={allStateExpanded}
-        compareStateData={compareStateData}
-      />
+      <div className={`${allStateExpanded === 'all_hidden' ? 'hidden' : ''}`}>
+        <StateView
+          stateData={stateData}
+          viewRawData={viewRawData}
+          isExpanded={allStateExpanded === 'default_expanded'}
+          compareStateData={compareStateData}
+        />
+      </div>
       {error && (
         <>
           <h1 className="text-2xl text-gray-900 font-semibold">Error</h1>
@@ -190,13 +231,15 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
             name="Result"
             defaultExpanded={allResultExpanded}
             setDefaultExpanded={setAllResultExpanded}
-            enableExpansion={viewRawData === 'render'}
+            dualToggle={viewRawData === 'raw'}
           />
-          <ResultView
-            resultData={resultData}
-            viewRawData={viewRawData}
-            isExpanded={allResultExpanded}
-          />
+          <div className={`${allResultExpanded === 'all_hidden' ? 'hidden' : ''}`}>
+            <ResultView
+              resultData={resultData}
+              viewRawData={viewRawData}
+              isExpanded={allResultExpanded === 'default_expanded'}
+            />
+          </div>
         </>
       )}
       {inputs && Object.keys(inputs).length > 0 && (
@@ -205,28 +248,37 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
             name="Inputs"
             defaultExpanded={allInputExpanded}
             setDefaultExpanded={setAllInputExpanded}
-            enableExpansion={viewRawData === 'render'}
+            dualToggle={viewRawData === 'raw'}
           />
-          <InputsView inputs={inputs} isExpanded={allInputExpanded} viewRawData={viewRawData} />
-          {/* <FormRenderer data={inputs as DataType} isDefaultExpanded={allInputExpanded} /> */}
+          <div className={`${allInputExpanded === 'all_hidden' ? 'hidden' : ''}`}>
+            {
+              <InputsView
+                inputs={inputs}
+                isExpanded={allInputExpanded === 'default_expanded'}
+                viewRawData={viewRawData}
+              />
+            }
+          </div>
         </>
       )}
       {attributes && attributes.length > 0 && (
         <>
           <SectionHeaderWithExpand
             name="Attributes"
-            defaultExpanded={allInputExpanded}
-            setDefaultExpanded={setAllInputExpanded}
-            enableExpansion={viewRawData === 'render'}
+            defaultExpanded={allAttributeExpanded}
+            setDefaultExpanded={setAllAttributeExpanded}
+            dualToggle={viewRawData === 'raw'}
           />
-          {attributes.map((attribute, i) => (
-            <AttributeView
-              key={i}
-              attribute={attribute}
-              isExpanded={allInputExpanded}
-              viewRawData={viewRawData}
-            />
-          ))}
+          <div className={`${allAttributeExpanded === 'all_hidden' ? 'hidden' : ''}`}>
+            {attributes.map((attribute, i) => (
+              <AttributeView
+                key={i}
+                attribute={attribute}
+                isExpanded={allAttributeExpanded === 'default_expanded'}
+                viewRawData={viewRawData}
+              />
+            ))}
+          </div>
         </>
       )}
     </div>
