@@ -1,8 +1,9 @@
 import dataclasses
+import json
 import logging
 import random
 from contextvars import ContextVar
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from burr.integrations.base import require_plugin
 
@@ -66,21 +67,21 @@ def get_cached_span(span_id: int) -> Optional[FullSpanContext]:
 tracker_context = ContextVar[Optional[SyncTrackingClient]]("tracker_context", default=None)
 
 
-def _is_heterogeneous_array(value: list):
+def _is_homogeneous_sequence(value: Sequence):
     if len(value) == 0:
         return True
     first_type = type(value[0])
-    return any([not isinstance(val, first_type) for val in value])
+    return all([isinstance(val, first_type) for val in value])
 
 
 def convert_to_otel_attribute(attr: Any):
     if isinstance(attr, (str, bool, float, int)):
         return attr
-    elif isinstance(attr, list):
-        if _is_heterogeneous_array(attr):
-            return attr
+    elif isinstance(attr, Sequence):
+        if _is_homogeneous_sequence(attr):
+            return list(attr)
     try:
-        return serde.serialize(attr)
+        return json.dumps(serde.serialize(attr))
     except Exception as e:
         logger.error(f"Failed to serialize attribute: {attr}, got error: {e}")
         return str(attr)
