@@ -61,6 +61,7 @@ tests = [
   "pydantic",
   "pyarrow",
   "redis",
+  "burr[opentelemetry]"
 ]
 
 documentation = [

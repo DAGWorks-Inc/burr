@@ -289,44 +289,6 @@ class LocalBackend(BackendBase):
             async with aiofiles.open(log_file, "rb") as f:
                 lines = await f.readlines()
                 steps = Step.from_logs(lines)
-        #
-        #         for line in await f.readlines():
-        #             json_line = safe_json_load(line)
-        #             # TODO -- make these into constants
-        #             if json_line["type"] == "begin_entry":
-        #                 begin_step = BeginEntryModel.parse_obj(json_line)
-        #                 steps_by_sequence_id[begin_step.sequence_id] = schema.Step(
-        #                     step_start_log=begin_step, step_end_log=None, spans=[], attributes=[]
-        #                 )
-        #             elif json_line["type"] == "end_entry":
-        #                 # this assumes they'll be in order
-        #                 step_end_log = EndEntryModel.parse_obj(json_line)
-        #                 step = steps_by_sequence_id[step_end_log.sequence_id]
-        #                 step.step_end_log = step_end_log
-        #             elif json_line["type"] == "begin_span":
-        #                 span = BeginSpanModel.parse_obj(json_line)
-        #                 spans_by_id[span.span_id] = schema.Span(
-        #                     begin_entry=span,
-        #                     end_entry=None,
-        #                 )
-        #             elif json_line["type"] == "end_span":
-        #                 end_span = EndSpanModel.parse_obj(json_line)
-        #                 import pdb
-        #                 pdb.set_trace()
-        #                 span = spans_by_id[end_span.span_id]
-        #                 span.end_entry = end_span
-        #             elif json_line["type"] == "attribute":
-        #                 attribute = models.AttributeModel.parse_obj(json_line)
-        #                 attributes_by_step[attribute.action_sequence_id].append(attribute)
-        # for span in spans_by_id.values():
-        #     # They should have one, the other, or both set
-        #     step = steps_by_sequence_id[span.begin_entry.action_sequence_id]
-        #     step.spans.append(span)
-        #
-        # for action_sequence_id, attributes in attributes_by_step.items():
-        #     step = steps_by_sequence_id[action_sequence_id]
-        #     step.attributes = attributes
-
         children = []
         if os.path.exists(children_file):
             async with aiofiles.open(children_file) as f:
