@@ -95,3 +95,106 @@ The above will log quite a few attributes, prompt length, response tokens, etc..
 Note that we are currently building out the capability to wrap a class and "auto-log" standard attributes.
 
 You can read more in the :ref:`reference documentation <visibility>`.
+
+--------------
+Open Telemetry
+--------------
+
+While Burr does not support the entire `OpenTelemetry <https://opentelemetry.io/>`_
+spec, it does have integrations that allows it to (a) log to OpenTelemetry and (b)
+capture OpenTelemetry events with tracking.
+
+These features are currently experimental, but we expect the API to remain largely stable.
+
+Capturing OTel events
+---------------------
+
+Burr can capture OTel traces/spans that are logged from within a Burr step.
+These get tracked in the UI, which can display traces and attributes, as explained above.
+
+To do this, you just have to set the ``use_otel_tracing`` flag on :py:meth:`with_tracker <burr.core.application.ApplicationBuilder.with_tracker>`
+function in the ``ApplicationBuilder``. This will automatically capture all OTel traces, mixing them with Burr traces. Take the following (contrived)
+example:
+
+.. code-block:: python
+
+    from burr.visibility import TracingFactory
+    from burr.core import action
+    from opentelemetry import trace
+    otel_tracer = trace.get_tracer(__name__)
+
+    @action(reads=['prompt'], writes=['response'])
+    def my_action(state: State, __tracer: TracingFactory) -> State:
+        with __tracer:
+            # Burr logging
+            __tracer.log_attribute(prompt_length=len(state["prompt"]), prompt=state["prompt"])
+            # Otel Tracer
+            with otel_tracer.start_as_current_span('create_prompt') as span:
+                modified_prompt = _modify_prompt(state["prompt"])
+                span.set_attributes(dict(modified_prompt=modified_prompt))
+            # Back to Burr tracer
+            with __tracer('call_llm', dependencies=['create_prompt']):
+                response = _query(prompt=modified_prompt)
+                t.log_attribute(response=response.message, tokens=response.tokens)
+        return state.update({'response': response.message})
+
+    app = (
+        ApplicationBuilder()
+        .with_actions(my_action, ...)
+        .with_state(...)
+        .with_transitions(...)
+        .with_tracker("local", project="my_projet", cuse_otel_tracing=True)
+        .with_entrypoint("prompt", "my_action")
+        .build()
+    )
+While this is contrived, it illustrates that you can mix/match Burr/Otel. This is valuable
+when you have a Burr action that calls out to a function that is instrumented via OTel (
+of which there are a host of integrations).
+
+Note that this currently does not support logging remote traces, but we plan to have a
+more complete integration in the future.
+
+If you do not enable ``use_otel_tracing``, this will all be a no-op.
+
+Logging to OTel
+---------------
+
+Burr can also log to any OTel provider, again enabling mixing/matching of spans. To do this,
+you simply need to pass an instance of the :py:class:`OpenTelemetryBridge <burr.integrations.opentelemetry.OpenTelemetryBridge>` to the
+:py:meth:`with_hooks <burr.core.application.ApplicationBuilder.with_hooks>` method of the ``ApplicationBuilder``. This will automatically
+log all spans to the OTel provider of choice (and you are responsible for initializes
+it as you see fit).
+
+.. code-block:: python
+    from burr.integrations.opentelemetry import OpenTelemetryBridge
+
+    otel_tracer = trace.get_tracer(__name__)
+    app = (
+        ApplicationBuilder()
+        .with_actions(my_action, ...)
+        .with_state(...)
+        .with_transitions(...)
+        .with_hooks(OpenTelemetryBridge(tracer=otel_tracer))
+        .with_entrypoint("prompt", "my_action")
+        .build()
+    )
+
+
+With this you can log to any OpenTelemetry provider.
+
+LLM-specific Telemetry
+----------------------
+
+To get LLM-specific logging, you can you employ any of the `openllmetry <https://github.com/traceloop/openllmetry/>`_
+SDKs. This automatically instruments a variety of LLM interfaces.
+
+For instance, if you want to pick up on all prompts/tokens/etc... from OpenAI, it's as simple as running
+the following:
+
+.. code-block:: python
+
+    from opentelemetry.instrumentation.openai import OpenAIInstrumentor
+    OpenAIInstrumentor().instrument()
+
+This works with both of the integrations above, and simple requires the
+``opentelemetry-instrumentation-YYY`` package (where ``YYY`` is the library you want to instrument, openai in this case).
