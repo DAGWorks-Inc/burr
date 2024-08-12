@@ -3,6 +3,7 @@ import { Tabs } from '../../common/tabs';
 import { DataView } from './DataView';
 import { ActionView } from './ActionView';
 import { GraphView } from './GraphView';
+import { InsightsView } from './InsightsView';
 
 export const AppStateView = (props: {
   steps: Step[];
@@ -27,7 +28,8 @@ export const AppStateView = (props: {
   );
   const tabs = [
     { id: 'data', displayName: 'Data' },
-    { id: 'action', displayName: 'Action' }
+    { id: 'action', displayName: 'Action' },
+    { id: 'insights', displayName: 'Insights' }
   ];
   if (props.displayGraphAsTab) {
     tabs.push({ id: 'graph', displayName: 'Graph' });
@@ -48,6 +50,7 @@ export const AppStateView = (props: {
             hoverAction={props.hoverAction}
           />
         )}
+        {currentTab === 'insights' && <InsightsView steps={props.steps} />}
       </div>
     </>
   );
