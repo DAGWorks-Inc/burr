@@ -135,7 +135,10 @@ start = [
 examples = [
   "langchain",
   "langchain-community",
-  "langchain-openai"
+  "langchain-openai",
+  "opentelemetry-api",
+  "opentelemetry-sdk",
+  'opentelemetry-instrumentation-openai',
 ]
 
 # just install everything for developers
