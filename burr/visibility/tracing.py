@@ -232,6 +232,8 @@ class ActionSpanTracer(AbstractContextManager, AbstractAsyncContextManager):
             action=self.action,
             action_sequence_id=self.action_sequence_id,
             span=self.context_var.get(),
+            app_id=self.app_id,
+            partition_key=self.partition_key,
             tags={},  # TODO -- add tags
         )
 

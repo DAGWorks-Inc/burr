@@ -189,6 +189,8 @@ class EndSpanModel(IdentifyingModel):
 
     @property
     def sequence_id(self) -> int:
+        # so we have full backwards compatibility
+        # the server likes them all to be called sequence_id
         return self.action_sequence_id
 
 
@@ -203,3 +205,8 @@ class AttributeModel(IdentifyingModel):
     value: Union[dict, str, int, float, bool, list, None]
     tags: Dict[str, str]
     type: str = "attribute"
+
+    @property
+    def sequence_id(self) -> int:
+        # Ditto with the above
+        return self.action_sequence_id
