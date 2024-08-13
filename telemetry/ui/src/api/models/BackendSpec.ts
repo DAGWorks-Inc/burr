@@ -8,4 +8,5 @@
 export type BackendSpec = {
   indexing: boolean;
   snapshotting: boolean;
+  supports_demos: boolean;
 };

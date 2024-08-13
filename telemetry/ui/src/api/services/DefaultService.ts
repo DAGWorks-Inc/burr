@@ -18,6 +18,17 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class DefaultService {
   /**
+   * Is Ready
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static isReadyReadyGet(): CancelablePromise<any> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/ready'
+    });
+  }
+  /**
    * Get App Spec
    * @returns BackendSpec Successful Response
    * @throws ApiError
