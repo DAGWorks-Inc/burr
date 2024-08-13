@@ -83,7 +83,7 @@ tracking-client = [
 
 tracking-client-s3 = [
   "burr[tracking-client]",
-  "aiobotocore"
+  "boto3"
 ]
 
 tracking-server-s3 = [
