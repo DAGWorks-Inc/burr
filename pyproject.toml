@@ -109,14 +109,19 @@ tracking-server = [
   "openai", # temporary for the demo, we will likely remove
 ]
 
+cli = [
+  "loguru",
+  "click",
+  "requests"
+]
+
 tracking = [
   "burr[tracking-client]",
   "burr[tracking-server]",
-  "loguru",
 ]
 
 learn = [
-  "burr[tracking,streamlit,graphviz,hamilton]"
+  "burr[tracking,streamlit,graphviz,hamilton, cli]"
 ]
 
 start = [
@@ -126,7 +131,8 @@ start = [
 # All the bloatware from various LLM demos
 # In the future most people will be relying on simple APIs, not this
 # But its good for demos!
-bloat = [
+# TODO -- fill this up with whatever is needed for the demos, it's not complete
+examples = [
   "langchain",
   "langchain-community",
   "langchain-openai"
