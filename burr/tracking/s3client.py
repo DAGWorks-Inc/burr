@@ -115,6 +115,20 @@ class S3TrackingClient(SyncTrackingClient):
     TODO -- get working with aiobotocore and an async tracker
     """
 
+    def do_log_attributes(
+        self,
+        *,
+        attributes: Dict[str, Any],
+        action: str,
+        action_sequence_id: int,
+        span: Optional["ActionSpan"],
+        tags: dict,
+        **future_kwargs: Any,
+    ):
+        # TODO -- log attributes to s3 as well
+        # Coming up shortly
+        pass
+
     def __init__(
         self,
         project: str,
@@ -338,7 +352,7 @@ class S3TrackingClient(SyncTrackingClient):
     def pre_start_span(
         self,
         *,
-        sequence_id: int,
+        action_sequence_id: int,
         partition_key: str,
         app_id: str,
         span: ActionSpan,
@@ -347,7 +361,7 @@ class S3TrackingClient(SyncTrackingClient):
     ):
         begin_span_model = BeginSpanModel(
             start_time=datetime.datetime.now(),
-            action_sequence_id=sequence_id,
+            action_sequence_id=action_sequence_id,
             span_id=span.uid,
             parent_span_id=span.parent.uid if span.parent else None,
             span_dependencies=span_dependencies,
@@ -359,7 +373,7 @@ class S3TrackingClient(SyncTrackingClient):
         self,
         *,
         action: str,
-        sequence_id: int,
+        action_sequence_id: int,
         span: ActionSpan,
         span_dependencies: list[str],
         app_id: str,
@@ -368,7 +382,7 @@ class S3TrackingClient(SyncTrackingClient):
     ):  # TODO -- implemenet
         end_span_model = EndSpanModel(
             end_time=datetime.datetime.now(),
-            action_sequence_id=sequence_id,
+            action_sequence_id=action_sequence_id,
             span_id=span.uid,
         )
         self.submit_log_event(end_span_model, app_id, partition_key)
