@@ -427,6 +427,7 @@ class BurrTrackingSpanProcessor(SpanProcessor):
                     span=cached_span.action_span,
                     tags={},  # TODO -- log
                     app_id=cached_span.app_id,
+                    partition_key=cached_span.partition_key,
                 )
 
 

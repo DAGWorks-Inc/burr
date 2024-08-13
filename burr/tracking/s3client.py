@@ -19,6 +19,7 @@ from burr.tracking.base import SyncTrackingClient
 from burr.tracking.common.models import (
     ApplicationMetadataModel,
     ApplicationModel,
+    AttributeModel,
     BeginEntryModel,
     BeginSpanModel,
     EndEntryModel,
@@ -84,7 +85,7 @@ def _allowed_project_name(project_name: str, on_windows: bool) -> bool:
     return bool(re.match(pattern, project_name))
 
 
-EventType = Union[BeginEntryModel, EndEntryModel, BeginSpanModel, EndSpanModel]
+EventType = Union[BeginEntryModel, EndEntryModel, BeginSpanModel, EndSpanModel, AttributeModel]
 
 
 def unique_ordered_prefix() -> str:
@@ -122,12 +123,22 @@ class S3TrackingClient(SyncTrackingClient):
         action: str,
         action_sequence_id: int,
         span: Optional["ActionSpan"],
+        app_id: str,
+        partition_key: Optional[str],
         tags: dict,
         **future_kwargs: Any,
     ):
         # TODO -- log attributes to s3 as well
         # Coming up shortly
-        pass
+        for attribute_name, attribute in attributes.items():
+            attribute_model = AttributeModel(
+                key=attribute_name,
+                action_sequence_id=action_sequence_id,
+                span_id=span.uid if span is not None else None,
+                value=serde.serialize(attribute, **self.serde_kwargs),
+                tags=tags,
+            )
+            self.submit_log_event(attribute_model, app_id=app_id, partition_key=partition_key)
 
     def __init__(
         self,
@@ -305,7 +316,6 @@ class S3TrackingClient(SyncTrackingClient):
                 else "None",
             },
         )
-        # TODO -- log parent relationship
 
     def pre_run_step(
         self,

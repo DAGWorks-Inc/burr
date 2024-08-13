@@ -206,6 +206,8 @@ class DoLogAttributeHook(abc.ABC):
         action_sequence_id: int,
         span: Optional["ActionSpan"],
         tags: dict,
+        app_id: str,
+        partition_key: Optional[str],
         **future_kwargs: Any,
     ):
         pass
@@ -225,6 +227,8 @@ class DoLogAttributeHookAsync(abc.ABC):
         action_sequence_id: int,
         span: "ActionSpan",
         tags: dict,
+        app_id: str,
+        partition_key: Optional[str],
         **future_kwargs: Any,
     ):
         pass
