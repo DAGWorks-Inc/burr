@@ -125,7 +125,12 @@ def is_ready():
 def get_app_spec():
     is_indexing_backend = isinstance(backend, IndexingBackendMixin)
     is_snapshotting_backend = isinstance(backend, SnapshottingBackendMixin)
-    return BackendSpec(indexing=is_indexing_backend, snapshotting=is_snapshotting_backend)
+    supports_demos = backend.supports_demos()
+    return BackendSpec(
+        indexing=is_indexing_backend,
+        snapshotting=is_snapshotting_backend,
+        supports_demos=supports_demos,
+    )
 
 
 app_spec = get_app_spec()

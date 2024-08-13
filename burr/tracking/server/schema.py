@@ -158,3 +158,4 @@ class BackendSpec(pydantic.BaseModel):
 
     indexing: bool
     snapshotting: bool
+    supports_demos: bool

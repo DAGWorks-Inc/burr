@@ -87,29 +87,32 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
       icon: FolderIcon,
       linkType: 'external'
     },
-    {
-      name: 'Demos',
-      href: '/demos',
-      icon: ListBulletIcon,
-      linkType: 'internal',
-      children: [
-        { name: 'counter', href: '/demos/counter', current: false, linkType: 'internal' },
-        { name: 'chatbot', href: '/demos/chatbot', current: false, linkType: 'internal' },
-        {
-          name: 'email-assistant',
-          href: '/demos/email-assistant',
-          current: false,
-          linkType: 'internal'
-        },
-        {
-          name: 'streaming-chatbot',
-          href: '/demos/streaming-chatbot',
-          current: false,
-          linkType: 'internal'
-        }
-      ]
-    },
-
+    ...(backendSpec?.supports_demos
+      ? [
+          {
+            name: 'Demos',
+            href: '/demos',
+            icon: ListBulletIcon,
+            linkType: 'internal',
+            children: [
+              { name: 'counter', href: '/demos/counter', current: false, linkType: 'internal' },
+              { name: 'chatbot', href: '/demos/chatbot', current: false, linkType: 'internal' },
+              {
+                name: 'email-assistant',
+                href: '/demos/email-assistant',
+                current: false,
+                linkType: 'internal'
+              },
+              {
+                name: 'streaming-chatbot',
+                href: '/demos/streaming-chatbot',
+                current: false,
+                linkType: 'internal'
+              }
+            ]
+          }
+        ]
+      : []),
     {
       name: 'Develop',
       href: 'https://github.com/dagworks-inc/burr',

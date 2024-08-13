@@ -157,6 +157,12 @@ class BackendBase(abc.ABC):
             cls.settings_model()(_env_file=dotenv_path, _env_file_encoding="utf-8")
         )
 
+    def supports_demos(self) -> bool:
+        """Whether this supports demos. Really we should abstract this out into a new mixin
+        but for now this is OK.
+        """
+        return False
+
 
 def safe_json_load(line: bytes):
     # Every once in a while we'll hit a non-utf-8 character
@@ -304,6 +310,9 @@ class LocalBackend(BackendBase):
             spawning_parent_pointer=metadata.spawning_parent_pointer,
             children=children,
         )
+
+    def supports_demos(self) -> bool:
+        return True
 
     class BackendSettings(BurrSettings):
         path: str = DEFAULT_PATH
