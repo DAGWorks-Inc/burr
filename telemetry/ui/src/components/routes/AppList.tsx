@@ -40,6 +40,15 @@ const getForkID = (app: ApplicationSummary) => {
     return null;
   }
 };
+
+const getParentPartitionKey = (app: ApplicationSummary) => {
+  if (app.parent_pointer) {
+    return app.parent_pointer.partition_key;
+  } else {
+    return null;
+  }
+};
+
 /**
  * Sub-application list -- handles spaned applications.
  * This contains a list of applications that correspond to a parent application.
@@ -117,7 +126,9 @@ const AppSubList = (props: {
             <MdForkRight
               className=" hover:scale-125 h-5 w-5 text-gray-600 "
               onClick={(e) => {
-                props.navigate(`/project/${props.projectId}/${app.partition_key}/${forkID}`);
+                props.navigate(
+                  `/project/${props.projectId}/${getParentPartitionKey(app) || 'null'}/${forkID}`
+                );
                 e.stopPropagation();
               }}
             />
