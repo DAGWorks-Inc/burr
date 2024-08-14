@@ -262,8 +262,10 @@ const LinkSubTable = (props: {
             <TableCell colSpan={1}>
               <Icon className={`h-5 w-5 ${iconColor} `} />
             </TableCell>
-            <TableCell colSpan={1} className={` ${normalText}  w-48 min-w-48 max-w-48 truncate`}>
-              <Link to={`/project/${props.projectId}/${subApp.child.app_id}`}>
+            <TableCell colSpan={1} className={` ${normalText} w-48 min-w-48 max-w-48 truncate`}>
+              <Link
+                to={`/project/${props.projectId}/${subApp.child.partition_key}/${subApp.child.app_id}`}
+              >
                 <span className="hover:underline">{subApp.child.app_id}</span>
               </Link>
             </TableCell>
@@ -700,7 +702,9 @@ const ParentLink = (props: {
         className="text-gray-500"
       >
         <div className="flex flex-row gap-1 items-center ">
-          <Link to={`/project/${props.projectId}/${props.parentPointer.app_id}`}>
+          <Link
+            to={`/project/${props.projectId}/${props.parentPointer.partition_key}/${props.parentPointer.app_id}`}
+          >
             <span className="hover:underline">{props.parentPointer.app_id}</span>
           </Link>
           <span>@</span>
