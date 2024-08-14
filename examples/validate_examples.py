@@ -23,6 +23,7 @@ FILTERLIST = [
     "web-server",
     "integrations",
     "templates",
+    "deployment",
 ]
 
 

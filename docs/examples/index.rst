@@ -17,3 +17,4 @@ Examples of more complex/powerful use-cases of Burr. Download/copy these to adap
     simulation
     creating_tests
     web-server
+    deployment
