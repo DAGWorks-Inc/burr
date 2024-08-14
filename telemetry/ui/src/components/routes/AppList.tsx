@@ -117,7 +117,7 @@ const AppSubList = (props: {
             <MdForkRight
               className=" hover:scale-125 h-5 w-5 text-gray-600 "
               onClick={(e) => {
-                props.navigate(`/project/${props.projectId}/${forkID}`);
+                props.navigate(`/project/${props.projectId}/${app.partition_key}/${forkID}`);
                 e.stopPropagation();
               }}
             />
