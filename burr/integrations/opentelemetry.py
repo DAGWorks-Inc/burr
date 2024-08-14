@@ -151,7 +151,7 @@ class OpenTelemetryBridge(
         if tracer:
             self.tracer = tracer
         else:
-            self.tracer = trace.get_tracer(tracer_name)
+            self.tracer = trace.get_tracer(__name__ if tracer_name is None else tracer_name)
 
     def pre_run_execute_call(
         self,
