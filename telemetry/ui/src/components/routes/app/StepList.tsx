@@ -264,7 +264,7 @@ const LinkSubTable = (props: {
             </TableCell>
             <TableCell colSpan={1} className={` ${normalText} w-48 min-w-48 max-w-48 truncate`}>
               <Link
-                to={`/project/${props.projectId}/${subApp.child.partition_key}/${subApp.child.app_id}`}
+                to={`/project/${props.projectId}/${subApp.child.partition_key || 'null'}/${subApp.child.app_id}`}
               >
                 <span className="hover:underline">{subApp.child.app_id}</span>
               </Link>
