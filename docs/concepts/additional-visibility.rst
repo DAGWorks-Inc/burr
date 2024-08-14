@@ -7,6 +7,48 @@ Additional Visibility
     Burr comes with the ability to see inside your actions. This is a very pluggable framework
     that comes with the default tracking client, but can also be hooked up to tools such as `OpenTelemetry <https://opentelemetry.io/>`_
 
+----------
+Quickstart
+----------
+Below is a quick start. For more in depth documentation see the next few sections.
+
+If you want to:
+    (a) automatically instrument LLM API calls, and
+    (b) see them show up in the Burr UI,
+
+you can do the following:
+
+    1. Determine the LLM API you want to instrument (e.g. OpenAI, Anthropic, etc...). \
+       See `openllmetry repo <https://github.com/traceloop/openllmetry/tree/main/packages>`_ for available options.
+    2. Use the local tracker and flip the `use_otel_tracing` flag to True in the ``ApplicationBuilder``.
+
+Here's an example to instrument OpenAI:
+
+.. code-block:: bash
+
+    # install the appropriate openllmetry package
+    pip install opentelemetry-instrumentation-openai
+
+
+.. code-block:: python
+
+    # add the right imports
+    from opentelemetry.instrumentation.openai import OpenAIInstrumentor
+    OpenAIInstrumentor().instrument()  # this instruments openai clients
+
+    # create the local tracker
+    tracker = LocalTrackingClient(project="your-project")
+    app = (
+        ApplicationBuilder()
+        .with_graph(base_graph)
+        #... whatever you do normally here
+        .with_tracker(tracker, use_otel_tracing=True)  # set use_otel_tracing to True
+        .build()
+    )
+    # use your app as you normally would -- go to the Burr UI and see additional spans!
+
+
+
 -------
 Tracing
 -------
@@ -143,10 +185,11 @@ example:
         .with_actions(my_action, ...)
         .with_state(...)
         .with_transitions(...)
-        .with_tracker("local", project="my_projet", cuse_otel_tracing=True)
+        .with_tracker("local", project="my_project", use_otel_tracing=True)
         .with_entrypoint("prompt", "my_action")
         .build()
     )
+
 While this is contrived, it illustrates that you can mix/match Burr/Otel. This is valuable
 when you have a Burr action that calls out to a function that is instrumented via OTel (
 of which there are a host of integrations).
@@ -166,6 +209,7 @@ log all spans to the OTel provider of choice (and you are responsible for initia
 it as you see fit).
 
 .. code-block:: python
+
     from burr.integrations.opentelemetry import OpenTelemetryBridge
 
     otel_tracer = trace.get_tracer(__name__)

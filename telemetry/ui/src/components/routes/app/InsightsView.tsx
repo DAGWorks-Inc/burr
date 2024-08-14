@@ -41,7 +41,7 @@ export const InsightsView = (props: { steps: Step[] }) => {
     // Display the total sum
     // Skip cost for
     return (
-      <div>
+      <div className="pt-2">
         <h2>Total Prompt Tokens: {totalPromptTokens}</h2>
         <h2>Total Completion Tokens: {totalCompletionTokens}</h2>
         {/*<h2>Total Cost: ${totalCost}</h2>*/}
@@ -51,7 +51,15 @@ export const InsightsView = (props: { steps: Step[] }) => {
   } else {
     return (
       <div>
-        <h2>No LLM calls found.</h2>
+        <h2 className="pt-2">
+          No LLM calls instrumented. To instrument{' '}
+          <a
+            className="text-dwlightblue"
+            href={'https://burr.dagworks.io/concepts/additional-visibility/#quickstart'}
+          >
+            see docs.
+          </a>
+        </h2>
       </div>
     );
   }
