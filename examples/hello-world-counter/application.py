@@ -51,8 +51,10 @@ def application(
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     app = application(app_id="a7c8e525-58f9-4e84-b4b3-f5b80b5b0d0e")
     action, result, state = app.run(halt_after=["result"])
-    # app.visualize(output_file_path="digraph", include_conditions=True, view=False, format="png")
+    app.visualize(
+        output_file_path="statemachine.png", include_conditions=True, view=False, format="png"
+    )
     print(state["counter"])
