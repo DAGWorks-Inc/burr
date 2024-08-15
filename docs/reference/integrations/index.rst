@@ -9,3 +9,6 @@ Integrations -- we will be adding more
 
    hamilton
    streamlit
+   opentelemetry
+   traceloop
+   langchain
