@@ -83,7 +83,6 @@ def _get_application(project_id: str, app_id: str) -> Application:
         )
     )
     return builder.build()
-    return app
 
 
 def _run_through(project_id: str, app_id: [str], inputs: Dict[str, Any]) -> EmailAssistantState:
