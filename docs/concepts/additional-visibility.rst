@@ -138,6 +138,8 @@ Note that we are currently building out the capability to wrap a class and "auto
 
 You can read more in the :ref:`reference documentation <visibility>`.
 
+.. _opentelref:
+
 --------------
 Open Telemetry
 --------------
