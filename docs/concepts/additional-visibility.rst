@@ -138,6 +138,65 @@ Note that we are currently building out the capability to wrap a class and "auto
 
 You can read more in the :ref:`reference documentation <visibility>`.
 
+
+-----------------
+Tracing Functions
+-----------------
+
+You can observe non-burr functions, which will show up as part of your traces. To do this, you simply need to decorate the
+function with the :py:func:`@trace <burr.visibility.tracing.trace>` decorator. This will automatically create a span
+for the function (within the approprite context), and log as attributes the parameters + return value.
+
+For instance:
+
+.. code-block:: python
+
+    from burr.visibility import trace
+
+    @trace
+    def _modify_prompt(prompt: str) -> str:
+        return ...
+
+    @trace
+    def _fix(prompt: str) -> str:
+        return ...
+
+    @trace
+    def _query(prompt: str) -> Response:
+        return ...
+
+    from burr.core import action
+    @action(reads=['prompt'], writes=['response'])
+    def my_action(state: State, __tracer: TracingFactory) -> State:
+        modified_prompt = _modify_prompt(state["prompt"])
+        if _is_unsafe(modified_prompt):
+              modified_prompt = _fix(modified_prompt)
+        response = _query(prompt=modified_prompt)
+        return state.update({'response': response})
+
+
+This will create spans for the ``_modify_prompt``, ``_fix``, and ``_query`` functions, and log the parameters and return values. You can opt out of logging paramers or return values and adding a filter to the decorator to exclude certain parameters.
+To contrast what you can instrument manually, the ``@trace`` decorator allows you to get more visibility and replace manual code such as the following (though you can happily combine the two approaches):
+
+.. code-block:: python
+
+    from burr.visibility import TracingFactory
+    from burr.core import action
+    @action(reads=['prompt'], writes=['response'])
+    def my_action(state: State, __tracer: TracingFactory) -> State:
+        with __tracer('create_prompt'):
+            modified_prompt = _modify_prompt(state["prompt"])
+            with __tracer('check_prompt_safety'):
+                if _is_unsafe(modified_prompt):
+                    modified_prompt = _fix(modified_prompt)
+        with __tracer('call_llm', dependencies=['create_prompt']):
+            response = _query(prompt=modified_prompt)
+        return state.update({'response': response})
+
+
+This will create spans for the ``_modify_prompt``, ``_fix``, and ``_query`` functions, and log the parameters and return values.
+You can opt out of logging paramers or return values and adding a filter to the decorator to exclude certain parameters.
+
 .. _opentelref:
 
 --------------

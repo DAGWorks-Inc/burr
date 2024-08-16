@@ -1,3 +1,3 @@
-from burr.visibility.tracing import ActionSpan, ActionSpanTracer, TracerFactory
+from burr.visibility.tracing import ActionSpan, ActionSpanTracer, TracerFactory, trace
 
-__all__ = ["TracerFactory", "ActionSpan", "ActionSpanTracer"]
+__all__ = ["TracerFactory", "ActionSpan", "ActionSpanTracer", "trace"]

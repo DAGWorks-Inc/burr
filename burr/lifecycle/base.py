@@ -361,6 +361,7 @@ class PostApplicationExecuteCallHookAsync(abc.ABC):
 # strictly for typing -- this conflicts a bit with the lifecycle decorator above, but its fine for now
 # This makes IDE completion/type-hinting easier
 LifecycleAdapter = Union[
+    DoLogAttributeHook,
     PreRunStepHook,
     PreRunStepHookAsync,
     PostRunStepHook,
