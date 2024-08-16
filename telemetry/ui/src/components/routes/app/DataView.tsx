@@ -5,7 +5,7 @@ import { Button } from '../../common/button';
 import { Switch, SwitchField } from '../../common/switch';
 import { Label } from '../../common/fieldset';
 import { classNames } from '../../../utils/tailwind';
-import { ChevronDownIcon, ChevronUpIcon, QuestionMarkCircleIcon } from '@heroicons/react/20/solid';
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid';
 import { getUniqueAttributeID } from '../../../utils';
 import { AppViewHighlightContext } from './AppView';
 import { MinusIcon } from '@heroicons/react/24/outline';
@@ -140,27 +140,6 @@ const SectionHeaderWithExpand = (props: {
   );
 };
 
-const FlashMessage = ({
-  message,
-  duration,
-  onClose
-}: {
-  message: string;
-  duration: number;
-  onClose: () => void;
-}) => {
-  useEffect(() => {
-    const timer = setTimeout(onClose, duration);
-    return () => clearTimeout(timer);
-  }, [duration, onClose]);
-
-  return (
-    <div className="fixed bottom-4 right-4 bg-blue-500 text-white p-2 rounded shadow-lg">
-      {message}
-    </div>
-  );
-};
-
 export const DataView = (props: { currentStep: Step | undefined; priorStep: Step | undefined }) => {
   const [whichState, setWhichState] = useState<'after' | 'before' | 'compare'>('after');
   const stepToExamine = whichState !== 'before' ? props.currentStep : props.priorStep;
@@ -179,18 +158,7 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
     useState<EXPANDED_TOGGLE>('default_expanded');
 
   const attributes = stepToExamine?.attributes || [];
-  const step = props.currentStep || props.priorStep;
-  const [isFlashVisible, setIsFlashVisible] = useState(false);
-  const url = window.location.href;
-  const parts = url.split('/');
-  const [projectName, partitionKey, appID] = parts.slice(-3);
-  const cmd =
-    'burr-test-case create  \\\n' +
-    `  --project-name "${projectName}" \\\n` +
-    `  --partition-key "${partitionKey}" \\\n` +
-    `  --app-id "${appID}" \\\n` +
-    `  --sequence-id ${step ? step.step_start_log.sequence_id : '?'} \\\n` +
-    '  --target-file-name YOUR_FIXTURE_FILE.json \n';
+
   return (
     <div className="pl-1 flex flex-col gap-2 hide-scrollbar">
       <div className="flex flex-row justify-between sticky top-0 z-20 bg-white">
@@ -200,32 +168,6 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
           setDefaultExpanded={setAllStateExpanded}
           dualToggle={viewRawData === 'raw'}
         />
-        <div className="text-xs pt-3 flex items-center">
-          {' '}
-          <span
-            className="cursor-pointer"
-            onClick={() => {
-              navigator.clipboard.writeText(cmd);
-              setIsFlashVisible(true);
-              // alert(`Copied ${cmd} to clipboard`);
-            }}
-          >
-            Step {step ? step.step_start_log.sequence_id : '?'} Test Case 📋
-          </span>
-          <QuestionMarkCircleIcon
-            className="h-3 w-3 text-gray-500 hover:text-gray-700 cursor-pointer"
-            onClick={() =>
-              window.open('https://burr.dagworks.io/examples/creating_tests/', '_blank')
-            }
-          />
-          {isFlashVisible && (
-            <FlashMessage
-              message={`${cmd} copied to clipboard!`}
-              duration={3000}
-              onClose={() => setIsFlashVisible(false)}
-            />
-          )}
-        </div>
         <div className="flex flex-row justify-end gap-2 pr-2">
           <SwitchField>
             <Switch
