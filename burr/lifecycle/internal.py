@@ -104,6 +104,14 @@ class LifecycleAdapterSet:
         self._adapters = list(adapters)
         self.sync_hooks, self.async_hooks = self._get_lifecycle_hooks()
 
+    def with_new_adapters(self, *adapters: "LifecycleAdapter") -> "LifecycleAdapterSet":
+        """Adds new adapters to the set.
+
+        :param adapters: Adapters to add
+        :return: A new adapter set with the new adapters
+        """
+        return LifecycleAdapterSet(*self.adapters, *adapters)
+
     def _get_lifecycle_hooks(
         self,
     ) -> Tuple[Dict[str, List["LifecycleAdapter"]], Dict[str, List["LifecycleAdapter"]]]:

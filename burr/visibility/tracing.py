@@ -1,10 +1,16 @@
 import dataclasses
+import functools
+import inspect
+import logging
 import uuid
 from contextlib import AbstractAsyncContextManager, AbstractContextManager
 from contextvars import ContextVar
-from typing import Any, List, Optional, Type
+from hashlib import sha256
+from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 
 from burr.lifecycle.internal import LifecycleAdapterSet
+
+logger = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
@@ -281,7 +287,7 @@ class TracerFactory(ActionSpanTracer):
         action: str,
         sequence_id: int,
         app_id: str,
-        partition_key: str,
+        partition_key: Optional[str],
         lifecycle_adapters: LifecycleAdapterSet,
         _context_var: ContextVar[Optional[ActionSpan]] = execution_context_var,
     ):
@@ -321,3 +327,147 @@ class TracerFactory(ActionSpanTracer):
             app_id=self.app_id,
             partition_key=self.partition_key,
         )
+
+
+FNType = TypeVar("FNType", bound=Callable)
+
+# This is specifically meant to set anything that is "out of band" -- I.E.
+# Through a decorator that does not have access to the parameter
+# This is an internal API that we are liable to change over time
+# This is set by the application on every `step` call
+
+tracer_factory_context_var: ContextVar[Optional[TracerFactory]] = ContextVar(
+    "tracer_context",
+    default=None,
+)
+
+
+class trace:
+    def __init__(
+        self,
+        capture_inputs: bool = True,
+        capture_outputs: bool = True,
+        input_filterlist: Optional[List[str]] = None,
+        span_name: Optional[str] = None,
+        _context_var: ContextVar[Optional[TracerFactory]] = tracer_factory_context_var,
+    ):
+        """trace() can wrap any function and uses the tracer to create a span and log
+        attributes. This also (by default) logs the inputs/outputs of a function as attributes.
+        Be careful not to include sensitive data in the inputs/outputs, but if you do, you have the
+        input_filterlist to exclude it.
+
+        This works with sync/async
+
+        Take the following code:
+
+        .. code-block:: python
+
+            from burr.visibility import trace
+
+            @trace()
+            def call_llm(prompt):
+                return _query(...)
+
+            @trace()
+            def generate_text(prompt: str) -> str:
+                result = call_llm(prompt)
+                return f"<p>{result}</p>"
+
+            @action(reads=["prompt"], writes=["response"])
+            def prompt_action(state: State) -> State:
+                response = generate_text(state["prompt"])
+                return state.update(response=response)
+
+        Every time `prompt_action` is called (within the context of prompt_action), it will generate a trace that looks like the following:
+
+        ------ prompt action --------------------------------------------
+            ----- generate_text -----------------------------------
+                ----- call_llm -----------------------------------
+
+        If it is called outside the context of a Burr action, it will be effectively a no-op.
+
+
+        :param capture_inputs: Whether to capture inputs as attributes (defaults to True).
+            Note that this only works with keyword-argument bindable functions.
+        :param capture_outputs: Whether to capture outputs as attributes (defaults to True)
+        :param input_filterlist: A list of inputs to filter out (defaults to filtering nothing. Use if you have sensitive data)
+        :param span_name: Name of the span, will default to the function name
+        :param _context_var: Context var to use for the tracer factory, used purely for internal testing
+        """
+        self.capture_inputs = capture_inputs
+        self.capture_outputs = capture_outputs
+        self.input_filterlist = input_filterlist or []
+        self.span_name = span_name
+        self.context_var = _context_var
+
+    def _ensure_bind(self, fn, *args, **kwargs) -> Dict[str, Any]:
+        try:
+            bound_params = inspect.signature(fn).bind(*args, **kwargs)
+        except TypeError as e:
+            func_name = fn.__name__
+            raise TypeError(f"{func_name}: {e.args[0]}") from None
+
+        bound_kwargs = bound_params.arguments
+        return bound_kwargs
+
+    def _get_auto_attributes(self, fn: FNType):
+        qualname = fn.__qualname__
+        try:
+            code, *_ = inspect.getsourcelines(fn)
+            code_hash = sha256("".join(code).encode()).hexdigest()
+        except OSError:
+            code_hash = "Unable to retrieve source code for hash"
+        return {"__burr_function": qualname, "__burr_function_hash": code_hash}
+
+    def _log_parameters(self, __action_span_tracer: ActionSpanTracer, bound_aprams):
+        # TODO -- ensure we can serialize this
+        filtered_params = {k: v for k, v in bound_aprams.items() if k not in self.input_filterlist}
+        __action_span_tracer.log_attributes(**filtered_params)
+
+    def _get_span_name(self, fn: FNType) -> str:
+        return self.span_name if self.span_name else fn.__name__
+
+    def __call__(self, fn: FNType) -> FNType:
+        @functools.wraps(fn)
+        def wrapped_fn(*args, **kwargs):
+            tracer_factory = self.context_var.get()
+            if tracer_factory is not None:
+                bound_params = self._ensure_bind(fn, *args, **kwargs)
+                with tracer_factory(self._get_span_name(fn)) as action_span_tracer:
+                    if self.capture_inputs:
+                        self._log_parameters(action_span_tracer, bound_params)
+                    additional_attributes = self._get_auto_attributes(fn)
+                    action_span_tracer.log_attributes(**additional_attributes)
+                    output = fn(*args, **kwargs)
+                    if self.capture_outputs:
+                        action_span_tracer.log_attributes(**{"return": output})
+                    return output
+            logger.debug(
+                f"Function: {fn.__name__} is decorated with @trace but is not being executed "
+                f"in the context of a Burr action. No tracing will occur."
+            )
+            return fn(*args, **kwargs)
+
+        @functools.wraps(fn)
+        async def awrapped_fn(*args, **kwargs):
+            tracer_factory = self.context_var.get()
+            if tracer_factory is not None:
+                bound_params = self._ensure_bind(fn, *args, **kwargs)
+                with tracer_factory(self._get_span_name(fn)) as action_span_tracer:
+                    if self.capture_inputs:
+                        self._log_parameters(action_span_tracer, bound_aprams=bound_params)
+                    additional_attributes = self._get_auto_attributes(fn)
+                    action_span_tracer.log_attributes(**additional_attributes)
+                    output = await fn(*args, **kwargs)
+                    if self.capture_outputs:
+                        action_span_tracer.log_attributes(**{"return": output})
+                    return output
+            logger.debug(
+                f"Function: {fn.__name__} is decorated with @trace but is not being executed "
+                f"in the context of a Burr action. No tracing will occur."
+            )
+            return await fn(*args, **kwargs)
+
+        if inspect.iscoroutinefunction(fn):
+            return awrapped_fn
+        return wrapped_fn

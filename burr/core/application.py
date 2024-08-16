@@ -42,8 +42,10 @@ from burr.core.graph import Graph, GraphBuilder
 from burr.core.persistence import BaseStateLoader, BaseStateSaver
 from burr.core.state import State
 from burr.core.validation import BASE_ERROR_MESSAGE
-from burr.lifecycle.base import ExecuteMethod, LifecycleAdapter
+from burr.lifecycle.base import ExecuteMethod, LifecycleAdapter, PostRunStepHook, PreRunStepHook
 from burr.lifecycle.internal import LifecycleAdapterSet
+from burr.visibility import tracing
+from burr.visibility.tracing import tracer_factory_context_var
 
 if TYPE_CHECKING:
     from burr.tracking.base import TrackingClient
@@ -500,6 +502,56 @@ class _call_execute_method_pre_post:
         return wrapper_async if inspect.iscoroutinefunction(fn) else wrapper_sync
 
 
+class TracerFactoryContextHook(PreRunStepHook, PostRunStepHook):
+    """Passes the tracer factory into context. This allows us to do out-of-band visibility processing"""
+
+    def __init__(self, adapter_set: LifecycleAdapterSet):
+        self._adapter_set = adapter_set
+        self.token_pointer_map = {}
+
+    def pre_run_step(
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        sequence_id: int,
+        state: "State",
+        action: "Action",
+        inputs: Dict[str, Any],
+        **future_kwargs: Any,
+    ):
+        if "__tracer" in inputs:
+            tracer_factory = inputs["__tracer"]
+        else:
+            tracer_factory = tracing.TracerFactory(
+                action=action.name,
+                app_id=app_id,
+                lifecycle_adapters=self._adapter_set,
+                partition_key=partition_key,
+                sequence_id=sequence_id,
+            )
+        assert tracer_factory is not None
+        # TODO -- store token/context manager by app_id, sequence_id
+        self.token_pointer_map[(app_id, sequence_id)] = tracer_factory_context_var.set(
+            tracer_factory
+        )
+
+    def post_run_step(
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        sequence_id: int,
+        state: "State",
+        action: "Action",
+        result: Optional[Dict[str, Any]],
+        exception: Exception,
+        **future_kwargs: Any,
+    ):
+        tracer_factory_context_var.reset(self.token_pointer_map[(app_id, sequence_id)])
+        del self.token_pointer_map[(app_id, sequence_id)]
+
+
 class Application:
     def __init__(
         self,
@@ -539,7 +591,8 @@ class Application:
             entrypoint=graph.get_action(entrypoint),
         )
         self._state = state
-        self._adapter_set = adapter_set if adapter_set is not None else LifecycleAdapterSet()
+        adapter_set = adapter_set if adapter_set is not None else LifecycleAdapterSet()
+        self._adapter_set = adapter_set.with_new_adapters(TracerFactoryContextHook(adapter_set))
         # TODO -- consider adding global inputs + global input factories to the builder
         self._tracker = tracker
 
@@ -547,7 +600,7 @@ class Application:
             self._set_sequence_id(sequence_id)
         self._builder = builder
         self._parent_pointer = fork_parent_pointer
-        self.dependency_factory = {
+        self._dependency_factory = {
             "__tracer": functools.partial(
                 visibility.tracing.TracerFactory,
                 lifecycle_adapters=self._adapter_set,
@@ -697,8 +750,10 @@ class Application:
             # if we can find it in the dependency factory, we'll use that
             # TODO -- figure out what happens if people attempt to override default factory
             # inputs
-            if input_ in self.dependency_factory:
-                processed_inputs[input_] = self.dependency_factory[input_](action, self.sequence_id)
+            if input_ in self._dependency_factory:
+                processed_inputs[input_] = self._dependency_factory[input_](
+                    action, self.sequence_id
+                )
                 if input_ in missing_inputs:
                     missing_inputs.remove(input_)
         if len(missing_inputs) > 0:
