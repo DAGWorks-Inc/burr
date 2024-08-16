@@ -4,6 +4,16 @@ import { DataView } from './DataView';
 import { ActionView } from './ActionView';
 import { GraphView } from './GraphView';
 import { InsightsView } from './InsightsView';
+import { ReproduceView } from './ReproduceView';
+import { useParams } from 'react-router-dom';
+
+const NoStepSelected = () => {
+  return (
+    <div className="flex flex-col items-center justify-center h-full">
+      <p className="text-xl text-gray-400">Please select a step from the table on the left</p>
+    </div>
+  );
+};
 
 export const AppStateView = (props: {
   steps: Step[];
@@ -26,9 +36,11 @@ export const AppStateView = (props: {
   const actionModel = props.stateMachine.actions.find(
     (action) => action.name === currentStep?.step_start_log.action
   );
+  const { projectId, appId, partitionKey } = useParams();
   const tabs = [
     { id: 'data', displayName: 'Data' },
-    { id: 'action', displayName: 'Action' },
+    { id: 'code', displayName: 'Code' },
+    { id: 'reproduce', displayName: 'Reproduce' },
     { id: 'insights', displayName: 'Insights' }
   ];
   if (props.displayGraphAsTab) {
@@ -38,10 +50,14 @@ export const AppStateView = (props: {
     <>
       <Tabs tabs={tabs} currentTab={currentTab} setCurrentTab={setCurrentTab} />
       <div className="px-4 h-full w-full hide-scrollbar overflow-y-auto">
-        {currentTab === 'data' && currentStep && (
-          <DataView currentStep={currentStep} priorStep={priorStep} />
-        )}
-        {currentTab === 'action' && currentStep && <ActionView currentAction={actionModel} />}
+        {currentTab === 'data' &&
+          (currentStep ? (
+            <DataView currentStep={currentStep} priorStep={priorStep} />
+          ) : (
+            <NoStepSelected />
+          ))}
+        {currentTab === 'code' &&
+          (currentStep ? <ActionView currentAction={actionModel} /> : <NoStepSelected />)}
         {currentTab === 'graph' && (
           <GraphView
             stateMachine={props.stateMachine}
@@ -51,6 +67,17 @@ export const AppStateView = (props: {
           />
         )}
         {currentTab === 'insights' && <InsightsView steps={props.steps} />}
+        {currentTab === 'reproduce' &&
+          (currentStep ? (
+            <ReproduceView
+              step={currentStep}
+              appId={appId as string}
+              partitionKey={partitionKey as string}
+              projectID={projectId as string}
+            />
+          ) : (
+            <NoStepSelected />
+          ))}
       </div>
     </>
   );
