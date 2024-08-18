@@ -6,7 +6,6 @@ import json
 import logging
 import operator
 import os.path
-import sys
 import uuid
 from collections import Counter
 from typing import List, Literal, Optional, Sequence, Tuple, Type, TypeVar, Union
@@ -20,6 +19,7 @@ from tortoise import functions, transactions
 from tortoise.contrib.fastapi import RegisterTortoise
 from tortoise.expressions import Q
 
+from burr import system
 from burr.tracking.common.models import ApplicationModel
 from burr.tracking.server import schema
 from burr.tracking.server.backend import (
@@ -44,11 +44,6 @@ logger = logging.getLogger(__name__)
 FileType = Literal["log", "metadata", "graph"]
 
 ContentsModel = TypeVar("ContentsModel", bound=pydantic.BaseModel)
-
-if sys.version_info >= (3, 11):
-    utc = datetime.UTC
-else:
-    utc = datetime.timezone.utc
 
 
 async def _query_s3_file(
@@ -132,7 +127,7 @@ class S3Settings(BurrSettings):
 
 def timestamp_to_reverse_alphabetical(timestamp: datetime) -> str:
     # Get the inverse of the timestamp
-    epoch = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+    epoch = datetime.datetime(1970, 1, 1, tzinfo=system.utc)
     total_seconds = int((timestamp - epoch).total_seconds())
 
     # Invert the seconds (latest timestamps become smallest values)
@@ -154,7 +149,7 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
         load_snapshot_on_start: bool,
         prior_snapshots_to_keep: int,
     ):
-        self._backend_id = datetime.datetime.now(utc).isoformat() + str(uuid.uuid4())
+        self._backend_id = system.now().isoformat() + str(uuid.uuid4())
         self._bucket = s3_bucket
         self._session = session.get_session()
         self._update_interval_milliseconds = update_interval_milliseconds
@@ -198,7 +193,7 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
 
     async def snapshot(self):
         path = settings.DB_PATH
-        timestamp = timestamp_to_reverse_alphabetical(datetime.datetime.now(datetime.UTC))
+        timestamp = timestamp_to_reverse_alphabetical(system.now())
         # latest
         s3_key = f"{self._snapshot_prefix}/{timestamp}/{self._backend_id}/snapshot.db"
         # TODO -- copy the path at snapshot_path to s3 using aiobotocore
@@ -230,9 +225,7 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
                 if "Contents" in result:
                     first_object = result["Contents"][0]
                     return first_object["LastModified"]
-        return (
-            datetime.datetime.utcnow()
-        )  # This should never be hit unless someone is concurrently deleting...
+        return system.now()  # This should never be hit unless someone is concurrently deleting...
 
     async def _update_projects(self):
         current_projects = await Project.all()
@@ -246,7 +239,7 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
                 for prefix in result.get("CommonPrefixes", []):
                     project_name = prefix.get("Prefix").split("/")[-2]
                     if project_name not in project_names:
-                        now = datetime.datetime.utcnow()
+                        now = system.now()
                         logger.info(f"Creating project: {project_name}")
                         await Project.create(
                             name=project_name,
@@ -384,7 +377,7 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
                 name=app_id,
                 partition_key=pk,
                 project=project,
-                created_at=datetime.datetime.utcnow(),
+                created_at=system.now(),
             )
             for app_id, pk in all_application_keys
             if (app_id, pk) not in existing_applications
@@ -512,7 +505,7 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
             logger.info(f"Scanned: {num_files} files with status stored at ID={status.id}")
 
             indexing_job.records_processed = num_files
-            indexing_job.end_time = datetime.datetime.utcnow()
+            indexing_job.end_time = system.now()
             # TODO -- handle failure
             indexing_job.status = IndexingJobStatus.SUCCESS
             indexing_job.index_status = status

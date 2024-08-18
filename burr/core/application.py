@@ -23,7 +23,7 @@ from typing import (
     cast,
 )
 
-from burr import telemetry, visibility
+from burr import system, telemetry, visibility
 from burr.common import types as burr_types
 from burr.core import persistence, validation
 from burr.core.action import (
@@ -244,14 +244,23 @@ def _run_single_step_action(
 
 
 def _run_single_step_streaming_action(
-    action: SingleStepStreamingAction, state: State, inputs: Optional[Dict[str, Any]]
+    action: SingleStepStreamingAction,
+    state: State,
+    inputs: Optional[Dict[str, Any]],
+    sequence_id: int,
+    app_id: str,
+    partition_key: Optional[str],
+    lifecycle_adapters: LifecycleAdapterSet = LifecycleAdapterSet(),
 ) -> Generator[Tuple[dict, Optional[State]], None, None]:
     """Runs a single step streaming action. This API is internal-facing.
     This normalizes + validates the output."""
     action.validate_inputs(inputs)
+    stream_initialize_time = system.now()
+    first_stream_start_time = None
     generator = action.stream_run_and_update(state, **inputs)
     result = None
     state_update = None
+    count = 0
     for item in generator:
         if not isinstance(item, tuple):
             # TODO -- consider adding support for just returning a result.
@@ -261,8 +270,23 @@ def _run_single_step_streaming_action(
                 f"the state update must be None"
             )
         result, state_update = item
+        count += 1
         if state_update is None:
+            if first_stream_start_time is None:
+                first_stream_start_time = system.now()
+            lifecycle_adapters.call_all_lifecycle_hooks_sync(
+                "post_stream_item",
+                item=result,
+                item_index=count,
+                stream_initialize_time=stream_initialize_time,
+                first_stream_item_start_time=first_stream_start_time,
+                action=action,
+                app_id=app_id,
+                partition_key=partition_key,
+                sequence_id=sequence_id,
+            )
             yield result, None
+
     if state_update is None:
         raise ValueError(
             f"Action {action.name} did not return a state update. For streaming actions, the last yield "
@@ -274,13 +298,22 @@ def _run_single_step_streaming_action(
 
 
 async def _arun_single_step_streaming_action(
-    action: SingleStepStreamingAction, state: State, inputs: Optional[Dict[str, Any]]
+    action: SingleStepStreamingAction,
+    state: State,
+    inputs: Optional[Dict[str, Any]],
+    sequence_id: int,
+    app_id: str,
+    partition_key: Optional[str],
+    lifecycle_adapters: LifecycleAdapterSet = LifecycleAdapterSet(),
 ) -> AsyncGenerator[Tuple[dict, Optional[State]], None]:
     """Runs a single step streaming action in async. See the synchronous version for more details."""
     action.validate_inputs(inputs)
+    stream_initialize_time = system.now()
+    first_stream_start_time = None
     generator = action.stream_run_and_update(state, **inputs)
     result = None
     state_update = None
+    count = 0
     async for item in generator:
         if not isinstance(item, tuple):
             # TODO -- consider adding support for just returning a result.
@@ -291,6 +324,20 @@ async def _arun_single_step_streaming_action(
             )
         result, state_update = item
         if state_update is None:
+            if first_stream_start_time is None:
+                first_stream_start_time = system.now()
+            await lifecycle_adapters.call_all_lifecycle_hooks_sync_and_async(
+                "post_stream_item",
+                item=result,
+                item_index=count,
+                stream_initialize_time=stream_initialize_time,
+                first_stream_item_start_time=first_stream_start_time,
+                action=action,
+                app_id=app_id,
+                partition_key=partition_key,
+                sequence_id=sequence_id,
+            )
+            count += 1
             yield result, None
     if state_update is None:
         raise ValueError(
@@ -304,7 +351,13 @@ async def _arun_single_step_streaming_action(
 
 
 def _run_multi_step_streaming_action(
-    action: StreamingAction, state: State, inputs: Optional[Dict[str, Any]]
+    action: StreamingAction,
+    state: State,
+    inputs: Optional[Dict[str, Any]],
+    sequence_id: int,
+    app_id: str,
+    partition_key: Optional[str],
+    lifecycle_adapters: LifecycleAdapterSet = LifecycleAdapterSet(),
 ) -> Generator[Tuple[dict, Optional[State]], None, None]:
     """Runs a multi-step streaming action. E.G. one with a run/reduce step.
     This API is internal-facing. Note that this converts the shape of a
@@ -314,8 +367,11 @@ def _run_multi_step_streaming_action(
     This peeks ahead by one so we know when this is done (and when to validate).
     """
     action.validate_inputs(inputs)
+    stream_initialize_time = system.now()
     generator = action.stream_run(state, **inputs)
     result = None
+    first_stream_start_time = None
+    count = 0
     for item in generator:
         # We want to peek ahead so we can return the last one
         # This is slightly eager, but only in the case in which we
@@ -323,6 +379,20 @@ def _run_multi_step_streaming_action(
         next_result = result
         result = item
         if next_result is not None:
+            if first_stream_start_time is None:
+                first_stream_start_time = system.now()
+            lifecycle_adapters.call_all_lifecycle_hooks_sync(
+                "post_stream_item",
+                item=next_result,
+                item_index=count,
+                stream_initialize_time=stream_initialize_time,
+                first_stream_item_start_time=first_stream_start_time,
+                action=action,
+                app_id=app_id,
+                partition_key=partition_key,
+                sequence_id=sequence_id,
+            )
+            count += 1
             yield next_result, None
     state_update = _run_reducer(action, state, result, action.name)
     _validate_result(result, action.name)
@@ -331,12 +401,21 @@ def _run_multi_step_streaming_action(
 
 
 async def _arun_multi_step_streaming_action(
-    action: AsyncStreamingAction, state: State, inputs: Optional[Dict[str, Any]]
+    action: AsyncStreamingAction,
+    state: State,
+    inputs: Optional[Dict[str, Any]],
+    sequence_id: int,
+    app_id: str,
+    partition_key: Optional[str],
+    lifecycle_adapters: LifecycleAdapterSet = LifecycleAdapterSet(),
 ) -> AsyncGenerator[Tuple[dict, Optional[State]], None]:
     """Runs a multi-step streaming action in async. See the synchronous version for more details."""
     action.validate_inputs(inputs)
+    stream_initialize_time = system.now()
     generator = action.stream_run(state, **inputs)
     result = None
+    first_stream_start_time = None
+    count = 0
     async for item in generator:
         # We want to peek ahead so we can return the last one
         # This is slightly eager, but only in the case in which we
@@ -344,6 +423,20 @@ async def _arun_multi_step_streaming_action(
         next_result = result
         result = item
         if next_result is not None:
+            if first_stream_start_time is None:
+                first_stream_start_time = system.now()
+            await lifecycle_adapters.call_all_lifecycle_hooks_sync_and_async(
+                "post_stream_item",
+                item=next_result,
+                stream_initialize_time=stream_initialize_time,
+                item_index=count,
+                first_stream_item_start_time=first_stream_start_time,
+                action=action,
+                app_id=app_id,
+                partition_key=partition_key,
+                sequence_id=sequence_id,
+            )
+            count += 1
             yield next_result, None
     state_update = _run_reducer(action, state, result, action.name)
     _validate_result(result, action.name)
@@ -1248,6 +1341,13 @@ class Application:
                     exception=exc,
                 )
                 call_execute_method_wrapper.call_post(self, exc)
+                self._adapter_set.call_all_lifecycle_hooks_sync(
+                    "post_end_stream",
+                    action=next_action.name,
+                    sequence_id=self.sequence_id,
+                    app_id=self._uid,
+                    partition_key=self._partition_key,
+                )
 
             action_inputs = self._process_inputs(inputs, next_action)
             if not next_action.streaming:
@@ -1269,10 +1369,24 @@ class Application:
                 )
                 call_execute_method_wrapper.call_post(self, None)
                 return out
+            # Both the next cases start with this
+            self._adapter_set.call_all_lifecycle_hooks_sync(
+                "pre_start_stream",
+                action=next_action.name,
+                sequence_id=self.sequence_id,
+                app_id=self._uid,
+                partition_key=self._partition_key,
+            )
             if next_action.single_step:
                 next_action = cast(SingleStepStreamingAction, next_action)
                 generator = _run_single_step_streaming_action(
-                    next_action, self._state, action_inputs
+                    action=next_action,
+                    state=self._state,
+                    inputs=action_inputs,
+                    sequence_id=self.sequence_id,
+                    app_id=self._uid,
+                    partition_key=self._partition_key,
+                    lifecycle_adapters=self._adapter_set,
                 )
                 return next_action, StreamingResultContainer(
                     generator, self._state, process_result, callback
@@ -1280,7 +1394,13 @@ class Application:
             else:
                 next_action = cast(StreamingAction, next_action)
                 generator = _run_multi_step_streaming_action(
-                    next_action, self._state, action_inputs
+                    action=next_action,
+                    state=self._state,
+                    inputs=action_inputs,
+                    sequence_id=self.sequence_id,
+                    app_id=self._uid,
+                    partition_key=self._partition_key,
+                    lifecycle_adapters=self._adapter_set,
                 )
         except Exception as e:
             # We only want to raise this in the case of an exception
@@ -1470,6 +1590,13 @@ class Application:
                     sequence_id=self.sequence_id,
                     exception=exc,
                 )
+                await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
+                    "post_end_stream",
+                    action=next_action.name,
+                    sequence_id=self.sequence_id,
+                    app_id=self._uid,
+                    partition_key=self._partition_key,
+                )
                 await call_execute_method_wrapper.acall_post(self, exc)
 
             action_inputs = self._process_inputs(inputs, next_action)
@@ -1491,6 +1618,13 @@ class Application:
                 return action, AsyncStreamingResultContainer.pass_through(
                     results=result, final_state=state
                 )
+            await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
+                "pre_start_stream",
+                action=next_action.name,
+                sequence_id=self.sequence_id,
+                app_id=self._uid,
+                partition_key=self._partition_key,
+            )
             if next_action.single_step:
                 next_action = cast(SingleStepStreamingAction, next_action)
                 if not next_action.is_async():
@@ -1502,7 +1636,13 @@ class Application:
                         "For now, convert the action to async. Please open up an issue if you hit this. "
                     )
                 generator = _arun_single_step_streaming_action(
-                    next_action, self._state, action_inputs
+                    action=next_action,
+                    state=self._state,
+                    inputs=action_inputs,
+                    sequence_id=self.sequence_id,
+                    app_id=self._uid,
+                    partition_key=self._partition_key,
+                    lifecycle_adapters=self._adapter_set,
                 )
                 return next_action, AsyncStreamingResultContainer(
                     generator, self._state, process_result, callback
@@ -1518,13 +1658,19 @@ class Application:
                     )
                 next_action = cast(AsyncStreamingAction, next_action)
                 generator = _arun_multi_step_streaming_action(
-                    next_action, self._state, action_inputs
+                    action=next_action,
+                    state=self._state,
+                    inputs=action_inputs,
+                    sequence_id=self.sequence_id,
+                    app_id=self._uid,
+                    partition_key=self._partition_key,
+                    lifecycle_adapters=self._adapter_set,
                 )
         except Exception as e:
             # We only want to raise this in the case of an exception
             # otherwise, this will get delegated to the finally
             # block of the streaming result container
-            self._adapter_set.call_all_lifecycle_hooks_sync(
+            await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
                 "post_run_step",
                 app_id=self._uid,
                 partition_key=self._partition_key,
@@ -1535,6 +1681,13 @@ class Application:
                 exception=e,
             )
             await call_execute_method_wrapper.acall_post(self, None, e)
+            await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
+                "post_end_stream",
+                action=next_action.name,
+                sequence_id=self.sequence_id,
+                app_id=self._uid,
+                partition_key=self._partition_key,
+            )
             raise
         return next_action, AsyncStreamingResultContainer(
             generator, self._state, process_result, callback

@@ -1,4 +1,5 @@
 import abc
+import datetime
 import enum
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
@@ -358,6 +359,120 @@ class PostApplicationExecuteCallHookAsync(abc.ABC):
         pass
 
 
+@lifecycle.base_hook("pre_start_stream")
+class PreStartStreamHook(abc.ABC):
+    """Hook that runs after a stream is started.
+    If you have a generator, this gets run directly when the generator is called.
+    """
+
+    @abc.abstractmethod
+    def pre_start_stream(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+
+@lifecycle.base_hook("pre_start_stream")
+class PreStartStreamHookAsync(abc.ABC):
+    """Hook that runs after a stream is started.
+    If you have a generator, this gets run directly when the generator is called.
+    """
+
+    @abc.abstractmethod
+    async def pre_start_stream(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+
+@lifecycle.base_hook("post_stream_item")
+class PostStreamItemHook(abc.ABC):
+    """Hook that runs after a stream item is yielded"""
+
+    @abc.abstractmethod
+    def post_stream_item(
+        self,
+        *,
+        item: Any,
+        item_index: int,
+        stream_initialize_time: datetime.datetime,
+        first_stream_item_start_time: datetime.datetime,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+
+@lifecycle.base_hook("post_stream_item")
+class PostStreamItemHookAsync(abc.ABC):
+    """Hook that runs after a stream item is yielded"""
+
+    @abc.abstractmethod
+    async def post_stream_item(
+        self,
+        *,
+        item: Any,
+        item_index: int,
+        stream_initialize_time: datetime.datetime,
+        first_stream_item_start_time: datetime.datetime,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+
+@lifecycle.base_hook("post_end_stream")
+class PostEndStreamHook(abc.ABC):
+    """Hook that runs after a stream is ended"""
+
+    @abc.abstractmethod
+    def post_end_stream(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+
+@lifecycle.base_hook("post_end_stream")
+class PostEndStreamHookAsync(abc.ABC):
+    """Hook that runs after a stream is ended"""
+
+    @abc.abstractmethod
+    async def post_end_stream(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+
 # strictly for typing -- this conflicts a bit with the lifecycle decorator above, but its fine for now
 # This makes IDE completion/type-hinting easier
 LifecycleAdapter = Union[
@@ -375,4 +490,10 @@ LifecycleAdapter = Union[
     PreStartSpanHookAsync,
     PostEndSpanHook,
     PostEndSpanHookAsync,
+    PreStartStreamHook,
+    PostStreamItemHook,
+    PostEndStreamHook,
+    PreStartStreamHookAsync,
+    PostStreamItemHookAsync,
+    PostEndStreamHookAsync,
 ]

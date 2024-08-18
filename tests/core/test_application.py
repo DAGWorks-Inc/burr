@@ -1,5 +1,6 @@
 import asyncio
 import collections
+import datetime
 import logging
 import typing
 from typing import Any, Awaitable, Callable, Dict, Generator, Literal, Optional, Tuple
@@ -52,8 +53,13 @@ from burr.lifecycle.base import (
     PostApplicationCreateHook,
     PostApplicationExecuteCallHook,
     PostApplicationExecuteCallHookAsync,
+    PostEndStreamHook,
+    PostStreamItemHook,
+    PostStreamItemHookAsync,
     PreApplicationExecuteCallHook,
     PreApplicationExecuteCallHookAsync,
+    PreStartStreamHook,
+    PreStartStreamHookAsync,
 )
 from burr.lifecycle.internal import LifecycleAdapterSet
 from burr.tracking.base import SyncTrackingClient
@@ -128,8 +134,101 @@ base_counter_action_with_inputs = PassedInAction(
 )
 
 
-class ActionTracker(
-    PreRunStepHook, PostRunStepHook, PreApplicationExecuteCallHook, PostApplicationExecuteCallHook
+class StreamEventCaptureTracker(PreStartStreamHook, PostStreamItemHook, PostEndStreamHook):
+    def post_end_stream(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        self.post_end_stream_calls.append((action, locals()))
+
+    def __init__(self):
+        self.pre_start_stream_calls = []
+        self.post_stream_item_calls = []
+        self.post_end_stream_calls = []
+
+    def pre_start_stream(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        self.pre_start_stream_calls.append((action, locals()))
+
+    def post_stream_item(
+        self,
+        *,
+        item: Any,
+        item_index: int,
+        stream_initialize_time: datetime.datetime,
+        first_stream_item_start_time: datetime.datetime,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        self.post_stream_item_calls.append((action, locals()))
+
+
+class StreamEventCaptureTrackerAsync(
+    PreStartStreamHookAsync, PostStreamItemHookAsync, PostEndStreamHook
+):
+    def __init__(self):
+        self.pre_start_stream_calls = []
+        self.post_stream_item_calls = []
+        self.post_end_stream_calls = []
+
+    async def pre_start_stream(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        self.pre_start_stream_calls.append((action, locals()))
+
+    async def post_stream_item(
+        self,
+        *,
+        item: Any,
+        item_index: int,
+        stream_initialize_time: datetime.datetime,
+        first_stream_item_start_time: datetime.datetime,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        self.post_stream_item_calls.append((action, locals()))
+
+    def post_end_stream(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        self.post_end_stream_calls.append((action, locals()))
+
+
+class CallCaptureTracker(
+    PreRunStepHook,
+    PostRunStepHook,
+    PreApplicationExecuteCallHook,
+    PostApplicationExecuteCallHook,
 ):
     def __init__(self):
         self.pre_called = []
@@ -459,7 +558,9 @@ def test_run_single_step_streaming_action_errors_missing_write():
     action = BrokenAction()
     state = State()
     with pytest.raises(ValueError, match="missing_value"):
-        gen = _run_single_step_streaming_action(action, state, inputs={})
+        gen = _run_single_step_streaming_action(
+            action, state, inputs={}, sequence_id=0, partition_key="partition_key", app_id="app_id"
+        )
         collections.deque(gen, maxlen=0)  # exhaust the generator
 
 
@@ -482,7 +583,15 @@ async def test_run_single_step_streaming_action_errors_missing_write_async():
     action = BrokenAction()
     state = State()
     with pytest.raises(ValueError, match="missing_value"):
-        gen = _arun_single_step_streaming_action(action, state, inputs={})
+        gen = _arun_single_step_streaming_action(
+            action,
+            state,
+            inputs={},
+            sequence_id=0,
+            app_id="app_id",
+            partition_key="partition_key",
+            lifecycle_adapters=LifecycleAdapterSet(),
+        )
         [result async for result in gen]  # exhaust the generator
 
 
@@ -506,7 +615,9 @@ def test_run_multi_step_streaming_action_errors_missing_write():
     action = BrokenAction()
     state = State()
     with pytest.raises(ValueError, match="missing_value"):
-        gen = _run_multi_step_streaming_action(action, state, inputs={})
+        gen = _run_multi_step_streaming_action(
+            action, state, inputs={}, sequence_id=0, partition_key="partition_key", app_id="app_id"
+        )
         collections.deque(gen, maxlen=0)  # exhaust the generator
 
 
@@ -822,7 +933,9 @@ def test__run_single_step_action_deletes_state():
 def test__run_multistep_streaming_action():
     action = base_streaming_counter.with_name("counter")
     state = State({"count": 0, "tracker": []})
-    generator = _run_multi_step_streaming_action(action, state, inputs={})
+    generator = _run_multi_step_streaming_action(
+        action, state, inputs={}, sequence_id=0, partition_key="partition_key", app_id="app_id"
+    )
     last_result = -1
     result = None
     for result, state in generator:
@@ -834,10 +947,51 @@ def test__run_multistep_streaming_action():
     assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
 
 
+def test__run_multistep_streaming_action_callbacks():
+    class TrackingCallback(PostStreamItemHook):
+        def __init__(self):
+            self.items = []
+
+        def post_stream_item(self, item: Any, **future_kwargs: Any):
+            self.items.append(item)
+
+    hook = TrackingCallback()
+
+    action = base_streaming_counter.with_name("counter")
+    state = State({"count": 0, "tracker": []})
+    generator = _run_multi_step_streaming_action(
+        action,
+        state,
+        inputs={},
+        sequence_id=0,
+        partition_key="partition_key",
+        app_id="app_id",
+        lifecycle_adapters=LifecycleAdapterSet(hook),
+    )
+    last_result = -1
+    result = None
+    for result, state in generator:
+        if last_result < 1:
+            # Otherwise you hit floating poit comparison problems
+            assert result["count"] > last_result
+        last_result = result["count"]
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+    assert len(hook.items) == 10  # one for each streaming callback
+
+
 async def test__run_multistep_streaming_action_async():
     action = base_streaming_counter_async.with_name("counter")
     state = State({"count": 0, "tracker": []})
-    generator = _arun_multi_step_streaming_action(action, state, inputs={})
+    generator = _arun_multi_step_streaming_action(
+        action=action,
+        state=state,
+        inputs={},
+        sequence_id=0,
+        app_id="app_id",
+        partition_key="partition_key",
+        lifecycle_adapters=LifecycleAdapterSet(),
+    )
     last_result = -1
     result = None
     async for result, state in generator:
@@ -849,11 +1003,45 @@ async def test__run_multistep_streaming_action_async():
     assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
 
 
+async def test__run_multistep_streaming_action_async_callbacks():
+    class TrackingCallback(PostStreamItemHookAsync):
+        def __init__(self):
+            self.items = []
+
+        async def post_stream_item(self, item: Any, **future_kwargs: Any):
+            self.items.append(item)
+
+    hook = TrackingCallback()
+    action = base_streaming_counter_async.with_name("counter")
+    state = State({"count": 0, "tracker": []})
+    generator = _arun_multi_step_streaming_action(
+        action=action,
+        state=state,
+        inputs={},
+        sequence_id=0,
+        app_id="app_id",
+        partition_key="partition_key",
+        lifecycle_adapters=LifecycleAdapterSet(hook),
+    )
+    last_result = -1
+    result = None
+    async for result, state in generator:
+        if last_result < 1:
+            # Otherwise you hit floating poit comparison problems
+            assert result["count"] > last_result
+        last_result = result["count"]
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+    assert len(hook.items) == 10  # one for each streaming callback
+
+
 def test__run_streaming_action_incorrect_result_type():
     action = StreamingActionIncorrectResultType()
     state = State()
     with pytest.raises(ValueError, match="returned a non-dict"):
-        gen = _run_multi_step_streaming_action(action, state, inputs={})
+        gen = _run_multi_step_streaming_action(
+            action, state, inputs={}, sequence_id=0, partition_key="partition_key", app_id="app_id"
+        )
         collections.deque(gen, maxlen=0)  # exhaust the generator
 
 
@@ -861,7 +1049,15 @@ async def test__run_streaming_action_incorrect_result_type_async():
     action = StreamingActionIncorrectResultTypeAsync()
     state = State()
     with pytest.raises(ValueError, match="returned a non-dict"):
-        gen = _arun_multi_step_streaming_action(action, state, inputs={})
+        gen = _arun_multi_step_streaming_action(
+            action=action,
+            state=state,
+            inputs={},
+            sequence_id=0,
+            app_id="app_id",
+            partition_key="partition_key",
+            lifecycle_adapters=LifecycleAdapterSet(),
+        )
         async for _ in gen:
             pass
 
@@ -870,7 +1066,14 @@ def test__run_single_step_streaming_action_incorrect_result_type():
     action = StreamingSingleStepActionIncorrectResultType()
     state = State()
     with pytest.raises(ValueError, match="returned a non-dict"):
-        gen = _run_single_step_streaming_action(action, state, inputs={})
+        gen = _run_single_step_streaming_action(
+            action=action,
+            state=state,
+            inputs={},
+            sequence_id=0,
+            partition_key="partition_key",
+            app_id="app_id",
+        )
         collections.deque(gen, maxlen=0)  # exhaust the generator
 
 
@@ -878,14 +1081,24 @@ async def test__run_single_step_streaming_action_incorrect_result_type_async():
     action = StreamingSingleStepActionIncorrectResultTypeAsync()
     state = State()
     with pytest.raises(ValueError, match="returned a non-dict"):
-        gen = _arun_single_step_streaming_action(action, state, inputs={})
+        gen = _arun_single_step_streaming_action(
+            action,
+            state,
+            inputs={},
+            sequence_id=0,
+            partition_key="partition_key",
+            app_id="app_id",
+            lifecycle_adapters=LifecycleAdapterSet(),
+        )
         _ = [item async for item in gen]
 
 
 def test__run_single_step_streaming_action():
     action = base_streaming_single_step_counter.with_name("counter")
     state = State({"count": 0, "tracker": []})
-    generator = _run_single_step_streaming_action(action, state, inputs={})
+    generator = _run_single_step_streaming_action(
+        action, state, inputs={}, sequence_id=0, partition_key="partition_key", app_id="app_id"
+    )
     last_result = -1
     result, state = None, None
     for result, state in generator:
@@ -898,10 +1111,53 @@ def test__run_single_step_streaming_action():
     assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
 
 
+def test__run_single_step_streaming_action_calls_callbacks():
+    action = base_streaming_single_step_counter.with_name("counter")
+
+    class TrackingCallback(PostStreamItemHook):
+        def __init__(self):
+            self.items = []
+
+        def post_stream_item(self, item: Any, **future_kwargs: Any):
+            self.items.append(item)
+
+    hook = TrackingCallback()
+
+    state = State({"count": 0, "tracker": []})
+    generator = _run_single_step_streaming_action(
+        action,
+        state,
+        inputs={},
+        sequence_id=0,
+        partition_key="partition_key",
+        app_id="app_id",
+        lifecycle_adapters=LifecycleAdapterSet(hook),
+    )
+    last_result = -1
+    result, state = None, None
+    for result, state in generator:
+        if last_result < 1:
+            # Otherwise you hit comparison issues
+            # This is because we get to the last one, which is the final result
+            assert result["count"] > last_result
+        last_result = result["count"]
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+    assert len(hook.items) == 10  # one for each streaming callback
+
+
 async def test__run_single_step_streaming_action_async():
     async_action = base_streaming_single_step_counter_async.with_name("counter")
     state = State({"count": 0, "tracker": []})
-    generator = _arun_single_step_streaming_action(async_action, state, inputs={})
+    generator = _arun_single_step_streaming_action(
+        action=async_action,
+        state=state,
+        inputs={},
+        sequence_id=0,
+        app_id="app_id",
+        partition_key="partition_key",
+        lifecycle_adapters=LifecycleAdapterSet(),
+    )
     last_result = -1
     result, state = None, None
     async for result, state in generator:
@@ -912,6 +1168,40 @@ async def test__run_single_step_streaming_action_async():
         last_result = result["count"]
     assert result == {"count": 1}
     assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+
+
+async def test__run_single_step_streaming_action_async_callbacks():
+    class TrackingCallback(PostStreamItemHookAsync):
+        def __init__(self):
+            self.items = []
+
+        async def post_stream_item(self, item: Any, **future_kwargs: Any):
+            self.items.append(item)
+
+    hook = TrackingCallback()
+
+    async_action = base_streaming_single_step_counter_async.with_name("counter")
+    state = State({"count": 0, "tracker": []})
+    generator = _arun_single_step_streaming_action(
+        action=async_action,
+        state=state,
+        inputs={},
+        sequence_id=0,
+        app_id="app_id",
+        partition_key="partition_key",
+        lifecycle_adapters=LifecycleAdapterSet(hook),
+    )
+    last_result = -1
+    result, state = None, None
+    async for result, state in generator:
+        if last_result < 1:
+            # Otherwise you hit comparison issues
+            # This is because we get to the last one, which is the final result
+            assert result["count"] > last_result
+        last_result = result["count"]
+    assert result == {"count": 1}
+    assert state.subset("count", "tracker").get_all() == {"count": 1, "tracker": [1]}
+    assert len(hook.items) == 10  # one for each streaming callback
 
 
 class SingleStepActionWithDeletionAsync(SingleStepActionWithDeletion):
@@ -1533,13 +1823,14 @@ async def test_app_a_run_async_and_sync():
 
 
 def test_stream_result_halt_after_unique_ordered_sequence_id():
-    action_tracker = ActionTracker()
+    action_tracker = CallCaptureTracker()
+    stream_event_tracker = StreamEventCaptureTracker()
     counter_action = base_streaming_counter.with_name("counter")
     counter_action_2 = base_streaming_counter.with_name("counter_2")
     app = Application(
         state=State({"count": 0}),
         entrypoint="counter",
-        adapter_set=LifecycleAdapterSet(action_tracker),
+        adapter_set=LifecycleAdapterSet(action_tracker, stream_event_tracker),
         partition_key="test",
         uid="test-123",
         graph=Graph(
@@ -1570,16 +1861,26 @@ def test_stream_result_halt_after_unique_ordered_sequence_id():
     # One post call/one pre-call, as we call stream_result once
     assert len(action_tracker.post_run_execute_calls) == 1
     assert len(action_tracker.pre_run_execute_calls) == 1
+    # One call for streaming
+    assert len(stream_event_tracker.pre_start_stream_calls) == 1
+    # 10 streaming items
+    assert len(stream_event_tracker.post_stream_item_calls) == 10
+    # One call for streaming
+    assert len(stream_event_tracker.post_end_stream_calls) == 1
 
 
 async def test_astream_result_halt_after_unique_ordered_sequence_id():
-    action_tracker = ActionTracker()
+    action_tracker = CallCaptureTracker()
+    stream_event_tracker = StreamEventCaptureTrackerAsync()
+    stream_event_tracker_sync = StreamEventCaptureTracker()
     counter_action = base_streaming_counter_async.with_name("counter")
     counter_action_2 = base_streaming_counter_async.with_name("counter_2")
     app = Application(
         state=State({"count": 0}),
         entrypoint="counter",
-        adapter_set=LifecycleAdapterSet(action_tracker),
+        adapter_set=LifecycleAdapterSet(
+            action_tracker, stream_event_tracker, stream_event_tracker_sync
+        ),
         partition_key="test",
         uid="test-123",
         graph=Graph(
@@ -1613,17 +1914,37 @@ async def test_astream_result_halt_after_unique_ordered_sequence_id():
     assert len(action_tracker.post_run_execute_calls) == 1
     assert len(action_tracker.pre_run_execute_calls) == 1
 
+    # One call for streaming
+    assert (
+        len(stream_event_tracker.pre_start_stream_calls)
+        == len(stream_event_tracker_sync.pre_start_stream_calls)
+        == 1
+    )
+    # 10 streaming items
+    assert (
+        len(stream_event_tracker.post_stream_item_calls)
+        == len(stream_event_tracker_sync.post_stream_item_calls)
+        == 10
+    )
+    # One call for streaming
+    assert (
+        len(stream_event_tracker.post_end_stream_calls)
+        == len(stream_event_tracker_sync.post_end_stream_calls)
+        == 1
+    )
+
 
 def test_stream_result_halt_after_run_through_streaming():
     """Tests that we can pass through streaming results,
     fully realize them, then get to the streaming results at the end and return the stream"""
-    action_tracker = ActionTracker()
+    action_tracker = CallCaptureTracker()
+    stream_event_tracker = StreamEventCaptureTracker()
     counter_action = base_streaming_single_step_counter.with_name("counter")
     counter_action_2 = base_streaming_single_step_counter.with_name("counter_2")
     app = Application(
         state=State({"count": 0}),
         entrypoint="counter",
-        adapter_set=LifecycleAdapterSet(action_tracker),
+        adapter_set=LifecycleAdapterSet(action_tracker, stream_event_tracker),
         partition_key="test",
         uid="test-123",
         graph=Graph(
@@ -1653,10 +1974,19 @@ def test_stream_result_halt_after_run_through_streaming():
     ]  # ensure sequence ID is respected
     assert len(action_tracker.post_run_execute_calls) == 1
     assert len(action_tracker.pre_run_execute_calls) == 1
+    # One call for streaming
+    assert len(stream_event_tracker.pre_start_stream_calls) == 1
+    # 10 streaming items
+    assert len(stream_event_tracker.post_stream_item_calls) == 10
+    # One call for streaming
+    assert len(stream_event_tracker.post_end_stream_calls) == 1
 
 
 async def test_astream_result_halt_after_run_through_streaming():
-    action_tracker = ActionTracker()
+    action_tracker = CallCaptureTracker()
+    stream_event_tracker = StreamEventCaptureTrackerAsync()
+    sync_stream_event_tracker = StreamEventCaptureTracker()
+
     counter_action = base_streaming_single_step_counter_async.with_name("counter")
     counter_action_2 = base_streaming_single_step_counter_async.with_name("counter_2")
     assert counter_action.is_async()
@@ -1664,7 +1994,9 @@ async def test_astream_result_halt_after_run_through_streaming():
     app = Application(
         state=State({"count": 0}),
         entrypoint="counter",
-        adapter_set=LifecycleAdapterSet(action_tracker),
+        adapter_set=LifecycleAdapterSet(
+            action_tracker, stream_event_tracker, sync_stream_event_tracker
+        ),
         partition_key="test",
         uid="test-123",
         graph=Graph(
@@ -1697,18 +2029,38 @@ async def test_astream_result_halt_after_run_through_streaming():
     assert len(action_tracker.post_run_execute_calls) == 1
     assert len(action_tracker.pre_run_execute_calls) == 1
 
+    # One call for streaming
+    assert (
+        len(stream_event_tracker.pre_start_stream_calls)
+        == len(sync_stream_event_tracker.pre_start_stream_calls)
+        == 1
+    )
+    # 10 streaming items
+    assert (
+        len(stream_event_tracker.post_stream_item_calls)
+        == len(sync_stream_event_tracker.post_stream_item_calls)
+        == 10
+    )
+    # One call for streaming
+    assert (
+        len(stream_event_tracker.post_end_stream_calls)
+        == len(sync_stream_event_tracker.post_end_stream_calls)
+        == 1
+    )
+
 
 def test_stream_result_halt_after_run_through_non_streaming():
     """Tests what happens when we have an app that runs through non-streaming
     results before hitting a final streaming result specified by halt_after"""
-    action_tracker = ActionTracker()
+    action_tracker = CallCaptureTracker()
+    stream_event_tracker = StreamEventCaptureTracker()
     counter_non_streaming = base_counter_action.with_name("counter_non_streaming")
     counter_streaming = base_streaming_single_step_counter.with_name("counter_streaming")
 
     app = Application(
         state=State({"count": 0}),
         entrypoint="counter_non_streaming",
-        adapter_set=LifecycleAdapterSet(action_tracker),
+        adapter_set=LifecycleAdapterSet(action_tracker, stream_event_tracker),
         partition_key="test",
         uid="test-123",
         graph=Graph(
@@ -1743,16 +2095,27 @@ def test_stream_result_halt_after_run_through_non_streaming():
     assert len(action_tracker.post_run_execute_calls) == 1
     assert len(action_tracker.pre_run_execute_calls) == 1
 
+    # One call for streaming
+    assert len(stream_event_tracker.pre_start_stream_calls) == 1
+    # 10 streaming items
+    assert len(stream_event_tracker.post_stream_item_calls) == 10
+    # One call for streaming
+    assert len(stream_event_tracker.post_end_stream_calls) == 1
+
 
 async def test_astream_result_halt_after_run_through_non_streaming():
-    action_tracker = ActionTracker()
+    action_tracker = CallCaptureTracker()
+    stream_event_tracker = StreamEventCaptureTrackerAsync()
+    stream_event_tracker_sync = StreamEventCaptureTracker()
     counter_non_streaming = base_counter_action_async.with_name("counter_non_streaming")
     counter_streaming = base_streaming_single_step_counter_async.with_name("counter_streaming")
 
     app = Application(
         state=State({"count": 0}),
         entrypoint="counter_non_streaming",
-        adapter_set=LifecycleAdapterSet(action_tracker),
+        adapter_set=LifecycleAdapterSet(
+            action_tracker, stream_event_tracker, stream_event_tracker_sync
+        ),
         partition_key="test",
         uid="test-123",
         graph=Graph(
@@ -1789,10 +2152,29 @@ async def test_astream_result_halt_after_run_through_non_streaming():
     assert len(action_tracker.post_run_execute_calls) == 1
     assert len(action_tracker.pre_run_execute_calls) == 1
 
+    # One call for streaming
+    assert (
+        len(stream_event_tracker.pre_start_stream_calls)
+        == len(stream_event_tracker_sync.pre_start_stream_calls)
+        == 1
+    )
+    # 10 streaming items
+    assert (
+        len(stream_event_tracker.post_stream_item_calls)
+        == len(stream_event_tracker_sync.post_stream_item_calls)
+        == 10
+    )
+    # One call for streaming
+    assert (
+        len(stream_event_tracker.post_end_stream_calls)
+        == len(stream_event_tracker_sync.post_end_stream_calls)
+        == 1
+    )
+
 
 def test_stream_result_halt_after_run_through_final_non_streaming():
     """Tests that we can pass through non-streaming results when streaming is called"""
-    action_tracker = ActionTracker()
+    action_tracker = CallCaptureTracker()
     counter_non_streaming = base_counter_action.with_name("counter_non_streaming")
     counter_final_non_streaming = base_counter_action.with_name("counter_final_non_streaming")
 
@@ -1837,7 +2219,8 @@ def test_stream_result_halt_after_run_through_final_non_streaming():
 
 async def test_astream_result_halt_after_run_through_final_streaming():
     """Tests that we can pass through non-streaming results when streaming is called"""
-    action_tracker = ActionTracker()
+    action_tracker = CallCaptureTracker()
+
     counter_non_streaming = base_counter_action_async.with_name("counter_non_streaming")
     counter_final_non_streaming = base_counter_action_async.with_name("counter_final_non_streaming")
 
@@ -1885,7 +2268,7 @@ async def test_astream_result_halt_after_run_through_final_streaming():
 
 
 def test_stream_result_halt_before():
-    action_tracker = ActionTracker()
+    action_tracker = CallCaptureTracker()
     counter_non_streaming = base_counter_action.with_name("counter_non_streaming")
     counter_streaming = base_streaming_single_step_counter.with_name("counter_final")
 
@@ -1921,7 +2304,7 @@ def test_stream_result_halt_before():
 
 
 async def test_astream_result_halt_before():
-    action_tracker = ActionTracker()
+    action_tracker = CallCaptureTracker()
     counter_non_streaming = base_counter_action_async.with_name("counter_non_streaming")
     counter_streaming = base_streaming_single_step_counter_async.with_name("counter_final")
 
@@ -2069,7 +2452,7 @@ def test_application_builder_unset():
 
 
 def test_application_run_step_hooks_sync():
-    action_tracker = ActionTracker()
+    action_tracker = CallCaptureTracker()
     counter_action = base_counter_action.with_name("counter")
     result_action = Result("count").with_name("result")
     app = Application(
@@ -2164,7 +2547,7 @@ async def test_application_run_step_hooks_async():
 
 
 async def test_application_run_step_runs_hooks():
-    hooks = [ActionTracker(), ActionTrackerAsync()]
+    hooks = [CallCaptureTracker(), ActionTrackerAsync()]
 
     counter_action = base_counter_action.with_name("counter")
     app = Application(
