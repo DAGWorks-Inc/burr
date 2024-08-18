@@ -38,7 +38,7 @@ from burr.core.application import (
     _run_single_step_streaming_action,
     _validate_start,
 )
-from burr.core.graph import Graph, Transition
+from burr.core.graph import Graph, GraphBuilder, Transition
 from burr.core.persistence import BaseStatePersister, DevNullPersister, PersistedStateData
 from burr.lifecycle import (
     PostRunStepHook,
@@ -2691,3 +2691,73 @@ def test_application_does_not_allow_dunderscore_inputs():
     )
     with pytest.raises(ValueError, match="double underscore"):
         app._process_inputs({"__not_allowed": ...}, app.get_next_action())
+
+
+def test_application_recursive_action_lifecycle_hooks():
+    """Tests that calling burr within burr works as expected"""
+
+    class TestingHook(PreApplicationExecuteCallHook, PostApplicationExecuteCallHook):
+        def __init__(self):
+            self.pre_called = []
+            self.post_called = []
+
+        def pre_run_execute_call(
+            self,
+            *,
+            app_id: str,
+            partition_key: str,
+            state: "State",
+            method: ExecuteMethod,
+            **future_kwargs: Any,
+        ):
+            self.pre_called.append((app_id, partition_key, state, method))
+
+        def post_run_execute_call(
+            self,
+            *,
+            app_id: str,
+            partition_key: str,
+            state: "State",
+            method: ExecuteMethod,
+            exception: Optional[Exception],
+            **future_kwargs,
+        ):
+            self.post_called.append((app_id, partition_key, state, method, exception))
+
+    hook = TestingHook()
+    foo = []
+
+    @action(reads=["recursion_count", "total_count"], writes=["recursion_count", "total_count"])
+    def recursive_action(state: State) -> State:
+        foo.append(1)
+        recursion_count = state["recursion_count"]
+        if recursion_count == 5:
+            return state
+        # Fork bomb!
+        total_counts = []
+        for i in range(2):
+            app = (
+                ApplicationBuilder()
+                .with_graph(graph)
+                .with_hooks(hook)
+                .with_entrypoint("recursive_action")
+                .with_state(recursion_count=recursion_count + 1, total_count=1)
+                .build()
+            )
+            action, result, state = app.run(halt_after=["recursive_action"])
+            total_counts.append(state["total_count"])
+        return state.update(
+            recursion_count=state["recursion_count"], total_count=sum(total_counts) + 1
+        )
+
+    graph = GraphBuilder().with_actions(recursive_action).with_transitions().build()
+
+    # initial to kick it off
+    result = recursive_action(State({"recursion_count": 0, "total_count": 0}))
+    # Basic sanity checks to demonstrate
+    assert result["recursion_count"] == 5
+    assert result["total_count"] == 63  # One for each of the calls (sum(2**n for n in range(6)))
+    assert (
+        len(hook.pre_called) == 62
+    )  # 63 - the initial one from the call to recursive_action outside the application
+    assert len(hook.post_called) == 62  # ditto

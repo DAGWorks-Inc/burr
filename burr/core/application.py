@@ -412,8 +412,15 @@ class ApplicationContext(AbstractContextManager):
 _application_context = contextvars.ContextVar[Optional[ApplicationContext]](
     "application_context", default=None
 )
-
-_run_call_var = contextvars.ContextVar[Optional[object]]("run_call_var", default=None)
+# The purpose of this is to ensure that we don't run the run call hooks multiple times
+# We do this as some functions call out to others (but they do not call out to themselves, recursively)
+# Thus we keep track of a sentinel, unique per execute method, which tells us if we have already logged
+# If we want to call out recursively inside applications, we'll need to think this through
+# That said, this is all context/thread safe -- multiple threads can call at the same time
+# Furthermore, if one app delegates to another, their app ID will be different, so it will trace as well.
+_run_call_var = contextvars.ContextVar[Optional[Dict[str, ExecuteMethod]]](
+    "run_call_var", default=None
+)
 
 CallableT = TypeVar("CallableT")
 
@@ -427,11 +434,10 @@ class _call_execute_method_pre_post:
 
     def __init__(self, method: ExecuteMethod):
         self.method = method
-        self.sentinel = object()  # unique object to ensure we only call once
 
     def call_pre(self, app) -> bool:
-        if should_run_hooks := (_run_call_var.get() is None):
-            _run_call_var.set(self.sentinel)
+        if should_run_hooks := (app.uid not in _run_call_var.get({})):
+            _run_call_var.set({**_run_call_var.get({}), **{app.uid: self.method}})
             app._adapter_set.call_all_lifecycle_hooks_sync(
                 "pre_run_execute_call",
                 app_id=app._uid,
@@ -442,21 +448,23 @@ class _call_execute_method_pre_post:
         return should_run_hooks
 
     def call_post(self, app, exc) -> bool:
-        if should_run_hooks := (_run_call_var.get() is self.sentinel):
+        if should_run_hooks := (
+            app.uid in _run_call_var.get(dict) and _run_call_var.get()[app.uid] == self.method
+        ):
+            _run_call_var.set({k: v for k, v in _run_call_var.get().items() if k != app.uid})
             app._adapter_set.call_all_lifecycle_hooks_sync(
                 "post_run_execute_call",
-                app_id=app._uid,
+                app_id=app.uid,
                 partition_key=app._partition_key,
                 state=app.state,
                 method=self.method,
                 exception=exc,
             )
-            _run_call_var.set(None)
         return should_run_hooks
 
     async def acall_pre(self, app) -> bool:
-        if should_run_hooks := (_run_call_var.get() is None):
-            _run_call_var.set(self.sentinel)
+        if should_run_hooks := (app.uid not in _run_call_var.get({})):
+            _run_call_var.set({**_run_call_var.get({}), **{app.uid: self.method}})
             await app._adapter_set.call_all_lifecycle_hooks_sync_and_async(
                 "pre_run_execute_call",
                 app_id=app._uid,
@@ -467,7 +475,10 @@ class _call_execute_method_pre_post:
         return should_run_hooks
 
     async def acall_post(self, app, exc) -> bool:
-        if should_run_hooks := (_run_call_var.get() is self.sentinel):
+        if should_run_hooks := (
+            app.uid in _run_call_var.get(dict) and _run_call_var.get()[app.uid] == self.method
+        ):
+            _run_call_var.set({k: v for k, v in _run_call_var.get().items() if k != app.uid})
             await app._adapter_set.call_all_lifecycle_hooks_sync_and_async(
                 "post_run_execute_call",
                 app_id=app._uid,
@@ -476,7 +487,6 @@ class _call_execute_method_pre_post:
                 method=self.method,
                 exception=exc,
             )
-            _run_call_var.set(None)
         return should_run_hooks
 
     def __call__(self, fn: CallableT) -> CallableT:
