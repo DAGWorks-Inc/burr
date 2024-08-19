@@ -94,6 +94,8 @@ def cli():
 
 
 def _build_ui():
+    cmd = "npm install"
+    _command(cmd, capture_output=False)
     cmd = "npm run build --prefix telemetry/ui"
     _command(cmd, capture_output=False)
     # create a symlink so we can get packages inside it...
