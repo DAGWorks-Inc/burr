@@ -8,6 +8,7 @@ import { AppStateView } from './StateMachine';
 import { createContext, useEffect, useState } from 'react';
 import { Status } from '../../../utils';
 import { GraphView } from './GraphView';
+import { useSearchParams } from 'react-router-dom';
 
 /**
  * Gives a list of prior actions. Note they're currently sorted in order from
@@ -106,8 +107,23 @@ export const AppView = (props: {
   orientation: 'stacked_vertical' | 'stacked_horizontal';
   defaultAutoRefresh?: boolean;
 }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentActionIndex = searchParams.get('sequence_id')
+    ? parseInt(searchParams.get('sequence_id')!)
+    : undefined;
+
+  const setCurrentActionIndex = (index: number | undefined) => {
+    const newSearchParams = new URLSearchParams(searchParams); // Clone the searchParams
+    if (index !== undefined) {
+      newSearchParams.set('sequence_id', index.toString());
+    } else {
+      newSearchParams.delete('sequence_id');
+    }
+    setSearchParams(newSearchParams); // Update the searchParams with the new object
+  };
+  console.log(searchParams, '->', currentActionIndex);
   const { projectId, appId } = props;
-  const [currentActionIndex, setCurrentActionIndex] = useState<number | undefined>(undefined);
+  // const [currentActionIndex, setCurrentActionIndex] = useState<number | undefined>(undefined);
   const [hoverSequenceID, setHoverSequenceID] = useState<number | undefined>(undefined);
   const [autoRefresh, setAutoRefresh] = useState(props.defaultAutoRefresh || false);
   const shouldQuery = projectId !== undefined && appId !== undefined;
@@ -137,24 +153,21 @@ export const AppView = (props: {
     const handleKeyDown = (event: KeyboardEvent) => {
       switch (event.key) {
         case 'ArrowDown':
-          setCurrentActionIndex((prevIndex) => {
-            if (prevIndex === undefined || prevIndex <= minSequenceID) {
-              return minSequenceID;
-            } else {
-              return prevIndex - 1;
-            }
-          });
+          if (currentActionIndex === undefined || currentActionIndex <= minSequenceID) {
+            setCurrentActionIndex(minSequenceID);
+          } else {
+            setCurrentActionIndex(currentActionIndex - 1);
+          }
           break;
         case 'ArrowUp':
-          setCurrentActionIndex((prevIndex) => {
-            if (prevIndex === undefined) {
-              return maxSequenceID;
-            } else if (prevIndex >= maxSequenceID) {
-              return prevIndex;
-            } else {
-              return prevIndex + 1;
-            }
-          });
+          if (currentActionIndex === undefined) {
+            setCurrentActionIndex(maxSequenceID);
+          } else if (currentActionIndex >= maxSequenceID) {
+            setCurrentActionIndex(currentActionIndex);
+          } else {
+            setCurrentActionIndex(currentActionIndex + 1);
+            console.log('incrementing', currentActionIndex, 'to', currentActionIndex + 1);
+          }
           break;
         default:
           break;
@@ -166,7 +179,7 @@ export const AppView = (props: {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [data?.steps]);
+  }, [data?.steps, currentActionIndex, setCurrentActionIndex]);
   useEffect(() => {
     if (autoRefresh) {
       const maxSequenceID = Math.max(
