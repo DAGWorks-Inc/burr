@@ -289,7 +289,6 @@ class LocalBackend(BackendBase):
             )
         async with aiofiles.open(graph_file) as f:
             str_graph = await f.read()
-        # TODO -- use the Step.from_logs method
         collections.defaultdict(list)
         if os.path.exists(log_file):
             async with aiofiles.open(log_file, "rb") as f:

@@ -1,6 +1,6 @@
 import collections
 import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import pydantic
 from pydantic import fields
@@ -13,6 +13,9 @@ from burr.tracking.common.models import (
     ChildApplicationModel,
     EndEntryModel,
     EndSpanModel,
+    EndStreamModel,
+    FirstItemStreamModel,
+    InitializeStreamModel,
     PointerModel,
 )
 from burr.tracking.utils import safe_json_load
@@ -61,6 +64,9 @@ class PartialStep(pydantic.BaseModel):
     step_start_log: Optional[BeginEntryModel] = fields.Field(default_factory=lambda: None)
     step_end_log: Optional[EndEntryModel] = fields.Field(default_factory=lambda: None)
     spans: List[Span] = fields.Field(default_factory=list)
+    streaming_events: List[
+        Union[InitializeStreamModel, FirstItemStreamModel, EndStreamModel]
+    ] = fields.Field(default_factory=list)
 
 
 class Step(pydantic.BaseModel):
@@ -70,6 +76,7 @@ class Step(pydantic.BaseModel):
     step_end_log: Optional[EndEntryModel]
     spans: List[Span]
     attributes: List[AttributeModel]
+    streaming_events: List[Union[InitializeStreamModel, FirstItemStreamModel, EndStreamModel]]
 
     @staticmethod
     def from_logs(log_lines: List[bytes]) -> List["Step"]:
@@ -98,6 +105,15 @@ class Step(pydantic.BaseModel):
             elif json_line["type"] == "attribute":
                 attribute = AttributeModel.parse_obj(json_line)
                 attributes_by_step[attribute.action_sequence_id].append(attribute)
+            elif json_line["type"] in ["begin_stream", "first_item_stream", "end_stream"]:
+                streaming_event = {
+                    "begin_stream": InitializeStreamModel,
+                    "first_item_stream": FirstItemStreamModel,
+                    "end_stream": EndStreamModel,
+                }[json_line["type"]].parse_obj(json_line)
+                steps_by_sequence_id[streaming_event.sequence_id].streaming_events.append(
+                    streaming_event
+                )
         for span in spans_by_id.values():
             sequence_id = (
                 span.begin_entry.action_sequence_id
@@ -121,6 +137,7 @@ class Step(pydantic.BaseModel):
                 step_end_log=value.step_end_log,
                 spans=[Span(**span.dict()) for span in value.spans if span.begin_entry is not None],
                 attributes=attributes_by_step[key],
+                streaming_events=value.streaming_events,
             )
             for key, value in sorted(steps_by_sequence_id.items())
             if value.step_start_log is not None

@@ -1,7 +1,13 @@
 import abc
+import dataclasses
 import datetime
 
-from burr.lifecycle.base import DoLogAttributeHook
+from burr.lifecycle.base import (
+    DoLogAttributeHook,
+    PostEndStreamHook,
+    PostStreamItemHook,
+    PreStartStreamHook,
+)
 
 # this is a quick hack to get it to work on windows
 # we'll have to implement a proper lock later
@@ -25,7 +31,7 @@ import os
 import re
 import traceback
 from abc import ABC
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 try:
     from typing import Self
@@ -53,6 +59,9 @@ from burr.tracking.common.models import (
     ChildApplicationModel,
     EndEntryModel,
     EndSpanModel,
+    EndStreamModel,
+    FirstItemStreamModel,
+    InitializeStreamModel,
     PointerModel,
 )
 from burr.visibility import ActionSpan
@@ -91,6 +100,15 @@ def _allowed_project_name(project_name: str, on_windows: bool) -> bool:
     return bool(re.match(pattern, project_name))
 
 
+@dataclasses.dataclass
+class StreamState:
+    stream_init_time: datetime.datetime
+    count: Optional[int]
+
+
+StateKey = Tuple[str, str, Optional[str]]
+
+
 class SyncTrackingClient(
     PostApplicationCreateHook,
     PreRunStepHook,
@@ -98,6 +116,9 @@ class SyncTrackingClient(
     PreStartSpanHook,
     PostEndSpanHook,
     DoLogAttributeHook,
+    PreStartStreamHook,
+    PostStreamItemHook,
+    PostEndStreamHook,
     ABC,
 ):
     @abc.abstractmethod
@@ -159,6 +180,8 @@ class LocalTrackingClient(
         self.storage_dir = LocalTrackingClient.get_storage_path(project, storage_dir)
         self.project_id = project
         self.serde_kwargs = serde_kwargs or {}
+        # app_id, action, partition_key  -> stream data so we can track
+        self.stream_state: Dict[StateKey, StreamState] = dict()
 
     def _log_child_relationships(
         self,
@@ -476,6 +499,73 @@ class LocalTrackingClient(
                 tags=tags,
             )
             self._append_write_line(attribute_model)
+
+    def pre_start_stream(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        self._append_write_line(
+            InitializeStreamModel(
+                action_sequence_id=sequence_id,
+                span_id=None,
+                stream_init_time=system.now(),
+            )
+        )
+        self.stream_state[app_id, action, partition_key] = StreamState(
+            stream_init_time=system.now(),
+            count=0,
+        )
+
+    def post_stream_item(
+        self,
+        *,
+        item: Any,
+        item_index: int,
+        stream_initialize_time: datetime.datetime,
+        first_stream_item_start_time: datetime.datetime,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        stream_state = self.stream_state[app_id, action, partition_key]
+        if stream_state.count == 0:
+            stream_state.count += 1
+            self._append_write_line(
+                FirstItemStreamModel(
+                    action_sequence_id=sequence_id,
+                    span_id=None,
+                    first_item_time=system.now(),
+                )
+            )
+        else:
+            stream_state.count += 1
+
+    def post_end_stream(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        stream_state = self.stream_state[app_id, action, partition_key]
+        self._append_write_line(
+            EndStreamModel(
+                action_sequence_id=sequence_id,
+                span_id=None,
+                end_time=system.now(),
+                items_streamed=stream_state.count,
+            )
+        )
+        del self.stream_state[app_id, action, partition_key]
 
     def __del__(self):
         if self.f is not None:
