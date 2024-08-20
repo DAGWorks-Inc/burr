@@ -210,3 +210,49 @@ class AttributeModel(IdentifyingModel):
     def sequence_id(self) -> int:
         # Ditto with the above
         return self.action_sequence_id
+
+
+class InitializeStreamModel(IdentifyingModel):
+    """Pydantic model that represents an entry for the beginning of a stream"""
+
+    action_sequence_id: int
+    span_id: Optional[
+        str
+    ]  # It doesn't have to relate to a span, but if it was started in a span, this is the span_id
+    stream_init_time: datetime.datetime
+    type: str = "begin_stream"
+
+    @property
+    def sequence_id(self) -> int:
+        return self.action_sequence_id
+
+
+class FirstItemStreamModel(IdentifyingModel):
+    """Pydantic model that represents an entry for the first item of a stream"""
+
+    action_sequence_id: int
+    span_id: Optional[
+        str
+    ]  # It doesn't have to relate to a span, but if it was started in a span, this is the span_id
+    first_item_time: datetime.datetime
+    type: str = "first_item_stream"
+
+    @property
+    def sequence_id(self) -> int:
+        return self.action_sequence_id
+
+
+class EndStreamModel(IdentifyingModel):
+    """Pydantic model that represents an entry for the first item of a stream"""
+
+    action_sequence_id: int
+    span_id: Optional[
+        str
+    ]  # It doesn't have to relate to a span, but if it was started in a span, this is the span_id
+    end_time: datetime.datetime
+    items_streamed: int
+    type: str = "end_stream"
+
+    @property
+    def sequence_id(self) -> int:
+        return self.action_sequence_id
