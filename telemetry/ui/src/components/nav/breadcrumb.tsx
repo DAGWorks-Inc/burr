@@ -55,7 +55,7 @@ export const BreadCrumb = () => {
                       className="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700"
                       aria-current={page.current ? 'page' : undefined}
                     >
-                      {page.name}
+                      {decodeURIComponent(page.name)}
                     </Link>
                   )}
                 </div>
