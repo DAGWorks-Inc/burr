@@ -70,7 +70,7 @@ export const ReproduceView = (props: {
           }}
         />
       </div>
-      <pre className="text-white bg-gray-800 p-2 rounded-md text-sm">{cmd}</pre>;
+      <pre className="text-white bg-gray-800 p-2 rounded-md text-sm">{cmd}</pre>
     </div>
   );
   //   <span

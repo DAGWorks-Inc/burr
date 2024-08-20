@@ -106,6 +106,7 @@ const SectionHeaderWithExpand = (props: {
   defaultExpanded?: EXPANDED_TOGGLE;
   setDefaultExpanded?: (expanded: EXPANDED_TOGGLE) => void;
   dualToggle?: boolean;
+  hideTopBorder?: boolean;
 }) => {
   let expandedState = props.defaultExpanded || 'default_expanded';
   const cycle = props.dualToggle ? cycleExpandedDual : cycleExpanded;
@@ -121,7 +122,7 @@ const SectionHeaderWithExpand = (props: {
         ? MinusIcon
         : ChevronDownIcon;
   return (
-    <div className="flex flex-row items-center gap-1 border-t">
+    <div className={`flex flex-row items-center gap-1 ${props.hideTopBorder ? '' : 'border-t'}`}>
       <h1 className="text-2xl text-gray-900 font-semibold">{props.name}</h1>
       <MinimizeMaximizeIcon
         className={classNames(
@@ -167,6 +168,7 @@ export const DataView = (props: { currentStep: Step | undefined; priorStep: Step
           defaultExpanded={allStateExpanded}
           setDefaultExpanded={setAllStateExpanded}
           dualToggle={viewRawData === 'raw'}
+          hideTopBorder={true}
         />
         <div className="flex flex-row justify-end gap-2 pr-2">
           <SwitchField>
