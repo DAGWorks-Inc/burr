@@ -548,7 +548,16 @@ class TracerFactoryContextHook(PreRunStepHook, PostRunStepHook):
         exception: Exception,
         **future_kwargs: Any,
     ):
-        tracer_factory_context_var.reset(self.token_pointer_map[(app_id, sequence_id)])
+        try:
+            tracer_factory_context_var.reset(self.token_pointer_map[(app_id, sequence_id)])
+        except ValueError:  # Token var = ContextVar created in a different context
+            # This occurs when we're at the finally block of an async streaming action
+            logger.debug(
+                "Token var = ContextVar created in a different context -- this happens with streaming APIs. "
+                "See: https://github.com/open-telemetry/opentelemetry-python/issues/2606 for a similar issue"
+            )
+            tracer_factory_context_var.set(None)
+
         del self.token_pointer_map[(app_id, sequence_id)]
 
 
