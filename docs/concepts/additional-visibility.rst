@@ -65,11 +65,11 @@ For the function-based API, this would look as follows:
 
 .. code-block:: python
 
-    from burr.visibility import TracingFactory
+    from burr.visibility import TracerFactory
     from burr.core import action
 
     @action(reads=['prompt'], writes=['response'])
-    def my_action(state: State, __tracer: TracingFactory) -> State:
+    def my_action(state: State, __tracer: TracerFactory) -> State:
         with __tracer('create_prompt'):
             modified_prompt = _modify_prompt(state["prompt"])
             with __tracer('check_prompt_safety'):
@@ -106,7 +106,7 @@ Observations
 ------------
 
 You can make observations on the state by calling out to the :py:meth:`log_attribute <burr.visibility.ActionSpanTracer.log_attribute>` or :py:meth:`log_attributes <burr.visibility.ActionSpanTracer.log_attributes>` method on the ``__tracer`` context manager
-or the root tracer factory.
+or the root tracer factory. Note: the `trace()` decorator explained below can substitute for the following approach in many cases.
 
 This allows you to log any arbitrary observations (think token count prompt, whatnot) that may not be part of state/results.
 
@@ -114,12 +114,14 @@ For instance:
 
 .. code-block:: python
 
-    from burr.visibility import TracingFactory
+    from burr.visibility import TracerFactory
     from burr.core import action
 
     @action(reads=['prompt'], writes=['response'])
-    def my_action(state: State, __tracer: TracingFactory) -> State:
+    def my_action(state: State, __tracer: TracerFactory) -> State:
         __tracer.log_attribute(prompt_length=len(state["prompt"]), prompt=state["prompt"])
+
+        # note: see `@trace()` below as an alternative to this approach.
         with __tracer('create_prompt') as t:
             modified_prompt = _modify_prompt(state["prompt"])
             t.log_attribute(modified_prompt=modified_prompt)
@@ -151,23 +153,23 @@ For instance:
 
 .. code-block:: python
 
+    from burr.core import action
     from burr.visibility import trace
 
-    @trace
+    @trace()
     def _modify_prompt(prompt: str) -> str:
         return ...
 
-    @trace
+    @trace()
     def _fix(prompt: str) -> str:
         return ...
 
-    @trace
+    @trace()
     def _query(prompt: str) -> Response:
         return ...
 
-    from burr.core import action
     @action(reads=['prompt'], writes=['response'])
-    def my_action(state: State, __tracer: TracingFactory) -> State:
+    def my_action(state: State) -> State:
         modified_prompt = _modify_prompt(state["prompt"])
         if _is_unsafe(modified_prompt):
               modified_prompt = _fix(modified_prompt)
@@ -180,10 +182,10 @@ To contrast what you can instrument manually, the ``@trace`` decorator allows yo
 
 .. code-block:: python
 
-    from burr.visibility import TracingFactory
+    from burr.visibility import TracerFactory
     from burr.core import action
     @action(reads=['prompt'], writes=['response'])
-    def my_action(state: State, __tracer: TracingFactory) -> State:
+    def my_action(state: State, __tracer: TracerFactory) -> State:
         with __tracer('create_prompt'):
             modified_prompt = _modify_prompt(state["prompt"])
             with __tracer('check_prompt_safety'):
@@ -221,13 +223,13 @@ example:
 
 .. code-block:: python
 
-    from burr.visibility import TracingFactory
+    from burr.visibility import TracerFactory
     from burr.core import action
     from opentelemetry import trace
     otel_tracer = trace.get_tracer(__name__)
 
     @action(reads=['prompt'], writes=['response'])
-    def my_action(state: State, __tracer: TracingFactory) -> State:
+    def my_action(state: State, __tracer: TracerFactory) -> State:
         with __tracer:
             # Burr logging
             __tracer.log_attribute(prompt_length=len(state["prompt"]), prompt=state["prompt"])
