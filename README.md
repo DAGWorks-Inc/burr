@@ -5,6 +5,7 @@
 [![Downloads](https://static.pepy.tech/badge/burr/month)](https://pepy.tech/project/burr)
 [![GitHub Last Commit](https://img.shields.io/github/last-commit/dagworks-inc/burr)](https://github.com/dagworks-inc/burr/pulse)
 [![X](https://img.shields.io/badge/follow-%40burr_framework-1DA1F2?logo=x&style=social)](https://twitter.com/burr_framework)
+<a href="https://app.commanddash.io/agent/github_DAGWorks-Inc_burr"><img src="https://img.shields.io/badge/AI-Code%20Agent-EB9FDA"></a>
 </div>
 
 Burr makes it easy to develop applications that make decisions (chatbots, agents, simulations, etc...) from simple python building blocks.
