@@ -1,4 +1,5 @@
 import dataclasses
+import datetime
 import json
 import logging
 import random
@@ -232,7 +233,67 @@ class OpenTelemetryTracker(
 
     Note that this globally sets a tracer provider -- it is possible that this will interfere with
     other tracers, and we are actively investigating it.
+    TODO -- add stream start/end to opentel + TTFS, etc...
     """
+
+    def pre_start_stream(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        return self.burr_tracker.pre_start_stream(
+            action=action,
+            sequence_id=sequence_id,
+            app_id=app_id,
+            partition_key=partition_key,
+            **future_kwargs,
+        )
+
+    def post_stream_item(
+        self,
+        *,
+        item: Any,
+        item_index: int,
+        stream_initialize_time: datetime.datetime,
+        first_stream_item_start_time: datetime.datetime,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        return self.burr_tracker.post_stream_item(
+            item=item,
+            item_index=item_index,
+            stream_initialize_time=stream_initialize_time,
+            first_stream_item_start_time=first_stream_item_start_time,
+            action=action,
+            sequence_id=sequence_id,
+            app_id=app_id,
+            partition_key=partition_key,
+            **future_kwargs,
+        )
+
+    def post_end_stream(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        return self.burr_tracker.post_end_stream(
+            action=action,
+            sequence_id=sequence_id,
+            app_id=app_id,
+            partition_key=partition_key,
+            **future_kwargs,
+        )
 
     def __init__(self, burr_tracker: SyncTrackingClient):
         initialize_tracer()
@@ -366,6 +427,9 @@ class OpenTelemetryTracker(
         )
         _exit_span(exception)
         tracker_context.set(None)
+
+    def copy(self):
+        return OpenTelemetryTracker(burr_tracker=self.burr_tracker.copy())
 
 
 class BurrTrackingSpanProcessor(SpanProcessor):
