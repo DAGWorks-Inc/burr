@@ -123,7 +123,8 @@ const CommonTableRow = (props: {
         } else {
           props.setCurrentSelectedIndex(props.sequenceID);
         }
-      }}>
+      }}
+    >
       {props.children}
     </TableRow>
   );
@@ -175,7 +176,8 @@ const ActionTableRow = (props: {
       currentSelectedIndex={currentSelectedIndex}
       step={props.step}
       setCurrentHoverIndex={setCurrentHoverIndex}
-      setCurrentSelectedIndex={setCurrentSelectedIndex}>
+      setCurrentSelectedIndex={setCurrentSelectedIndex}
+    >
       <TableCell className="text-gray-500 w-12 max-w-12 min-w-12">{sequenceID}</TableCell>
       <TableCell>
         <div className="flex flex-row gap-1 items-center">
@@ -187,7 +189,8 @@ const ActionTableRow = (props: {
             />
           </div>
           <div
-            className={`${props.minimized ? 'w-32' : 'w-72 max-w-72'} flex flex-row justify-start gap-1 items-center`}>
+            className={`${props.minimized ? 'w-32' : 'w-72 max-w-72'} flex flex-row justify-start gap-1 items-center`}
+          >
             <Chip
               label={isStreaming ? 'stream' : 'action'}
               chipType={isStreaming ? 'stream' : 'action'}
@@ -292,13 +295,15 @@ const LinkSubTable = (props: {
             currentSelectedIndex={currentSelectedIndex}
             step={props.step}
             setCurrentHoverIndex={setCurrentHoverIndex}
-            setCurrentSelectedIndex={setCurrentSelectedIndex}>
+            setCurrentSelectedIndex={setCurrentSelectedIndex}
+          >
             <TableCell colSpan={1}>
               <Icon className={`h-5 w-5 ${iconColor} -ml-1 `} />
             </TableCell>
             <TableCell
               colSpan={3}
-              className={` ${normalText} w-48 min-w-48 max-w-48 truncate pl-9`}>
+              className={` ${normalText} w-48 min-w-48 max-w-48 truncate pl-9`}
+            >
               <div
                 className="z-50"
                 onClick={(e) => {
@@ -306,25 +311,20 @@ const LinkSubTable = (props: {
                     `/project/${props.projectId}/${subApp.child.partition_key || 'null'}/${subApp.child.app_id}`
                   );
                   e.stopPropagation();
-                }}>
+                }}
+              >
                 <span className="hover:underline">{subApp.child.app_id}</span>
               </div>
             </TableCell>
-            {/* <TableCell colSpan={1} className={` ${normalText} min-w-10`}>
-              <div className="flex flex-row justify-end">
-                <DateTimeDisplay date={subApp.event_time} mode={'short'} />
-              </div>
-            </TableCell> */}
-            {/* <TableCell
-              colSpan={1 + +!!props.displayLinksCol + +!!props.displaySpansCol}
-            ></TableCell> */}
-            <TableCell colSpan={1} className="text-gray-500">
-              <Chip
-                label={subApp.event_type === 'fork' ? 'forked' : 'spawned'}
-                chipType={subApp.event_type === 'fork' ? 'fork' : 'spawn'}
-                className="w-16 flex flex-row justify-center"
-              />
-            </TableCell>
+            {!props.minimized && (
+              <TableCell colSpan={1} className="text-gray-500">
+                <Chip
+                  label={subApp.event_type === 'fork' ? 'forked' : 'spawned'}
+                  chipType={subApp.event_type === 'fork' ? 'fork' : 'spawn'}
+                  className="w-16 flex flex-row justify-center"
+                />
+              </TableCell>
+            )}
           </CommonTableRow>
         );
       })}
@@ -394,21 +394,25 @@ const StepSubTableRow = (props: {
       currentSelectedIndex={currentSelectedIndex}
       step={props.step}
       setCurrentHoverIndex={setCurrentHoverIndex}
-      setCurrentSelectedIndex={setCurrentSelectedIndex}>
+      setCurrentSelectedIndex={setCurrentSelectedIndex}
+    >
       <TableCell
-        className={` ${lightText} w-10 min-w-10 ${props.displaySpanID ? '' : 'text-opacity-0'}`}>
+        className={` ${lightText} w-10 min-w-10 ${props.displaySpanID ? '' : 'text-opacity-0'}`}
+      >
         {spanIDUniqueToAction}
       </TableCell>
       {!props.minimized ? (
         <>
           <TableCell
             onClick={onClick}
-            className={`${normalText} ${props.minimized ? 'w-32 min-w-32' : 'w-72 max-w-72'} flex flex-col`}>
+            className={`${normalText} ${props.minimized ? 'w-32 min-w-32' : 'w-72 max-w-72'} flex flex-col`}
+          >
             <div className="flex flex-row gap-1 items-center">
               {[...Array(depth).keys()].map((i) => (
                 <Icon
                   key={i}
-                  className={`${i === depth - 1 ? 'opacity-0' : 'opacity-0'} text-lg text-gray-600 w-4 flex-shrink-0`}></Icon>
+                  className={`${i === depth - 1 ? 'opacity-0' : 'opacity-0'} text-lg text-gray-600 w-4 flex-shrink-0`}
+                ></Icon>
               ))}
               <Chip
                 label={
@@ -464,7 +468,8 @@ const StepSubTableRow = (props: {
                 className="flex justify-start overflow-hidden pl-20"
                 onClick={(e) => {
                   e.stopPropagation();
-                }}>
+                }}
+              >
                 <RenderedField
                   value={(props.model as AttributeModel).value}
                   defaultExpanded={true} // no real need for default expanded
@@ -799,7 +804,8 @@ const WaterfallPiece: React.FC<{
                   position: 'absolute',
                   height: '100%',
                   left: `${leftPositionPercentage}%`
-                }}></div>
+                }}
+              ></div>
             ) : (
               <div
                 className={`h-5 w-5 ${bgColor} opacity-50 absolute`}
@@ -819,7 +825,8 @@ const WaterfallPiece: React.FC<{
               style={{
                 left: `calc(${leftPositionPercentage}% - 20px)`,
                 width: `calc(${widthPercentage}% + 40px)` // 20px buffer on each side
-              }}></div>
+              }}
+            ></div>
 
             {
               <div
@@ -833,7 +840,8 @@ const WaterfallPiece: React.FC<{
                   left: isCloseToEnd
                     ? `auto`
                     : `calc(${leftPositionPercentage}% + ${widthPercentage}%)`
-                }}>
+                }}
+              >
                 {hoverItem}
               </div>
             }
@@ -1192,7 +1200,12 @@ export const StepList = (props: {
   const parentRows = (
     <>
       {props.parentPointer ? (
-        <ParentLink parentPointer={props.parentPointer} projectId={props.projectId} type="fork" />
+        <ParentLink
+          parentPointer={props.parentPointer}
+          projectId={props.projectId}
+          type="fork"
+          minimized={props.minimized}
+        />
       ) : (
         <></>
       )}
@@ -1203,6 +1216,7 @@ export const StepList = (props: {
           type="spawn"
           displayLinksCol={displayLinksCol}
           displaySpansCol={displaySpansCol}
+          minimized={props.minimized}
         />
       ) : (
         <></>
@@ -1355,6 +1369,7 @@ const ParentLink = (props: {
   displayLinksCol?: boolean;
   displaySpansCol?: boolean;
   type: 'spawn' | 'fork';
+  minimized: boolean;
 }) => {
   const Icon = props.type === 'fork' ? TbGrillFork : TiFlowChildren;
   return (
@@ -1365,20 +1380,23 @@ const ParentLink = (props: {
       <TableCell colSpan={2} className="text-gray-500">
         <div className="flex flex-row gap-1 items-center pl-5">
           <Link
-            to={`/project/${props.projectId}/${props.parentPointer.partition_key}/${props.parentPointer.app_id}`}>
+            to={`/project/${props.projectId}/${props.parentPointer.partition_key}/${props.parentPointer.app_id}`}
+          >
             <span className="hover:underline">{props.parentPointer.app_id}</span>
           </Link>
           <span>@</span>
           <span>{props.parentPointer.sequence_id}</span>
         </div>
       </TableCell>
-      <TableCell colSpan={1} className="text-gray-500">
-        <Chip
-          label={'parent'}
-          chipType={props.type}
-          className="w-16 flex flex-row justify-center"
-        />
-      </TableCell>
+      {!props.minimized && (
+        <TableCell colSpan={1} className="text-gray-500">
+          <Chip
+            label={'parent'}
+            chipType={props.type}
+            className="w-16 flex flex-row justify-center"
+          />
+        </TableCell>
+      )}
     </TableRow>
   );
 };
