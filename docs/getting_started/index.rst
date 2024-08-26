@@ -1,7 +1,7 @@
 .. _gettingstarted:
 
 ====================
-Getting Started
+Get started
 ====================
 
 The following section of the docs will walk you through Burr and how to integrate into your project:

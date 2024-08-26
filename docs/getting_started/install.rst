@@ -1,6 +1,6 @@
-==========
-Installing
-==========
+=============
+Installation
+=============
 
 Burr itself requires no dependencies. Every *extra*/*plugin* is an additional install target.
 

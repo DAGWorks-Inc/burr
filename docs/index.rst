@@ -6,10 +6,10 @@
    :caption: Burr
 
    getting_started/index
+   examples/index
    concepts/index
    reference/index
    contributing/index
-   examples/index
 
 .. toctree::
    :hidden:
