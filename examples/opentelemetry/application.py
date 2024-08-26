@@ -2,14 +2,13 @@ import os
 from typing import Optional, Tuple
 
 import openai
-from opentelemetry.instrumentation.openai import OpenAIInstrumentor
 from traceloop.sdk import Traceloop
 
 from burr.core import Application, ApplicationBuilder, State, default, when
 from burr.core.action import action
 from burr.core.graph import GraphBuilder
 from burr.integrations.opentelemetry import OpenTelemetryBridge
-from burr.visibility import TracerFactory
+from burr.visibility import TracerFactory, trace
 
 MODES = {
     "answer_question": "text",
@@ -22,7 +21,7 @@ MODES = {
 @action(reads=[], writes=["chat_history", "prompt"])
 def process_prompt(state: State, prompt: str, __tracer: TracerFactory) -> Tuple[dict, State]:
     result = {"chat_item": {"role": "user", "content": prompt, "type": "text"}}
-    __tracer.log_attributes(prompt=prompt)
+    # __tracer.log_attributes(prompt=prompt)
     return result, state.wipe(keep=["prompt", "chat_history"]).append(
         chat_history=result["chat_item"]
     ).update(prompt=prompt)
@@ -30,35 +29,41 @@ def process_prompt(state: State, prompt: str, __tracer: TracerFactory) -> Tuple[
 
 @action(reads=["prompt"], writes=["safe"])
 def check_safety(state: State, __tracer: TracerFactory) -> Tuple[dict, State]:
-    with __tracer("check_safety"):
-        result = {"safe": "unsafe" not in state["prompt"]}  # quick hack to demonstrate
+    result = {"safe": "unsafe" not in state["prompt"]}  # quick hack to demonstrate
     return result, state.update(safe=result["safe"])
 
 
+@trace()
 def _get_openai_client():
     return openai.Client()
 
 
+@trace()
+def _query_openai(prompt: str, model: str = "gpt-4", chat_history: Optional[list] = None):
+    chat_history = chat_history or []
+    client = _get_openai_client()
+    result = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant"},
+            *chat_history,
+            {"role": "user", "content": prompt},
+        ],
+    )
+    return result.choices[0].message.content
+
+
 @action(reads=["prompt"], writes=["mode"])
-def choose_mode(state: State, __tracer: TracerFactory) -> Tuple[dict, State]:
+def decide_mode(state: State, __tracer: TracerFactory) -> Tuple[dict, State]:
     prompt = (
         f"You are a chatbot. You've been prompted this: {state['prompt']}. "
         f"You have the capability of responding in the following modes: {', '.join(MODES)}. "
         "Please respond with *only* a single word representing the mode that most accurately "
-        "corresponds to the prompt. Fr instance, if the prompt is 'draw a picture of a cat', "
+        "corresponds to the prompt. For instance, if the prompt is 'draw a picture of a cat', "
         "the mode would be 'generate_image'. If the prompt is 'what is the capital of France', the mode would be 'answer_question'."
         "If none of these modes apply, please respond with 'unknown'."
     )
-    with __tracer("query_openai", span_dependencies=["generate_prompt"]):
-        client = _get_openai_client()
-        result = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant"},
-                {"role": "user", "content": prompt},
-            ],
-        )
-    content = result.choices[0].message.content
+    content = _query_openai(prompt, model="gpt-4o")
     mode = content.lower()
     if mode not in MODES:
         mode = "unknown"
@@ -82,35 +87,20 @@ def prompt_for_more(state: State) -> Tuple[dict, State]:
 def chat_response(
     state: State,
     prepend_prompt: str,
-    __tracer: TracerFactory,
-    model: str = "gpt-3.5-turbo",
-) -> Tuple[dict, State]:
-    __tracer.log_attributes(model=model, prepend_prompt=prepend_prompt)
+    model: str = "gpt-4o",
+) -> State:
     chat_history = state["chat_history"].copy()
-    chat_history[-1]["content"] = f"{prepend_prompt}: {chat_history[-1]['content']}"
-    chat_history_api_format = [
-        {
-            "role": chat["role"],
-            "content": chat["content"],
-        }
-        for chat in chat_history
-    ]
-    client = _get_openai_client()
-    with __tracer("query_openai", span_dependencies=["create_openai_client"]):
-        result = client.chat.completions.create(
-            model=model,
-            messages=chat_history_api_format,
-        )
-    response = result.choices[0].message.content
-    result = {"response": {"content": response, "type": MODES[state["mode"]], "role": "assistant"}}
-    return result, state.update(**result)
+    chat_history_to_send = chat_history[:-1]
+    prompt = f"{prepend_prompt}: {chat_history[-1]['content']}"
+    response = _query_openai(prompt=prompt, chat_history=chat_history_to_send, model=model)
+    return state.update(response={"content": response, "type": "text", "role": "assistant"})
 
 
 @action(reads=["prompt", "chat_history", "mode"], writes=["response"])
 def image_response(
     state: State, __tracer: TracerFactory, model: str = "dall-e-2"
 ) -> Tuple[dict, State]:
-    __tracer.log_attributes(model=model)
+    # __tracer.log_attributes(model=model)
     client = _get_openai_client()
     with __tracer("query_openai_image", span_dependencies=["create_openai_client"]):
         result = client.images.generate(
@@ -118,7 +108,7 @@ def image_response(
         )
         response = result.data[0].url
     result = {"response": {"content": response, "type": MODES[state["mode"]], "role": "assistant"}}
-    __tracer.log_attributes(response=response)
+    # __tracer.log_attributes(response=response)
     return result, state.update(**result)
 
 
@@ -142,7 +132,7 @@ graph = (
     .with_actions(
         prompt=process_prompt,
         check_safety=check_safety,
-        decide_mode=choose_mode,
+        decide_mode=decide_mode,
         generate_image=image_response,
         generate_code=chat_response.bind(
             prepend_prompt="Please respond with *only* code and no other text (at all) to the following:",
@@ -182,7 +172,9 @@ def application_burr_as_otel_provider(
         .with_state(chat_history=[])
         .with_graph(graph)
         .with_tracker(
-            project="demo_opentelemetry", params={"storage_dir": storage_dir}, use_otel_tracing=True
+            project="demo_trace_decorator",
+            params={"storage_dir": storage_dir},
+            use_otel_tracing=True,
         )
         .with_identifiers(app_id=app_id)
         .build()
@@ -210,11 +202,21 @@ def application_traceloop_as_otel_provider(
 
 if __name__ == "__main__":
     # Instrument OpenAI API
-    OpenAIInstrumentor().instrument()
+    # OpenAIInstrumentor().instrument()
     # Choose which one to use
     # To use traceloop, uncomment this
     # app = application_traceloop_as_otel_provider()
     # To use Burr, keep this uncommented
-    app = application_burr_as_otel_provider()
+    app = application_burr_as_otel_provider(app_id="with_decorator")
+    # app = application_burr_as_otel_provider(app_id="vanilla_tracing")
     app.visualize(output_file_path="statemachine", include_conditions=True, view=True, format="png")
-    app.run(halt_after=["response"], inputs={"prompt": "What is the capital of France?"})
+    app.run(halt_after=["response"], inputs={"prompt": "Who was Aaron Burr, sir?."})
+    import time
+
+    time.sleep(1.5)
+    app.run(
+        halt_after=["response"],
+        inputs={
+            "prompt": "Please write a function that prints a quick poem about Aaron Burr and Alexander Hamilton."
+        },
+    )
