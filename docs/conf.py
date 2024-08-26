@@ -17,7 +17,7 @@ author = "Elijah ben Izzy, Stefan Krawczyk"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    "myst_parser",
+    "myst_nb",
     "sphinx_sitemap",
     "sphinx_toolbox.collapse",
 ]

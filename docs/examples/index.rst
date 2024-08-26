@@ -13,8 +13,8 @@ Examples of more complex/powerful use-cases of Burr. Download/copy these to adap
     simple
     chatbot
     agents
+    deployment
+    web-server
+    creating_tests
     ml_training
     simulation
-    creating_tests
-    web-server
-    deployment
