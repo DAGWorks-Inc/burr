@@ -3,7 +3,7 @@ FROM python:3.11-slim
 
 
 # Set environment variables
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED 1
 
 # Set working directory
 WORKDIR /app
@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y \
 # Install the dependencies
 # TODO -- use the right version
 #RUN pip install "git+https://github.com/dagworks-inc/burr.git@tracker-s3#egg=burr[tracking-server-s3]"
-RUN pip install "burr[tracking-server-s3]==0.26.3rc0"
+RUN pip install "burr[tracking-server-s3]>=0.29.0"
 
 # Copy the nginx config file
 COPY nginx.conf /etc/nginx/nginx.conf
@@ -30,13 +30,13 @@ COPY nginx.conf /etc/nginx/nginx.conf
 EXPOSE 8000
 EXPOSE 80
 
-ENV BURR_S3_BUCKET=burr-prod-test
-ENV BURR_load_snapshot_on_start=True
-ENV BURR_snapshot_interval_milliseconds=3_600_000
-ENV BURR_update_interval_milliseconds=150_000
-ENV BURR_BACKEND_IMPL=s3
-ENV ENV DEBIAN_FRONTEND=noninteractive
-ENV BURR_BACKEND_IMPL=burr.tracking.server.s3.backend.SQLiteS3Backend
+ENV BURR_S3_BUCKET burr-prod-test
+ENV BURR_load_snapshot_on_start True
+ENV BURR_snapshot_interval_milliseconds 3_600_000
+ENV BURR_update_interval_milliseconds 150_000
+ENV BURR_BACKEND_IMPL s3
+ENV ENV DEBIAN_FRONTEND noninteractive
+ENV BURR_BACKEND_IMPL burr.tracking.server.s3.backend.SQLiteS3Backend
 
 
 # Command to run FastAPI server and NGINX
