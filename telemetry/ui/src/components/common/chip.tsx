@@ -10,7 +10,14 @@ const chipColorMap = {
   demo: 'bg-yellow-400',
   test: 'bg-gray-800',
   fork: 'bg-dwdarkblue/80',
-  spawn: 'bg-purple-600'
+  spawn: 'bg-purple-600',
+  span: 'bg-yellow-500/80',
+  attribute: 'bg-gray-500',
+  error: 'bg-dwred',
+  action: 'bg-dwlightblue/90',
+  stream: 'bg-dwlightblue/90',
+  first_item_stream: 'bg-pink-400',
+  end_stream: 'bg-pink-400'
 };
 
 export type ChipType = keyof typeof chipColorMap;
@@ -20,12 +27,18 @@ export type ChipType = keyof typeof chipColorMap;
  * This makes it easy to centralize meaning across the repository
  * although it breaks encapsulation.
  */
-export const Chip = (props: { label: string; chipType: ChipType; className?: string }) => {
+export const Chip = (props: {
+  label: string;
+  chipType: ChipType;
+  className?: string;
+  onClick?: (e: React.MouseEvent) => void;
+}) => {
   const bgColor = chipColorMap[props.chipType];
+  const clickable = props.onClick !== undefined;
   return (
     <div
       className={`relative grid select-none items-center whitespace-nowrap rounded-lg
-        p-1 px-3 font-sans text-xs font-semibold text-white ${bgColor} ${
+        p-1 px-3 font-sans text-xs font-semibold text-white ${clickable ? 'cursor-pointer hover:underline' : ''} ${bgColor} ${
           props.className ? props.className : ''
         }`}
     >

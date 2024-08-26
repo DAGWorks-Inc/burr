@@ -3,14 +3,11 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * Represents a logged artifact
+ * Pydantic model that represents an entry for the beginning of a stream
  */
-export type AttributeModel = {
+export type InitializeStreamModel = {
   type?: string;
-  key: string;
   action_sequence_id: number;
   span_id: string | null;
-  value: Record<string, any> | string | number | boolean | null;
-  tags: Record<string, string>;
-  time_logged?: string | null;
+  stream_init_time: string;
 };

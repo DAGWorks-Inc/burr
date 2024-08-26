@@ -12,6 +12,8 @@ export const Tabs = (props: {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
 }) => {
+  // const MinimizeTableIcon = props.isMinimized ? ChevronRightIcon : ChevronLeftIcon;
+
   const { currentTab, setCurrentTab } = props;
   return (
     <div>
@@ -24,14 +26,15 @@ export const Tabs = (props: {
           id="tabs"
           name="tabs"
           className="block w-full rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-          defaultValue={currentTab}>
+          defaultValue={currentTab}
+        >
           {props.tabs.map((tab) => (
             <option key={tab.id}>{tab.displayName}</option>
           ))}
         </select>
       </div>
       <div className="hidden sm:block">
-        <nav className="flex space-x-4" aria-label="Tabs">
+        <nav className="flex space-x-4 flex-row pl-2" aria-label="Tabs">
           {props.tabs.map((tab) => (
             <span
               onClick={() => setCurrentTab(tab.id)}
@@ -42,7 +45,8 @@ export const Tabs = (props: {
                   : 'text-gray-500 hover:text-gray-700',
                 'rounded-md px-3 py-2 text-sm font-medium hover:cursor-pointer'
               )}
-              aria-current={tab.id === currentTab ? 'page' : undefined}>
+              aria-current={tab.id === currentTab ? 'page' : undefined}
+            >
               {tab.displayName}
             </span>
           ))}

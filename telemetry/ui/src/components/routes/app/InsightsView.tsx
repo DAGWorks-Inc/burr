@@ -1,4 +1,4 @@
-import { AttributeModel, Step } from '../../../api';
+import { AttributeModel, Span, Step } from '../../../api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../common/table';
 import React from 'react';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
@@ -116,11 +116,19 @@ const REGISTERED_INSIGHTS: Insight[] = [
   }
 ];
 
-const InsightSubTable = (props: { attributes: AttributeModel[]; insight: Insight }) => {
+const InsightSubTable = (props: {
+  attributes: AttributeModel[];
+  insight: Insight;
+  allSpans: Span[];
+}) => {
   const individualValues = props.insight.captureIndividualValues?.(props.attributes);
   const [isExpanded, setIsExpanded] = React.useState(false);
   const ExpandIcon = isExpanded ? ChevronUpIcon : ChevronDownIcon;
   const canExpand = props.insight.captureIndividualValues !== undefined;
+  const spansBySpanID = props.allSpans.reduce((acc, span) => {
+    acc.set(span.begin_entry.span_id, span);
+    return acc;
+  }, new Map<string, Span>());
   return (
     <>
       <TableRow className="hover:bg-gray-50">
@@ -145,11 +153,18 @@ const InsightSubTable = (props: { attributes: AttributeModel[]; insight: Insight
       </TableRow>
       {isExpanded
         ? individualValues?.map((attribute, i) => {
+            const span = spansBySpanID.get(attribute.span_id || '');
             const insightCasted = props.insight as InsightWithIndividualValues;
             return (
               <TableRow key={attribute.key + i} className="hover:bg-gray-50">
                 <TableCell></TableCell>
-                <TableCell className=" text-gray-400">{attribute.span_id}</TableCell>
+                <TableCell className=" text-gray-">
+                  <div className="flex gap">
+                    <div>{span?.begin_entry.action_sequence_id}:</div>
+                    <div>{span?.begin_entry.span_name || ''}</div>
+                    <div className="pl-2">({attribute.span_id})</div>
+                  </div>
+                </TableCell>
                 <TableCell>
                   <insightCasted.RenderIndividualValue attribute={attribute} />
                 </TableCell>
@@ -166,13 +181,15 @@ export const InsightsView = (props: { steps: Step[] }) => {
   const allAttributes: AttributeModel[] = props.steps.flatMap((step) => step.attributes);
   let noInsights = true;
 
+  const allSpans = props.steps.flatMap((step) => step.spans);
+
   const out = (
     <div className="pt-0">
       <Table dense={1}>
         <TableHead>
           <TableRow className="hover:bg-gray-100">
             <TableHeader>Name </TableHeader>
-            <TableHeader>Span ID</TableHeader>
+            <TableHeader>Span</TableHeader>
             <TableHeader>Value</TableHeader>
             <TableHeader></TableHeader>
             <TableHeader colSpan={1}></TableHeader>
@@ -187,6 +204,7 @@ export const InsightsView = (props: { steps: Step[] }) => {
                   key={insight.insightName}
                   attributes={allAttributes}
                   insight={insight}
+                  allSpans={allSpans}
                 />
               );
             }

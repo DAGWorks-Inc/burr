@@ -19,7 +19,12 @@ import { MinusIcon } from '@heroicons/react/24/outline';
 const CommonJsonView = (props: { value: object; collapsed?: number }) => {
   const collapsed = props.collapsed || 2;
   return (
-    <JsonView value={props.value} collapsed={collapsed} enableClipboard={true}>
+    <JsonView
+      value={props.value}
+      collapsed={collapsed}
+      enableClipboard={true}
+      displayDataTypes={false}
+    >
       <JsonView.Arrow
         // @ts-ignore
         render={({ 'data-expanded': isExpanded }) => {
@@ -399,6 +404,7 @@ export const AttributeView = (props: {
   attribute: AttributeModel;
   viewRawData: 'render' | 'raw';
   isExpanded: boolean;
+  hideHighlight?: boolean;
 }) => {
   const { attribute, viewRawData, isExpanded } = props;
   const attributeAsObject = { [attribute.key]: attribute.value };
@@ -410,7 +416,7 @@ export const AttributeView = (props: {
   return (
     <div
       id={getUniqueAttributeID(attribute)}
-      className={`${attributeHighlighted ? 'bg-pink-100' : ''}`}
+      className={`${attributeHighlighted && !props.hideHighlight ? 'bg-pink-100' : ''}`}
     >
       {viewRawData === 'render' && (
         <>
@@ -474,26 +480,26 @@ const Header = (props: {
     </div>
   );
 };
-const RenderedField = (props: {
+export const RenderedField = (props: {
   value: string | number | boolean | object | null;
-  keyName: string;
-  level: number;
+  keyName?: string;
+  level?: number;
   defaultExpanded: boolean;
 }) => {
   const [isExpanded, setExpanded] = useState(true);
   useEffect(() => {
-    setExpanded(props.defaultExpanded);
+    setExpanded(props.defaultExpanded || false);
   }, [props.defaultExpanded, props.value, props.keyName]);
   // TODO: have max level depth.
   const { value, keyName: key, level } = props;
   const bodyClassNames =
     'border-gray-100 border-l-[8px] pl-1 hover:bg-gray-100 text-sm text-gray-700';
-  if (key.startsWith('__')) {
+  if ((key || '').startsWith('__')) {
     return null;
   }
   return (
-    <>
-      <Header name={key} isExpanded={isExpanded} setExpanded={setExpanded} />
+    <div className="">
+      {key && <Header name={key} isExpanded={isExpanded} setExpanded={setExpanded} />}
       {isExpanded &&
         (props.value instanceof Array &&
         props.value.length > 0 &&
@@ -504,8 +510,7 @@ const RenderedField = (props: {
         ) : typeof value === 'string' ? (
           <div key={key + '-' + String(level)}>
             <pre
-              className={bodyClassNames}
-              style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', maxWidth: '1000px' }}
+              className={`${bodyClassNames} whitespace-pre-wrap word-wrap-break-word max-w-[1000px]`}
             >
               {value}
             </pre>
@@ -519,7 +524,7 @@ const RenderedField = (props: {
                     <RenderedField
                       value={v}
                       keyName={key + '[' + i.toString() + ']'}
-                      level={level + 1}
+                      level={(level || 0) + 1}
                       defaultExpanded={props.defaultExpanded}
                     />
                   </div>
@@ -543,7 +548,7 @@ const RenderedField = (props: {
                       <RenderedField
                         value={v}
                         keyName={k}
-                        level={level + 1}
+                        level={(level || 0) + 1}
                         defaultExpanded={props.defaultExpanded}
                       />
                     </div>
@@ -561,7 +566,7 @@ const RenderedField = (props: {
             <pre>{value.toString()}</pre>
           </div>
         ))}
-    </>
+    </div>
   );
 };
 

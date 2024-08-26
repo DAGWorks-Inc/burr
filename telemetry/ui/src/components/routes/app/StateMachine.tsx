@@ -6,6 +6,9 @@ import { GraphView } from './GraphView';
 import { InsightsView } from './InsightsView';
 import { ReproduceView } from './ReproduceView';
 import { useParams } from 'react-router-dom';
+import { useContext } from 'react';
+import { AppViewHighlightContext } from './AppView';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 const NoStepSelected = () => {
   return (
@@ -21,11 +24,12 @@ export const AppStateView = (props: {
   highlightedActions: Step[] | undefined;
   hoverAction: Step | undefined;
   currentSequenceID: number | undefined;
-  currentTab: string;
-  setCurrentTab: (tab: string) => void;
   displayGraphAsTab: boolean;
+  setMinimized: (minimized: boolean) => void;
+  isMinimized: boolean;
+  allowMinimized: boolean;
 }) => {
-  const { currentTab, setCurrentTab } = props;
+  const { tab, setTab } = useContext(AppViewHighlightContext);
   const currentStep = props.steps.find(
     (step) => step.step_start_log.sequence_id === props.currentSequenceID
   );
@@ -46,19 +50,27 @@ export const AppStateView = (props: {
   if (props.displayGraphAsTab) {
     tabs.push({ id: 'graph', displayName: 'Graph' });
   }
+  const MinimizeTableIcon = props.isMinimized ? ChevronLeftIcon : ChevronRightIcon;
   return (
     <>
-      <Tabs tabs={tabs} currentTab={currentTab} setCurrentTab={setCurrentTab} />
+      <div className="flex flex-row items-center pl-4">
+        {props.allowMinimized && (
+          <button onClick={() => props.setMinimized(!props.isMinimized)}>
+            <MinimizeTableIcon className="h-4 w-4 hover:scale-110 cursor-pointer text-gray-600" />
+          </button>
+        )}
+        <Tabs tabs={tabs} currentTab={tab} setCurrentTab={setTab} />
+      </div>
       <div className="px-4 h-full w-full hide-scrollbar overflow-y-auto">
-        {currentTab === 'data' &&
+        {tab === 'data' &&
           (currentStep ? (
             <DataView currentStep={currentStep} priorStep={priorStep} />
           ) : (
             <NoStepSelected />
           ))}
-        {currentTab === 'code' &&
+        {tab === 'code' &&
           (currentStep ? <ActionView currentAction={actionModel} /> : <NoStepSelected />)}
-        {currentTab === 'graph' && (
+        {tab === 'graph' && (
           <GraphView
             stateMachine={props.stateMachine}
             currentAction={currentStep}
@@ -66,8 +78,8 @@ export const AppStateView = (props: {
             hoverAction={props.hoverAction}
           />
         )}
-        {currentTab === 'insights' && <InsightsView steps={props.steps} />}
-        {currentTab === 'reproduce' &&
+        {tab === 'insights' && <InsightsView steps={props.steps} />}
+        {tab === 'reproduce' &&
           (currentStep ? (
             <ReproduceView
               step={currentStep}

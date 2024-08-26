@@ -12,6 +12,8 @@ export const MiniTelemetry = (props: { projectId: string; appId: string | undefi
       appId={appId}
       orientation="stacked_vertical"
       defaultAutoRefresh={true}
+      enableFullScreenStepView={false}
+      enableMinizedStepView={false}
     />
   );
 };
