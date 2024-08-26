@@ -1,7 +1,9 @@
 import { AttributeModel, Span, Step } from '../../../api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../common/table';
-import React from 'react';
+import React, { useContext } from 'react';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { AppViewHighlightContext } from './AppView';
+import { Chip } from '../../common/chip';
 
 /**
  * Insights allow us to visualize and surface attributes stored in steps.
@@ -13,6 +15,8 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
  * Insights are an aggregation over attributes
  */
 type InsightBase = {
+  // Tells the category
+  category: 'llm' | 'metric';
   // Tells whether or not we have the insight, meaning whether it should register or not
   hasInsight: (allAttributes: AttributeModel[]) => boolean;
   // Name of the insight
@@ -48,6 +52,7 @@ type Insight = InsightWithIndividualValues | InsightWithoutIndividualValues;
 
 const REGISTERED_INSIGHTS: Insight[] = [
   {
+    category: 'llm',
     hasInsight: (allAttributes) => {
       return allAttributes.some((attribute) => attribute.key.endsWith('prompt_tokens'));
     },
@@ -69,6 +74,7 @@ const REGISTERED_INSIGHTS: Insight[] = [
     }
   },
   {
+    category: 'llm',
     hasInsight: (allAttributes) => {
       return allAttributes.some((attribute) => attribute.key.endsWith('completion_tokens'));
     },
@@ -90,6 +96,7 @@ const REGISTERED_INSIGHTS: Insight[] = [
     }
   },
   {
+    category: 'llm',
     hasInsight: (allAttributes) => {
       return allAttributes.some((attribute) => attribute.key.endsWith('prompt_tokens'));
     },
@@ -102,24 +109,41 @@ const REGISTERED_INSIGHTS: Insight[] = [
         }
       });
       return <p>{totalLLMCalls}</p>;
+    },
+    captureIndividualValues: (allAttributes) => {
+      const spanIDToLLMCalls = new Map<string, number>();
+      allAttributes.forEach((attribute) => {
+        if (attribute.key.endsWith('prompt_tokens')) {
+          spanIDToLLMCalls.set(
+            attribute.span_id || '',
+            (spanIDToLLMCalls.get(attribute.span_id || '') || 0) + 1
+          );
+        }
+      });
+      return Array.from(spanIDToLLMCalls.entries()).map(([spanID, count]) => {
+        return {
+          key: 'llm_calls',
+          action_sequence_id: 0,
+          value: count,
+          span_id: spanID,
+          timestamp: 0,
+          tags: {}
+        };
+      });
+      // return allAttributes.filter((attribute) => attribute.key.endsWith('prompt_tokens')).map;
+    },
+    RenderIndividualValue: (props: { attribute: AttributeModel }) => {
+      return <p>{props.attribute.value?.toString()}</p>;
     }
-    // TODO -- get this to work
-    // Currently it's just a filter but we should be able to create individual values here
-    // It's just a simmple groupby/count
-    // captureIndividualValues: (allAttributes) => {
-    //   return allAttributes.filter((attribute) => attribute.key.endsWith('prompt_tokens'));
-    // },
-    // RenderIndividualValue: (props: { attribute: AttributeModel }) => {
-    //   debugger;
-    //   return <p>1</p>;
-    // }
   }
 ];
 
+// TODO -- get anonymous insights
 const InsightSubTable = (props: {
   attributes: AttributeModel[];
   insight: Insight;
   allSpans: Span[];
+  allSteps: Step[];
 }) => {
   const individualValues = props.insight.captureIndividualValues?.(props.attributes);
   const [isExpanded, setIsExpanded] = React.useState(false);
@@ -129,21 +153,37 @@ const InsightSubTable = (props: {
     acc.set(span.begin_entry.span_id, span);
     return acc;
   }, new Map<string, Span>());
+  const stepsByStepID = props.allSteps.reduce((acc, step) => {
+    acc.set(step.step_start_log.sequence_id, step);
+    return acc;
+  }, new Map<number, Step>());
+
+  const { currentSelectedIndex, setCurrentSelectedIndex, currentHoverIndex, setCurrentHoverIndex } =
+    useContext(AppViewHighlightContext);
+
   return (
     <>
-      <TableRow className="hover:bg-gray-50">
-        <TableCell>{props.insight.insightName}</TableCell>
-        <TableCell></TableCell>
+      <TableRow
+        className="hover:bg-gray-50 cursor-pointer"
+        onClick={() => {
+          if (canExpand) {
+            setIsExpanded(!isExpanded);
+          }
+        }}
+      >
         <TableCell>
-          <props.insight.RenderInsightValue attributes={props.attributes} />
+          <div className="flex flex-row gap-1 items-center">
+            <Chip label={props.insight.category} chipType={props.insight.category}></Chip>
+            {props.insight.insightName}
+          </div>
         </TableCell>
-        <TableCell>
+        <TableCell className=""></TableCell>
+        <TableCell className=""></TableCell>
+
+        <TableCell className="flex flex-row justify-end gap-2">
+          <props.insight.RenderInsightValue attributes={props.attributes} />
           {canExpand ? (
-            <button
-              onClick={() => {
-                setIsExpanded(!isExpanded);
-              }}
-            >
+            <button>
               <ExpandIcon className="h-5 w-5" />
             </button>
           ) : (
@@ -154,21 +194,42 @@ const InsightSubTable = (props: {
       {isExpanded
         ? individualValues?.map((attribute, i) => {
             const span = spansBySpanID.get(attribute.span_id || '');
+            const step = stepsByStepID.get(span?.begin_entry.action_sequence_id || 0);
             const insightCasted = props.insight as InsightWithIndividualValues;
+            const isHovered = currentHoverIndex === span?.begin_entry.action_sequence_id;
+            const isCurrentSelected = currentSelectedIndex === span?.begin_entry.action_sequence_id;
             return (
-              <TableRow key={attribute.key + i} className="hover:bg-gray-50">
+              <TableRow
+                key={attribute.key + i}
+                className={` ${isCurrentSelected ? 'bg-gray-200' : isHovered ? 'bg-gray-50' : 'hover:bg-gray-50'} cursor-pointer`}
+                onMouseEnter={() => {
+                  setCurrentHoverIndex(span?.begin_entry.action_sequence_id);
+                }}
+                onMouseLeave={() => {
+                  setCurrentHoverIndex(undefined);
+                }}
+                onClick={() => {
+                  setCurrentSelectedIndex(span?.begin_entry.action_sequence_id);
+                }}
+              >
                 <TableCell></TableCell>
-                <TableCell className=" text-gray-">
+                <TableCell className="">
+                  {step && (
+                    <div className="flex gap-2">
+                      <span>{step.step_start_log.action}</span>
+                      <span>({span?.begin_entry.action_sequence_id})</span>
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell className="">
                   <div className="flex gap">
-                    <div>{span?.begin_entry.action_sequence_id}:</div>
                     <div>{span?.begin_entry.span_name || ''}</div>
-                    <div className="pl-2">({attribute.span_id})</div>
+                    <div className="pl-2">({attribute.span_id?.split(':')})</div>
                   </div>
                 </TableCell>
-                <TableCell>
+                <TableCell className="flex justify-end mr-7">
                   <insightCasted.RenderIndividualValue attribute={attribute} />
                 </TableCell>
-                <TableCell></TableCell>
               </TableRow>
             );
           })
@@ -188,11 +249,11 @@ export const InsightsView = (props: { steps: Step[] }) => {
       <Table dense={1}>
         <TableHead>
           <TableRow className="hover:bg-gray-100">
-            <TableHeader>Name </TableHeader>
-            <TableHeader>Span</TableHeader>
-            <TableHeader>Value</TableHeader>
-            <TableHeader></TableHeader>
-            <TableHeader colSpan={1}></TableHeader>
+            <TableHeader className="w-72">Name </TableHeader>
+            <TableHeader className="w-48">Step</TableHeader>
+            <TableHeader className="w-48">Span</TableHeader>
+            <TableHeader className="flex justify-end">Value</TableHeader>
+            {/* <TableHeader colSpan={1}></TableHeader> */}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -205,6 +266,7 @@ export const InsightsView = (props: { steps: Step[] }) => {
                   attributes={allAttributes}
                   insight={insight}
                   allSpans={allSpans}
+                  allSteps={props.steps}
                 />
               );
             }

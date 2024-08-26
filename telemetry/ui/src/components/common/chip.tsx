@@ -17,7 +17,9 @@ const chipColorMap = {
   action: 'bg-dwlightblue/90',
   stream: 'bg-dwlightblue/90',
   first_item_stream: 'bg-pink-400',
-  end_stream: 'bg-pink-400'
+  end_stream: 'bg-pink-400',
+  llm: 'bg-gray-400/50',
+  metric: 'bg-gray-400/50'
 };
 
 export type ChipType = keyof typeof chipColorMap;
