@@ -204,6 +204,7 @@ class AttributeModel(IdentifyingModel):
     ]  # It doesn't have to relate to a span, it can be at the level of an action as well
     value: Union[dict, str, int, float, bool, list, None]
     tags: Dict[str, str]
+    time_logged: Optional[datetime.datetime] = None
     type: str = "attribute"
 
     @property

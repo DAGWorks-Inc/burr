@@ -497,6 +497,7 @@ class LocalTrackingClient(
                 span_id=span.uid if span is not None else None,
                 value=serde.serialize(attribute, **self.serde_kwargs),
                 tags=tags,
+                time_logged=system.now(),
             )
             self._append_write_line(attribute_model)
 

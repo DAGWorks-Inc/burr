@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pydantic
 
+from burr import system
 from burr.common import types as burr_types
 from burr.core import Action, ApplicationGraph, State, serde
 from burr.integrations.base import require_plugin
@@ -137,6 +138,7 @@ class S3TrackingClient(SyncTrackingClient):
                 span_id=span.uid if span is not None else None,
                 value=serde.serialize(attribute, **self.serde_kwargs),
                 tags=tags,
+                time_logged=system.now(),
             )
             self.submit_log_event(attribute_model, app_id=app_id, partition_key=partition_key)
 
