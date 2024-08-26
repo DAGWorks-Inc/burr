@@ -41,7 +41,8 @@ export function Table({
       <div className="flow-root">
         <div
           {...props}
-          className={clsx(className, '-mx-[--gutter] overflow-x-auto whitespace-nowrap')}
+          // TODO - this is currently hidden cause of weird stuff, but we really shouldn't be, we should figure out why it's overflowing
+          className={clsx(className, '-mx-[--gutter] overflow-x-hidden whitespace-nowrap')}
         >
           <div
             className={clsx('inline-block min-w-full align-middle', !bleed && 'sm:px-[--gutter]')}
@@ -129,7 +130,7 @@ export function TableCell({ className, children, ...props }: React.ComponentProp
         'relative px-4 first:pl-[var(--gutter,theme(spacing.2))] last:pr-[var(--gutter,theme(spacing.2))]',
         !striped && 'border-b border-zinc-950/5 dark:border-white/5',
         grid && 'border-l border-l-zinc-950/5 first:border-l-0 dark:border-l-white/5',
-        dense === 0 ? 'py-4' : dense === 1 ? 'py-2.5' : 'py-0.2', //'py-2.5' : 'py-4',
+        dense === 0 ? 'py-4' : dense === 1 ? 'py-2.5' : dense === 2 ? 'py-1' : 'py-0.2', //'py-2.5' : 'py-4',
         !bleed && 'sm:first:pl-2 sm:last:pr-2'
       )}
     >

@@ -81,18 +81,28 @@ export const backgroundColorsForIndex = (index: number, status: Status) => {
 };
 
 // Default number of previous actions to show
-const NUM_PREVIOUS_ACTIONS = 6;
+const NUM_PREVIOUS_ACTIONS = 0;
 
 export type HighlightState = {
   attributesHighlighted: AttributeModel[];
   setAttributesHighlighted: (attributes: AttributeModel[]) => void;
   setTab: (tab: string) => void;
+  tab: string;
+  setCurrentSelectedIndex: (index: number | undefined) => void;
+  currentSelectedIndex?: number;
+  setCurrentHoverIndex: (index: number | undefined) => void;
+  currentHoverIndex?: number;
 };
 
 export const AppViewHighlightContext = createContext<HighlightState>({
   attributesHighlighted: [],
   setAttributesHighlighted: () => {},
-  setTab: () => {}
+  setTab: () => {},
+  tab: 'data',
+  setCurrentSelectedIndex: () => {},
+  currentSelectedIndex: undefined,
+  setCurrentHoverIndex: () => {},
+  currentHoverIndex: undefined
 });
 
 /**
@@ -106,8 +116,12 @@ export const AppView = (props: {
   partitionKey?: string;
   orientation: 'stacked_vertical' | 'stacked_horizontal';
   defaultAutoRefresh?: boolean;
+  enableFullScreenStepView: boolean;
+  enableMinizedStepView: boolean;
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [topToBottomChronological, setTopToBottomChronological] = useState(true);
+  const [inspectViewOpen, setInspectViewOpen] = useState(false);
   const currentActionIndex = searchParams.get('sequence_id')
     ? parseInt(searchParams.get('sequence_id')!)
     : undefined;
@@ -121,7 +135,6 @@ export const AppView = (props: {
     }
     setSearchParams(newSearchParams); // Update the searchParams with the new object
   };
-  console.log(searchParams, '->', currentActionIndex);
   const { projectId, appId } = props;
   // const [currentActionIndex, setCurrentActionIndex] = useState<number | undefined>(undefined);
   const [hoverSequenceID, setHoverSequenceID] = useState<number | undefined>(undefined);
@@ -129,9 +142,25 @@ export const AppView = (props: {
   const shouldQuery = projectId !== undefined && appId !== undefined;
   const [minimizedTable, setMinimizedTable] = useState(false);
   const [highlightedAttributes, setHighlightedAttributes] = useState<AttributeModel[]>([]);
-  const displayGraphAsTabs = props.orientation === 'stacked_vertical';
+  const fullScreen = searchParams.get('full') === 'true' && props.enableFullScreenStepView;
+  const displayGraphAsTabs = props.orientation === 'stacked_vertical' || fullScreen;
   const defaultTab = displayGraphAsTabs ? 'graph' : 'data';
-  const [currentTab, setCurrentTab] = useState(defaultTab);
+  // const [currentTab, setCurrentTab] = useState(defaultTab);
+  const currentTab = searchParams.get('tab') || defaultTab;
+  const setCurrentTab = (tab: string) => {
+    const newSearchParams = new URLSearchParams(searchParams); // Clone the searchParams
+    newSearchParams.set('tab', tab);
+    setSearchParams(newSearchParams); // Update the searchParams with the new object
+  };
+  const setFullScreen = (full: boolean) => {
+    const newSearchParams = new URLSearchParams(searchParams); // Clone the searchParams
+    if (full) {
+      newSearchParams.set('full', 'true');
+    } else {
+      newSearchParams.delete('full');
+    }
+    setSearchParams(newSearchParams); // Update the searchParams with the new object
+  };
   const { data, error } = useQuery(
     ['steps', appId],
     () =>
@@ -152,21 +181,21 @@ export const AppView = (props: {
     const minSequenceID = Math.min(...steps.map((step) => step.step_start_log.sequence_id));
     const handleKeyDown = (event: KeyboardEvent) => {
       switch (event.key) {
-        case 'ArrowDown':
+        case topToBottomChronological ? 'ArrowUp' : 'ArrowDown':
           if (currentActionIndex === undefined || currentActionIndex <= minSequenceID) {
             setCurrentActionIndex(minSequenceID);
           } else {
             setCurrentActionIndex(currentActionIndex - 1);
           }
           break;
-        case 'ArrowUp':
+        case topToBottomChronological ? 'ArrowDown' : 'ArrowUp':
+          // case 'ArrowUp':
           if (currentActionIndex === undefined) {
             setCurrentActionIndex(maxSequenceID);
           } else if (currentActionIndex >= maxSequenceID) {
             setCurrentActionIndex(currentActionIndex);
           } else {
             setCurrentActionIndex(currentActionIndex + 1);
-            console.log('incrementing', currentActionIndex, 'to', currentActionIndex + 1);
           }
           break;
         default:
@@ -229,27 +258,32 @@ export const AppView = (props: {
   const hoverAction = hoverSequenceID
     ? stepsSorted.find((step) => step.step_start_log.sequence_id === hoverSequenceID)
     : undefined;
+
   return (
     <AppViewHighlightContext.Provider
       value={{
         attributesHighlighted: highlightedAttributes,
         setAttributesHighlighted: setHighlightedAttributes,
-        setTab: setCurrentTab
+        setTab: setCurrentTab,
+        tab: currentTab,
+        setCurrentSelectedIndex: (n) => {
+          setCurrentActionIndex(n);
+          setInspectViewOpen(n !== undefined);
+        },
+        currentSelectedIndex: currentActionIndex,
+        setCurrentHoverIndex: setHoverSequenceID,
+        currentHoverIndex: hoverSequenceID
       }}
     >
       <Layout
-        mode={minimizedTable ? 'first-minimal' : 'half'}
+        mode={fullScreen ? 'expanding-second' : minimizedTable ? 'first-minimal' : 'half'}
         firstItem={
           <div className="w-full h-full flex flex-col">
             <div
-              className={`overflow-y-scroll hide-scrollbar  w-full ${props.orientation === 'stacked_vertical' ? 'h-full' : 'h-1/2'}`}
+              className={`w-full ${fullScreen ? 'h-full' : props.orientation === 'stacked_vertical' ? 'h-full' : 'h-1/2'}`}
             >
               <StepList
                 steps={stepsSorted}
-                currentHoverIndex={hoverSequenceID}
-                setCurrentHoverIndex={setHoverSequenceID}
-                currentSelectedIndex={currentActionIndex}
-                setCurrentSelectedIndex={setCurrentActionIndex}
                 numPriorIndices={NUM_PREVIOUS_ACTIONS}
                 autoRefresh={autoRefresh}
                 setAutoRefresh={setAutoRefresh}
@@ -259,9 +293,16 @@ export const AppView = (props: {
                 parentPointer={data?.parent_pointer || undefined}
                 spawningParentPointer={data?.spawning_parent_pointer || undefined}
                 links={data.children || []}
+                fullScreen={fullScreen}
+                setFullScreen={setFullScreen}
+                allowFullScreen={props.enableFullScreenStepView}
+                allowMinimized={props.enableMinizedStepView}
+                topToBottomChronological={topToBottomChronological}
+                setTopToBottomChronological={setTopToBottomChronological}
+                toggleInspectViewOpen={() => setInspectViewOpen(!inspectViewOpen)}
               />
             </div>
-            {props.orientation === 'stacked_horizontal' && (
+            {!fullScreen && props.orientation === 'stacked_horizontal' && (
               <div className="h-1/2 w-[full]">
                 <GraphView
                   stateMachine={data.application}
@@ -281,10 +322,12 @@ export const AppView = (props: {
             hoverAction={hoverAction}
             currentSequenceID={currentActionIndex}
             displayGraphAsTab={displayGraphAsTabs} // in this case we want the graph as a tab
-            currentTab={currentTab}
-            setCurrentTab={setCurrentTab}
+            setMinimized={(min: boolean) => setInspectViewOpen(!min)}
+            isMinimized={!inspectViewOpen}
+            allowMinimized={inspectViewOpen && fullScreen}
           />
         }
+        animateSecondPanel={inspectViewOpen}
       />
     </AppViewHighlightContext.Provider>
   );
@@ -301,6 +344,8 @@ export const AppViewContainer = () => {
       appId={appId}
       partitionKey={partitionKey}
       orientation={'stacked_horizontal'}
+      enableFullScreenStepView={true}
+      enableMinizedStepView={true}
     />
   );
 };

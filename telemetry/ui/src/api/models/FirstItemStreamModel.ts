@@ -3,14 +3,11 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * Represents a logged artifact
+ * Pydantic model that represents an entry for the first item of a stream
  */
-export type AttributeModel = {
+export type FirstItemStreamModel = {
   type?: string;
-  key: string;
   action_sequence_id: number;
   span_id: string | null;
-  value: Record<string, any> | string | number | boolean | null;
-  tags: Record<string, string>;
-  time_logged?: string | null;
+  first_item_time: string;
 };

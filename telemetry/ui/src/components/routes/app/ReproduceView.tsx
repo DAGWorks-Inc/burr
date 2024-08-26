@@ -73,13 +73,4 @@ export const ReproduceView = (props: {
       <pre className="text-white bg-gray-800 p-2 rounded-md text-sm">{cmd}</pre>
     </div>
   );
-  //   <span
-  //     className="cursor-pointer"
-  //     onClick={() => {
-  //       navigator.clipboard.writeText(cmd);
-  //       setIsFlashVisible(true);
-  //       // alert(`Copied ${cmd} to clipboard`);
-  //     }}>
-  //     Step {step ? step.step_start_log.sequence_id : '?'} Test Case 📋
-  //   </span>;
 };
