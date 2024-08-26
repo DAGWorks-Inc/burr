@@ -1358,7 +1358,7 @@ class Application:
                     "post_run_step",
                     app_id=self._uid,
                     partition_key=self._partition_key,
-                    action=next_action.name,
+                    action=next_action,
                     state=self._state,
                     result=result,
                     sequence_id=self.sequence_id,
@@ -1380,7 +1380,7 @@ class Application:
             if next_action.single_step:
                 next_action = cast(SingleStepStreamingAction, next_action)
                 generator = _run_single_step_streaming_action(
-                    action=next_action.name,
+                    action=next_action,
                     state=self._state,
                     inputs=action_inputs,
                     sequence_id=self.sequence_id,
@@ -1394,7 +1394,7 @@ class Application:
             else:
                 next_action = cast(StreamingAction, next_action)
                 generator = _run_multi_step_streaming_action(
-                    action=next_action.name,
+                    action=next_action,
                     state=self._state,
                     inputs=action_inputs,
                     sequence_id=self.sequence_id,
