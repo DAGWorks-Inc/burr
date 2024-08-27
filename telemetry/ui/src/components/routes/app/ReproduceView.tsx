@@ -48,7 +48,7 @@ export const ReproduceView = (props: {
           onClose={() => setIsFlashVisible(false)}
         />
       )}
-      <div className="flex flex-row justify-between">
+      <div className="flex flex-row justify-between text-gray-700">
         <p>
           To generate a test case for this step, run the following command.
           <a

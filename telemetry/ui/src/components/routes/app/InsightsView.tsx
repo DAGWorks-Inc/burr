@@ -252,12 +252,11 @@ const InsightSubTable = (props: {
 
 export const InsightsView = (props: { steps: Step[] }) => {
   const allAttributes: AttributeModel[] = props.steps.flatMap((step) => step.attributes);
-  let noInsights = true;
 
   const allSpans = props.steps.flatMap((step) => step.spans);
 
   const out = (
-    <div className="pt-0">
+    <div className="pt-0 flex flex-col">
       <Table dense={1}>
         <TableHead>
           <TableRow className="hover:bg-gray-100">
@@ -271,7 +270,6 @@ export const InsightsView = (props: { steps: Step[] }) => {
         <TableBody>
           {REGISTERED_INSIGHTS.map((insight) => {
             if (insight.hasInsight(allAttributes)) {
-              noInsights = false;
               return (
                 <InsightSubTable
                   key={insight.insightName}
@@ -285,14 +283,17 @@ export const InsightsView = (props: { steps: Step[] }) => {
           })}
         </TableBody>
       </Table>
-    </div>
-  );
-  if (noInsights) {
-    return (
       <div>
-        <h2 className="text-gray-500 max-w-xl">
-          Use this tab to view summaries of your application -- E.G. LLM call data. To instrument,
-          and start collecting, see{' '}
+        <h2 className="text-gray-500 pl-2 pt-4">
+          Use this tab to view summaries of your application. This automatically picks up on a
+          variety of attributes, including those populated by{' '}
+          <a
+            className="text-dwlightblue"
+            href={'https://www.traceloop.com/docs/openllmetry/tracing/without-sdk'}
+          >
+            opentelemetry instrumentation.
+          </a>{' '}
+          -- E.G. LLM call data. To instrument, and start collecting, see{' '}
           <a
             className="text-dwlightblue"
             href={'https://burr.dagworks.io/concepts/additional-visibility/#quickstart'}
@@ -301,7 +302,7 @@ export const InsightsView = (props: { steps: Step[] }) => {
           </a>
         </h2>
       </div>
-    );
-  }
+    </div>
+  );
   return out;
 };
