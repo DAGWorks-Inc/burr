@@ -2,6 +2,7 @@ import os
 from typing import Optional, Tuple
 
 import openai
+from opentelemetry.instrumentation.openai import OpenAIInstrumentor
 from traceloop.sdk import Traceloop
 
 from burr.core import Application, ApplicationBuilder, State, default, when
@@ -21,7 +22,6 @@ MODES = {
 @action(reads=[], writes=["chat_history", "prompt"])
 def process_prompt(state: State, prompt: str, __tracer: TracerFactory) -> Tuple[dict, State]:
     result = {"chat_item": {"role": "user", "content": prompt, "type": "text"}}
-    # __tracer.log_attributes(prompt=prompt)
     return result, state.wipe(keep=["prompt", "chat_history"]).append(
         chat_history=result["chat_item"]
     ).update(prompt=prompt)
@@ -100,7 +100,6 @@ def chat_response(
 def image_response(
     state: State, __tracer: TracerFactory, model: str = "dall-e-2"
 ) -> Tuple[dict, State]:
-    # __tracer.log_attributes(model=model)
     client = _get_openai_client()
     with __tracer("query_openai_image", span_dependencies=["create_openai_client"]):
         result = client.images.generate(
@@ -108,7 +107,6 @@ def image_response(
         )
         response = result.data[0].url
     result = {"response": {"content": response, "type": MODES[state["mode"]], "role": "assistant"}}
-    # __tracer.log_attributes(response=response)
     return result, state.update(**result)
 
 
@@ -202,7 +200,7 @@ def application_traceloop_as_otel_provider(
 
 if __name__ == "__main__":
     # Instrument OpenAI API
-    # OpenAIInstrumentor().instrument()
+    OpenAIInstrumentor().instrument()
     # Choose which one to use
     # To use traceloop, uncomment this
     # app = application_traceloop_as_otel_provider()
