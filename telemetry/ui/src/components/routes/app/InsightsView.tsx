@@ -54,20 +54,24 @@ const REGISTERED_INSIGHTS: Insight[] = [
   {
     category: 'llm',
     hasInsight: (allAttributes) => {
-      return allAttributes.some((attribute) => attribute.key.endsWith('prompt_tokens'));
+      return allAttributes.some(
+        (attribute) => attribute.key.endsWith('prompt_tokens') && attribute.key.startsWith('gen_ai')
+      );
     },
     insightName: 'Total Prompt Tokens',
     RenderInsightValue: (props) => {
       let totalPromptTokens = 0;
       props.attributes.forEach((attribute) => {
-        if (attribute.key.endsWith('prompt_tokens')) {
+        if (attribute.key.endsWith('prompt_tokens') && attribute.key.startsWith('gen_ai')) {
           totalPromptTokens += attribute.value as number;
         }
       });
       return <p>{totalPromptTokens}</p>;
     },
     captureIndividualValues: (allAttributes) => {
-      return allAttributes.filter((attribute) => attribute.key.endsWith('prompt_tokens'));
+      return allAttributes.filter(
+        (attribute) => attribute.key.endsWith('prompt_tokens') && attribute.key.startsWith('gen_ai')
+      );
     },
     RenderIndividualValue: (props: { attribute: AttributeModel }) => {
       return <p>{props.attribute.value?.toString()}</p>;
@@ -76,7 +80,10 @@ const REGISTERED_INSIGHTS: Insight[] = [
   {
     category: 'llm',
     hasInsight: (allAttributes) => {
-      return allAttributes.some((attribute) => attribute.key.endsWith('completion_tokens'));
+      return allAttributes.some(
+        (attribute) =>
+          attribute.key.endsWith('completion_tokens') && attribute.key.startsWith('gen_ai')
+      );
     },
     insightName: 'Total Completion Tokens',
     RenderInsightValue: (props) => {
@@ -89,7 +96,10 @@ const REGISTERED_INSIGHTS: Insight[] = [
       return <p>{totalCompletionTokens}</p>;
     },
     captureIndividualValues: (allAttributes) => {
-      return allAttributes.filter((attribute) => attribute.key.endsWith('completion_tokens'));
+      return allAttributes.filter(
+        (attribute) =>
+          attribute.key.endsWith('completion_tokens') && attribute.key.startsWith('gen_ai')
+      );
     },
     RenderIndividualValue: (props: { attribute: AttributeModel }) => {
       return <p>{props.attribute.value?.toString()}</p>;
@@ -98,13 +108,15 @@ const REGISTERED_INSIGHTS: Insight[] = [
   {
     category: 'llm',
     hasInsight: (allAttributes) => {
-      return allAttributes.some((attribute) => attribute.key.endsWith('prompt_tokens'));
+      return allAttributes.some(
+        (attribute) => attribute.key.endsWith('prompt_tokens') && attribute.key.startsWith('gen_ai')
+      );
     },
     insightName: 'Total LLM Calls',
     RenderInsightValue: (props) => {
       let totalLLMCalls = 0;
       props.attributes.forEach((attribute) => {
-        if (attribute.key.endsWith('prompt_tokens')) {
+        if (attribute.key.endsWith('prompt_tokens') && attribute.key.startsWith('gen_ai')) {
           totalLLMCalls += 1;
         }
       });
@@ -113,7 +125,7 @@ const REGISTERED_INSIGHTS: Insight[] = [
     captureIndividualValues: (allAttributes) => {
       const spanIDToLLMCalls = new Map<string, number>();
       allAttributes.forEach((attribute) => {
-        if (attribute.key.endsWith('prompt_tokens')) {
+        if (attribute.key.endsWith('prompt_tokens') && attribute.key.startsWith('gen_ai')) {
           spanIDToLLMCalls.set(
             attribute.span_id || '',
             (spanIDToLLMCalls.get(attribute.span_id || '') || 0) + 1
