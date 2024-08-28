@@ -3,7 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { ApplicationLogs } from '../models/ApplicationLogs';
-import type { ApplicationSummary } from '../models/ApplicationSummary';
+import type { ApplicationPage } from '../models/ApplicationPage';
 import type { BackendSpec } from '../models/BackendSpec';
 import type { ChatItem } from '../models/ChatItem';
 import type { DraftInit } from '../models/DraftInit';
@@ -63,19 +63,27 @@ export class DefaultService {
    * :return: a list of projects visible by the user
    * @param projectId
    * @param partitionKey
-   * @returns ApplicationSummary Successful Response
+   * @param limit
+   * @param offset
+   * @returns ApplicationPage Successful Response
    * @throws ApiError
    */
   public static getAppsApiV0ProjectIdPartitionKeyAppsGet(
     projectId: string,
-    partitionKey: string
-  ): CancelablePromise<Array<ApplicationSummary>> {
+    partitionKey: string,
+    limit: number = 100,
+    offset?: number
+  ): CancelablePromise<ApplicationPage> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/api/v0/{project_id}/{partition_key}/apps',
       path: {
         project_id: projectId,
         partition_key: partitionKey
+      },
+      query: {
+        limit: limit,
+        offset: offset
       },
       errors: {
         422: `Validation Error`

@@ -397,7 +397,7 @@ export const EmailAssistantAppSelector = (props: {
     {
       onSuccess: (appID) => {
         refetch().then((data) => {
-          const appSummaries = data.data || [];
+          const appSummaries = data.data?.applications || [];
           const app = appSummaries.find((app) => app.app_id === appID);
           if (app) {
             setApp(app);
@@ -407,7 +407,7 @@ export const EmailAssistantAppSelector = (props: {
     }
   );
   const appSetter = (appID: string) => createAndUpdateMutation.mutate(appID);
-  const dataOrEmpty = Array.from(data || []);
+  const dataOrEmpty = Array.from(data?.applications || []);
   const options = dataOrEmpty
     .sort((a, b) => {
       return new Date(a.last_written) > new Date(b.last_written) ? -1 : 1;

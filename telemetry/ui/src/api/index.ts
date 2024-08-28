@@ -10,6 +10,7 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 export type { ActionModel } from './models/ActionModel';
 export type { ApplicationLogs } from './models/ApplicationLogs';
 export type { ApplicationModel } from './models/ApplicationModel';
+export type { ApplicationPage } from './models/ApplicationPage';
 export type { ApplicationSummary } from './models/ApplicationSummary';
 export type { AttributeModel } from './models/AttributeModel';
 export type { BackendSpec } from './models/BackendSpec';

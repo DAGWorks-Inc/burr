@@ -23,7 +23,12 @@ try:
     from starlette.templating import Jinja2Templates
 
     from burr.tracking.server import schema
-    from burr.tracking.server.schema import ApplicationLogs, BackendSpec, IndexingJob
+    from burr.tracking.server.schema import (
+        ApplicationLogs,
+        ApplicationPage,
+        BackendSpec,
+        IndexingJob,
+    )
 
     # dynamic importing due to the dashes (which make reading the examples on github easier)
     email_assistant = importlib.import_module("burr.examples.email-assistant.server")
@@ -166,12 +171,14 @@ async def get_projects(request: Request) -> Sequence[schema.Project]:
     return await backend.list_projects(request)
 
 
-@app.get(
-    "/api/v0/{project_id}/{partition_key}/apps", response_model=Sequence[schema.ApplicationSummary]
-)
+@app.get("/api/v0/{project_id}/{partition_key}/apps", response_model=ApplicationPage)
 async def get_apps(
-    request: Request, project_id: str, partition_key: str
-) -> Sequence[schema.ApplicationSummary]:
+    request: Request,
+    project_id: str,
+    partition_key: str,
+    limit: int = 100,
+    offset: int = 0,
+) -> ApplicationPage:
     """Gets all apps visible by the user
 
     :param request: FastAPI request
@@ -180,7 +187,14 @@ async def get_apps(
     """
     if partition_key == SENTINEL_PARTITION_KEY:
         partition_key = None
-    return await backend.list_apps(request, project_id, partition_key=partition_key)
+    applications, total_count = await backend.list_apps(
+        request, project_id, partition_key=partition_key, limit=limit, offset=offset
+    )
+    return ApplicationPage(
+        applications=list(applications),
+        total=total_count,
+        has_another_page=total_count > offset + limit,
+    )
 
 
 @app.get("/api/v0/{project_id}/{app_id}/{partition_key}/apps")

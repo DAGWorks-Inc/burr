@@ -41,6 +41,12 @@ class ApplicationSummary(pydantic.BaseModel):
     spawning_parent_pointer: Optional[PointerModel] = None
 
 
+class ApplicationPage(pydantic.BaseModel):
+    applications: List[ApplicationSummary]
+    total: int
+    has_another_page: bool
+
+
 class ApplicationModelWithChildren(pydantic.BaseModel):
     application: ApplicationModel
     children: List[PointerModel]
