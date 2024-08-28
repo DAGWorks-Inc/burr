@@ -317,7 +317,10 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
         return out
 
     async def _gather_paths_to_update(
-        self, project: Project, high_watermark_s3_path: str
+        self,
+        project: Project,
+        high_watermark_s3_path: str,
+        max_paths=200,
     ) -> Sequence[DataFile]:
         """Gathers all paths to update in s3 -- we store file pointers in the db for these.
         This allows us to periodically scan for more files to index.
@@ -340,6 +343,8 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
                     # Created == last_modified as we have an immutable data model
                     logger.info(f"Found new file: {key}")
                     paths_to_update.append(DataFile.from_path(key, created_date=last_modified))
+                    if len(paths_to_update) >= max_paths:
+                        break
         logger.info(f"Found {len(paths_to_update)} new files to index")
         return paths_to_update
 
@@ -553,18 +558,19 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
         # TODO -- distinctify between project name and project ID
         # Currently they're the same in the UI but we'll want to have them decoupled
         app_query = (
-            Application.filter(project__name=project_id)
+            Application.filter(project__name=project_id).order_by("-updated_at")
             if partition_key is None
             else Application.filter(project__name=project_id, partition_key=partition_key)
         )
 
         applications = (
-            # Sentinel value for partition_key is __none__ -- passing it in required makes querying easier
             await app_query.annotate(
+                # TODO -- figure out why created_at is not giving the true latest date
+                # For now we're using updated_at, but this is troubling...
                 latest_logfile_created_at=functions.Max("log_files__created_at"),
+                latest_logfile_updated_at=functions.Max("log_files__updated_at"),
                 logfile_count=functions.Max("log_files__max_sequence_id"),
             )
-            .order_by("created_at")
             .offset(offset)
             .limit(limit)
             .prefetch_related("log_files", "project")
@@ -572,8 +578,8 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
         out = []
         for application in applications:
             last_written = (
-                datetime.datetime.fromisoformat(application.latest_logfile_created_at)
-                if (application.latest_logfile_created_at is not None)
+                datetime.datetime.fromisoformat(application.latest_logfile_updated_at)
+                if (application.latest_logfile_updated_at is not None)
                 else application.created_at
             )
             out.append(
@@ -582,7 +588,9 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
                     partition_key=application.partition_key,
                     first_written=application.created_at,
                     last_written=last_written,
-                    num_steps=application.logfile_count,
+                    num_steps=application.logfile_count
+                    if application.logfile_count is not None
+                    else 0,
                     tags={},
                 )
             )
