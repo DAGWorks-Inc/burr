@@ -186,7 +186,13 @@ class Action(Function, Reducer, abc.ABC):
 class Condition(Function):
     KEY = "PROCEED"
 
-    def __init__(self, keys: List[str], resolver: Callable[[State], bool], name: str = None):
+    def __init__(
+        self,
+        keys: List[str],
+        resolver: Callable[[State], bool],
+        name: str = None,
+        optional_keys: List[str] = None,
+    ):
         """Base condition class. Chooses keys to read from the state and a resolver function.
         If you want a condition that defaults to true, use Condition.default or just default.
 
@@ -202,6 +208,7 @@ class Condition(Function):
         """
         self._resolver = resolver
         self._keys = keys
+        self._optional_keys = optional_keys if optional_keys is not None else []
         self._name = name
 
     @staticmethod
@@ -239,6 +246,33 @@ class Condition(Function):
             return eval(compile(tree, "<string>", "eval"), {}, __globals)
 
         return Condition(keys, condition_func, name=expr)
+
+    @staticmethod
+    def lmda(resolver: Callable[[State], bool], state_keys: List[str]) -> "Condition":
+        """Returns a condition that evaluates the given function of State.
+        Note that this is just a simple wrapper over the Condition object.
+
+        This does not (yet) support optional (default) arguments.
+
+        :param fn:
+        :param state_keys:
+        :return:
+        """
+        return Condition(state_keys, resolver, name=f"lmda_{resolver.__name__}_")
+
+    # TODO -- decide what to do with this when we have optional keys
+    # @staticmethod
+    # def exists(*keys: str) -> "Condition":
+    #     """Returns a condition that checks if the given key exists in the state.
+    #
+    #     :param key: Key to check for existence
+    #     :return: A condition that checks if the given key exists in the state
+    #     """
+    #     return Condition(
+    #         list(keys),
+    #         lambda state: all(item in state for item in keys),
+    #         name=f"exists_{'_and_'.join(sorted(keys))}"
+    #     )
 
     def _validate(self, state: State):
         missing_keys = set(self._keys) - set(state.keys())
@@ -340,6 +374,8 @@ Condition.default = Condition([], lambda _: True, name="default")
 default = Condition.default
 when = Condition.when
 expr = Condition.expr
+lmda = Condition.lmda
+# exists = Condition.exists
 
 
 class Result(Action):

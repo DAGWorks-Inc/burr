@@ -176,6 +176,30 @@ def test_condition_or():
     assert cond_or.run(State({"foo": "baz", "baz": "corge"})) == {Condition.KEY: False}
 
 
+def test_condition_lmda():
+    cond = Condition.lmda(lambda state: state["foo"] == "bar", ["foo"])
+    assert cond.reads == ["foo"]
+    assert cond.run(State({"foo": "bar"})) == {Condition.KEY: True}
+    assert cond.run(State({"foo": "baz"})) == {Condition.KEY: False}
+
+
+# TODO -- add this in once we decide what to do with optional keys...
+# def test_condition_exists_single():
+#     cond = Condition.exists("foo")
+#     assert cond.name == "exists_foo"
+#     assert cond.reads == ["foo"]
+#     assert cond.run(State({"foo": "baz", "bar": "baz"})) == {Condition.KEY: True}
+#     assert cond.run(State({})) == {Condition.KEY: False}
+#
+#
+# def test_condition_exists_double():
+#     cond = Condition.exists("foo", "bar")
+#     assert cond.name == "exists_bar_and_foo"
+#     assert cond.reads == ["foo"]
+#     assert cond.run(State({"foo": "baz", "bar": "baz"})) == {Condition.KEY: True}
+#     assert cond.run(State({"foo" : "bar"})) == {Condition.KEY: False}
+
+
 def test_result():
     result = Result("foo", "bar")
     assert result.run(State({"foo": "baz", "bar": "qux", "baz": "quux"})) == {
