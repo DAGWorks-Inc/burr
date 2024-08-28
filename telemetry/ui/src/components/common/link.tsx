@@ -5,7 +5,7 @@
  * ensure this does what we want.
  */
 
-import { DataInteractive as HeadlessDataInteractive } from '@headlessui/react';
+import { Link as RouterLink } from 'react-router-dom';
 import React from 'react';
 
 export const Link = React.forwardRef(function Link(
@@ -13,8 +13,9 @@ export const Link = React.forwardRef(function Link(
   ref: React.ForwardedRef<HTMLAnchorElement>
 ) {
   return (
-    <HeadlessDataInteractive>
-      <a {...props} ref={ref} />
-    </HeadlessDataInteractive>
+    <RouterLink {...props} to={props.href} ref={ref} />
+    // <HeadlessDataInteractive>
+    //   <a {...props} ref={ref} />
+    // </HeadlessDataInteractive>
   );
 });

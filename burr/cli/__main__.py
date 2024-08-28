@@ -224,7 +224,8 @@ def build_and_publish(prod: bool, no_wipe_dist: bool):
     default="burr/tracking/server/demo_data",
 )
 @click.option("--unique-app-names", help="Use unique app names", is_flag=True)
-def generate_demo_data(s3_bucket, data_dir, unique_app_names: bool):
+@click.option("--no-clear-current-data", help="Don't clear current data", is_flag=True)
+def generate_demo_data(s3_bucket, data_dir, unique_app_names: bool, no_clear_current_data: bool):
     _telemetry_if_enabled("generate_demo_data")
     git_root = _get_git_root()
     # We need to add the examples directory to the path so we have all the imports
@@ -236,7 +237,8 @@ def generate_demo_data(s3_bucket, data_dir, unique_app_names: bool):
     if s3_bucket is None:
         with cd(git_root):
             logger.info("Removing old demo data")
-            shutil.rmtree(data_dir, ignore_errors=True)
+            if not no_clear_current_data:
+                shutil.rmtree(data_dir, ignore_errors=True)
             generate_all(data_dir=data_dir, unique_app_names=unique_app_names)
     else:
         generate_all(s3_bucket=s3_bucket, unique_app_names=unique_app_names)

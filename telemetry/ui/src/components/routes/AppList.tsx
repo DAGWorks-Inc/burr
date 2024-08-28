@@ -4,11 +4,13 @@ import { Loading } from '../common/loading';
 import { ApplicationSummary, DefaultService } from '../../api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../common/table';
 import { DateTimeDisplay } from '../common/dates';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FunnelIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { MdForkRight } from 'react-icons/md';
 import { RiCornerDownRightLine } from 'react-icons/ri';
+import React from 'react';
+import { Paginator } from '../common/pagination';
 
 const StepCountHeader = (props: {
   displayZeroCount: boolean;
@@ -208,64 +210,132 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
     (app) => !isNullPartitionKey(app.partition_key)
   );
 
+  const tableRef = React.createRef<HTMLDivElement>();
+  const [tableHeight, setTableHeight] = useState('auto');
+
+  const updateTableHeight = () => {
+    if (tableRef.current) {
+      const parentElement = tableRef.current.parentElement;
+      if (parentElement) {
+        const parentHeight = parentElement.clientHeight;
+        const tableTop =
+          tableRef.current.getBoundingClientRect().top - parentElement.getBoundingClientRect().top;
+        const availableHeight = parentHeight - tableTop;
+        setTableHeight(`${availableHeight}px`);
+      }
+    }
+  };
+
+  useEffect(() => {
+    updateTableHeight(); // Initial calculation on mount
+    window.addEventListener('resize', updateTableHeight); // Recalculate on window resize
+
+    // Set up a ResizeObserver to listen to changes in the parent element's size
+    const observer = new ResizeObserver(updateTableHeight);
+    if (tableRef.current?.parentElement) {
+      observer.observe(tableRef.current.parentElement);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateTableHeight);
+      observer.disconnect(); // Cleanup observer on unmount
+    };
+  }, []);
+
   return (
-    <Table dense={1}>
-      <TableHead>
-        <TableRow>
-          {anyHavePartitionKey && <TableHeader>Partition Key</TableHeader>}
-          <TableHeader>ID</TableHeader>
-          <TableHeader>Last Run</TableHeader>
-          <TableHeader>Forked</TableHeader>
-          <TableHeader>Sub Apps</TableHeader>
-          <TableHeader>
-            <StepCountHeader
-              displayZeroCount={displayZeroCount}
-              setDisplayZeroCount={setDisplayZeroCount}
-            />
-          </TableHeader>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {rootAppsToDisplay.map((app) => {
-          return (
-            <AppSubList
-              key={app.app_id}
-              app={app}
-              projectId={props.projectId}
-              navigate={navigate}
-              spawningParentMap={spawningParentMap}
-              displayPartitionKey={anyHavePartitionKey}
-            />
-          );
-        })}
-      </TableBody>
-    </Table>
+    <div ref={tableRef} style={{ height: tableHeight }} className="flex flex-col justify-between">
+      <Table dense={1} style={{ maxHeight: tableHeight }} className="hide-scrollbar">
+        <TableHead className=" bg-white sticky top-0 z-50">
+          <TableRow>
+            {anyHavePartitionKey && <TableHeader>Partition Key</TableHeader>}
+            <TableHeader>ID</TableHeader>
+            <TableHeader>Last Run</TableHeader>
+            <TableHeader>Forked</TableHeader>
+            <TableHeader>Sub Apps</TableHeader>
+            <TableHeader>
+              <StepCountHeader
+                displayZeroCount={displayZeroCount}
+                setDisplayZeroCount={setDisplayZeroCount}
+              />
+            </TableHeader>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rootAppsToDisplay.map((app) => {
+            return (
+              <AppSubList
+                key={app.app_id}
+                app={app}
+                projectId={props.projectId}
+                navigate={navigate}
+                spawningParentMap={spawningParentMap}
+                displayPartitionKey={anyHavePartitionKey}
+              />
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
   );
 };
+
+const DEFAULT_LIMIT = 100;
 
 /**
  * List of applications. This fetches data from the BE and passes it to the table
  */
 export const AppList = () => {
   const { projectId, partitionKey } = useParams();
+  const [searchParams] = useSearchParams();
+  const currentOffset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0;
+  const pageSize = DEFAULT_LIMIT;
   const { data, error } = useQuery(
-    ['apps', projectId, partitionKey],
+    ['apps', projectId, partitionKey, pageSize, currentOffset],
     () =>
       DefaultService.getAppsApiV0ProjectIdPartitionKeyAppsGet(
         projectId as string,
-        partitionKey ? partitionKey : '__none__'
+        partitionKey ? partitionKey : '__none__',
+        pageSize,
+        currentOffset
       ),
     { enabled: projectId !== undefined }
   );
+
+  const [queriedData, setQueriedData] = useState(data);
+
+  useEffect(() => {
+    if (data !== undefined) {
+      setQueriedData(data);
+    }
+  }, [data]);
+
   if (projectId === undefined) {
     return <Navigate to={'/projects'} />;
   }
 
-  if (error) return <div>Error loading projects</div>;
-  if (data === undefined) return <Loading />;
+  if (error) return <div>Error loading apps</div>;
+  const shouldDisplayPagination = queriedData ? queriedData.total > pageSize : false;
   return (
-    <div className="">
-      <AppListTable apps={data} projectId={projectId} />
+    <div className="h-full flex flex-col gap-1 justify-between">
+      {queriedData !== undefined ? (
+        <AppListTable apps={queriedData.applications} projectId={projectId} />
+      ) : (
+        <Loading />
+      )}
+      <div className="flex flex-row w-full justify-center">
+        {shouldDisplayPagination && (
+          <Paginator
+            currentPage={currentOffset / pageSize + 1}
+            getPageURL={(page) => {
+              // TODO -- make this more robust to URL changes
+              return `/project/${projectId}/${partitionKey || '__none__'}?offset=${(page - 1) * pageSize}`;
+            }}
+            totalPages={queriedData ? Math.ceil(queriedData?.total / pageSize) : undefined}
+            // TODO -- add query result back
+            hasNextPage={queriedData ? currentOffset + pageSize < queriedData.total : false}
+          ></Paginator>
+        )}
+      </div>
     </div>
   );
 };

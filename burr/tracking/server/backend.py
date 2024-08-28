@@ -4,7 +4,7 @@ import importlib
 import json
 import os.path
 import sys
-from typing import Any, Optional, Sequence, Type, TypeVar
+from typing import Any, Optional, Sequence, Tuple, Type, TypeVar
 
 import aiofiles
 import aiofiles.os as aiofilesos
@@ -101,14 +101,19 @@ class BackendBase(abc.ABC):
 
     @abc.abstractmethod
     async def list_apps(
-        self, request: fastapi.Request, project_id: str, partition_key: Optional[str]
-    ) -> Sequence[schema.ApplicationSummary]:
+        self,
+        request: fastapi.Request,
+        project_id: str,
+        partition_key: Optional[str],
+        limit: int,
+        offset: int,
+    ) -> Tuple[Sequence[schema.ApplicationSummary], int]:
         """Lists out all apps (continual state machine runs with shared state) for a given project.
 
         :param request: The request object, used for authentication/authorization if needed
         :param project_id: filter by project id
         :param partition_key: filter by partition key
-        :return: A list of apps
+        :return: A list of apps and the total number of apps (given that we paginate)
         """
         pass
 
@@ -230,8 +235,13 @@ class LocalBackend(BackendBase):
         return models.ApplicationMetadataModel()
 
     async def list_apps(
-        self, request: fastapi.Request, project_id: str, partition_key: Optional[str]
-    ) -> Sequence[ApplicationSummary]:
+        self,
+        request: fastapi.Request,
+        project_id: str,
+        partition_key: Optional[str],
+        limit: int = 100,
+        offset: int = 0,
+    ) -> Tuple[Sequence[ApplicationSummary], int]:
         project_filepath = os.path.join(self.path, project_id)
         if not os.path.exists(project_filepath):
             return []
@@ -265,7 +275,9 @@ class LocalBackend(BackendBase):
                         spawning_parent_pointer=metadata.spawning_parent_pointer,
                     )
                 )
-        return out
+        out = sorted(out, key=lambda x: x.last_written, reverse=True)
+        # TODO -- actually only get the most recent ones rather than reading everything, this is inefficient
+        return out[offset : offset + limit], len(out)
 
     async def get_application_logs(
         self, request: fastapi.Request, project_id: str, app_id: str, partition_key: Optional[str]

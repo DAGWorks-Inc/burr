@@ -60,7 +60,7 @@ export const ChatbotAppSelector = (props: {
     {
       onSuccess: (appID) => {
         refetch().then((data) => {
-          const appSummaries = data.data || [];
+          const appSummaries = data.data?.applications || [];
           const app = appSummaries.find((app) => app.app_id === appID);
           if (app) {
             setApp(app);
@@ -69,8 +69,9 @@ export const ChatbotAppSelector = (props: {
       }
     }
   );
+  const appSummaries = data?.applications || [];
   const appSetter = (appID: string) => createAndUpdateMutation.mutate(appID);
-  const dataOrEmpty = Array.from(data || []);
+  const dataOrEmpty = Array.from(appSummaries || []);
   const options = dataOrEmpty
     .sort((a, b) => {
       return new Date(a.last_written) > new Date(b.last_written) ? -1 : 1;

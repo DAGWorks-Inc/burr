@@ -549,7 +549,7 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
         partition_key: Optional[str],
         limit: int = 100,
         offset: int = 0,
-    ) -> Sequence[schema.ApplicationSummary]:
+    ) -> Tuple[Sequence[schema.ApplicationSummary], int]:
         # TODO -- distinctify between project name and project ID
         # Currently they're the same in the UI but we'll want to have them decoupled
         app_query = (
@@ -586,7 +586,8 @@ class SQLiteS3Backend(BackendBase, IndexingBackendMixin, SnapshottingBackendMixi
                     tags={},
                 )
             )
-        return out
+        total_app_count = await app_query.count()
+        return out, total_app_count
 
     async def get_application_logs(
         self, request: fastapi.Request, project_id: str, app_id: str, partition_key: str

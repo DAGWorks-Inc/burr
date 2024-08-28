@@ -1315,7 +1315,6 @@ export const StepList = (props: {
             )}
           </TableRow>
         </TableHead>
-        {/* <div className="h-10"></div> */}
         {props.topToBottomChronological ? parentRows : <></>}
         <TableBody className="pt-10">
           {stepsWithEllapsedTime.map((step) => {
