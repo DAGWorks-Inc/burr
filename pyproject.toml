@@ -68,7 +68,7 @@ documentation = [
   "burr[tests]",
   "sphinx",
   "sphinx-autobuild",
-  "myst-parser",
+  "myst-nb",
   "furo",
   "sphinx-sitemap",
   "sphinx-toolbox",
