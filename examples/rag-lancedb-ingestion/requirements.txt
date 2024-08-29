@@ -1,0 +1,8 @@
+beautifulsoup4
+burr[start]
+dlt[lancedb]
+feedparser
+lancedb
+openai
+opentelemetry-instrumentation-lancedb
+opentelemetry-instrumentation-openai
