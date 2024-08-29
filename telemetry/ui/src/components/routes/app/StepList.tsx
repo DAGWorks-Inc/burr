@@ -761,18 +761,19 @@ const WaterfallPiece: React.FC<{
   const bgColor = props.isHighlighted ? 'bg-white' : props.bgColor;
   const [isHovered, setIsHovered] = useState(false);
   return (
-    <div ref={containerRef} className="w-full px-2 h-full relative">
+    <div ref={containerRef} className="w-full px-2 h-full">
       {(() => {
         const leftPositionPercentage =
           ((startTimeMilliseconds - earliestStartTimeMilliseconds) / earliestToLatestMilliseconds) *
           100;
-        const widthPercentage = Math.max(
-          Math.min(
-            ((endTimeMilliseconds - startTimeMilliseconds) / earliestToLatestMilliseconds) * 100,
-            100
-          ),
-          0.1
-        );
+        const widthPercentage =
+          Math.max(
+            Math.max(
+              (endTimeMilliseconds - startTimeMilliseconds) / earliestToLatestMilliseconds,
+              0.005
+            )
+            // 0.1
+          ) * 100;
         const isCloseToEnd = leftPositionPercentage + widthPercentage > 80; // Threshold for "close to the end"
         // TODO -- unhack these, we're converting back and forth cause we already have interfaces for strings and
         // don't want to change
@@ -796,13 +797,14 @@ const WaterfallPiece: React.FC<{
           <>
             {!props.isEvent ? (
               <div
-                className={`${bgColor} opacity-50 h-full px-0 rounded-none`}
+                className={`${bgColor} opacity-50 h-12 px-0 rounded-sm`}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 style={{
                   width: `${widthPercentage}%`,
                   position: 'absolute',
-                  height: '100%',
+                  bottom: '5%',
+                  height: '90%',
                   left: `${leftPositionPercentage}%`
                 }}
               ></div>
@@ -830,12 +832,12 @@ const WaterfallPiece: React.FC<{
 
             {
               <div
-                className={`px-4 transition-opacity duration-500 ${
+                className={`backdrop-blur-lg rounded-md px-4 transition-opacity duration-500 ${
                   isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 }`}
                 style={{
                   position: 'absolute',
-                  top: 0,
+                  top: 5,
                   right: isCloseToEnd ? `calc(100% - ${leftPositionPercentage}%)` : `auto`,
                   left: isCloseToEnd
                     ? `auto`
