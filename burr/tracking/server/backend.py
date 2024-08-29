@@ -244,7 +244,7 @@ class LocalBackend(BackendBase):
     ) -> Tuple[Sequence[ApplicationSummary], int]:
         project_filepath = os.path.join(self.path, project_id)
         if not os.path.exists(project_filepath):
-            return []
+            return [], 0
             # raise fastapi.HTTPException(status_code=404, detail=f"Project: {project_id} not found")
         out = []
         for entry in await aiofilesos.listdir(project_filepath):
