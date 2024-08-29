@@ -9,7 +9,7 @@ from burr.lifecycle import PostRunStepHook
 
 
 @action(reads=[], writes=["relevant_chunks", "chat_history"])
-def retrieve_relevant_chunks(
+def relevant_chunk_retrieval(
     state: State,
     user_query: str,
     lancedb_con: lancedb.DBConnection,
@@ -68,14 +68,14 @@ def build_application() -> Application:
     return (
         ApplicationBuilder()
         .with_actions(
-            retrieve_relevant_chunks.bind(lancedb_con=lancedb_con),
+            relevant_chunk_retrieval.bind(lancedb_con=lancedb_con),
             bot_turn.bind(llm_client=llm_client),
         )
         .with_transitions(
-            ("retrieve_relevant_chunks", "bot_turn"),
-            ("bot_turn", "retrieve_relevant_chunks"),
+            ("relevant_chunk_retrieval", "bot_turn"),
+            ("bot_turn", "relevant_chunk_retrieval"),
         )
-        .with_entrypoint("retrieve_relevant_chunks")
+        .with_entrypoint("relevant_chunk_retrieval")
         .with_tracker("local", project="substack-rag", use_otel_tracing=True)
         .with_hooks(PrintBotAnswer())
         .build()
