@@ -10,11 +10,11 @@ for the latest.
 Examples of more complex/powerful use-cases of Burr. Download/copy these to adapt to your use-cases.
 
 .. toctree::
-    simple
-    chatbot
-    agents
-    deployment
-    web-server
-    creating_tests
-    ml_training
-    simulation
+    :maxdepth: 2
+
+    simple/index
+    chatbots/index
+    agents/index
+    deployment/index
+    guardrails/index
+    data-science/index

@@ -47,6 +47,7 @@ html_theme_options = {
     },
 }
 
+nb_execution_mode = "off"
 
 exclude_patterns = ["README-internal.md"]
 
