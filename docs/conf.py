@@ -17,7 +17,7 @@ author = "Elijah ben Izzy, Stefan Krawczyk"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    "myst_parser",
+    "myst_nb",
     "sphinx_sitemap",
     "sphinx_toolbox.collapse",
 ]
@@ -47,6 +47,7 @@ html_theme_options = {
     },
 }
 
+nb_execution_mode = "off"
 
 exclude_patterns = ["README-internal.md"]
 

@@ -1,7 +1,7 @@
 .. _simpleexample:
 
 ==============
-Simple Example
+Quickstart
 ==============
 
 Let's build a basic chatbot using Burr.

@@ -1,7 +1,7 @@
 .. _reference:
 
 ========================
-Reference Documentation
+API reference
 ========================
 
 Reference documentation. Anything in here is part of the public (semantically versioned) API, unless marked otherwise.

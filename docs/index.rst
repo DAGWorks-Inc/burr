@@ -3,43 +3,26 @@
 .. toctree::
    :maxdepth: 2
    :hidden:
-   :caption: User guide:
+   :caption: Burr
 
    getting_started/index
-   concepts/index
-
-.. toctree::
-   :hidden:
-   :maxdepth: 2
-   :caption: Examples:
-
    examples/index
-
-.. toctree::
-   :hidden:
-   :caption: Community
-
-   Discord Server <https://discord.gg/6Zy2DwP4f3>
-
-.. toctree::
-   :hidden:
-   :maxdepth: 2
-   :caption: Reference:
-
+   concepts/index
    reference/index
-
-.. toctree::
-   :hidden:
-   :maxdepth: 2
-   :caption: Contributing:
-
    contributing/index
 
 .. toctree::
    :hidden:
-   :caption: EXTERNAL RESOURCES
+   :maxdepth: 2
+   :caption: Burr Cloud
 
-   GitHub <https://github.com/dagworks-inc/burr>
-   Burr Cloud <https://forms.gle/w9u2QKcPrztApRedA>
+   Waitist <https://forms.gle/w9u2QKcPrztApRedA>
+
+.. toctree::
+   :hidden:
+   :caption: RESOURCES
+
    Blog <https://blog.dagworks.io/>
+   Discord community server <https://discord.gg/6Zy2DwP4f3>
+   GitHub <https://github.com/dagworks-inc/burr>
    Twitter <https://twitter.com/dagworks>

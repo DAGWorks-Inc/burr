@@ -1,5 +1,5 @@
 ========
-Examples
+Cookbook
 ========
 
 .. _examples:
@@ -10,11 +10,11 @@ for the latest.
 Examples of more complex/powerful use-cases of Burr. Download/copy these to adapt to your use-cases.
 
 .. toctree::
-    simple
-    chatbot
-    agents
-    ml_training
-    simulation
-    creating_tests
-    web-server
-    deployment
+    :maxdepth: 2
+
+    simple/index
+    chatbots/index
+    agents/index
+    deployment/index
+    guardrails/index
+    data-science/index

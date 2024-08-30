@@ -32,7 +32,7 @@ Steps:
 3. Note the project name, partition key, app id, and sequence id for the state you want to test.
    See orange lines indicating what to pull from the UI in the image below.
 
-    .. image:: test-case-creation-burr.png
+    .. image:: _creating_tests.png
        :alt: What you need to pull from the UI for running the command.
        :align: center
 
