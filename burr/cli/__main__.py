@@ -244,7 +244,13 @@ def generate_demo_data(s3_bucket, data_dir, unique_app_names: bool, no_clear_cur
         generate_all(s3_bucket=s3_bucket, unique_app_names=unique_app_names)
 
 
-def _transform_state_to_test_case(state: dict, action_name: str, test_name: str) -> dict:
+def _remove_private_keys(state: dict):
+    return {key: value for key, value in state.items() if not key.startswith("__")}
+
+
+def _transform_state_to_test_case(
+    before_action_state: dict, after_action_state: dict, action_name: str, test_name: str
+) -> dict:
     """Helper function to transform a state into a test case.
 
     :param state:
@@ -252,11 +258,14 @@ def _transform_state_to_test_case(state: dict, action_name: str, test_name: str)
     :param test_name:
     :return:
     """
+    # Remove private Burr keys -- don't want to expose these in the test case since we could change them
+    before_action_state = _remove_private_keys(before_action_state)
+    after_action_state = _remove_private_keys(after_action_state)
     return {
         "action": action_name,
         "name": test_name,
-        "input_state": state,
-        "expected_state": {"TODO:": "fill this in"},
+        "input_state": before_action_state,
+        "expected_state": after_action_state,
     }
 
 
@@ -308,8 +317,8 @@ def import_from_file(file_path: str) -> ModuleType:
 
 
 @click.command()
-@click.option("--project-name", required=True, help="Name of the project")
-@click.option("--partition-key", required=False, help="Partition key to look at")
+@click.option("--project-name", required=True, help="Name of the project.")
+@click.option("--partition-key", required=False, help="Partition key to look at.")
 @click.option("--app-id", required=True, help="App ID to pull from.")
 @click.option("--sequence-id", required=True, help="Sequence ID to pull.")
 @click.option(
@@ -322,6 +331,11 @@ def import_from_file(file_path: str) -> ModuleType:
     required=False,
     help="Python file or fully qualified python module to import for custom serialization/deserialization.",
 )
+@click.option(
+    "--action-name",
+    required=False,
+    help="Provide name of the action for the test case. Defaults to the action name at the sequence ID.",
+)
 def create_test_case(
     project_name: str,
     partition_key: str,  # will be None if not passed in.
@@ -329,6 +343,7 @@ def create_test_case(
     sequence_id: str,
     target_file_name: str = None,
     serde_module: str = None,
+    action_name: str = None,
 ):
     """Create a test case from a persisted state.
 
@@ -343,6 +358,14 @@ def create_test_case(
     If you have custom serialization/deserialization then pass in the name of a
     python module, or a path to a python file, to import with your custom serialization/deserialization
     registration functions. This will be imported so that they can be registered.
+
+    Note:
+        - when burr fails, then the state retrieved for a sequence ID is the state at the start of the sequence ID.
+          The fixture created will only have input state.
+        - when burr completes successfully, then the state retrieved for a sequence ID is the final modified state.
+          The fixture created will have input and output state, as we will grab the prior sequence ID's state
+          as the input state.
+        - we strip any keys prefixed with __ from the state to avoid exposing private keys in the test case.
     """
     if serde_module:
         if os.path.exists(serde_module):
@@ -358,17 +381,60 @@ def create_test_case(
     from burr.tracking.client import LocalTrackingClient
 
     local_tracker = LocalTrackingClient(project=project_name)
-    data: PersistedStateData = local_tracker.load(
-        partition_key=partition_key, app_id=app_id, sequence_id=int(sequence_id)
+    sequence_id = int(sequence_id)
+
+    after_action: PersistedStateData = local_tracker.load(
+        partition_key=partition_key, app_id=app_id, sequence_id=sequence_id
     )
-    if not data:
-        print(f"No data found for {app_id} in {project_name} with sequence {sequence_id}")
+    if not after_action:
+        print(f"No state found for {project_name}, {partition_key}, {app_id}, {sequence_id}.")
         return
-    state_dict = data["state"].serialize()
-    print("Found data for action: ", data["position"])
+
+    action_name = action_name if action_name else after_action["position"]
+    """
+    Explanation of the logic here.
+    If there's an error:
+     - status would be failed vs completed
+     - state loaded would be the starting state
+    If there's no error:
+     - status would be completed
+     - state loaded would be the ending state, so to get the starting state, we need to look at the prior sequence ID
+    """
+    if after_action["status"] == "completed":
+        print("Action was successful so loading initial and expected state into test fixture.")
+        after_action_state = after_action["state"].serialize()
+        # if it's completed, then we need to look at the prior sequence ID to get the input state
+        prior_sequence_id = sequence_id - 1
+        try:
+            # TODO: handle forked case. i.e. prior doesn't exist because it was a forked sequence.
+            before_action: PersistedStateData = local_tracker.load(
+                partition_key=partition_key, app_id=app_id, sequence_id=prior_sequence_id
+            )
+        except ValueError:
+            before_action = None
+
+        if not before_action:
+            # there was no initial state saved for this sequence id
+            print(
+                f"Warning: there was no initial state found sequence ID {sequence_id}. That is, we looked for the "
+                f"prior state corresponding to the prior sequence ID {prior_sequence_id}, but did not find a state "
+                f"value. Was this application ID forked? Defaulting to empty state - please fill this in."
+            )
+            before_action_state = {"TODO:": "fill this in"}
+        else:
+            before_action_state = before_action["state"].serialize()
+    else:
+        print("Action was not successful so loading initial state into test fixture.")
+        # there was an error so state is the starting state
+        before_action_state = after_action["state"].serialize()
+        after_action_state = {"TODO:": "fill this in"}
+
     # test case json
     tc_json = _transform_state_to_test_case(
-        state_dict, data["position"], f"{data['position']}_{app_id[:8] + '_' + str(sequence_id)}"
+        before_action_state,
+        after_action_state,
+        action_name,
+        f"{action_name}_{app_id[:8] + '_' + str(sequence_id)}",
     )
 
     if target_file_name:
@@ -387,7 +453,7 @@ def create_test_case(
         logger.info(json.dumps(tc_json, indent=2))
     # print out python test to add
     print("\nAdd the following to your test file:\n")
-    print(PYTEST_TEMPLATE.format(FILE_NAME=target_file_name, ACTION_NAME=data["position"]))
+    print(PYTEST_TEMPLATE.format(FILE_NAME=target_file_name, ACTION_NAME=action_name))
 
 
 test_case.add_command(create_test_case, name="create")
