@@ -621,15 +621,15 @@ class LocalTrackingClient(
         for key in to_delete:
             del prior_state[key]
         prior_state["__SEQUENCE_ID"] = sequence_id  # add the sequence id back
-        return {
-            "partition_key": partition_key,
-            "app_id": app_id,
-            "sequence_id": sequence_id,
-            "position": position,
-            "state": State.deserialize(prior_state, **self.serde_kwargs),
-            "created_at": datetime.datetime.fromtimestamp(os.path.getctime(path)).isoformat(),
-            "status": "completed" if line["exception"] is None else "failed",
-        }
+        return PersistedStateData(
+            partition_key=partition_key,
+            app_id=app_id,
+            sequence_id=sequence_id,
+            position=position,
+            state=State.deserialize(prior_state, **self.serde_kwargs),
+            created_at=datetime.datetime.fromtimestamp(os.path.getctime(path)).isoformat(),
+            status="completed" if line["exception"] is None else "failed",
+        )
 
 
 # TODO -- implement async version
