@@ -32,9 +32,10 @@ class BaseStateLoader(abc.ABC):
         :param partition_key: the partition key. Note this could be None, but it's up to the persistor to whether
             that is a valid value it can handle.
         :param app_id: the identifier for the app instance being recorded.
-        :param sequence_id: optional, the state corresponding to a specific point in time.
-            If not provided, should return the latest.
-        :return: position, state, sequence_id
+        :param sequence_id: optional, the state corresponding to a specific point in time. Specifically state at the
+            end of the action with this sequence_id. If sequence_id is not provided, persistor should return the state
+            from the latest fully completed action.
+        :return: PersistedStateData or None
         """
         pass
 
