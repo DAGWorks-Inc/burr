@@ -51,8 +51,11 @@ Steps:
 See `github repository example <https://github.com/DAGWorks-Inc/burr/tree/main/examples/test-case-creation>`_
 for an example.
 
-Note that, if you have custom serialization/deserialization logic, you will want to pass in `--serde-module` to the
+Note (1): if you have custom serialization/deserialization logic, you will want to pass in `--serde-module` to the
 test case with the module name of your serialization logic.
+
+Note (2): you can pass in `--action-name` to override the action name in the test case. This is useful if you want
+to use the output of one action as the input to another action; there are corner cases where this is useful.
 
 Future Work
 -----------
