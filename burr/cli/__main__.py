@@ -134,8 +134,10 @@ def _run_server(
     cmd = f"uvicorn burr.tracking.server.run:app --port {port} --host {host}"
     if dev_mode:
         cmd += " --reload"
-    base_dir = os.path.expanduser("~/.burr")
-    if not no_copy_demo_data:
+
+    if backend == "local" and not no_copy_demo_data:
+        # TODO: fix this so we don't leak burr_path here since that's the value the local backend users
+        base_dir = os.environ.get("burr_path", os.path.expanduser("~/.burr"))
         logger.info(f"Copying demo data over to {base_dir}...")
         demo_data_path = files("burr").joinpath("tracking/server/demo_data")
         for top_level in os.listdir(demo_data_path):
