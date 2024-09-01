@@ -189,9 +189,10 @@ DEFAULT_PATH = os.path.expanduser("~/.burr")
 
 
 class LocalBackend(BackendBase):
-    """Quick implementation of a local backend for testing purposes. This is not a production backend."""
+    """Quick implementation of a local backend for testing purposes. This is not a production backend.
 
-    # TODO -- make this configurable through an env variable
+    To override the path, set a `burr_path` environment variable to the path you want to use.
+    """
 
     def __init__(self, path: str = DEFAULT_PATH):
         self.path = path
