@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextvars
 import dataclasses
 import functools
@@ -13,6 +15,7 @@ from typing import (
     Callable,
     Dict,
     Generator,
+    Generic,
     List,
     Literal,
     Optional,
@@ -41,6 +44,7 @@ from burr.core.action import (
 from burr.core.graph import Graph, GraphBuilder
 from burr.core.persistence import BaseStateLoader, BaseStateSaver
 from burr.core.state import State
+from burr.core.typing import DictBasedTypingSystem
 from burr.core.validation import BASE_ERROR_MESSAGE
 from burr.lifecycle.base import ExecuteMethod, LifecycleAdapter, PostRunStepHook, PreRunStepHook
 from burr.lifecycle.internal import LifecycleAdapterSet
@@ -48,12 +52,16 @@ from burr.visibility import tracing
 from burr.visibility.tracing import tracer_factory_context_var
 
 if TYPE_CHECKING:
+    from burr.core.typing import TypingSystem
     from burr.tracking.base import TrackingClient
 
 logger = logging.getLogger(__name__)
 
 PRIOR_STEP = "__PRIOR_STEP"
 SEQUENCE_ID = "__SEQUENCE_ID"
+
+StateType = TypeVar("StateType")
+StateTypeToSet = TypeVar("StateTypeToSet")
 
 
 def _validate_result(result: dict, name: str) -> None:
@@ -292,7 +300,8 @@ def _run_single_step_streaming_action(
             f"Action {action.name} did not return a state update. For streaming actions, the last yield "
             f"statement must be a tuple of (result, state_update). For example, yield dict(foo='bar'), state.update(foo='bar')"
         )
-    _validate_result(result, action.name)
+    # TODO -- get this back in and use the action's schema (still not set) to validate the result...
+    # _validate_result(result, action.name)
     _validate_reducer_writes(action, state_update, action.name)
     yield result, state_update
 
@@ -344,7 +353,8 @@ async def _arun_single_step_streaming_action(
             f"Action {action.name} did not return a state update. For async actions, the last yield "
             f"statement must be a tuple of (result, state_update). For example, yield dict(foo='bar'), state.update(foo='bar')"
         )
-    _validate_result(result, action.name)
+    # TODO -- add back in validation when we have a schema
+    # _validate_result(result, action.name)
     _validate_reducer_writes(action, state_update, action.name)
     # TODO -- add guard against zero-length stream
     yield result, state_update
@@ -664,11 +674,14 @@ class TracerFactoryContextHook(PreRunStepHook, PostRunStepHook):
         del self.token_pointer_map[(app_id, sequence_id)]
 
 
-class Application:
+ApplicationStateType = TypeVar("ApplicationStateType")
+
+
+class Application(Generic[ApplicationStateType]):
     def __init__(
         self,
         graph: Graph,
-        state: State,
+        state: State[ApplicationStateType],
         partition_key: Optional[str],
         uid: str,
         entrypoint: str,
@@ -824,7 +837,9 @@ class Application:
         in your graph, but this will do the trick if you need it!"""
         self._set_state(self._state.wipe(delete=[PRIOR_STEP]))
 
-    def _update_internal_state_value(self, new_state: State, next_action: Action) -> State:
+    def _update_internal_state_value(
+        self, new_state: State[ApplicationStateType], next_action: Action
+    ) -> State[ApplicationStateType]:
         """Updates the internal state values of the new state."""
         new_state = new_state.update(
             **{
@@ -889,7 +904,9 @@ class Application:
     # @telemetry.capture_function_usage
     # ditto with step()
     @_call_execute_method_pre_post(ExecuteMethod.astep)
-    async def astep(self, inputs: Dict[str, Any] = None) -> Optional[Tuple[Action, dict, State]]:
+    async def astep(
+        self, inputs: Optional[Dict[str, Any]] = None
+    ) -> Optional[Tuple[Action, dict, State[ApplicationStateType]]]:
         """Asynchronous version of step.
 
         :param inputs: Inputs to the action -- this is if this action
@@ -1022,7 +1039,7 @@ class Application:
         halt_after: list[str],
         prior_action: Optional[Action],
         result: Optional[dict],
-    ) -> Tuple[Optional[Action], Optional[dict], State]:
+    ) -> Tuple[Optional[Action], Optional[dict], State[ApplicationStateType]]:
         """Utility function to decide what to return for iterate/arun. Note that run() will delegate to the return value of
         iterate, whereas arun cannot delegate to the return value of aiterate (as async generators cannot return a value).
         We put the code centrally to clean up the logic.
@@ -1057,7 +1074,11 @@ class Application:
         halt_before: list[str] = None,
         halt_after: list[str] = None,
         inputs: Optional[Dict[str, Any]] = None,
-    ) -> Generator[Tuple[Action, dict, State], None, Tuple[Action, Optional[dict], State]]:
+    ) -> Generator[
+        Tuple[Action, dict, State[ApplicationStateType]],
+        None,
+        Tuple[Action, Optional[dict], State[ApplicationStateType]],
+    ]:
         """Returns a generator that calls step() in a row, enabling you to see the state
         of the system as it updates. Note this returns a generator, and also the final result
         (for convenience).
@@ -1095,7 +1116,7 @@ class Application:
         halt_before: list[str] = None,
         halt_after: list[str] = None,
         inputs: Optional[Dict[str, Any]] = None,
-    ) -> AsyncGenerator[Tuple[Action, dict, State], None]:
+    ) -> AsyncGenerator[Tuple[Action, dict, State[ApplicationStateType]], None]:
         """Returns a generator that calls step() in a row, enabling you to see the state
         of the system as it updates. This is the asynchronous version so it has no capability of t
 
@@ -1125,7 +1146,7 @@ class Application:
         halt_before: list[str] = None,
         halt_after: list[str] = None,
         inputs: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Action, Optional[dict], State]:
+    ) -> Tuple[Action, Optional[dict], State[ApplicationStateType]]:
         """Runs your application through until completion. Does
         not give access to the state along the way -- if you want that, use iterate().
 
@@ -1179,7 +1200,7 @@ class Application:
         halt_after: list[str],
         halt_before: list[str] = None,
         inputs: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Action, StreamingResultContainer]:
+    ) -> Tuple[Action, StreamingResultContainer[ApplicationStateType]]:
         """Streams a result out.
 
         :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
@@ -1428,7 +1449,7 @@ class Application:
         halt_after: list[str],
         halt_before: list[str] = None,
         inputs: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Action, AsyncStreamingResultContainer]:
+    ) -> Tuple[Action, AsyncStreamingResultContainer[ApplicationStateType]]:
         """Streams a result out in an asynchronous manner.
 
         :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
@@ -1680,7 +1701,7 @@ class Application:
                 sequence_id=self.sequence_id,
                 exception=e,
             )
-            await call_execute_method_wrapper.acall_post(self, None, e)
+            await call_execute_method_wrapper.acall_post(self, e)
             await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
                 "post_end_stream",
                 action=next_action.name,
@@ -1726,13 +1747,13 @@ class Application:
             **engine_kwargs,
         )
 
-    def _set_state(self, new_state: State):
+    def _set_state(self, new_state: State[ApplicationStateType]):
         self._state = new_state
 
     def get_next_action(self) -> Optional[Action]:
         return self._graph.get_next_node(self._state.get(PRIOR_STEP), self._state, self.entrypoint)
 
-    def update_state(self, new_state: State):
+    def update_state(self, new_state: State[ApplicationStateType]):
         """Updates state -- this is meant to be called if you need to do
         anything with the state. For example:
         1. Reset it (after going through a loop)
@@ -1744,7 +1765,7 @@ class Application:
         self._state = new_state
 
     @property
-    def state(self) -> State:
+    def state(self) -> State[ApplicationStateType]:
         """Gives the state. Recall that state is purely immutable
         -- anything you do with this state will not be persisted unless you
         subsequently call update_state.
@@ -1837,7 +1858,7 @@ class Application:
         return self._partition_key
 
     @property
-    def builder(self) -> Optional["ApplicationBuilder"]:
+    def builder(self) -> Optional["ApplicationBuilder[ApplicationStateType]"]:
         """Returns the application builder that was used to build this application.
         Note that this asusmes the application was built using the builder. Otherwise,
 
@@ -1873,10 +1894,10 @@ def _validate_start(start: Optional[str], actions: Set[str]):
         )
 
 
-class ApplicationBuilder:
+class ApplicationBuilder(Generic[StateType]):
     def __init__(self):
         self.start = None
-        self.state: Optional[State] = None
+        self.state: Optional[State[StateType]] = None
         self.lifecycle_adapters: List[LifecycleAdapter] = list()
         self.app_id: str = str(uuid.uuid4())
         self.partition_key: Optional[str] = None
@@ -1894,10 +1915,11 @@ class ApplicationBuilder:
         self.tracker = None
         self.graph_builder = None
         self.prebuilt_graph = None
+        self.typing_system = None
 
     def with_identifiers(
         self, app_id: str = None, partition_key: str = None, sequence_id: int = None
-    ) -> "ApplicationBuilder":
+    ) -> "ApplicationBuilder[StateType]":
         """Assigns various identifiers to the application. This is used for tracking, persistence, etc...
 
         :param app_id: Application ID -- this will be assigned to a uuid if not set.
@@ -1915,7 +1937,21 @@ class ApplicationBuilder:
             self.sequence_id = sequence_id
         return self
 
-    def with_state(self, **kwargs) -> "ApplicationBuilder":
+    def with_typing(
+        self, typing_system: TypingSystem[StateTypeToSet]
+    ) -> "ApplicationBuilder[StateTypeToSet]":
+        """Sets the typing system for the application. This is used to enforce typing on the state.
+
+        :param typing_system: Typing system to use
+        :return: The application builder for future chaining.
+        """
+        if typing_system is not None:
+            self.typing_system = typing_system
+        return self  # type: ignore
+
+    def with_state(
+        self, state: Optional[Union[State, StateTypeToSet]] = None, **kwargs
+    ) -> "ApplicationBuilder[StateType]":
         """Sets initial values in the state. If you want to load from a prior state,
         you can do so here and pass the values in.
 
@@ -1930,13 +1966,30 @@ class ApplicationBuilder:
                 "the .initialize_from() API. Either allow the persister to set the "
                 "state, or set the state manually."
             )
-        if self.state is not None:
+        if state is not None:
+            if self.state is not None:
+                raise ValueError(
+                    BASE_ERROR_MESSAGE
+                    + "State items have already been set -- you cannot use the type-based API as well."
+                    " Either set state with with_state(**kwargs) or pass in a state/typed object."
+                )
+            if isinstance(state, State):
+                self.state = state
+            elif self.typing_system is not None:
+                self.state = self.typing_system.construct_state(state)
+            else:
+                raise ValueError(
+                    BASE_ERROR_MESSAGE
+                    + "You have not set a typing system, and you are passing in a typed state object."
+                    " Please set a typing system using with_typing before doing so."
+                )
+        elif self.state is not None:
             self.state = self.state.update(**kwargs)
         else:
             self.state = State(kwargs)
         return self
 
-    def with_graph(self, graph: Graph) -> "ApplicationBuilder":
+    def with_graph(self, graph: Graph) -> "ApplicationBuilder[StateType]":
         """Adds a prebuilt graph -- this is an alternative to using the with_actions and with_transitions methods.
         While you will likely use with_actions and with_transitions, you may want this in a few cases:
 
@@ -1969,7 +2022,7 @@ class ApplicationBuilder:
         if self.graph_builder is None:
             self.graph_builder = GraphBuilder()
 
-    def with_entrypoint(self, action: str) -> "ApplicationBuilder":
+    def with_entrypoint(self, action: str) -> "ApplicationBuilder[StateType]":
         """Adds an entrypoint to the application. This is the action that will be run first.
         This can only be called once.
 
@@ -1988,7 +2041,7 @@ class ApplicationBuilder:
 
     def with_actions(
         self, *action_list: Union[Action, Callable], **action_dict: Union[Action, Callable]
-    ) -> "ApplicationBuilder":
+    ) -> "ApplicationBuilder[StateType]":
         """Adds an action to the application. The actions are granted names (using the with_name)
         method post-adding, using the kw argument. If it already has a name (or you wish to use the function name, raw, and
         it is a function-based-action), then you can use the *args* parameter. This is the only supported way to add actions.
@@ -2007,7 +2060,7 @@ class ApplicationBuilder:
         *transitions: Union[
             Tuple[Union[str, list[str]], str], Tuple[Union[str, list[str]], str, Condition]
         ],
-    ) -> "ApplicationBuilder":
+    ) -> "ApplicationBuilder[StateType]":
         """Adds transitions to the application. Transitions are specified as tuples of either:
             1. (from, to, condition)
             2. (from, to)  -- condition is set to DEFAULT (which is a fallback)
@@ -2024,7 +2077,7 @@ class ApplicationBuilder:
         self.graph_builder = self.graph_builder.with_transitions(*transitions)
         return self
 
-    def with_hooks(self, *adapters: LifecycleAdapter) -> "ApplicationBuilder":
+    def with_hooks(self, *adapters: LifecycleAdapter) -> "ApplicationBuilder[StateType]":
         """Adds a lifecycle adapter to the application. This is a way to add hooks to the application so that
         they are run at the appropriate times. You can use this to synchronize state out, log results, etc...
 
@@ -2093,7 +2146,7 @@ class ApplicationBuilder:
         fork_from_app_id: str = None,
         fork_from_partition_key: str = None,
         fork_from_sequence_id: int = None,
-    ) -> "ApplicationBuilder":
+    ) -> "ApplicationBuilder[StateType]":
         """Initializes the application we will build from some prior state object.
 
         Note (1) that you can *either* call this or use `with_state` and `with_entrypoint`.
@@ -2133,7 +2186,7 @@ class ApplicationBuilder:
 
     def with_state_persister(
         self, persister: Union[BaseStateSaver, LifecycleAdapter], on_every: str = "step"
-    ) -> "ApplicationBuilder":
+    ) -> "ApplicationBuilder[StateType]":
         """Adds a state persister to the application. This is a way to persist state out to a database, file, etc...
         at the specified interval. This is one of two options:
 
@@ -2156,7 +2209,7 @@ class ApplicationBuilder:
 
     def with_spawning_parent(
         self, app_id: str, sequence_id: int, partition_key: Optional[str] = None
-    ) -> "ApplicationBuilder":
+    ) -> "ApplicationBuilder[StateType]":
         """Sets the 'spawning' parent application that created this app.
         This is used for tracking purposes. Doing this creates a parent/child relationship.
         There can be many spawned children from a single sequence ID (just as there can be many forks of an app).
@@ -2251,14 +2304,14 @@ class ApplicationBuilder:
             raise ValueError(
                 BASE_ERROR_MESSAGE
                 + "You must set the graph using with_graph, or use with_entrypoint, with_actions, and with_transitions"
-                "to build the graph."
+                " to build the graph."
             )
         if self.graph_builder is not None:
             return self.graph_builder.build()
         return self.prebuilt_graph
 
-    @telemetry.capture_function_usage
-    def build(self) -> Application:
+    # @telemetry.capture_function_usage
+    def build(self) -> Application[StateType]:
         """Builds the application.
 
         This function is a bit messy as we iron out the exact logic and rigor we want around things.
@@ -2274,6 +2327,10 @@ class ApplicationBuilder:
             self._load_from_persister()
         graph = self._get_built_graph()
         _validate_start(self.start, {action.name for action in graph.actions})
+        typing_system: TypingSystem[StateType] = (
+            self.typing_system if self.typing_system is not None else DictBasedTypingSystem()
+        )  # type: ignore
+        self.state = self.state.with_typing_system(typing_system=typing_system)
         return Application(
             graph=graph,
             state=self.state,
@@ -2283,19 +2340,38 @@ class ApplicationBuilder:
             entrypoint=self.start,
             adapter_set=LifecycleAdapterSet(*self.lifecycle_adapters),
             builder=self,
-            fork_parent_pointer=burr_types.ParentPointer(
-                app_id=self.fork_from_app_id,
-                partition_key=self.fork_from_partition_key,
-                sequence_id=self.fork_from_sequence_id,
-            )
-            if self.loaded_from_fork
-            else None,
+            fork_parent_pointer=(
+                burr_types.ParentPointer(
+                    app_id=self.fork_from_app_id,
+                    partition_key=self.fork_from_partition_key,
+                    sequence_id=self.fork_from_sequence_id,
+                )
+                if self.loaded_from_fork
+                else None
+            ),
             tracker=self.tracker,
-            spawning_parent_pointer=burr_types.ParentPointer(
-                app_id=self.spawn_from_app_id,
-                partition_key=self.spawn_from_partition_key,
-                sequence_id=self.spawn_from_sequence_id,
-            )
-            if self.spawn_from_app_id is not None
-            else None,
+            spawning_parent_pointer=(
+                burr_types.ParentPointer(
+                    app_id=self.spawn_from_app_id,
+                    partition_key=self.spawn_from_partition_key,
+                    sequence_id=self.spawn_from_sequence_id,
+                )
+                if self.spawn_from_app_id is not None
+                else None
+            ),
         )
+
+
+if __name__ == "__main__":
+    import pydantic
+
+    class Foo(pydantic.BaseModel):
+        a: int
+        b: str
+
+    from burr.integrations import pydantic
+
+    app = ApplicationBuilder().with_typing(pydantic.PydanticTypingSystem(Foo)).build()
+
+    _, _, foo = app.run(inputs={"a": 1, "b": "hello"})
+    mod = foo.data

@@ -5,6 +5,7 @@ from burr.core.application import (
     ApplicationContext,
     ApplicationGraph,
 )
+from burr.core.graph import Graph
 from burr.core.state import State
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "Result",
     "State",
     "when",
+    "Graph",
 ]

@@ -18,6 +18,7 @@ Overview of the concepts -- read these to get a mental model for how Burr works.
     state-persistence
     serde
     streaming-actions
+    state-typing
     hooks
     additional-visibility
     recursion

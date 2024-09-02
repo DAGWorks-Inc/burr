@@ -24,7 +24,7 @@ import os
 import platform
 import threading
 import uuid
-from typing import TYPE_CHECKING, Callable, List
+from typing import TYPE_CHECKING, Callable, List, TypeVar
 from urllib import request
 
 if TYPE_CHECKING:
@@ -256,7 +256,10 @@ def create_and_send_cli_event(command: str):
     send_event_json(event)
 
 
-def capture_function_usage(call_fn: Callable) -> Callable:
+CallableT = TypeVar("CallableT", bound=Callable)
+
+
+def capture_function_usage(call_fn: CallableT) -> CallableT:
     """Decorator to wrap some application functions for telemetry capture.
 
     We want to use this for non-execute functions.
