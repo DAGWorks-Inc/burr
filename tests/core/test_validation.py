@@ -8,5 +8,5 @@ def test__assert_set():
 
 
 def test__assert_set_unset():
-    with pytest.raises(ValueError, match="foo"):
+    with pytest.raises(ValueError, match="bar"):
         assert_set(None, "foo", "bar")

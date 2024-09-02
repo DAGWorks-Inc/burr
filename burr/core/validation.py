@@ -12,5 +12,5 @@ def assert_set(value: Optional[Any], field: str, method: str):
     if value is None:
         raise ValueError(
             BASE_ERROR_MESSAGE
-            + f"Must set `{field}` before building application! Do so with ApplicationBuilder.{method}"
+            + f"Must call `{method}` before building application! Do so with ApplicationBuilder."
         )

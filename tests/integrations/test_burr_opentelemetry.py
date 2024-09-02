@@ -7,7 +7,7 @@ from burr.core import serde
 from burr.integrations.opentelemetry import convert_to_otel_attribute
 
 
-class TestModel(pydantic.BaseModel):
+class SampleModel(pydantic.BaseModel):
     foo: int
     bar: bool
 
@@ -21,7 +21,7 @@ class TestModel(pydantic.BaseModel):
         ((1.0, 1.0), [1.0, 1.0]),
         ((True, True), [True, True]),
         (("hello", "hello"), ["hello", "hello"]),
-        (TestModel(foo=1, bar=True), json.dumps(serde.serialize(TestModel(foo=1, bar=True)))),
+        (SampleModel(foo=1, bar=True), json.dumps(serde.serialize(SampleModel(foo=1, bar=True)))),
     ],
 )
 def test_convert_to_otel_attribute(value, expected):

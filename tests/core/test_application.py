@@ -41,6 +41,7 @@ from burr.core.application import (
 )
 from burr.core.graph import Graph, GraphBuilder, Transition
 from burr.core.persistence import BaseStatePersister, DevNullPersister, PersistedStateData
+from burr.core.typing import TypingSystem
 from burr.lifecycle import (
     PostRunStepHook,
     PostRunStepHookAsync,
@@ -3184,3 +3185,44 @@ def test_application_recursive_action_lifecycle_hooks():
         len(hook.pre_called) == 62
     )  # 63 - the initial one from the call to recursive_action outside the application
     assert len(hook.post_called) == 62  # ditto
+
+
+class CounterState(State):
+    count: int
+
+
+class SimpleTypingSystem(TypingSystem[CounterState]):
+    def state_type(self) -> type[CounterState]:
+        return CounterState
+
+    def state_pre_action_run_type(self, action: Action, graph: Graph) -> type[Any]:
+        raise NotImplementedError
+
+    def state_post_action_run_type(self, action: Action, graph: Graph) -> type[Any]:
+        raise NotImplementedError
+
+    def construct_data(self, state: State[Any]) -> CounterState:
+        return CounterState({"count": state["count"]})
+
+    def construct_state(self, data: Any) -> State[Any]:
+        raise NotImplementedError
+
+
+def test_builder_captures_typing_system():
+    """Tests that the typing system is captured correctly"""
+    counter_action = base_counter_action.with_name("counter")
+    result_action = Result("count").with_name("result")
+    app = (
+        ApplicationBuilder()
+        .with_actions(counter_action, result_action)
+        .with_transitions(("counter", "counter", expr("count < 10")))
+        .with_transitions(("counter", "result", default))
+        .with_entrypoint("counter")
+        .with_state(count=0)
+        .with_typing(SimpleTypingSystem())
+        .build()
+    )
+    assert isinstance(app.state.data, CounterState)
+    _, _, state = app.run(halt_after=["result"])
+    assert isinstance(state.data, CounterState)
+    assert state.data["count"] == 10

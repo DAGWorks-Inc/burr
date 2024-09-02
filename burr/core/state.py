@@ -4,9 +4,10 @@ import dataclasses
 import importlib
 import inspect
 import logging
-from typing import Any, Callable, Dict, Iterator, Mapping, Union
+from typing import Any, Callable, Dict, Generic, Iterator, Mapping, Optional, TypeVar, Union
 
 from burr.core import serde
+from burr.core.typing import DictBasedTypingSystem, TypingSystem
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +143,7 @@ class AppendFields(StateDelta):
             if key not in inputs:
                 inputs[key] = []
             if not isinstance(inputs[key], list):
-                raise ValueError(f"Cannot append to non-list value {key}={inputs[self.key]}")
+                raise ValueError(f"Cannot append to non-list value {key}={inputs[key]}")
             inputs[key].append(value)
 
     def validate(self, input_state: Dict[str, Any]):
@@ -211,22 +212,51 @@ class DeleteField(StateDelta):
             inputs.pop(key, None)
 
 
-class State(Mapping):
+StateType = TypeVar("StateType", bound=Union[Dict[str, Any], Any])
+AssignedStateType = TypeVar("AssignedStateType")
+
+
+class State(Mapping, Generic[StateType]):
     """An immutable state object. This is the only way to interact with state in Burr."""
 
-    def __init__(self, initial_values: Dict[str, Any] = None):
+    def __init__(
+        self,
+        initial_values: Optional[Dict[str, Any]] = None,
+        typing_system: Optional[TypingSystem[StateType]] = None,
+    ):
         if initial_values is None:
             initial_values = dict()
+        self._typing_system = (
+            typing_system if typing_system is not None else DictBasedTypingSystem()  # type: ignore
+        )
         self._state = initial_values
 
-    def apply_operation(self, operation: StateDelta) -> "State":
+    @property
+    def typing_system(self) -> TypingSystem[StateType]:
+        return self._typing_system
+
+    def with_typing_system(
+        self, typing_system: TypingSystem[AssignedStateType]
+    ) -> "State[AssignedStateType]":
+        """Copies state with a specific typing system"""
+        return State(self._state, typing_system=typing_system)
+
+    @property
+    def data(self) -> StateType:
+        return self._typing_system.construct_data(self)  # type: ignore
+
+    def apply_operation(self, operation: StateDelta) -> "State[StateType]":
         """Applies a given operation to the state, returning a new state"""
-        new_state = copy.deepcopy(self._state)  # TODO -- restrict to just the read keys
+
+        # Moved to copy.copy instead of copy.deepcopy
+        # TODO -- just copy the ones that have changed
+        # And if they can't be copied then we use the same ones...
+        new_state = copy.copy(self._state)  # TODO -- restrict to just the read keys
         operation.validate(new_state)
         operation.apply_mutate(
             new_state
         )  # todo -- validate that the write keys are the only different ones
-        return State(new_state)
+        return State(new_state, typing_system=self._typing_system)
 
     def get_all(self) -> Dict[str, Any]:
         """Returns the entire state, realize as a dictionary. This is a copy."""
@@ -251,7 +281,7 @@ class State(Mapping):
         return {k: _serialize(k, v, **kwargs) for k, v in _dict.items()}
 
     @classmethod
-    def deserialize(cls, json_dict: dict, **kwargs) -> "State":
+    def deserialize(cls, json_dict: dict, **kwargs) -> "State[StateType]":
         """Converts a dictionary representing a JSON object back into a state"""
 
         def _deserialize(k, v: Union[str, dict], **extrakwargs) -> Callable:
@@ -262,7 +292,7 @@ class State(Mapping):
 
         return State({k: _deserialize(k, v, **kwargs) for k, v in json_dict.items()})
 
-    def update(self, **updates: Any) -> "State":
+    def update(self, **updates: Any) -> "State[StateType]":
         """Updates the state with a set of key-value pairs
         Does an upsert operation (if the keys exist their value will be overwritten,
         otherwise they will be created)
@@ -277,7 +307,7 @@ class State(Mapping):
         """
         return self.apply_operation(SetFields(updates))
 
-    def append(self, **updates: Any) -> "State":
+    def append(self, **updates: Any) -> "State[StateType]":
         """Appends to the state with a set of key-value pairs. Each one
         must correspond to a list-like object, or an error will be raised.
 
@@ -295,7 +325,7 @@ class State(Mapping):
 
         return self.apply_operation(AppendFields(updates))
 
-    def increment(self, **updates: int) -> "State":
+    def increment(self, **updates: int) -> "State[StateType]":
         """Increments the state with a set of key-value pairs. Each one
         must correspond to an integer, or an error will be raised.
 
@@ -304,7 +334,7 @@ class State(Mapping):
         """ ""
         return self.apply_operation(IncrementFields(updates))
 
-    def wipe(self, delete: list[str] = None, keep: list[str] = None):
+    def wipe(self, delete: Optional[list[str]] = None, keep: Optional[list[str]] = None):
         """Wipes the state, either by deleting the keys in delete and keeping everything else
          or keeping the keys in keep. and deleting everything else. If you pass nothing in
          it will delete the whole thing.
@@ -324,14 +354,17 @@ class State(Mapping):
             fields_to_delete = [key for key in self._state if key not in keep]
         return self.apply_operation(DeleteField(fields_to_delete))
 
-    def merge(self, other: "State") -> "State":
+    def merge(self, other: "State") -> "State[StateType]":
         """Merges two states together, overwriting the values in self
         with those in other."""
-        return State({**self.get_all(), **other.get_all()})
+        return State({**self.get_all(), **other.get_all()}, self.typing_system)
 
-    def subset(self, *keys: str, ignore_missing: bool = True) -> "State":
+    def subset(self, *keys: str, ignore_missing: bool = True) -> "State[StateType]":
         """Returns a subset of the state, with only the given keys"""
-        return State({key: self[key] for key in keys if key in self or not ignore_missing})
+        return State(
+            {key: self[key] for key in keys if key in self or not ignore_missing},
+            self.typing_system,
+        )
 
     def __getitem__(self, __k: str) -> Any:
         return self._state[__k]

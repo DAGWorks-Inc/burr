@@ -1,6 +1,10 @@
+from typing import Any
+
 import pytest
 
+from burr.core import Action, Graph
 from burr.core.state import State, register_field_serde
+from burr.core.typing import TypingSystem
 
 
 def test_state_access():
@@ -158,3 +162,26 @@ def test_register_field_serde_check_no_kwargs():
     with pytest.raises(ValueError):
         # deserializer still bad
         register_field_serde("my_field", my_field_serializer, my_field_deserializer)
+
+
+class SimpleTypingSystem(TypingSystem[Any]):
+    def state_type(self) -> type[Any]:
+        raise NotImplementedError
+
+    def state_pre_action_run_type(self, action: Action, graph: Graph) -> type[Any]:
+        raise NotImplementedError
+
+    def state_post_action_run_type(self, action: Action, graph: Graph) -> type[Any]:
+        raise NotImplementedError
+
+    def construct_data(self, state: State[Any]) -> Any:
+        raise NotImplementedError
+
+    def construct_state(self, data: State[Any]) -> State[Any]:
+        raise NotImplementedError
+
+
+def test_state_apply_keeps_typing_system():
+    state = State({"foo": "bar"}, typing_system=SimpleTypingSystem())
+    assert state.update(foo="baz").typing_system is state.typing_system
+    assert state.subset("foo").typing_system is state.typing_system

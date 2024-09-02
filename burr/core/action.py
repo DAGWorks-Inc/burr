@@ -13,6 +13,7 @@ from typing import (
     Coroutine,
     Dict,
     Generator,
+    Generic,
     Iterator,
     List,
     Optional,
@@ -96,9 +97,11 @@ class Function(abc.ABC):
                 f"Inputs to function {self} are invalid. "
                 + f"Missing the following inputs: {', '.join(missing_inputs)}."
                 if missing_inputs
-                else "" f"Additional inputs: {','.join(additional_inputs)}."
-                if additional_inputs
-                else ""
+                else (
+                    "" f"Additional inputs: {','.join(additional_inputs)}."
+                    if additional_inputs
+                    else ""
+                )
             )
 
     def is_async(self) -> bool:
@@ -493,7 +496,7 @@ class SingleStepAction(Action, abc.ABC):
 
 # the following exist to share implementation between FunctionBasedStreamingAction and FunctionBasedAction
 # TODO -- think through the class hierarchy to simplify, for now this is OK
-def _get_inputs(bound_params: dict, fn: Callable) -> tuple[list[str], list[str]]:
+def get_inputs(bound_params: dict, fn: Callable) -> tuple[list[str], list[str]]:
     sig = inspect.signature(fn)
     required_inputs, optional_inputs = [], []
     for param_name, param in sig.parameters.items():
@@ -507,9 +510,7 @@ def _get_inputs(bound_params: dict, fn: Callable) -> tuple[list[str], list[str]]
     return required_inputs, optional_inputs
 
 
-FunctionBasedActionType = TypeVar(
-    "FunctionBasedActionType", bound=Union["FunctionBasedAction", "FunctionBasedStreamingAction"]
-)
+FunctionBasedActionType = Union["FunctionBasedAction", "FunctionBasedStreamingAction"]
 
 
 class FunctionBasedAction(SingleStepAction):
@@ -520,21 +521,33 @@ class FunctionBasedAction(SingleStepAction):
         fn: Callable,
         reads: List[str],
         writes: List[str],
-        bound_params: dict = None,
+        bound_params: Optional[dict] = None,
+        input_spec: Optional[tuple[list[str], list[str]]] = None,
+        originating_fn: Optional[Callable] = None,
     ):
         """Instantiates a function-based action with the given function, reads, and writes.
         The function must take in a state and return a tuple of (result, new_state).
 
-        :param fn:
-        :param reads:
-        :param writes:
+        :param fn: Function to run
+        :param reads: Keys that the function reads from the state
+        :param writes: Keys that the function writes to the state
+        :param bound_params: Prior bound parameters
+        :param input_spec: Specification for inputs. Will derive from function if not provided.
         """
         super(FunctionBasedAction, self).__init__()
+        self._originating_fn = originating_fn if originating_fn is not None else fn
         self._fn = fn
         self._reads = reads
         self._writes = writes
         self._bound_params = bound_params if bound_params is not None else {}
-        self._inputs = _get_inputs(self._bound_params, self._fn)
+        self._inputs = (
+            get_inputs(self._bound_params, self._fn)
+            if input_spec is None
+            else (
+                [item for item in input_spec[0] if item not in self._bound_params],
+                [item for item in input_spec[1] if item not in self._bound_params],
+            )
+        )
 
     @property
     def fn(self) -> Callable:
@@ -562,7 +575,11 @@ class FunctionBasedAction(SingleStepAction):
         :return:
         """
         return FunctionBasedAction(
-            self._fn, self._reads, self._writes, {**self._bound_params, **kwargs}
+            self._fn,
+            self._reads,
+            self._writes,
+            {**self._bound_params, **kwargs},
+            input_spec=self._inputs,
         )
 
     def run_and_update(self, state: State, **run_kwargs) -> tuple[dict, State]:
@@ -573,10 +590,12 @@ class FunctionBasedAction(SingleStepAction):
 
     def get_source(self) -> str:
         """Return the source of the code for this action."""
-        return inspect.getsource(self._fn)
+        return inspect.getsource(self._originating_fn)
 
 
-StreamType = Tuple[dict, Optional[State]]
+StateType = TypeVar("StateType")
+
+StreamType = Tuple[dict, Optional[State[StateType]]]
 
 GeneratorReturnType = Generator[StreamType, None, None]
 AsyncGeneratorReturnType = AsyncGenerator[StreamType, None]
@@ -590,7 +609,7 @@ class StreamingAction(Action, abc.ABC):
     they run in multiple passes (run -> update)"""
 
     @abc.abstractmethod
-    def stream_run(self, state: State, **run_kwargs) -> Generator[dict, None, None]:
+    def stream_run(self, state: State[StateType], **run_kwargs) -> Generator[dict, None, None]:
         """Streaming action ``stream_run`` is different than standard action run. It:
         1. streams in an intermediate result (the dict output)
         2. yields the final result at the end
@@ -617,7 +636,7 @@ class StreamingAction(Action, abc.ABC):
         """
         pass
 
-    def run(self, state: State, **run_kwargs) -> dict:
+    def run(self, state: State[StateType], **run_kwargs) -> dict:
         """Runs the streaming action through to completion."""
         gen = self.stream_run(state, **run_kwargs)
         last_result = None
@@ -636,7 +655,7 @@ class AsyncStreamingAction(Action, abc.ABC):
     Note this is the "multi-step" variant, in which run/update are separate."""
 
     @abc.abstractmethod
-    async def stream_run(self, state: State, **run_kwargs) -> AsyncGenerator[dict, None]:
+    async def stream_run(self, state, **run_kwargs) -> AsyncGenerator[dict, None]:
         """Asynchronous streaming action ``stream_run`` is different than the standard action run. It:
         1. streams in an intermediate result (the dict output)
         2. yields the final result at the end
@@ -663,7 +682,7 @@ class AsyncStreamingAction(Action, abc.ABC):
         """
         pass
 
-    async def run(self, state: State, **run_kwargs) -> dict:
+    async def run(self, state: State[StateType], **run_kwargs) -> dict:
         """Runs the streaming action through to completion.
         Returns the final result. This is used if we want a streaming action
         as an intermediate.
@@ -686,7 +705,7 @@ class AsyncStreamingAction(Action, abc.ABC):
         return True
 
 
-class StreamingResultContainer(Iterator[dict]):
+class StreamingResultContainer(Iterator[dict], Generic[StateType]):
     """Container for a streaming result. This allows you to:
 
     1. Iterate over the result as it comes in
@@ -711,12 +730,14 @@ class StreamingResultContainer(Iterator[dict]):
     """
 
     @staticmethod
-    def pass_through(results: dict, final_state: State) -> "StreamingResultContainer":
+    def pass_through(
+        results: dict, final_state: State[StateType]
+    ) -> "StreamingResultContainer[StateType]":
         """Instantiates a streaming result container that just passes through the given results
         This is to be used internally -- it allows us to wrap non-streaming action results in a streaming
         result container."""
 
-        def empty_generator() -> GeneratorReturnType:
+        def empty_generator() -> Generator[Tuple[dict, Optional[State[StateType]]], None, None]:
             yield results, final_state
 
         return StreamingResultContainer(
@@ -729,7 +750,7 @@ class StreamingResultContainer(Iterator[dict]):
     def __init__(
         self,
         streaming_result_generator: GeneratorReturnType,
-        initial_state: State,
+        initial_state: State[StateType],
         process_result: Callable[[dict, State], tuple[dict, State]],
         callback: Callable[[Optional[dict], State, Optional[Exception]], None],
     ):
@@ -788,7 +809,7 @@ class StreamingResultContainer(Iterator[dict]):
         return self._result
 
 
-class AsyncStreamingResultContainer(typing.AsyncIterator[dict]):
+class AsyncStreamingResultContainer(typing.AsyncIterator[dict], Generic[StateType]):
     """Container for an async streaming result. This allows you to:
     1. Iterate over the result as it comes in
     2. Await the final result/state at the end
@@ -814,10 +835,11 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict]):
     def __init__(
         self,
         streaming_result_generator: AsyncGeneratorReturnType,
-        initial_state: State,
-        process_result: Callable[[dict, State], tuple[dict, State]],
+        initial_state: State[StateType],
+        process_result: Callable[[dict, State[StateType]], tuple[dict, State[StateType]]],
         callback: Callable[
-            [Optional[dict], State, Optional[Exception]], typing.Coroutine[None, None, None]
+            [Optional[dict], State[StateType], Optional[Exception]],
+            typing.Coroutine[None, None, None],
         ],
     ):
         """Initializes an async streaming result container. User will never call directly.
@@ -869,7 +891,7 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict]):
         # return it as `__aiter__` cannot be async/have awaits :/
         return gen_fn()
 
-    async def get(self) -> tuple[Optional[dict], State]:
+    async def get(self) -> tuple[Optional[dict], State[StateType]]:
         # exhaust the generator
         async for _ in self:
             pass
@@ -877,7 +899,9 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict]):
         return self._result
 
     @staticmethod
-    def pass_through(results: dict, final_state: State) -> "AsyncStreamingResultContainer":
+    def pass_through(
+        results: dict, final_state: State[StateType]
+    ) -> "AsyncStreamingResultContainer[StateType]":
         """Creates a streaming result container that just passes through the given results.
         This is not a public facing API."""
 
@@ -887,7 +911,7 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict]):
         async def empty_callback(result: Optional[dict], state: State, exc: Optional[Exception]):
             pass
 
-        return AsyncStreamingResultContainer(
+        return AsyncStreamingResultContainer[StateType](
             just_results(), final_state, lambda result, state: (result, state), empty_callback
         )
 
@@ -954,7 +978,9 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         ],
         reads: List[str],
         writes: List[str],
-        bound_params: dict = None,
+        bound_params: Optional[dict] = None,
+        input_spec: Optional[tuple[list[str], list[str]]] = None,
+        originating_fn: Optional[Callable] = None,
     ):
         """Instantiates a function-based streaming action with the given function, reads, and writes.
         The function must take in a state (and inputs) and return a generator of (result, new_state).
@@ -968,6 +994,15 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         self._reads = reads
         self._writes = writes
         self._bound_params = bound_params if bound_params is not None else {}
+        self._inputs = (
+            get_inputs(self._bound_params, self._fn)
+            if input_spec is None
+            else (
+                [item for item in input_spec[0] if item not in self._bound_params],
+                [item for item in input_spec[1] if item not in self._bound_params],
+            )
+        )
+        self._originating_fn = originating_fn if originating_fn is not None else fn
 
     async def _a_stream_run_and_update(
         self, state: State, **run_kwargs
@@ -1005,12 +1040,17 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         :return:
         """
         return FunctionBasedStreamingAction(
-            self._fn, self._reads, self._writes, {**self._bound_params, **kwargs}
+            self._fn,
+            self._reads,
+            self._writes,
+            {**self._bound_params, **kwargs},
+            input_spec=self._inputs,
+            originating_fn=self._originating_fn,
         )
 
     @property
     def inputs(self) -> tuple[list[str], list[str]]:
-        return _get_inputs(self._bound_params, self._fn)
+        return self._inputs
 
     @property
     def fn(self) -> Union[StreamingFn, StreamingFnAsync]:
@@ -1021,7 +1061,7 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
 
     def get_source(self) -> str:
         """Return the source of the code for this action"""
-        return inspect.getsource(self._fn)
+        return inspect.getsource(self._originating_fn)
 
 
 C = TypeVar("C", bound=Callable)  # placeholder for any Callable
