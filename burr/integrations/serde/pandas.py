@@ -28,6 +28,8 @@ def serialize_pandas_df(value: pd.DataFrame, pandas_kwargs: dict, **kwargs) -> d
     file_name = f"df_{hash_object.hexdigest()}.parquet"
     kwargs = pandas_kwargs.copy()
     base_path: str = kwargs.pop("path")
+    if not os.path.exists(base_path):
+        os.makedirs(base_path)
     saved_to = os.path.join(base_path, file_name)
     value.to_parquet(path=saved_to, **kwargs)
     return {serde.KEY: "pandas.DataFrame", "path": saved_to}
