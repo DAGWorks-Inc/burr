@@ -179,7 +179,7 @@ class LocalTrackingClient(
         self.raw_storage_dir = storage_dir
         self.storage_dir = LocalTrackingClient.get_storage_path(project, storage_dir)
         self.project_id = project
-        self.serde_kwargs = serde_kwargs or {}
+        self.serde_kwargs = serde_kwargs if serde_kwargs is not None else {}
         # app_id, action, partition_key  -> stream data so we can track
         self.stream_state: Dict[StateKey, StreamState] = dict()
 
@@ -441,7 +441,7 @@ class LocalTrackingClient(
             result=serde.serialize(result, **self.serde_kwargs),
             sequence_id=sequence_id,
             exception=_format_exception(exception),
-            state=state.serialize(),
+            state=state.serialize(**self.serde_kwargs),
         )
         self._append_write_line(post_run_entry)
 
