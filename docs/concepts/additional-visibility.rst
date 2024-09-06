@@ -119,19 +119,19 @@ For instance:
 
     @action(reads=['prompt'], writes=['response'])
     def my_action(state: State, __tracer: TracerFactory) -> State:
-        __tracer.log_attribute(prompt_length=len(state["prompt"]), prompt=state["prompt"])
+        __tracer.log_attributes(prompt_length=len(state["prompt"]), prompt=state["prompt"])
 
         # note: see `@trace()` below as an alternative to this approach.
         with __tracer('create_prompt') as t:
             modified_prompt = _modify_prompt(state["prompt"])
-            t.log_attribute(modified_prompt=modified_prompt)
+            t.log_attributes(modified_prompt=modified_prompt)
             with __tracer('check_prompt_safety') as t:
                 if is_unsafe:=_is_unsafe(modified_prompt):
                     modified_prompt = _fix(modified_prompt)
-                t.log_attribute(fixed_prompt=modified_prompt, is_unsafe=is_unsafe)
+                t.log_attributes(fixed_prompt=modified_prompt, is_unsafe=is_unsafe)
         with __tracer('call_llm', dependencies=['create_prompt']):
             response = _query(prompt=modified_prompt)
-            t.log_attribute(response=response.message, tokens=response.tokens)
+            t.log_attributes(response=response.message, tokens=response.tokens)
         return state.update({'response': response.message})
 
 The above will log quite a few attributes, prompt length, response tokens, etc... The observation can be any serializable object.
@@ -232,7 +232,7 @@ example:
     def my_action(state: State, __tracer: TracerFactory) -> State:
         with __tracer:
             # Burr logging
-            __tracer.log_attribute(prompt_length=len(state["prompt"]), prompt=state["prompt"])
+            __tracer.log_attributes(prompt_length=len(state["prompt"]), prompt=state["prompt"])
             # Otel Tracer
             with otel_tracer.start_as_current_span('create_prompt') as span:
                 modified_prompt = _modify_prompt(state["prompt"])
@@ -240,7 +240,7 @@ example:
             # Back to Burr tracer
             with __tracer('call_llm', dependencies=['create_prompt']):
                 response = _query(prompt=modified_prompt)
-                t.log_attribute(response=response.message, tokens=response.tokens)
+                t.log_attributes(response=response.message, tokens=response.tokens)
         return state.update({'response': response.message})
 
     app = (
