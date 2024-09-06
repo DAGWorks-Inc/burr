@@ -236,7 +236,7 @@ def frontend():
         steps_with_llms = [
             step
             for step in steps
-            if any(span for span in step.spans if span.begin_entry.span_name == "openai.chat")
+            if any(span for span in step.spans if len(get_llm_spans(step)) > 0)
         ]
         if len(steps_with_llms) == 0:
             st.warning("Select a `Project > Application > Step` that includes LLM requests")
