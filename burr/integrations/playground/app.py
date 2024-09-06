@@ -188,7 +188,8 @@ def history_component(normalized_spans):
         answer = normalized_spans["gen_ai"]["completion"].values()
 
         for message in list(prompts) + list(answer):
-            with st.chat_message(message["role"]):
+            role = message.get("role", "assistant")
+            with st.chat_message(role):
                 st.markdown(message["content"])
 
 
