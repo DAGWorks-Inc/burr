@@ -1,9 +1,13 @@
-import asyncio
-
 import litellm
 import streamlit as st
 
 from burr.core import Application, ApplicationBuilder, State, action
+from burr.integrations.streamlit import (
+    application_selectbox,
+    get_steps,
+    project_selectbox,
+    step_selectbox,
+)
 from burr.tracking import LocalTrackingClient
 from burr.tracking.server.backend import LocalBackend
 from burr.visibility import TracerFactory
@@ -177,24 +181,6 @@ def normalize_spans(spans: list) -> dict:
     return nested_dict
 
 
-def selector_with_params_component(items, query_param: str, item_key: str):
-    selection = 0
-    if item_id := st.query_params.get(query_param):
-        for item_idx, i in enumerate(items):
-            if getattr(i, item_key) == item_id:
-                selection = item_idx
-                break
-
-    selected_item = st.selectbox(
-        query_param.capitalize().split("_")[0],
-        options=items,
-        format_func=lambda i: getattr(i, item_key),
-        index=selection,
-    )
-    st.query_params[query_param] = getattr(selected_item, item_key)
-    return selected_item
-
-
 def history_component(normalized_spans):
     # historical data
     with st.expander("History", expanded=True):
@@ -243,45 +229,20 @@ def frontend():
         st.header("Burr playground")
 
         # project selection
-        projects = asyncio.run(backend.list_projects({}))
-        selected_project = selector_with_params_component(projects, "project", "name")
+        selected_project = project_selectbox(backend=backend)
+        selected_app = application_selectbox(project=selected_project, backend=backend)
+        steps = get_steps(project=selected_project, application=selected_app, backend=backend)
 
-        # app selection
-        apps, _ = asyncio.run(
-            backend.list_apps({}, project_id=selected_project.id, partition_key=None)
-        )
-        selected_app = selector_with_params_component(apps, "app_id", "app_id")
-
-        # logs selection
-        logs = asyncio.run(
-            backend.get_application_logs(
-                {}, project_id=selected_project.id, app_id=selected_app.app_id, partition_key=None
-            )
-        )
         steps_with_llms = [
             step
-            for step in logs.steps
+            for step in steps
             if any(span for span in step.spans if span.begin_entry.span_name == "openai.chat")
         ]
         if len(steps_with_llms) == 0:
             st.warning("Select a `Project > Application > Step` that includes LLM requests")
             return
 
-        step_selection = 0
-        if step_id := st.query_params.get("step"):
-            for step_idx, step in enumerate(steps_with_llms):
-                if step.step_start_log.sequence_id == step_id:
-                    step_selection = step_idx
-                    break
-
-        selected_step = st.selectbox(
-            "Step",
-            options=steps_with_llms,
-            index=step_selection,
-            format_func=lambda step: f"{step.step_start_log.sequence_id}: {step.step_start_log.action}",
-        )
-        st.query_params["step"] = selected_step.step_start_log.sequence_id
-
+        selected_step = step_selectbox(steps=steps_with_llms)
         relevant_spans = get_llm_spans(selected_step)
         normalized_spans = normalize_spans(relevant_spans)
 
