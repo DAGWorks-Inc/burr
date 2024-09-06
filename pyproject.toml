@@ -158,6 +158,16 @@ opentelemetry = [
   "opentelemetry-api",
   "opentelemetry-sdk",
 ]
+
+playground = [
+  "asyncio",
+  "litellm",
+  "streamlit",
+  "burr",
+  "burr[opentelemetry]",
+  "burr[tracking]",
+]
+
 [tool.setuptools]
 include-package-data = true
 
