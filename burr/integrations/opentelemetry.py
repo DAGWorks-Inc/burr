@@ -1,10 +1,14 @@
 import dataclasses
 import datetime
+import functools
+import importlib
+import importlib.metadata
 import json
 import logging
 import random
+import sys
 from contextvars import ContextVar
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple
 
 from burr.integrations.base import require_plugin
 
@@ -509,6 +513,91 @@ def initialize_tracer():
     initialized = True
     trace.set_tracer_provider(TracerProvider())
     trace.get_tracer_provider().add_span_processor(BurrTrackingSpanProcessor())
+
+
+INSTRUMENTS_SPECS = {
+    "openai": ("openai", "opentelemetry.instrumentation.openai", "OpenAIInstrumentor"),
+    "anthropic": ("anthropic", "opentelemetry.instrumentation.anthropic", "AnthropicInstrumentor"),
+    "cohere": ("cohere", "opentelemetry.instrumentation.cohere", "CohereInstrumentor"),
+    "google_generativeai": (
+        "google.generativeai",
+        "opentelemetry.instrumentation.google_generativeai",
+        "GoogleGenerativeAiInstrumentor",
+    ),
+    "mistral": ("mistralai", "opentelemetry.instrumentation.mistralai", "MistralAiInstrumentor"),
+    "ollama": ("ollama", "opentelemetry.instrumentation.ollama", "OllamaInstrumentor"),
+    "transformers": (
+        "transformers",
+        "opentelemetry.instrumentation.transformers",
+        "TransformersInstrumentor",
+    ),
+    "together": ("together", "opentelemetry.instrumentation.together", "TogetherAiInstrumentor"),
+    "bedrock": ("bedrock", "opentelemetry.instrumentation.bedrock", "BedrockInstrumentor"),
+    "replicate": ("replicate", "opentelemetry.instrumentation.replicate", "ReplicateInstrumentor"),
+    "vertexai": ("vertexai", "opentelemetry.instrumentation.vertexai", "VertexAIInstrumentor"),
+    "groq": ("groq", "opentelemetry.instrumentation.groq", "GroqInstrumentor"),
+    "watsonx": ("ibm-watsonx-ai", "opentelemetry.instrumentation.watsonx", "WatsonxInstrumentor"),
+    "alephalpha": (
+        "aleph_alpha_client",
+        "opentelemetry.instrumentation.alephalpha",
+        "AlephAlphaInstrumentor",
+    ),
+    "pinecone": ("pinecone", "opentelemetry.instrumentation.pinecone", "PineconeInstrumentor"),
+    "qdrant": ("qdrant_client", "opentelemetry.instrumentation.qdrant", "QdrantInstrumentor"),
+    "chroma": ("chromadb", "opentelemetry.instrumentation.chromadb", "ChromaInstrumentor"),
+    "milvus": ("pymilvus", "opentelemetry.instrumentation.milvus", "MilvusInstrumentor"),
+    "weaviate": ("weaviate", "opentelemetry.instrumentation.weaviate", "WeaviateInstrumentor"),
+    "lancedb": ("lancedb", "opentelemetry.instrumentation.lancedb", "LanceInstrumentor"),
+    "marqo": ("marqo", "opentelemetry.instrumentation.marqo", "MarqoInstrumentor"),
+    "redis": ("redis", "opentelemetry.instrumentation.redis", "RedisInstrumentor"),
+    "langchain": ("langchain", "opentelemetry.instrumentation.langchain", "LangchainInstrumentor"),
+    "llama_index": (
+        "llama_index",
+        "opentelemetry.instrumentation.llamaindex",
+        "LlamaIndexInstrumentor",
+    ),
+    "haystack": ("haystack", "opentelemetry.instrumentation.haystack", "HaystackInstrumentor"),
+    "requests": ("requests", "opentelemetry.instrumentation.requests", "RequestsInstrumentor"),
+    "httpx": ("httpx", "opentelemetry.instrumentation.httpx", "HTTPXClientInstrumentor"),
+    "urllib": ("urllib", "opentelemetry.instrumentation.urllib", "URLLibInstrumentor"),
+    "urllib3": ("urllib3", "opentelemetry.instrumentation.urllib3", "URLLib3Instrumentor"),
+}
+
+INSTRUMENTS = Literal[tuple(INSTRUMENTS_SPECS)]
+
+
+@functools.cache
+def available_dists() -> set[str]:
+    return set((dist.name for dist in importlib.metadata.distributions()))
+
+
+def _init_instrument(
+    module_name: str, instrumentation_module_name: str, instrumentor_name: str
+) -> None:
+    if module_name not in sys.modules:
+        return
+
+    if instrumentation_module_name not in available_dists():
+        logger.debug(f"{module_name} is installed, but {instrumentation_module_name} isn't")
+        return
+
+    try:
+        instrumentation_module = importlib.import_module(instrumentation_module_name)
+        instrumentor = getattr(instrumentation_module, instrumentor_name)
+        if not instrumentor.is_instrumented_by_opentelemetry:
+            instrumentor.instrument()
+    except BaseException:
+        logger.debug(f"Failed to instrument {module_name} with {instrumentation_module_name}")
+
+
+def init_instruments(*instruments: INSTRUMENTS):
+    # if no instrument explicitly passed, default to trying to instrument all available packages
+    if len(instruments) == 0:
+        instruments = INSTRUMENTS_SPECS.keys()
+
+    for instrument in instruments:
+        specs = INSTRUMENTS_SPECS[instrument]
+        _init_instrument(*specs)
 
 
 if __name__ == "__main__":
