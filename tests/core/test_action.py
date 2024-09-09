@@ -12,6 +12,7 @@ from burr.core.action import (
     Function,
     Input,
     Result,
+    Select,
     SingleStepAction,
     SingleStepStreamingAction,
     StreamingAction,
@@ -198,6 +199,39 @@ def test_condition_lmda():
 #     assert cond.reads == ["foo"]
 #     assert cond.run(State({"foo": "baz", "bar": "baz"})) == {Condition.KEY: True}
 #     assert cond.run(State({"foo" : "bar"})) == {Condition.KEY: False}
+
+
+def test_select_constant():
+    select = Select([], resolver=lambda *args: "foo")
+    selected_action = select.run(State(), [])
+
+    assert selected_action == "foo"
+
+
+def test_select_determistic():
+    @action(reads=[], writes=[])
+    def bar(state):
+        return state
+
+    @action(reads=[], writes=[])
+    def baz(state):
+        return state
+
+    def length_resolver(state: State, actions: list[Action]) -> str:
+        foo = state["foo"]
+        action_idx = len(foo) % len(actions)
+        return actions[action_idx].name
+
+    foo1 = "len=3"  # % 2 = 1
+    foo2 = "len_is_8"  # % 2 = 0
+    actions = [create_action(bar, "bar"), create_action(baz, "baz")]
+    select = Select(["foo"], resolver=length_resolver)
+
+    selected_1 = select.run(State({"foo": foo1}), possible_actions=actions)
+    assert selected_1 == actions[len(foo1) % len(actions)].name
+
+    selected_2 = select.run(State({"foo": foo2}), possible_actions=actions)
+    assert selected_2 == actions[len(foo2) % len(actions)].name
 
 
 def test_result():

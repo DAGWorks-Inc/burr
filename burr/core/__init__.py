@@ -1,4 +1,4 @@
-from burr.core.action import Action, Condition, Result, action, default, expr, when
+from burr.core.action import Action, Condition, Result, Select, action, default, expr, when
 from burr.core.application import (
     Application,
     ApplicationBuilder,
@@ -18,6 +18,7 @@ __all__ = [
     "default",
     "expr",
     "Result",
+    "Select",
     "State",
     "when",
 ]

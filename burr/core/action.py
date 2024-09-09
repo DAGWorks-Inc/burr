@@ -17,6 +17,7 @@ from typing import (
     List,
     Optional,
     Protocol,
+    Sequence,
     Tuple,
     TypeVar,
     Union,
@@ -376,6 +377,50 @@ when = Condition.when
 expr = Condition.expr
 lmda = Condition.lmda
 # exists = Condition.exists
+
+
+# TODO type `resolver` to prevent user-facing type-mismatch
+# e.g., a user provided `def foo(state: State, actions: list)`
+# would be too restrictive for a `Sequence` type
+class Select(Function):
+    def __init__(
+        self,
+        keys: List[str],
+        resolver: Callable[[State, Sequence[Action]], str],
+        name: str = None,
+    ):
+        self._keys = keys
+        self._resolver = resolver
+        self._name = name
+        # TODO add a `default` kwarg;
+        # could an Action, action_name: str, or action_idx: int
+        # `default` value could be returned if `_resolver` returns None
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def reads(self) -> list[str]:
+        return self._keys
+
+    @property
+    def resolver(self) -> Callable[[State, Sequence[Action]], str]:
+        return self._resolver
+
+    def __repr__(self) -> str:
+        return f"select: {self._name}"
+
+    def _validate(self, state: State):
+        missing_keys = set(self._keys) - set(state.keys())
+        if missing_keys:
+            raise ValueError(
+                f"Missing keys in state required by condition: {self} {', '.join(missing_keys)}"
+            )
+
+    def run(self, state: State, possible_actions: Sequence[Action]) -> str:
+        self._validate(state)
+        return self._resolver(state, possible_actions)
 
 
 class Result(Action):
