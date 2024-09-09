@@ -123,8 +123,7 @@ const CommonTableRow = (props: {
         } else {
           props.setCurrentSelectedIndex(props.sequenceID);
         }
-      }}
-    >
+      }}>
       {props.children}
     </TableRow>
   );
@@ -176,8 +175,7 @@ const ActionTableRow = (props: {
       currentSelectedIndex={currentSelectedIndex}
       step={props.step}
       setCurrentHoverIndex={setCurrentHoverIndex}
-      setCurrentSelectedIndex={setCurrentSelectedIndex}
-    >
+      setCurrentSelectedIndex={setCurrentSelectedIndex}>
       <TableCell className="text-gray-500 w-12 max-w-12 min-w-12">{sequenceID}</TableCell>
       <TableCell>
         <div className="flex flex-row gap-1 items-center">
@@ -189,8 +187,7 @@ const ActionTableRow = (props: {
             />
           </div>
           <div
-            className={`${props.minimized ? 'w-32' : 'w-72 max-w-72'} flex flex-row justify-start gap-1 items-center`}
-          >
+            className={`${props.minimized ? 'w-32' : 'w-72 max-w-72'} flex flex-row justify-start gap-1 items-center`}>
             <Chip
               label={isStreaming ? 'stream' : 'action'}
               chipType={isStreaming ? 'stream' : 'action'}
@@ -295,15 +292,13 @@ const LinkSubTable = (props: {
             currentSelectedIndex={currentSelectedIndex}
             step={props.step}
             setCurrentHoverIndex={setCurrentHoverIndex}
-            setCurrentSelectedIndex={setCurrentSelectedIndex}
-          >
+            setCurrentSelectedIndex={setCurrentSelectedIndex}>
             <TableCell colSpan={1}>
               <Icon className={`h-5 w-5 ${iconColor} -ml-1 `} />
             </TableCell>
             <TableCell
               colSpan={3}
-              className={` ${normalText} w-48 min-w-48 max-w-48 truncate pl-9`}
-            >
+              className={` ${normalText} w-48 min-w-48 max-w-48 truncate pl-9`}>
               <div
                 className="z-50"
                 onClick={(e) => {
@@ -311,8 +306,7 @@ const LinkSubTable = (props: {
                     `/project/${props.projectId}/${subApp.child.partition_key || 'null'}/${subApp.child.app_id}`
                   );
                   e.stopPropagation();
-                }}
-              >
+                }}>
                 <span className="hover:underline">{subApp.child.app_id}</span>
               </div>
             </TableCell>
@@ -394,25 +388,21 @@ const StepSubTableRow = (props: {
       currentSelectedIndex={currentSelectedIndex}
       step={props.step}
       setCurrentHoverIndex={setCurrentHoverIndex}
-      setCurrentSelectedIndex={setCurrentSelectedIndex}
-    >
+      setCurrentSelectedIndex={setCurrentSelectedIndex}>
       <TableCell
-        className={` ${lightText} w-10 min-w-10 ${props.displaySpanID ? '' : 'text-opacity-0'}`}
-      >
+        className={` ${lightText} w-10 min-w-10 ${props.displaySpanID ? '' : 'text-opacity-0'}`}>
         {spanIDUniqueToAction}
       </TableCell>
       {!props.minimized ? (
         <>
           <TableCell
             onClick={onClick}
-            className={`${normalText} ${props.minimized ? 'w-32 min-w-32' : 'w-72 max-w-72'} flex flex-col`}
-          >
+            className={`${normalText} ${props.minimized ? 'w-32 min-w-32' : 'w-72 max-w-72'} flex flex-col`}>
             <div className="flex flex-row gap-1 items-center">
               {[...Array(depth).keys()].map((i) => (
                 <Icon
                   key={i}
-                  className={`${i === depth - 1 ? 'opacity-0' : 'opacity-0'} text-lg text-gray-600 w-4 flex-shrink-0`}
-                ></Icon>
+                  className={`${i === depth - 1 ? 'opacity-0' : 'opacity-0'} text-lg text-gray-600 w-4 flex-shrink-0`}></Icon>
               ))}
               <Chip
                 label={
@@ -468,8 +458,7 @@ const StepSubTableRow = (props: {
                 className="flex justify-start overflow-hidden pl-20"
                 onClick={(e) => {
                   e.stopPropagation();
-                }}
-              >
+                }}>
                 <RenderedField
                   value={(props.model as AttributeModel).value}
                   defaultExpanded={true} // no real need for default expanded
@@ -806,8 +795,7 @@ const WaterfallPiece: React.FC<{
                   bottom: '5%',
                   height: '90%',
                   left: `${leftPositionPercentage}%`
-                }}
-              ></div>
+                }}></div>
             ) : (
               <div
                 className={`h-5 w-5 ${bgColor} opacity-50 absolute`}
@@ -827,8 +815,7 @@ const WaterfallPiece: React.FC<{
               style={{
                 left: `calc(${leftPositionPercentage}% - 20px)`,
                 width: `calc(${widthPercentage}% + 40px)` // 20px buffer on each side
-              }}
-            ></div>
+              }}></div>
 
             {
               <div
@@ -842,8 +829,7 @@ const WaterfallPiece: React.FC<{
                   left: isCloseToEnd
                     ? `auto`
                     : `calc(${leftPositionPercentage}% + ${widthPercentage}%)`
-                }}
-              >
+                }}>
                 {hoverItem}
               </div>
             }
@@ -999,9 +985,7 @@ const ActionSubTable = (props: {
         isExpanded={isTraceExpanded}
         setExpanded={setTraceExpanded}
         allowExpand={
-          step.spans.length > 0 ||
-          // step.streaming_events.length > 0 ||
-          step.attributes.length > 0
+          step.spans.length > 0 || step.streaming_events.length > 0 || step.attributes.length > 0
         }
         latestTimeSeen={latestTimeSeen}
         expandNonSpanAttributes={expandNonSpanAttributes}
@@ -1159,7 +1143,9 @@ export const StepList = (props: {
       : new Date();
   const MinimizeTableIcon = props.minimized ? ChevronRightIcon : ChevronLeftIcon;
   const FullScreenIcon = props.fullScreen ? AiOutlineFullscreenExit : AiOutlineFullscreen;
-  const displaySpansCol = stepsWithEllapsedTime.some((step) => step.spans.length > 0);
+  const displaySpansCol = stepsWithEllapsedTime.some(
+    (step) => step.spans.length > 0 || step.streaming_events.length > 0
+  );
   const displayLinksCol = props.links.length > 0;
   const linksBySequenceID = props.links.reduce((acc, child) => {
     const existing = acc.get(child.sequence_id || -1) || [];
@@ -1381,8 +1367,7 @@ const ParentLink = (props: {
       <TableCell colSpan={2} className="text-gray-500">
         <div className="flex flex-row gap-1 items-center pl-5">
           <Link
-            to={`/project/${props.projectId}/${props.parentPointer.partition_key}/${props.parentPointer.app_id}`}
-          >
+            to={`/project/${props.projectId}/${props.parentPointer.partition_key}/${props.parentPointer.app_id}`}>
             <span className="hover:underline">{props.parentPointer.app_id}</span>
           </Link>
           <span>@</span>
