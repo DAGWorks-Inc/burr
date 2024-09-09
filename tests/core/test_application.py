@@ -9,6 +9,7 @@ import pytest
 
 from burr.core import State
 from burr.core.action import (
+    DEFAULT_SCHEMA,
     Action,
     AsyncGenerator,
     AsyncStreamingAction,
@@ -2426,25 +2427,28 @@ def test__validate_start_not_found():
 def test__adjust_single_step_output_result_and_state():
     state = State({"count": 1})
     result = {"count": 1}
-    assert _adjust_single_step_output((result, state), "test_action") == (result, state)
+    assert _adjust_single_step_output((result, state), "test_action", DEFAULT_SCHEMA) == (
+        result,
+        state,
+    )
 
 
 def test__adjust_single_step_output_just_state():
     state = State({"count": 1})
-    assert _adjust_single_step_output(state, "test_action") == ({}, state)
+    assert _adjust_single_step_output(state, "test_action", DEFAULT_SCHEMA) == ({}, state)
 
 
 def test__adjust_single_step_output_errors_incorrect_type():
     state = "foo"
     with pytest.raises(ValueError, match="must return either"):
-        _adjust_single_step_output(state, "test_action")
+        _adjust_single_step_output(state, "test_action", DEFAULT_SCHEMA)
 
 
 def test__adjust_single_step_output_errors_incorrect_result_type():
     state = State()
     result = "bar"
     with pytest.raises(ValueError, match="non-dict"):
-        _adjust_single_step_output((state, result), "test_action")
+        _adjust_single_step_output((state, result), "test_action", DEFAULT_SCHEMA)
 
 
 def test_application_builder_unset():

@@ -69,6 +69,47 @@ class TypingSystem(abc.ABC, Generic[BaseType]):
         """
 
 
+StateInputType = TypeVar("StateInputType")
+StateOutputType = TypeVar("StateOutputType")
+IntermediateResultType = TypeVar("IntermediateResultType")
+
+
+class ActionSchema(
+    abc.ABC,
+    Generic[
+        StateInputType,
+        StateOutputType,
+        IntermediateResultType,
+    ],
+):
+    """Quick wrapper class to represent a schema. Note that this is currently used internally,
+    just to store the appropriate information. This does not validate or do conversion, currently that
+    is done within the pydantic model state typing system (which is also internal in its implementation).
+
+
+
+    We will likely centralize that logic at some point when we get more -- it would look something like this:
+    1. Action is passed an ActionSchema
+    2. Action is parameterized on the ActionSchema types
+    3. Action takes state, validates the type and converts to StateInputType
+    4. Action runs, returns intermediate result + state
+    5. Action validates intermediate result type (or converts to dict? Probably just keeps it
+    6. Action converts StateOutputType to State
+    """
+
+    @abc.abstractmethod
+    def state_input_type() -> Type[StateInputType]:
+        pass
+
+    @abc.abstractmethod
+    def state_output_type() -> Type[StateOutputType]:
+        pass
+
+    @abc.abstractmethod
+    def intermediate_result_type() -> Type[IntermediateResultType]:
+        pass
+
+
 class DictBasedTypingSystem(TypingSystem[dict]):
     """Effectively a no-op. State is backed by a dictionary, which allows every state item
     to... be a dictionary."""

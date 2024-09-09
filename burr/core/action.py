@@ -29,6 +29,7 @@ else:
     from typing import Self
 
 from burr.core.state import State
+from burr.core.typing import ActionSchema
 
 
 class Function(abc.ABC):
@@ -130,6 +131,20 @@ class Reducer(abc.ABC):
         pass
 
 
+class DefaultSchema(ActionSchema):
+    def state_input_type(self) -> type[State]:
+        raise NotImplementedError
+
+    def state_output_type(self) -> type[State]:
+        raise NotImplementedError
+
+    def intermediate_result_type(self) -> type[dict]:
+        return dict
+
+
+DEFAULT_SCHEMA = DefaultSchema()
+
+
 class Action(Function, Reducer, abc.ABC):
     def __init__(self):
         """Represents an action in a state machine. This is the base class from which
@@ -172,6 +187,10 @@ class Action(Function, Reducer, abc.ABC):
     @property
     def streaming(self) -> bool:
         return False
+
+    @property
+    def schema(self) -> ActionSchema:
+        return DEFAULT_SCHEMA
 
     def get_source(self) -> str:
         """Returns the source code of the action. This will default to
@@ -524,6 +543,7 @@ class FunctionBasedAction(SingleStepAction):
         bound_params: Optional[dict] = None,
         input_spec: Optional[tuple[list[str], list[str]]] = None,
         originating_fn: Optional[Callable] = None,
+        schema: ActionSchema = DEFAULT_SCHEMA,
     ):
         """Instantiates a function-based action with the given function, reads, and writes.
         The function must take in a state and return a tuple of (result, new_state).
@@ -548,6 +568,7 @@ class FunctionBasedAction(SingleStepAction):
                 [item for item in input_spec[1] if item not in self._bound_params],
             )
         )
+        self._schema = schema
 
     @property
     def fn(self) -> Callable:
@@ -565,6 +586,10 @@ class FunctionBasedAction(SingleStepAction):
     def inputs(self) -> tuple[list[str], list[str]]:
         return self._inputs
 
+    @property
+    def schema(self) -> ActionSchema:
+        return self._schema
+
     def with_params(self, **kwargs: Any) -> "FunctionBasedAction":
         """Binds parameters to the function.
         Note that there is no reason to call this by the user. This *could*
@@ -580,6 +605,8 @@ class FunctionBasedAction(SingleStepAction):
             self._writes,
             {**self._bound_params, **kwargs},
             input_spec=self._inputs,
+            originating_fn=self._originating_fn,
+            schema=self._schema,
         )
 
     def run_and_update(self, state: State, **run_kwargs) -> tuple[dict, State]:
@@ -981,6 +1008,7 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         bound_params: Optional[dict] = None,
         input_spec: Optional[tuple[list[str], list[str]]] = None,
         originating_fn: Optional[Callable] = None,
+        schema: ActionSchema = DEFAULT_SCHEMA,
     ):
         """Instantiates a function-based streaming action with the given function, reads, and writes.
         The function must take in a state (and inputs) and return a generator of (result, new_state).
@@ -1003,6 +1031,7 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
             )
         )
         self._originating_fn = originating_fn if originating_fn is not None else fn
+        self._schema = schema
 
     async def _a_stream_run_and_update(
         self, state: State, **run_kwargs
@@ -1046,6 +1075,7 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
             {**self._bound_params, **kwargs},
             input_spec=self._inputs,
             originating_fn=self._originating_fn,
+            schema=self._schema,
         )
 
     @property
@@ -1055,6 +1085,10 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
     @property
     def fn(self) -> Union[StreamingFn, StreamingFnAsync]:
         return self._fn
+
+    @property
+    def schema(self) -> ActionSchema:
+        return self._schema
 
     def is_async(self) -> bool:
         return inspect.isasyncgenfunction(self._fn)
