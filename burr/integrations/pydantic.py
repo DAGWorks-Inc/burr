@@ -22,7 +22,7 @@ from pydantic_core import PydanticUndefined
 
 from burr.core import Action, Graph, State
 from burr.core.action import FunctionBasedAction, FunctionBasedStreamingAction, bind, get_inputs
-from burr.core.typing import TypingSystem
+from burr.core.typing import ActionSchema, TypingSystem
 
 Inputs = ParamSpec("Inputs")
 
@@ -133,8 +133,37 @@ def _validate_keys(model: Type[pydantic.BaseModel], keys: List[str], fn: Callabl
         )
 
 
+StateInputType = TypeVar("StateInputType", bound=pydantic.BaseModel)
+StateOutputType = TypeVar("StateOutputType", bound=pydantic.BaseModel)
+IntermediateResultType = TypeVar("IntermediateResultType", bound=Union[pydantic.BaseModel, dict])
+
+
+class PydanticActionSchema(ActionSchema[StateInputType, StateOutputType, IntermediateResultType]):
+    def __init__(
+        self,
+        input_type: Type[StateInputType],
+        output_type: Type[StateOutputType],
+        intermediate_result_type: Type[IntermediateResultType],
+    ):
+        self._input_type = input_type
+        self._output_type = output_type
+        self._intermediate_result_type = intermediate_result_type
+
+    def state_input_type(self) -> Type[StateInputType]:
+        return self._input_type
+
+    def state_output_type(self) -> Type[StateOutputType]:
+        return self._output_type
+
+    def intermediate_result_type(self) -> type[IntermediateResultType]:
+        return self._intermediate_result_type
+
+
 def pydantic_action(
-    reads: List[str], writes: List[str]
+    reads: List[str],
+    writes: List[str],
+    state_input_type: Optional[Type[pydantic.BaseModel]] = None,
+    state_output_type: Optional[Type[pydantic.BaseModel]] = None,
 ) -> Callable[[PydanticActionFunction], PydanticActionFunction]:
     """Action that specifies inputs/outputs using pydantic models.
     This should make it easier to develop with guardrails.
@@ -147,7 +176,15 @@ def pydantic_action(
     """
 
     def decorator(fn: PydanticActionFunction) -> PydanticActionFunction:
-        itype, otype = _validate_and_extract_signature_types(fn)
+        if state_input_type is None and state_output_type is None:
+            itype, otype = _validate_and_extract_signature_types(fn)
+
+        elif state_input_type is not None and state_output_type is not None:
+            itype, otype = state_input_type, state_output_type
+        else:
+            raise ValueError(
+                "If you specify state_input_type or state_output_type, you must specify both."
+            )
         _validate_keys(model=itype, keys=reads, fn=fn)
         _validate_keys(model=otype, keys=writes, fn=fn)
         SubsetInputType = subset_model(
@@ -162,6 +199,7 @@ def pydantic_action(
             force_optional_fields=[],
             model_name_suffix=f"{fn.__name__}_input",
         )
+        # TODO -- figure out
 
         def action_function(state: State, **kwargs) -> State:
             model_to_use = model_from_state(model=SubsetInputType, state=state)
@@ -191,6 +229,11 @@ def pydantic_action(
                 writes,
                 input_spec=get_inputs({}, fn),
                 originating_fn=fn,
+                schema=PydanticActionSchema(
+                    input_type=SubsetInputType,
+                    output_type=SubsetOutputType,
+                    intermediate_result_type=dict,
+                ),
             ),
         )
         setattr(fn, "bind", types.MethodType(bind, fn))
@@ -316,6 +359,11 @@ def pydantic_streaming_action(
                 writes,
                 input_spec=get_inputs({}, fn),
                 originating_fn=fn,
+                schema=PydanticActionSchema(
+                    input_type=SubsetInputType,
+                    output_type=SubsetOutputType,
+                    intermediate_result_type=dict,
+                ),
             ),
         )
         setattr(fn, "bind", types.MethodType(bind, fn))

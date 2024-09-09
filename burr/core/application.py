@@ -30,6 +30,7 @@ from burr import system, telemetry, visibility
 from burr.common import types as burr_types
 from burr.core import persistence, validation
 from burr.core.action import (
+    DEFAULT_SCHEMA,
     Action,
     AsyncStreamingAction,
     AsyncStreamingResultContainer,
@@ -44,7 +45,7 @@ from burr.core.action import (
 from burr.core.graph import Graph, GraphBuilder
 from burr.core.persistence import BaseStateLoader, BaseStateSaver
 from burr.core.state import State
-from burr.core.typing import DictBasedTypingSystem
+from burr.core.typing import ActionSchema, DictBasedTypingSystem, TypingSystem
 from burr.core.validation import BASE_ERROR_MESSAGE
 from burr.lifecycle.base import ExecuteMethod, LifecycleAdapter, PostRunStepHook, PreRunStepHook
 from burr.lifecycle.internal import LifecycleAdapterSet
@@ -52,7 +53,8 @@ from burr.visibility import tracing
 from burr.visibility.tracing import tracer_factory_context_var
 
 if TYPE_CHECKING:
-    from burr.core.typing import TypingSystem
+    # TODO --  push type-checking check back from here
+    # OR just put everything under type-chekcing...
     from burr.tracking.base import TrackingClient
 
 logger = logging.getLogger(__name__)
@@ -64,8 +66,13 @@ StateType = TypeVar("StateType")
 StateTypeToSet = TypeVar("StateTypeToSet")
 
 
-def _validate_result(result: dict, name: str) -> None:
-    if not isinstance(result, dict):
+def _validate_result(result: Any, name: str, schema: ActionSchema = DEFAULT_SCHEMA) -> None:
+    # TODO -- validate the output type is action schema's output type...
+    # TODO -- split out the action schema into input/output schema types
+    # Then action schema will have both
+    # we'll just need to ensure we pass the right ones
+    result_type = schema.intermediate_result_type()
+    if not isinstance(result, result_type):
         raise ValueError(
             f"Action {name} returned a non-dict result: {result}. "
             f"All results must be dictionaries."
@@ -80,13 +87,15 @@ def _raise_fn_return_validation_error(output: Any, action_name: str):
     )
 
 
-def _adjust_single_step_output(output: Union[State, Tuple[dict, State]], action_name: str):
+def _adjust_single_step_output(
+    output: Union[State, Tuple[dict, State]], action_name: str, action_schema: ActionSchema
+):
     """Adjusts the output of a single step action to be a tuple of (result, state) or just state"""
 
     if isinstance(output, tuple):
         if not len(output) == 2:
             _raise_fn_return_validation_error(output, action_name)
-        _validate_result(output[0], action_name)
+        _validate_result(output[0], action_name, action_schema)
         if not isinstance(output[1], State):
             _raise_fn_return_validation_error(output, action_name)
         return output
@@ -242,11 +251,10 @@ def _run_single_step_action(
     # TODO -- guard all reads/writes with a subset of the state
     action.validate_inputs(inputs)
     result, new_state = _adjust_single_step_output(
-        action.run_and_update(state, **inputs), action.name
+        action.run_and_update(state, **inputs), action.name, action.schema
     )
-    _validate_result(result, action.name)
+    _validate_result(result, action.name, action.schema)
     out = result, _state_update(state, new_state)
-    _validate_result(result, action.name)
     _validate_reducer_writes(action, new_state, action.name)
     return out
 
@@ -300,8 +308,7 @@ def _run_single_step_streaming_action(
             f"Action {action.name} did not return a state update. For streaming actions, the last yield "
             f"statement must be a tuple of (result, state_update). For example, yield dict(foo='bar'), state.update(foo='bar')"
         )
-    # TODO -- get this back in and use the action's schema (still not set) to validate the result...
-    # _validate_result(result, action.name)
+    _validate_result(result, action.name, action.schema)
     _validate_reducer_writes(action, state_update, action.name)
     yield result, state_update
 
@@ -354,7 +361,7 @@ async def _arun_single_step_streaming_action(
             f"statement must be a tuple of (result, state_update). For example, yield dict(foo='bar'), state.update(foo='bar')"
         )
     # TODO -- add back in validation when we have a schema
-    # _validate_result(result, action.name)
+    _validate_result(result, action.name, action.schema)
     _validate_reducer_writes(action, state_update, action.name)
     # TODO -- add guard against zero-length stream
     yield result, state_update
@@ -405,7 +412,7 @@ def _run_multi_step_streaming_action(
             count += 1
             yield next_result, None
     state_update = _run_reducer(action, state, result, action.name)
-    _validate_result(result, action.name)
+    _validate_result(result, action.name, action.schema)
     _validate_reducer_writes(action, state_update, action.name)
     yield result, state_update
 
@@ -449,7 +456,7 @@ async def _arun_multi_step_streaming_action(
             count += 1
             yield next_result, None
     state_update = _run_reducer(action, state, result, action.name)
-    _validate_result(result, action.name)
+    _validate_result(result, action.name, action.schema)
     _validate_reducer_writes(action, state_update, action.name)
     yield result, state_update
 
@@ -461,9 +468,9 @@ async def _arun_single_step_action(
     state_to_use = state
     action.validate_inputs(inputs)
     result, new_state = _adjust_single_step_output(
-        await action.run_and_update(state_to_use, **inputs), action.name
+        await action.run_and_update(state_to_use, **inputs), action.name, action.schema
     )
-    _validate_result(result, action.name)
+    _validate_result(result, action.name, action.schema)
     _validate_reducer_writes(action, new_state, action.name)
     return result, _state_update(state, new_state)
 
