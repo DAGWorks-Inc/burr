@@ -362,7 +362,7 @@ def pydantic_streaming_action(
                 schema=PydanticActionSchema(
                     input_type=SubsetInputType,
                     output_type=SubsetOutputType,
-                    intermediate_result_type=dict,
+                    intermediate_result_type=stream_type_processed,
                 ),
             ),
         )

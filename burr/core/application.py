@@ -74,7 +74,7 @@ def _validate_result(result: Any, name: str, schema: ActionSchema = DEFAULT_SCHE
     result_type = schema.intermediate_result_type()
     if not isinstance(result, result_type):
         raise ValueError(
-            f"Action {name} returned a non-dict result: {result}. "
+            f"Action {name} returned a non-{result_type.__name__} result: {result}. "
             f"All results must be dictionaries."
         )
 
@@ -682,6 +682,7 @@ class TracerFactoryContextHook(PreRunStepHook, PostRunStepHook):
 
 
 ApplicationStateType = TypeVar("ApplicationStateType")
+StreamResultType = TypeVar("StreamResultType", bound=Union[dict, Any])
 
 
 class Application(Generic[ApplicationStateType]):
@@ -1205,9 +1206,9 @@ class Application(Generic[ApplicationStateType]):
     def stream_result(
         self,
         halt_after: list[str],
-        halt_before: list[str] = None,
+        halt_before: Optional[list[str]] = None,
         inputs: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Action, StreamingResultContainer[ApplicationStateType]]:
+    ) -> Tuple[Action, StreamingResultContainer[ApplicationStateType, Union[dict, Any]]]:
         """Streams a result out.
 
         :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
@@ -1454,9 +1455,9 @@ class Application(Generic[ApplicationStateType]):
     async def astream_result(
         self,
         halt_after: list[str],
-        halt_before: list[str] = None,
+        halt_before: Optional[list[str]] = None,
         inputs: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Action, AsyncStreamingResultContainer[ApplicationStateType]]:
+    ) -> Tuple[Action, AsyncStreamingResultContainer[ApplicationStateType, Union[dict, Any]]]:
         """Streams a result out in an asynchronous manner.
 
         :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
