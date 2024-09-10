@@ -6,6 +6,7 @@ import inspect
 import sys
 import types
 import typing
+from collections.abc import AsyncIterator
 from typing import (
     Any,
     AsyncGenerator,
@@ -198,6 +199,11 @@ class Action(Function, Reducer, abc.ABC):
         but can be overwritten." Override if you want debugging/tracking
         to display a different source"""
         return inspect.getsource(self.__class__)
+
+    def input_schema(self) -> Any:
+        """Returns the input schema for the action.
+        The input schema is a type that can be used to validate the input to the action"""
+        return None
 
     def __repr__(self):
         read_repr = ", ".join(self.reads) if self.reads else "{}"
@@ -732,7 +738,10 @@ class AsyncStreamingAction(Action, abc.ABC):
         return True
 
 
-class StreamingResultContainer(Iterator[dict], Generic[StateType]):
+StreamResultType = TypeVar("StreamResultType")
+
+
+class StreamingResultContainer(Generic[StateType, StreamResultType], Iterator[StreamResultType]):
     """Container for a streaming result. This allows you to:
 
     1. Iterate over the result as it comes in
@@ -758,13 +767,15 @@ class StreamingResultContainer(Iterator[dict], Generic[StateType]):
 
     @staticmethod
     def pass_through(
-        results: dict, final_state: State[StateType]
-    ) -> "StreamingResultContainer[StateType]":
+        results: StreamResultType, final_state: State[StateType]
+    ) -> "StreamingResultContainer[StreamResultType, StateType]":
         """Instantiates a streaming result container that just passes through the given results
         This is to be used internally -- it allows us to wrap non-streaming action results in a streaming
         result container."""
 
-        def empty_generator() -> Generator[Tuple[dict, Optional[State[StateType]]], None, None]:
+        def empty_generator() -> (
+            Generator[Tuple[StreamResultType, Optional[State[StateType]]], None, None]
+        ):
             yield results, final_state
 
         return StreamingResultContainer(
@@ -798,7 +809,7 @@ class StreamingResultContainer(Iterator[dict], Generic[StateType]):
         self._result = None
         self._callback_realized = False
 
-    def __next__(self):
+    def __next__(self) -> StreamResultType:
         if self._result is not None:
             # we're done, and we've run through it
             raise StopIteration
@@ -808,7 +819,7 @@ class StreamingResultContainer(Iterator[dict], Generic[StateType]):
             raise StopIteration
         return result
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[StreamResultType]:
         def gen_fn():
             try:
                 while True:
@@ -836,7 +847,10 @@ class StreamingResultContainer(Iterator[dict], Generic[StateType]):
         return self._result
 
 
-class AsyncStreamingResultContainer(typing.AsyncIterator[dict], Generic[StateType]):
+class AsyncStreamingResultContainer(
+    Generic[StateType, StreamResultType],
+    AsyncIterator[StreamResultType],
+):
     """Container for an async streaming result. This allows you to:
     1. Iterate over the result as it comes in
     2. Await the final result/state at the end
@@ -863,9 +877,11 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict], Generic[StateTyp
         self,
         streaming_result_generator: AsyncGeneratorReturnType,
         initial_state: State[StateType],
-        process_result: Callable[[dict, State[StateType]], tuple[dict, State[StateType]]],
+        process_result: Callable[
+            [StreamResultType, State[StateType]], tuple[StreamResultType, State[StateType]]
+        ],
         callback: Callable[
-            [Optional[dict], State[StateType], Optional[Exception]],
+            [Optional[StreamResultType], State[StateType], Optional[Exception]],
             typing.Coroutine[None, None, None],
         ],
     ):
@@ -885,7 +901,7 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict], Generic[StateTyp
         self._result = None
         self._callback_realized = False
 
-    async def __anext__(self):
+    async def __anext__(self) -> StreamResultType:
         """Moves to the next state in the streaming result"""
         if self._result is not None:
             # we're done, and we've run through it
@@ -896,7 +912,7 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict], Generic[StateTyp
             raise StopAsyncIteration
         return result
 
-    def __aiter__(self):
+    def __aiter__(self) -> AsyncIterator[StreamResultType]:
         """Gives the iterator. Just calls anext, assigning the result in the finally block.
         Note this may not be perfect due to the complexity of callbacks for async generators,
         but it works in most cases."""
@@ -918,7 +934,7 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict], Generic[StateTyp
         # return it as `__aiter__` cannot be async/have awaits :/
         return gen_fn()
 
-    async def get(self) -> tuple[Optional[dict], State[StateType]]:
+    async def get(self) -> tuple[Optional[StreamResultType], State[StateType]]:
         # exhaust the generator
         async for _ in self:
             pass
@@ -927,7 +943,7 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict], Generic[StateTyp
 
     @staticmethod
     def pass_through(
-        results: dict, final_state: State[StateType]
+        results: StreamResultType, final_state: State[StateType]
     ) -> "AsyncStreamingResultContainer[StateType]":
         """Creates a streaming result container that just passes through the given results.
         This is not a public facing API."""
@@ -935,10 +951,12 @@ class AsyncStreamingResultContainer(typing.AsyncIterator[dict], Generic[StateTyp
         async def just_results() -> AsyncGeneratorReturnType:
             yield results, final_state
 
-        async def empty_callback(result: Optional[dict], state: State, exc: Optional[Exception]):
+        async def empty_callback(
+            result: Optional[StreamResultType], state: State, exc: Optional[Exception]
+        ):
             pass
 
-        return AsyncStreamingResultContainer[StateType](
+        return AsyncStreamingResultContainer[StateType, StreamResultType](
             just_results(), final_state, lambda result, state: (result, state), empty_callback
         )
 

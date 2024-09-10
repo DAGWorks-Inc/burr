@@ -9,6 +9,7 @@ from rich.console import Console
 from youtube_transcript_api import YouTubeTranscriptApi
 
 from burr.core import Application, ApplicationBuilder
+from burr.core.action import AsyncStreamingResultContainer, StreamingResultContainer
 from burr.integrations.pydantic import (
     PydanticTypingSystem,
     pydantic_action,
@@ -289,10 +290,13 @@ def build_streaming_application_async() -> Application[ApplicationState]:
 async def run_async():
     console = Console()
     app = build_streaming_application_async()
+
     action, streaming_container = await app.astream_result(
         halt_after=["generate_post"],
         inputs={"youtube_url": "https://www.youtube.com/watch?v=hqutVJyd3TI"},
-    )
+    )  # type: ignore
+    streaming_container: AsyncStreamingResultContainer[ApplicationState, SocialMediaPost]
+
     async for post in streaming_container:
         obj = post.model_dump()
         console.clear()
@@ -305,7 +309,8 @@ if __name__ == "__main__":
     action, streaming_container = app.stream_result(
         halt_after=["generate_post"],
         inputs={"youtube_url": "https://www.youtube.com/watch?v=hqutVJyd3TI"},
-    )
+    )  # type: ignore
+    streaming_container: StreamingResultContainer[ApplicationState, SocialMediaPost]
     for post in streaming_container:
         obj = post.model_dump()
         console.clear()
