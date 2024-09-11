@@ -287,9 +287,9 @@ def _validate_and_extract_signature_types_streaming(
 def pydantic_streaming_action(
     reads: List[str],
     writes: List[str],
-    state_input_type: Optional[Type[pydantic.BaseModel]],
-    state_output_type: Optional[Type[pydantic.BaseModel]],
-    stream_type: Optional[PartialType],
+    state_input_type: Type[pydantic.BaseModel],
+    state_output_type: Type[pydantic.BaseModel],
+    stream_type: PartialType,
 ) -> Callable[[PydanticStreamingActionFunction], PydanticStreamingActionFunction]:
     """Creates a streaming action that uses pydantic models.
 
