@@ -21,7 +21,12 @@ import pydantic
 from pydantic_core import PydanticUndefined
 
 from burr.core import Action, Graph, State
-from burr.core.action import FunctionBasedAction, FunctionBasedStreamingAction, bind, get_inputs
+from burr.core.action import (
+    FunctionBasedAction,
+    FunctionBasedStreamingAction,
+    bind,
+    derive_inputs_from_fn,
+)
 from burr.core.typing import ActionSchema, TypingSystem
 
 Inputs = ParamSpec("Inputs")
@@ -227,7 +232,7 @@ def pydantic_action(
                 async_action_function if is_async else action_function,
                 reads,
                 writes,
-                input_spec=get_inputs({}, fn),
+                input_spec=derive_inputs_from_fn({}, fn),
                 originating_fn=fn,
                 schema=PydanticActionSchema(
                     input_type=SubsetInputType,
@@ -357,7 +362,7 @@ def pydantic_streaming_action(
                 async_action_generator if is_async else action_generator,
                 reads,
                 writes,
-                input_spec=get_inputs({}, fn),
+                input_spec=derive_inputs_from_fn({}, fn),
                 originating_fn=fn,
                 schema=PydanticActionSchema(
                     input_type=SubsetInputType,
