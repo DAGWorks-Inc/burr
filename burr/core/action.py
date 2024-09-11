@@ -8,6 +8,7 @@ import types
 import typing
 from collections.abc import AsyncIterator
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncGenerator,
     Callable,
@@ -20,6 +21,7 @@ from typing import (
     Optional,
     Protocol,
     Tuple,
+    Type,
     TypeVar,
     Union,
 )
@@ -31,6 +33,17 @@ else:
 
 from burr.core.state import State
 from burr.core.typing import ActionSchema
+
+# This is here to make accessing the pydantic actions easier
+# we just attach them to action so you can call `@action.pyddantic...`
+# The IDE will like it better and thus be able to auto-complete/type-check
+# TODO - come up with a better way to attach integrations to core objects
+imported_pydantic = False
+if TYPE_CHECKING:
+    try:
+        from pydantic import BaseModel
+    except ImportError:
+        pass
 
 
 class Function(abc.ABC):
@@ -1161,76 +1174,124 @@ def bind(self: FunctionRepresentingAction, **kwargs: Any) -> FunctionRepresentin
     return self
 
 
-def action(reads: List[str], writes: List[str]) -> Callable[[Callable], FunctionRepresentingAction]:
-    """Decorator to create a function-based action. This is user-facing.
-    Note that, in the future, with typed state, we may not need this for
-    all cases.
-
-    If parameters are not bound, they will be interpreted as inputs and must
-    be passed in at runtime. If they have default values, they will be recorded
-    as optional inputs. These can (optionally) be provided at runtime.
-
-    :param reads: Items to read from the state
-    :param writes: Items to write to the state
-    :return: The decorator to assign the function as an action
-    """
-
-    def decorator(fn) -> FunctionRepresentingAction:
-        setattr(fn, FunctionBasedAction.ACTION_FUNCTION, FunctionBasedAction(fn, reads, writes))
-        setattr(fn, "bind", types.MethodType(bind, fn))
-        return fn
-
-    return decorator
-
-
-def streaming_action(
-    reads: List[str], writes: List[str]
-) -> Callable[[Callable], FunctionRepresentingAction]:
-    """Decorator to create a streaming function-based action. This is user-facing.
-
-    If parameters are not bound, they will be interpreted as inputs and must be passed in at runtime.
-
-    See the following example for how to use this decorator -- this reads ``prompt`` from the state and writes
-    ``response`` back out, yielding all intermediate chunks.
-
-    Note that this *must* return a value. If it does not, we will not know how to update the state, and
-    we will error out.
-
-    .. code-block:: python
-
-        @streaming_action(reads=["prompt"], writes=['response'])
-        def streaming_response(state: State) -> Generator[dict, None, tuple[dict, State]]:
-            response = client.chat.completions.create(
-                model='gpt-3.5-turbo',
-                messages=[{
-                    'role': 'user',
-                    'content': state["prompt"]
-                    }],
-                temperature=0,
+class action:
+    @staticmethod
+    def pydantic(
+        reads: List[str],
+        writes: List[str],
+        state_input_type: Optional[Type["BaseModel"]] = None,
+        state_output_type: Optional[Type["BaseModel"]] = None,
+    ) -> Callable:
+        try:
+            from burr.integrations.pydantic import pydantic_action
+        except ImportError:
+            raise ImportError(
+                "Please install pydantic to use the pydantic decorator. pip install burr[pydantic]"
             )
-            buffer = []
-            for chunk in response:
-                delta = chunk.choices[0].delta.content
-                buffer.append(delta)
-                # yield partial results
-                yield {'response': delta}, None
-            full_response = ''.join(buffer)
-            # return the final result
-            return {'response': full_response}, state.update(response=full_response)
 
-    """
+        return pydantic_action(
+            reads=reads,
+            writes=writes,
+            state_input_type=state_input_type,
+            state_output_type=state_output_type,
+        )
 
-    def wrapped(fn) -> FunctionRepresentingAction:
-        fn = copy_func(fn)
+    def __init__(self, reads: List[str], writes: List[str]):
+        """Decorator to create a function-based action. This is user-facing.
+        Note that, in the future, with typed state, we may not need this for
+        all cases.
+
+        If parameters are not bound, they will be interpreted as inputs and must
+        be passed in at runtime. If they have default values, they will be recorded
+        as optional inputs. These can (optionally) be provided at runtime.
+
+        :param reads: Items to read from the state
+        :param writes: Items to write to the state
+        :return: The decorator to assign the function as an action
+        """
+        self.reads = reads
+        self.writes = writes
+
+    def __call__(self, fn) -> FunctionRepresentingAction:
         setattr(
             fn,
             FunctionBasedAction.ACTION_FUNCTION,
-            FunctionBasedStreamingAction(fn, reads, writes),
+            FunctionBasedAction(fn, self.reads, self.writes),
         )
         setattr(fn, "bind", types.MethodType(bind, fn))
         return fn
 
-    return wrapped
+
+class streaming_action:
+    @staticmethod
+    def pydantic(
+        reads: List[str],
+        writes: List[str],
+        state_input_type: Type["BaseModel"],
+        state_output_type: Type["BaseModel"],
+        stream_type: Type[StreamType],
+    ) -> Callable:
+        try:
+            from burr.integrations.pydantic import pydantic_streaming_action
+        except ImportError:
+            raise ImportError(
+                "Please install pydantic to use the pydantic decorator. pip install burr[pydantic]"
+            )
+
+        return pydantic_streaming_action(
+            reads=reads,
+            writes=writes,
+            state_input_type=state_input_type,
+            state_output_type=state_output_type,
+            stream_type=stream_type,
+        )
+
+    def __init__(self, reads: List[str], writes: List[str]):
+        """Decorator to create a streaming function-based action. This is user-facing.
+
+        If parameters are not bound, they will be interpreted as inputs and must be passed in at runtime.
+
+        See the following example for how to use this decorator -- this reads ``prompt`` from the state and writes
+        ``response`` back out, yielding all intermediate chunks.
+
+        Note that this *must* return a value. If it does not, we will not know how to update the state, and
+        we will error out.
+
+        .. code-block:: python
+
+            @streaming_action(reads=["prompt"], writes=['response'])
+            def streaming_response(state: State) -> Generator[dict, None, tuple[dict, State]]:
+                response = client.chat.completions.create(
+                    model='gpt-3.5-turbo',
+                    messages=[{
+                        'role': 'user',
+                        'content': state["prompt"]
+                        }],
+                    temperature=0,
+                )
+                buffer = []
+                for chunk in response:
+                    delta = chunk.choices[0].delta.content
+                    buffer.append(delta)
+                    # yield partial results
+                    yield {'response': delta}, None
+                full_response = ''.join(buffer)
+                # return the final result
+                return {'response': full_response}, state.update(response=full_response)
+
+        """
+        self.reads = reads
+        self.writes = writes
+
+    def __call__(self, fn: Callable) -> FunctionRepresentingAction:
+        fn = copy_func(fn)
+        setattr(
+            fn,
+            FunctionBasedAction.ACTION_FUNCTION,
+            FunctionBasedStreamingAction(fn, self.reads, self.writes),
+        )
+        setattr(fn, "bind", types.MethodType(bind, fn))
+        return fn
 
 
 ActionT = TypeVar("ActionT", bound=Action)
