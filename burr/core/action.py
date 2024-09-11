@@ -534,7 +534,14 @@ class SingleStepAction(Action, abc.ABC):
 
 # the following exist to share implementation between FunctionBasedStreamingAction and FunctionBasedAction
 # TODO -- think through the class hierarchy to simplify, for now this is OK
-def get_inputs(bound_params: dict, fn: Callable) -> tuple[list[str], list[str]]:
+def derive_inputs_from_fn(bound_params: dict, fn: Callable) -> tuple[list[str], list[str]]:
+    """Derives inputs from the function, given the bound parameters. This assumes that the function
+    has inputs named `state`, as well as any number of other kwarg-boundable parameters.
+
+    :param bound_params: Parameters that are already bound to the function
+    :param fn: Function to derive inputs from
+    :return: Required and optional inputs
+    """
     sig = inspect.signature(fn)
     required_inputs, optional_inputs = [], []
     for param_name, param in sig.parameters.items():
@@ -580,7 +587,7 @@ class FunctionBasedAction(SingleStepAction):
         self._writes = writes
         self._bound_params = bound_params if bound_params is not None else {}
         self._inputs = (
-            get_inputs(self._bound_params, self._fn)
+            derive_inputs_from_fn(self._bound_params, self._fn)
             if input_spec is None
             else (
                 [item for item in input_spec[0] if item not in self._bound_params],
@@ -852,7 +859,7 @@ class StreamingResultContainer(Generic[StateType, StreamResultType], Iterator[St
         # as the async version
         return gen_fn()
 
-    def get(self) -> StreamType:
+    def get(self) -> Tuple[StreamResultType, State[StateType]]:
         # exhaust the generator
         for _ in self:
             pass
@@ -1054,7 +1061,7 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         self._writes = writes
         self._bound_params = bound_params if bound_params is not None else {}
         self._inputs = (
-            get_inputs(self._bound_params, self._fn)
+            derive_inputs_from_fn(self._bound_params, self._fn)
             if input_spec is None
             else (
                 [item for item in input_spec[0] if item not in self._bound_params],
