@@ -1,5 +1,5 @@
 import textwrap
-from typing import Any, Generator, Optional, Tuple, Union
+from typing import Any, AsyncGenerator, Generator, Optional, Tuple, Union
 
 import instructor
 import openai
@@ -8,13 +8,13 @@ from pydantic.json_schema import SkipJsonSchema
 from rich.console import Console
 from youtube_transcript_api import YouTubeTranscriptApi
 
-from burr.core import Application, ApplicationBuilder
-from burr.core.action import AsyncStreamingResultContainer, StreamingResultContainer
-from burr.integrations.pydantic import (
-    PydanticTypingSystem,
-    pydantic_action,
-    pydantic_streaming_action,
+from burr.core import Application, ApplicationBuilder, action
+from burr.core.action import (
+    AsyncStreamingResultContainer,
+    StreamingResultContainer,
+    streaming_action,
 )
+from burr.integrations.pydantic import PydanticTypingSystem
 
 
 class Concept(BaseModel):
@@ -122,7 +122,7 @@ class ApplicationStateStream(ApplicationState):
         # return new_obj
 
 
-@pydantic_action(reads=[], writes=["transcript"])
+@action.pydantic(reads=[], writes=["transcript"])
 def get_youtube_transcript(state: ApplicationState, youtube_url: str) -> ApplicationState:
     """Get the official YouTube transcript for a video given it's URL"""
     _, _, video_id = youtube_url.partition("?v=")
@@ -134,7 +134,7 @@ def get_youtube_transcript(state: ApplicationState, youtube_url: str) -> Applica
     # store the transcript in state
 
 
-@pydantic_action(reads=["transcript"], writes=["post"])
+@action.pydantic(reads=["transcript"], writes=["post"])
 def generate_post(state: ApplicationState, llm_client) -> ApplicationState:
     """Use the Instructor LLM client to generate `SocialMediaPost` from the YouTube transcript."""
 
@@ -158,7 +158,7 @@ def generate_post(state: ApplicationState, llm_client) -> ApplicationState:
     return state
 
 
-@pydantic_streaming_action(
+@streaming_action.pydantic(
     reads=["transcript"],
     writes=["post"],
     state_input_type=ApplicationState,
@@ -191,7 +191,7 @@ def generate_post_streaming(
     yield final_post, state
 
 
-@pydantic_streaming_action(
+@streaming_action.pydantic(
     reads=["transcript"],
     writes=["post"],
     state_input_type=ApplicationState,
@@ -200,7 +200,7 @@ def generate_post_streaming(
 )
 async def generate_post_streaming_async(
     state: ApplicationStateStream, llm_client
-) -> Generator[Tuple[SocialMediaPost, Optional[ApplicationState]], None, None]:
+) -> AsyncGenerator[Tuple[SocialMediaPost, Optional[ApplicationState]], None]:
     """Use the Instructor LLM client to generate `SocialMediaPost` from the YouTube transcript."""
 
     transcript = state.transcript
@@ -234,6 +234,7 @@ def build_application() -> Application[ApplicationState]:
         )
         .with_transitions(
             ("get_youtube_transcript", "generate_post"),
+            ("generate_post", "get_youtube_transcript"),
         )
         # .with_state_persister(SQLLitePersister(db_path=".burr.db", table_name="state"))
         .with_entrypoint("get_youtube_transcript")
@@ -255,6 +256,7 @@ def build_streaming_application() -> Application[ApplicationState]:
         )
         .with_transitions(
             ("get_youtube_transcript", "generate_post"),
+            ("generate_post", "get_youtube_transcript"),
         )
         # .with_state_persister(SQLLitePersister(db_path=".burr.db", table_name="state"))
         .with_entrypoint("get_youtube_transcript")
@@ -276,6 +278,7 @@ def build_streaming_application_async() -> Application[ApplicationState]:
         )
         .with_transitions(
             ("get_youtube_transcript", "generate_post"),
+            ("generate_post", "get_youtube_transcript"),
         )
         # .with_state_persister(SQLLitePersister(db_path=".burr.db", table_name="state"))
         .with_entrypoint("get_youtube_transcript")
@@ -291,7 +294,7 @@ async def run_async():
     console = Console()
     app = build_streaming_application_async()
 
-    action, streaming_container = await app.astream_result(
+    a, streaming_container = await app.astream_result(
         halt_after=["generate_post"],
         inputs={"youtube_url": "https://www.youtube.com/watch?v=hqutVJyd3TI"},
     )  # type: ignore
@@ -306,7 +309,7 @@ async def run_async():
 if __name__ == "__main__":
     console = Console()
     app = build_streaming_application()
-    action, streaming_container = app.stream_result(
+    a, streaming_container = app.stream_result(
         halt_after=["generate_post"],
         inputs={"youtube_url": "https://www.youtube.com/watch?v=hqutVJyd3TI"},
     )  # type: ignore

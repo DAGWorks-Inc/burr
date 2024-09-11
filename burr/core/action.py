@@ -1229,7 +1229,7 @@ class streaming_action:
         writes: List[str],
         state_input_type: Type["BaseModel"],
         state_output_type: Type["BaseModel"],
-        stream_type: Type[StreamType],
+        stream_type: Union[Type["BaseModel"], Type[dict]],
     ) -> Callable:
         try:
             from burr.integrations.pydantic import pydantic_streaming_action
