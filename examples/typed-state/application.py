@@ -1,4 +1,3 @@
-import textwrap
 from typing import AsyncGenerator, Generator, Optional, Tuple, Union
 
 import instructor
@@ -21,10 +20,6 @@ class Concept(BaseModel):
     term: str = Field(description="A key term or concept mentioned.")
     definition: str = Field(description="A brief definition or explanation of the term.")
     timestamp: float = Field(description="Timestamp when the concept is explained.")
-
-    def display(self):
-        minutes, seconds = divmod(self.timestamp, 60)
-        return f"{int(minutes)}:{int(seconds)} - {self.term}: {self.definition}"
 
 
 class SocialMediaPost(BaseModel):
@@ -51,28 +46,6 @@ class SocialMediaPost(BaseModel):
     )
     youtube_url: SkipJsonSchema[Union[str, None]] = None
 
-    def display(self) -> str:
-        formatted_takeways = " ".join([t for t in self.key_takeaways])
-        formatted_concepts = "CONCEPTS\n" + "\n".join([c.display() for c in self.concepts])
-        link = f"link: {self.youtube_url}\n\n" if self.youtube_url else ""
-
-        return (
-            textwrap.dedent(
-                f"""\
-            TOPIC: {self.topic}
-
-            {self.hook}
-
-            {self.body}
-
-            {formatted_takeways}
-
-            """
-            )
-            + link
-            + formatted_concepts
-        )
-
 
 class ApplicationState(BaseModel):
     # Make these have defaults as they are only set in actions
@@ -92,8 +65,6 @@ def get_youtube_transcript(state: ApplicationState, youtube_url: str) -> Applica
     transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=["en"])
     state.transcript = " ".join([f"ts={entry['start']} - {entry['text']}" for entry in transcript])
     return state
-
-    # store the transcript in state
 
 
 @action.pydantic(reads=["transcript"], writes=["post"])
