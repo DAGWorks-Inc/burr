@@ -1189,6 +1189,19 @@ class action:
         state_input_type: Optional[Type["BaseModel"]] = None,
         state_output_type: Optional[Type["BaseModel"]] = None,
     ) -> Callable:
+        """Action that specifies inputs/outputs using pydantic models.
+        This should make it easier to develop with guardrails.
+
+        :param reads: keys that this model reads. Note that this will be a subset of the pydantic model with which this is decorated.
+            We will be validating that the keys are present in the model.
+        :param writes: keys that this model writes. Note that this will be a subset of the pydantic model with which this is decorated.
+            We will be validating that the keys are present in the model.
+        :param state_input_type: The pydantic model type that is used to represent the input state.
+            If this is None it will attempt to derive from the signature.
+        :param state_output_type: The pydantic model type that is used to represent the output state.
+            If this is None it will attempt to derive from the signature.
+        :return:
+        """
         try:
             from burr.integrations.pydantic import pydantic_action
         except ImportError:
@@ -1238,11 +1251,21 @@ class streaming_action:
         state_output_type: Type["BaseModel"],
         stream_type: Union[Type["BaseModel"], Type[dict]],
     ) -> Callable:
+        """Creates a streaming action that uses pydantic models.
+
+        :param reads: The fields this consumes from the state.
+        :param writes: The fields this writes to the state.
+        :param stream_type: The pydantic model or dictionary type that is used to represent the partial results.
+            Use a dict if you want this untyped.
+        :param state_input_type: The pydantic model type that is used to represent the input state.
+        :param state_output_type: The pydantic model type that is used to represent the output state.
+        :return: The same function, decorated function.
+        """
         try:
             from burr.integrations.pydantic import pydantic_streaming_action
         except ImportError:
             raise ImportError(
-                "Please install pydantic to use the pydantic decorator. pip install burr[pydantic]"
+                "Please install pydantic to use the pydantic decorator. pip install 'burr[pydantic]'"
             )
 
         return pydantic_streaming_action(

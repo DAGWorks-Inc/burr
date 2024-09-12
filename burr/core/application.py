@@ -53,8 +53,8 @@ from burr.visibility import tracing
 from burr.visibility.tracing import tracer_factory_context_var
 
 if TYPE_CHECKING:
-    # TODO --  push type-checking check back from here
-    # OR just put everything under type-chekcing...
+    # TODO --  figure out whether we want to just do if TYPE_CHECKING
+    # for all first-class imports as Ruff suggests...
     from burr.tracking.base import TrackingClient
 
 logger = logging.getLogger(__name__)
@@ -67,10 +67,8 @@ StateTypeToSet = TypeVar("StateTypeToSet")
 
 
 def _validate_result(result: Any, name: str, schema: ActionSchema = DEFAULT_SCHEMA) -> None:
-    # TODO -- validate the output type is action schema's output type...
     # TODO -- split out the action schema into input/output schema types
-    # Then action schema will have both
-    # we'll just need to ensure we pass the right ones
+    # Currently they're tied together, but this doesn't make as much sense for single-step actions
     result_type = schema.intermediate_result_type()
     if not isinstance(result, result_type):
         raise ValueError(
@@ -2318,7 +2316,7 @@ class ApplicationBuilder(Generic[StateType]):
             return self.graph_builder.build()
         return self.prebuilt_graph
 
-    # @telemetry.capture_function_usage
+    @telemetry.capture_function_usage
     def build(self) -> Application[StateType]:
         """Builds the application.
 
@@ -2368,18 +2366,3 @@ class ApplicationBuilder(Generic[StateType]):
                 else None
             ),
         )
-
-
-if __name__ == "__main__":
-    import pydantic
-
-    class Foo(pydantic.BaseModel):
-        a: int
-        b: str
-
-    from burr.integrations import pydantic
-
-    app = ApplicationBuilder().with_typing(pydantic.PydanticTypingSystem(Foo)).build()
-
-    _, _, foo = app.run(inputs={"a": 1, "b": "hello"})
-    mod = foo.data

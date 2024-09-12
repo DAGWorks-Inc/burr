@@ -22,7 +22,12 @@ Actions
 
    .. automethod:: __init__
 
-.. autodecorator:: burr.core.action.action
+.. autoclass:: burr.core.action.action
+   :members:
+
+   .. automethod:: __init__
+
+
 .. autofunction:: burr.core.action.bind
 
 
