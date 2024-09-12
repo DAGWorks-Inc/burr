@@ -170,15 +170,7 @@ def pydantic_action(
     state_input_type: Optional[Type[pydantic.BaseModel]] = None,
     state_output_type: Optional[Type[pydantic.BaseModel]] = None,
 ) -> Callable[[PydanticActionFunction], PydanticActionFunction]:
-    """Action that specifies inputs/outputs using pydantic models.
-    This should make it easier to develop with guardrails.
-
-    :param reads: keys that this model reads. Note that this will be a subset of the pydantic model with which this is decorated.
-        We will be validating that the keys are present in the model.
-    :param writes: keys that this model writes. Note that this will be a subset of the pydantic model with which this is decorated.
-        We will be validating that the keys are present in the model.
-    :return:
-    """
+    """See docstring for @action.pydantic"""
 
     def decorator(fn: PydanticActionFunction) -> PydanticActionFunction:
         if state_input_type is None and state_output_type is None:
@@ -296,16 +288,7 @@ def pydantic_streaming_action(
     state_output_type: Type[pydantic.BaseModel],
     stream_type: PartialType,
 ) -> Callable[[PydanticStreamingActionFunction], PydanticStreamingActionFunction]:
-    """Creates a streaming action that uses pydantic models.
-
-    :param reads: The fields this consumes from the state.
-    :param writes: The fields this writes to the state.
-    :param stream_type: The pydantic model or dictionary type that is used to represent the partial results. If this is None it will attempt to derive from the signature.
-        Use a dict if you want this untyped.
-    :param state_input_type: The pydantic model type that is used to represent the input state. If this is None it will attempt to derive from the signature.
-    :param state_output_type: The pydantic model type that is used to represent the output state. If this is None it will attempt to derive from the signature.
-    :return: The same function, decorated function.
-    """
+    """See docstring for @streaming_action.pydantic"""
 
     def decorator(fn: PydanticStreamingActionFunctionVar) -> PydanticStreamingActionFunctionVar:
         itype, otype, stream_type_processed = _validate_and_extract_signature_types_streaming(
@@ -353,8 +336,6 @@ def pydantic_streaming_action(
         is_async = inspect.isasyncgenfunction(fn)
         # This recreates the @streaming_action decorator
         # TODO -- use the @streaming_action decorator directly
-        # TODO -- ensure that the function is the right one -- specifically it probably won't show code in the UI
-        # now
         setattr(
             fn,
             FunctionBasedAction.ACTION_FUNCTION,
