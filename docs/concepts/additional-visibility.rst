@@ -5,7 +5,7 @@ Additional Visibility
 .. note::
 
     Burr comes with the ability to see inside your actions. This is a very pluggable framework
-    that comes with the default tracking client, but can also be hooked up to tools such as `OpenTelemetry <https://opentelemetry.io/>`_
+    that comes with the default tracking client, but can also be hooked up to tools such as `OpenTelemetry <https://opentelemetry.io/>`_(OTel)
 
 ----------
 Quickstart
@@ -202,7 +202,7 @@ You can opt out of logging paramers or return values and adding a filter to the 
 .. _opentelref:
 
 --------------
-Open Telemetry
+OpenTelemetry
 --------------
 
 While Burr does not support the entire `OpenTelemetry <https://opentelemetry.io/>`_
@@ -211,14 +211,14 @@ capture OpenTelemetry events with tracking.
 
 These features are currently experimental, but we expect the API to remain largely stable.
 
-Capturing OTel events
----------------------
+Capturing OpenTelemetry events
+------------------------------
 
-Burr can capture OTel traces/spans that are logged from within a Burr step.
+Burr can capture OpenTelemetry traces/spans that are logged from within a Burr step.
 These get tracked in the UI, which can display traces and attributes, as explained above.
 
 To do this, you just have to set the ``use_otel_tracing`` flag on :py:meth:`with_tracker <burr.core.application.ApplicationBuilder.with_tracker>`
-function in the ``ApplicationBuilder``. This will automatically capture all OTel traces, mixing them with Burr traces. Take the following (contrived)
+function in the ``ApplicationBuilder``. This will automatically capture all OpenTelemetry traces, mixing them with Burr traces. Take the following (contrived)
 example:
 
 .. code-block:: python
@@ -233,7 +233,7 @@ example:
         with __tracer:
             # Burr logging
             __tracer.log_attributes(prompt_length=len(state["prompt"]), prompt=state["prompt"])
-            # Otel Tracer
+            # OpenTelemetry Tracer
             with otel_tracer.start_as_current_span('create_prompt') as span:
                 modified_prompt = _modify_prompt(state["prompt"])
                 span.set_attributes(dict(modified_prompt=modified_prompt))
@@ -253,8 +253,8 @@ example:
         .build()
     )
 
-While this is contrived, it illustrates that you can mix/match Burr/Otel. This is valuable
-when you have a Burr action that calls out to a function that is instrumented via OTel (
+While this is contrived, it illustrates that you can mix/match Burr/OpenTelemetry. This is valuable
+when you have a Burr action that calls out to a function that is instrumented via OpenTelemetry (
 of which there are a host of integrations).
 
 Note that this currently does not support logging remote traces, but we plan to have a
@@ -262,13 +262,13 @@ more complete integration in the future.
 
 If you do not enable ``use_otel_tracing``, this will all be a no-op.
 
-Logging to OTel
----------------
+Logging to OpenTelemetry
+-------------------------
 
-Burr can also log to any OTel provider, again enabling mixing/matching of spans. To do this,
+Burr can also log to any OpenTelemetry provider, again enabling mixing/matching of spans. To do this,
 you simply need to pass an instance of the :py:class:`OpenTelemetryBridge <burr.integrations.opentelemetry.OpenTelemetryBridge>` to the
 :py:meth:`with_hooks <burr.core.application.ApplicationBuilder.with_hooks>` method of the ``ApplicationBuilder``. This will automatically
-log all spans to the OTel provider of choice (and you are responsible for initializes
+log all spans to the OpenTelemetry provider of choice (and you are responsible for initializes
 it as you see fit).
 
 .. code-block:: python
@@ -289,19 +289,61 @@ it as you see fit).
 
 With this you can log to any OpenTelemetry provider.
 
+
+Instrumenting libraries
+-----------------------
+
+One way to gain observability is to **instrument** a library with OpenTelemetry. This involves importing an object that will automatically patch the library in order to produce and report telemetry (learn more about `autoinstrumentation <https://opentelemetry.io/docs/zero-code/python/>`_). The Python community has implemented `instrumentation for many popular libraries <https://opentelemetry-python-contrib.readthedocs.io/en/latest/>`_ (FastAPI, AWS Lambda, requests, etc.).
+
+This snippet enables automatically logging HTTP requests done via the ``requests`` library:
+
+.. code-block:: python
+
+    from opentelemetry.instrumentation.requests import RequestsInstrumentor
+    RequestsInstrumentor().instrument()
+
+
+This works with both of the integrations above, and simple requires the
+``opentelemetry-instrumentation-YYY`` package (where ``YYY`` is the library you want to instrument, openai in this case).
+
+
 LLM-specific Telemetry
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
-To get LLM-specific logging, you can you employ any of the `openllmetry <https://github.com/traceloop/openllmetry/>`_
-SDKs. This automatically instruments a variety of LLM interfaces.
+`Openllmetry <https://github.com/traceloop/openllmetry/>`_ is a project implementing autoinstrumentation for components of LLM stacks (LLM providers, vector databases, frameworks, etc.). This enables tracking prompts, token counts, temperature, vector search operations, etc.
 
-For instance, if you want to pick up on all prompts/tokens/etc... from OpenAI, it's as simple as running
-the following:
+The following instruments the ``openai`` Python library
 
 .. code-block:: python
 
     from opentelemetry.instrumentation.openai import OpenAIInstrumentor
     OpenAIInstrumentor().instrument()
 
-This works with both of the integrations above, and simple requires the
-``opentelemetry-instrumentation-YYY`` package (where ``YYY`` is the library you want to instrument, openai in this case).
+
+Burr's ``init_instruments()``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Burr integration for OpenTelemetry includes the convenience function ``init_instruments()``. You can provide it the names of modules to instrument as strings and it will try to instrument them. This feature has good IDE autocompletion support. Another benefit is the ability to instrument multiple libraries at once.
+
+The following instruments the module ``openai`` (equivalent to the previous snippet) along with ``lancedb`` and ``fastapi``.
+
+.. code-block:: python
+
+    from burr.integrations.opentelemetry import init_instruments
+    init_instruments("openai", "lancedb", "fastapi")
+
+
+Specifying the keyword argument ``init_all=True`` will try to instrument currently imported libraries with the instrumentation packages installed.
+
+You can get the logger to view in detail which library is instrumented.
+
+.. code-block:: python
+
+    import logging
+    from burr.integrations.opentelemetry import init_instruments
+
+    logger = logging.getLogger("burr.integrations.opentelemetry")
+    logger.addHandler(logging.StreamHandler())
+    logger.setLevel(logging.DEBUG)
+
+    init_instruments(init_all=True)
