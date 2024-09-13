@@ -1,6 +1,5 @@
 import dataclasses
 import datetime
-import functools
 import importlib
 import importlib.metadata
 import json
@@ -563,10 +562,39 @@ INSTRUMENTS_SPECS = {
     "urllib3": ("urllib3", "opentelemetry.instrumentation.urllib3", "URLLib3Instrumentor"),
 }
 
-INSTRUMENTS = Literal[tuple(INSTRUMENTS_SPECS)]
+INSTRUMENTS = Literal[
+    "openai",
+    "anthropic",
+    "cohere",
+    "google_generativeai",
+    "mistral",
+    "ollama",
+    "transformers",
+    "together",
+    "bedrock",
+    "replicate",
+    "vertexai",
+    "groq",
+    "watsonx",
+    "alephalpha",
+    "pinecone",
+    "qdrant",
+    "chroma",
+    "milvus",
+    "weaviate",
+    "lancedb",
+    "marqo",
+    "redis",
+    "langchain",
+    "llama_index",
+    "haystack",
+    "requests",
+    "httpx",
+    "urllib",
+    "urllib3",
+]
 
 
-@functools.cache
 def available_dists() -> set[str]:
     return set((dist.name for dist in importlib.metadata.distributions()))
 
@@ -575,29 +603,40 @@ def _init_instrument(
     module_name: str, instrumentation_module_name: str, instrumentor_name: str
 ) -> None:
     if module_name not in sys.modules:
+        logger.debug(f"`{module_name}` wasn't imported. Skipping instrumentation.")
         return
 
-    if instrumentation_module_name not in available_dists():
-        logger.debug(f"{module_name} is installed, but {instrumentation_module_name} isn't")
+    instrumentation_package_name = instrumentation_module_name.replace(".", "-")
+    if instrumentation_package_name not in available_dists():
+        logger.info(
+            f"Couldn't instrument `{module_name}`. Package `{instrumentation_package_name}` is missing."
+        )
         return
 
     try:
         instrumentation_module = importlib.import_module(instrumentation_module_name)
         instrumentor = getattr(instrumentation_module, instrumentor_name)
-        if not instrumentor.is_instrumented_by_opentelemetry:
+        if instrumentor.is_instrumented_by_opentelemetry:
+            logger.debug(f"`{module_name}` is already instrumented.")
+        else:
             instrumentor.instrument()
+            logger.info(f"`{module_name}` is now instrumented.")
+
     except BaseException:
-        logger.debug(f"Failed to instrument {module_name} with {instrumentation_module_name}")
+        logger.error(f"Failed to instrument `{module_name}` with `{instrumentation_package_name}`.")
 
 
-def init_instruments(*instruments: INSTRUMENTS):
+def init_instruments(*instruments: INSTRUMENTS, init_all: bool = False):
     # if no instrument explicitly passed, default to trying to instrument all available packages
-    if len(instruments) == 0:
+    if init_all:
+        logger.debug("Instrumenting all libraries.")
         instruments = INSTRUMENTS_SPECS.keys()
 
     for instrument in instruments:
         specs = INSTRUMENTS_SPECS[instrument]
-        _init_instrument(*specs)
+        module_name, instrumentation_module_name, instrumentor_name = specs
+
+        _init_instrument(module_name, instrumentation_module_name, instrumentor_name)
 
 
 if __name__ == "__main__":
