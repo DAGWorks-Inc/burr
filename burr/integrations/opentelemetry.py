@@ -596,12 +596,25 @@ INSTRUMENTS = Literal[
 
 
 def available_dists() -> set[str]:
+    """Get the name of all available libraries in the current environment.
+
+    ref for importlib.metadata: https://docs.python.org/3.11/library/importlib.metadata.html#metadata
+    """
     return set((dist.name for dist in importlib.metadata.distributions()))
 
 
 def _init_instrument(
     module_name: str, instrumentation_module_name: str, instrumentor_name: str
 ) -> None:
+    """Instrument a Python library.
+    Instrumentation will be skipped if module is not imported nor found in `sys.modules`
+    Exit early if the instrumentation module isn't installed in the current environment.
+
+    :param module_name: Name of the top-level module to instrument (e.g., `requests`, `openai`)
+    :param instrumentation_module_name: Name of the module containing the instrumentor (e.g., opentelemetry.instrumentation.requests)
+    :param instrumentor_name: Name of the object that has the `.instrument()` method. (e.g., OpenAIInstrumentor)
+    :return:
+    """
     if module_name not in sys.modules:
         logger.debug(f"`{module_name}` wasn't imported. Skipping instrumentation.")
         return
@@ -626,7 +639,13 @@ def _init_instrument(
         logger.error(f"Failed to instrument `{module_name}` with `{instrumentation_package_name}`.")
 
 
-def init_instruments(*instruments: INSTRUMENTS, init_all: bool = False):
+def init_instruments(*instruments: INSTRUMENTS, init_all: bool = False) -> None:
+    """Instruments the specified libraries
+
+    :param instruments: Name of libraries to instrument (e.g., `requests`, `openai`)
+    :param init_all: If True, initialize all available instruments for imported packages.
+    :return:
+    """
     # if no instrument explicitly passed, default to trying to instrument all available packages
     if init_all:
         logger.debug("Instrumenting all libraries.")
