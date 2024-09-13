@@ -85,8 +85,10 @@ def build_application() -> Application:
 if __name__ == "__main__":
     import utils
 
+    from burr.integrations.opentelemetry import init_instruments
+
     utils.set_environment_variables()  # set environment variables for LanceDB
-    utils.instrument()  # register the OpenTelemetry instrumentation
+    init_instruments("openai", "lancedb")  # register the OpenTelemetry instrumentation
 
     # build the Burr `Application`
     app = build_application()

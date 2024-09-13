@@ -19,14 +19,6 @@ def set_environment_variables():
     ]
 
 
-def instrument():
-    from opentelemetry.instrumentation.lancedb import LanceInstrumentor
-    from opentelemetry.instrumentation.openai import OpenAIInstrumentor
-
-    LanceInstrumentor().instrument()
-    OpenAIInstrumentor().instrument()
-
-
 def _compact_hash(digest: bytes) -> str:
     """Compact the hash to a string that's safe to pass around."""
     return base64.urlsafe_b64encode(digest).decode()
