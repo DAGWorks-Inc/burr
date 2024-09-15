@@ -159,6 +159,42 @@ class AppendFields(StateDelta):
 
 
 @dataclasses.dataclass
+class ExtendFields(StateDelta):
+    """State delta that extends fields in the state"""
+
+    values: Mapping[str, list[Any]]
+
+    @classmethod
+    def name(cls) -> str:
+        return "extend"
+
+    def reads(self) -> list[str]:
+        return list(self.values.keys())
+
+    def writes(self) -> list[str]:
+        return list(self.values.keys())
+
+    def apply_mutate(self, inputs: dict):
+        for key, value in self.values.items():
+            if key not in inputs:
+                inputs[key] = []
+            if not isinstance(inputs[key], list):
+                raise ValueError(f"Cannot extend non-list value {key}={inputs[key]}")
+            inputs[key].extend(value)
+
+    def validate(self, input_state: Dict[str, Any]):
+        incorrect_types = {}
+        for write_key in self.writes():
+            if write_key in input_state and not hasattr(input_state[write_key], "extend"):
+                incorrect_types[write_key] = type(input_state[write_key])
+        if incorrect_types:
+            raise ValueError(
+                f"Cannot extend non-extendable values: {incorrect_types}. "
+                f"Please ensure that all fields are list-like."
+            )
+
+
+@dataclasses.dataclass
 class IncrementFields(StateDelta):
     values: Mapping[str, int]
 
@@ -324,6 +360,24 @@ class State(Mapping, Generic[StateType]):
         """
 
         return self.apply_operation(AppendFields(updates))
+
+    def extend(self, **updates: list[Any]) -> "State[StateType]":
+        """Extends the state with a set of key-value pairs. Each one
+        must correspond to a list-like object, or an error will be raised.
+
+        This is an upsert operation, meaning that if the key does not
+        exist, a new list will be created and extended with the values.
+
+        .. code-block:: python
+
+            state = State({"a": [1]})
+            state.extend(a=[2, 3])  # State({"a": [1, 2, 3]})
+
+        :param updates: updates to apply
+        :return: new state object
+        """
+
+        return self.apply_operation(ExtendFields(updates))
 
     def increment(self, **updates: int) -> "State[StateType]":
         """Increments the state with a set of key-value pairs. Each one

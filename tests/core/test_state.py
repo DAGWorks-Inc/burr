@@ -63,6 +63,24 @@ def test_state_append():
     assert appended.get_all() == {"foo": ["bar", "baz"]}
 
 
+def test_state_extend():
+    state = State({"foo": ["bar"]})
+    extended = state.extend(foo=["baz", "qux"])
+    assert extended.get_all() == {"foo": ["bar", "baz", "qux"]}
+
+
+def test_state_append_multiple_keys():
+    state = State({"foo": ["bar"], "baz": [1]})
+    appended = state.append(foo="baz", baz=2)
+    assert appended.get_all() == {"foo": ["bar", "baz"], "baz": [1, 2]}
+
+
+def test_state_extend_multiple_keys():
+    state = State({"foo": ["bar"], "baz": [1]})
+    extended = state.extend(foo=["baz"], baz=[2, 3])
+    assert extended.get_all() == {"foo": ["bar", "baz"], "baz": [1, 2, 3]}
+
+
 def test_state_update():
     state = State({"foo": "bar", "baz": "qux"})
     updated = state.update(foo="baz")
@@ -90,6 +108,12 @@ def test_state_append_validate_failure():
     state = State({"foo": "bar"})
     with pytest.raises(ValueError, match="non-appendable"):
         state.append(foo="baz", bar="qux")
+
+
+def test_state_extend_validate_failure():
+    state = State({"foo": "bar"})
+    with pytest.raises(ValueError, match="non-extendable"):
+        state.extend(foo=["baz", "qux"], bar=["quux"])
 
 
 def test_state_increment():
