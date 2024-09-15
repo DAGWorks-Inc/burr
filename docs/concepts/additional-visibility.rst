@@ -5,7 +5,7 @@ Additional Visibility
 .. note::
 
     Burr comes with the ability to see inside your actions. This is a very pluggable framework
-    that comes with the default tracking client, but can also be hooked up to tools such as `OpenTelemetry <https://opentelemetry.io/>`_(OTel)
+    that comes with the default tracking client, but can also be hooked up to tools such as `OpenTelemetry <https://opentelemetry.io/>`_ (OTel)
 
 ----------
 Quickstart

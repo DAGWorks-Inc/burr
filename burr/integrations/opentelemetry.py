@@ -134,11 +134,30 @@ class OpenTelemetryBridge(
     DoLogAttributeHook,
 ):
     """Adapter to log Burr events to OpenTelemetry. At a high level, this works as follows:
+
     1. On any of the start/pre hooks (pre_run_execute_call, pre_run_step, pre_start_span), we start a new span
     2. On any of the post ones we exit the span, accounting for the error (setting it if needed)
     3. On do_log_attributes, we log the attributes to the current span -- these are serialized using the serde module
 
     This works by logging to OpenTelemetry, and setting the span processor to be the right one (that knows about the tracker).
+
+    You can use this as follows:
+
+    .. code-block:: python
+
+        # replace with instructions from your prefered vendor
+        my_vendor_library_or_tracer_provider.init()
+
+        app = (
+            ApplicationBuilder()
+            .with_entrypoint("prompt")
+            .with_state(chat_history=[])
+            .with_graph(graph)
+            .with_hooks(OpenTelemetryBridge())
+            .build()
+        )
+
+        app.run() # will log to OpenTelemetry
     """
 
     def __init__(self, tracer_name: str = None, tracer: trace.Tracer = None):
@@ -640,7 +659,11 @@ def _init_instrument(
 
 
 def init_instruments(*instruments: INSTRUMENTS, init_all: bool = False) -> None:
-    """Instruments the specified libraries
+    """Instruments the specified libraries, or all that are installed if it is enabled.
+
+    This will check if any libraries are available in the current environment and
+    initialize if they are. See the ``INSTRUMENTS_SPECS`` field for the list of
+    available libraries.
 
     :param instruments: Name of libraries to instrument (e.g., `requests`, `openai`)
     :param init_all: If True, initialize all available instruments for imported packages.
