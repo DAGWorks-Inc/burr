@@ -107,7 +107,7 @@ def test_state_wipe_keep():
 def test_state_append_validate_failure():
     state = State({"foo": "bar"})
     with pytest.raises(ValueError, match="non-appendable"):
-        state.append(foo="baz", bar="qux")
+        state.append(foo="baz")
 
 
 def test_state_extend_validate_failure():

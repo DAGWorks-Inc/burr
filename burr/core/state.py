@@ -284,10 +284,16 @@ class State(Mapping, Generic[StateType]):
     def apply_operation(self, operation: StateDelta) -> "State[StateType]":
         """Applies a given operation to the state, returning a new state"""
 
-        # Moved to copy.copy instead of copy.deepcopy
-        # TODO -- just copy the ones that have changed
-        # And if they can't be copied then we use the same ones...
         new_state = copy.copy(self._state)  # TODO -- restrict to just the read keys
+        for field in operation.reads():
+            # This ensures we only copy the fields that are read by value
+            # and copy the others by value
+            # TODO -- make this more efficient when we have immutable transactions
+            # with event-based history: https://github.com/DAGWorks-Inc/burr/issues/33
+            if field in new_state:
+                # currently the reads() includes optional fields
+                # We should clean that up, but this is an internal API so not worried now
+                new_state[field] = copy.deepcopy(new_state[field])
         operation.validate(new_state)
         operation.apply_mutate(
             new_state
