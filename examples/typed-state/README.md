@@ -5,9 +5,9 @@ This example goes over how to use the typed state features in Burr with pydantic
 It will cover the following concepts:
 
 1. Why you might want to use typing for your state in the first place
-1. Define typing at the application level
+1. IDE setup to make use of typing.
 1. Defining/altering state at the action level
-1. Doing so in a streaming manner
+1. Defining types for streaming contexts
 1. Wiring that through to a FastAPI app
 
 This README will contain snippets + link out to the code.
@@ -39,16 +39,16 @@ Type-annotation in python allows you to read your code and get some sense of wha
 ## Setting up your IDE
 
 VSCode (or an editor with a similar interface) is generally optimal for this. It has
-pluggable typing (e.g. pylance), which handles generics cleanly. Unfortunately pycharm
+pluggable typing (e.g. pylance), which handles generics cleanly. Note: pycharm
 is often behind on typing support. See issues like [this](https://youtrack.jetbrains.com/issue/PY-44364) and [this](https://youtrack.jetbrains.com/issue/PY-27627/Support-explicitly-parametrized-generic-class-instantiation-syntax).
 
-While it will still work in pycharm, you will not get some of the beter auto-completion capabilities.
+While it will still work in pycharm, you will not get some of the better auto-completion capabilities until those issues are resolved.
 
 ## Defining typed state at the application level
 
-This code for this is in [application.py](application.py).
+The code for this is in [application.py](application.py).
 
-First, define a pydantic model -- make it as recursive as you want. This will represent
+First, define a pydantic model -- make it as nested/recursive as you want. This will represent
 your entire state. In this case, we're going to have a transcript of a youtube video that
 was given by the user, as well as the social media post. The high-level is here -- the rest is
 in the code:
@@ -65,9 +65,9 @@ class ApplicationState(BaseModel):
 ```
 
 Note that this should exactly model your state -- we need to make things optional,
-as there are points in the state where the transcript/post will not have been assigned.
+as there are points in time when running your application where we have not populated all fields in the application state. For our example the transcript/post will not have been assigned.
 
-Next, we add it in to the application object, both the initial value and the typing system.
+Next, we add it in to the application object, both the initial value(s) and the typing system.
 The typing system is what's responsible for managing the schema:
 
 ```python
@@ -88,7 +88,7 @@ app = (
 
 That ensures that application and the application's state object are parameterized on the state type.
 
-To get the state, you can use `.data` on any state object returned by the application
+To get the typed state object you defined, you can use `.data` on any state object returned by the application:
 
 ```python
 # just from the application
@@ -101,17 +101,18 @@ print(state.data.transcript)
 
 ## Defining/altering typed state at the action level
 
-This code for this is in [application.py](application.py).
+The code for this is in [application.py](application.py).
 
 In addition to defining state centrally, we can define it at an action level.
 
-The code is simple, but the API is slightly different from standard Burr. Rather than
-using the immutable state-based API, we in-place mutate pydantic models. Don't worry, it's still immutable, you're just modifying a copy and returning it.
+The code is straightforward, but the API is slightly different from standard Burr. Rather than
+using the immutable state-based API, we in-place mutate pydantic models in the action function. Don't worry, the state object you are modifying is still immutable, you're just modifying a copy and returning it.
 
-In this case, we call to `@action.pydantic`, which tells which fields to read/write to from state. It derives the classes from the function annotations, although you can also pass it the
-pydantic classes as arguments to the decorator if you prefer.
+In this case, we use `@action.pydantic`, which tells that we're using typed state and which fields to read/write to from state. It derives your typed state class(es) from the function annotations, although you can also pass it the pydantic classes as arguments to the decorator if you prefer.
 
-Note that the reads/writes have to be a subset of the state object. In this case we use the global `ApplicationState` object as described above, although it can use a subset/compatible set of fields (or, if you elect not to use centralized state, it just has to be compatible with upstream/downstream versions).
+Note that the reads/writes have to be a subset of your defined state object -- fields that exist in your pydantic model.
+This is because the action will pull all its data from state -- it listens to specific sub-fields.
+In this case we use the global `ApplicationState` object as described above, although it can use a subset/compatible set of fields (or, if you elect not to use centralized state, it just has to be compatible with upstream/downstream versions).
 
 Under the hood, burr will subset the state class so it only has the relevant fields (the reads/write) fields.
 
@@ -136,9 +137,9 @@ def generate_post(state: ApplicationState, llm_client) -> ApplicationState:
 
 ## Typed state for streaming actions
 
-This code for this is in [application.py](application.py).
+The code for this is in [application.py](application.py).
 
-For streaming actions, not only do we have to type the input/output state, but we can also type the intermediate result.
+For streaming actions, not only can we type the input/output state, but we can also type the intermediate result.
 
 In this case, we just use the `SocialMediaPost` as we did in the application state. Instructor will be streaming that in as it gets created.
 
@@ -180,8 +181,8 @@ def generate_post_streaming(
     yield post, state
 ```
 
-When we call out to the application we built, we have to do a little magic to get typing to work
-in the IDE, but we still have the same benefits as the non-streaming approach.
+When we call out to the application we built, we have to add a type-hint to get typing to work
+in the IDE (see the line `streaming_container: StreamingResultContainer[...]`), but we still have the same benefits as the non-streaming approach.
 
 ```python
 app = build_streaming_application(...) # builder left out for now
@@ -200,7 +201,7 @@ for post in streaming_container:
 
 ## FastAPI integration
 
-This code for this is in [server.py](server.py).
+The code for this is in [server.py](server.py).
 
 To integrate this with FastAPI is easy, and gets easier with the types cascading through.
 
