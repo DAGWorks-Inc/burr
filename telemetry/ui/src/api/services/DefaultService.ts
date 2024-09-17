@@ -4,10 +4,11 @@
 /* eslint-disable */
 import type { ApplicationLogs } from '../models/ApplicationLogs';
 import type { ApplicationPage } from '../models/ApplicationPage';
+import type { AppResponse } from '../models/AppResponse';
 import type { BackendSpec } from '../models/BackendSpec';
+import type { burr__examples__email_assistant__server__EmailAssistantState } from '../models/burr__examples__email_assistant__server__EmailAssistantState';
 import type { ChatItem } from '../models/ChatItem';
 import type { DraftInit } from '../models/DraftInit';
-import type { EmailAssistantState } from '../models/EmailAssistantState';
 import type { Feedback } from '../models/Feedback';
 import type { IndexingJob } from '../models/IndexingJob';
 import type { Project } from '../models/Project';
@@ -297,14 +298,14 @@ export class DefaultService {
    * @param projectId
    * @param appId
    * @param requestBody
-   * @returns EmailAssistantState Successful Response
+   * @returns burr__examples__email_assistant__server__EmailAssistantState Successful Response
    * @throws ApiError
    */
   public static initializeDraftApiV0EmailAssistantCreateProjectIdAppIdPost(
     projectId: string,
     appId: string,
     requestBody: DraftInit
-  ): CancelablePromise<EmailAssistantState> {
+  ): CancelablePromise<burr__examples__email_assistant__server__EmailAssistantState> {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/api/v0/email_assistant/create/{project_id}/{app_id}',
@@ -330,14 +331,14 @@ export class DefaultService {
    * @param projectId
    * @param appId
    * @param requestBody
-   * @returns EmailAssistantState Successful Response
+   * @returns burr__examples__email_assistant__server__EmailAssistantState Successful Response
    * @throws ApiError
    */
   public static answerQuestionsApiV0EmailAssistantAnswerQuestionsProjectIdAppIdPost(
     projectId: string,
     appId: string,
     requestBody: QuestionAnswers
-  ): CancelablePromise<EmailAssistantState> {
+  ): CancelablePromise<burr__examples__email_assistant__server__EmailAssistantState> {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/api/v0/email_assistant/answer_questions/{project_id}/{app_id}',
@@ -363,14 +364,14 @@ export class DefaultService {
    * @param projectId
    * @param appId
    * @param requestBody
-   * @returns EmailAssistantState Successful Response
+   * @returns burr__examples__email_assistant__server__EmailAssistantState Successful Response
    * @throws ApiError
    */
   public static provideFeedbackApiV0EmailAssistantProvideFeedbackProjectIdAppIdPost(
     projectId: string,
     appId: string,
     requestBody: Feedback
-  ): CancelablePromise<EmailAssistantState> {
+  ): CancelablePromise<burr__examples__email_assistant__server__EmailAssistantState> {
     return __request(OpenAPI, {
       method: 'POST',
       url: '/api/v0/email_assistant/provide_feedback/{project_id}/{app_id}',
@@ -394,13 +395,13 @@ export class DefaultService {
    * :return: The state of the application
    * @param projectId
    * @param appId
-   * @returns EmailAssistantState Successful Response
+   * @returns burr__examples__email_assistant__server__EmailAssistantState Successful Response
    * @throws ApiError
    */
   public static getStateApiV0EmailAssistantStateProjectIdAppIdGet(
     projectId: string,
     appId: string
-  ): CancelablePromise<EmailAssistantState> {
+  ): CancelablePromise<burr__examples__email_assistant__server__EmailAssistantState> {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/api/v0/email_assistant/state/{project_id}/{app_id}',
@@ -425,6 +426,170 @@ export class DefaultService {
     return __request(OpenAPI, {
       method: 'GET',
       url: '/api/v0/email_assistant/validate/{project_id}/{app_id}'
+    });
+  }
+  /**
+   * Create New Application
+   * @param projectId
+   * @param appId
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static createNewApplicationApiV0EmailAssistantTypedCreateNewProjectIdAppIdPost(
+    projectId: string,
+    appId: string
+  ): CancelablePromise<string> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v0/email_assistant_typed/create_new/{project_id}/{app_id}',
+      path: {
+        project_id: projectId,
+        app_id: appId
+      },
+      errors: {
+        422: `Validation Error`
+      }
+    });
+  }
+  /**
+   * Initialize Draft
+   * Endpoint to initialize the draft with the email and instructions
+   *
+   * :param project_id: ID of the project (used by telemetry tracking/storage)
+   * :param app_id: ID of the application (used to reference the app)
+   * :param draft_data: Data to initialize the draft
+   * :return: The state of the application after initialization
+   * @param projectId
+   * @param appId
+   * @param requestBody
+   * @returns AppResponse Successful Response
+   * @throws ApiError
+   */
+  public static initializeDraftApiV0EmailAssistantTypedCreateProjectIdAppIdPost(
+    projectId: string,
+    appId: string,
+    requestBody: DraftInit
+  ): CancelablePromise<AppResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v0/email_assistant_typed/create/{project_id}/{app_id}',
+      path: {
+        project_id: projectId,
+        app_id: appId
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`
+      }
+    });
+  }
+  /**
+   * Answer Questions
+   * Endpoint to answer questions the LLM provides
+   *
+   * :param project_id: ID of the project (used by telemetry tracking/storage)
+   * :param app_id: ID of the application (used to reference the app)
+   * :param question_answers: Answers to the questions
+   * :return: The state of the application after answering the questions
+   * @param projectId
+   * @param appId
+   * @param requestBody
+   * @returns AppResponse Successful Response
+   * @throws ApiError
+   */
+  public static answerQuestionsApiV0EmailAssistantTypedAnswerQuestionsProjectIdAppIdPost(
+    projectId: string,
+    appId: string,
+    requestBody: QuestionAnswers
+  ): CancelablePromise<AppResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v0/email_assistant_typed/answer_questions/{project_id}/{app_id}',
+      path: {
+        project_id: projectId,
+        app_id: appId
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`
+      }
+    });
+  }
+  /**
+   * Provide Feedback
+   * Endpoint to provide feedback to the LLM
+   *
+   * :param project_id: ID of the project (used by telemetry tracking/storage)
+   * :param app_id: ID of the application (used to reference the app)
+   * :param feedback: Feedback to provide to the LLM
+   * :return: The state of the application after providing feedback
+   * @param projectId
+   * @param appId
+   * @param requestBody
+   * @returns AppResponse Successful Response
+   * @throws ApiError
+   */
+  public static provideFeedbackApiV0EmailAssistantTypedProvideFeedbackProjectIdAppIdPost(
+    projectId: string,
+    appId: string,
+    requestBody: Feedback
+  ): CancelablePromise<AppResponse> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v0/email_assistant_typed/provide_feedback/{project_id}/{app_id}',
+      path: {
+        project_id: projectId,
+        app_id: appId
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`
+      }
+    });
+  }
+  /**
+   * Get State
+   * Get the current state of the application
+   *
+   * :param project_id: ID of the project (used by telemetry tracking/storage)
+   * :param app_id:  ID of the application (used to reference the app)
+   * :return: The state of the application
+   * @param projectId
+   * @param appId
+   * @returns AppResponse Successful Response
+   * @throws ApiError
+   */
+  public static getStateApiV0EmailAssistantTypedStateProjectIdAppIdGet(
+    projectId: string,
+    appId: string
+  ): CancelablePromise<AppResponse> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v0/email_assistant_typed/state/{project_id}/{app_id}',
+      path: {
+        project_id: projectId,
+        app_id: appId
+      },
+      errors: {
+        422: `Validation Error`
+      }
+    });
+  }
+  /**
+   * Validate Environment
+   * Validate the environment
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static validateEnvironmentApiV0EmailAssistantTypedValidateProjectIdAppIdGet(): CancelablePromise<
+    string | null
+  > {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v0/email_assistant_typed/validate/{project_id}/{app_id}'
     });
   }
   /**
