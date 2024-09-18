@@ -6,41 +6,13 @@ These are on the roadmap (and will be part of Burr in the imminent future), but 
 
 We build fast though, so let us know which ones you need and they'll be in there before you know it!
 
------------
-Typed State
------------
 
-We plan to add the ability to type-check state with some (or all) of the following:
+--------------------
+UI-based annotations
+--------------------
 
-- Pydantic
-- dataclasses
-- TypedDict
-- Custom state schemas (through the ``reads``/``writes`` parameters)
-
-The idea is you would define state at the function level, parameterized by the state type, and Burr would be able to validate
-against that state.
-
-.. code-block:: python
-
-    class InputState(TypedDict):
-        foo: int
-        bar: str
-
-    class OutputState(TypedDict):
-        baz: int
-        qux: str
-
-    @action(reads=["foo", "bar"], writes=["baz"])
-    def my_action(state: State[InputState]) -> State[OutputState]:
-        result = {"baz": state["foo"] + 1, "qux": state["bar"] + "!"}
-        return state.update(**result)
-
-The above could also be dataclasses/pydantic models. We could also add something as simple as:
-
-.. code-block:: python
-
-    @action(reads={"foo": int, "bar": str}, writes={"baz": int, "qux": str})
-    ...
+We're adding the ability to annotate actions/states in the UI and download later for
+analysis, debugging, etc... Please reach out if this is something you'd like to test!
 
 -----------------------------
 State Management/Immutability
@@ -113,14 +85,6 @@ One could imagine adding it as a condition (a few possibilities)
     )
 
 Will have to come up with ergonomic APIs -- the above are just some ideas.
-
------------------
-Streaming results
------------------
-
-Results should be able to stream in, but we'll want to store the final output in state.
-
-Still thinking through the UX.
 
 ------------
 Integrations

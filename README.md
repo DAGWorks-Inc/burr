@@ -1,4 +1,5 @@
 # <img src="https://github.com/user-attachments/assets/2ab9b499-7ca2-4ae9-af72-ccc775f30b4e" width=25 height=25/> Burr
+
 <div>
 
 [![Discord](https://img.shields.io/badge/Join-Burr_Discord-7289DA?logo=discord)](https://discord.gg/6Zy2DwP4f3)
@@ -6,6 +7,7 @@
 [![GitHub Last Commit](https://img.shields.io/github/last-commit/dagworks-inc/burr)](https://github.com/dagworks-inc/burr/pulse)
 [![X](https://img.shields.io/badge/follow-%40burr_framework-1DA1F2?logo=x&style=social)](https://twitter.com/burr_framework)
 <a href="https://app.commanddash.io/agent/github_DAGWorks-Inc_burr"><img src="https://img.shields.io/badge/AI-Code%20Agent-EB9FDA"></a>
+
 </div>
 
 Burr makes it easy to develop applications that make decisions (chatbots, agents, simulations, etc...) from simple python building blocks.
@@ -31,6 +33,7 @@ Then run the UI server:
 ```bash
 burr
 ```
+
 This will open up Burr's telemetry UI. It comes loaded with some default data so you can click around.
 It also has a demo chat application to help demonstrate what the UI captures enabling you too see things changing in
 real-time. Hit the "Demos" side bar on the left and select `chatbot`. To chat it requires the `OPENAI_API_KEY`
@@ -42,6 +45,7 @@ Next, start coding / running examples:
 git clone https://github.com/dagworks-inc/burr && cd burr/examples/hello-world-counter
 python application.py
 ```
+
 You'll see the counter example running in the terminal, along with the trace being tracked in the UI.
 See if you can find it.
 
@@ -119,14 +123,14 @@ Then read through some of the concepts and write your own application!
 
 While Burr is attempting something (somewhat) unique, there are a variety of tools that occupy similar spaces:
 
-| Criteria                                  | Burr | Langgraph | temporal | Langchain | Superagent | Hamilton |
-|-------------------------------------------|:---:|:----------:|:--------:|:---------:|:----------:|:--------:|
-| Explicitly models a state machine         | ✅  |      ✅    |    ❌    |     ❌    |     ❌     |   ❌     |
-| Framework-agnostic                        | ✅  |      ✅    |    ✅    |     ✅    |     ❌     |   ✅     |
-| Asynchronous event-based orchestration    | ❌  |      ❌    |    ✅    |     ❌    |     ❌     |   ❌     |
-| Built for core web-service logic          | ✅  |      ✅    |    ❌    |     ✅    |     ✅     |   ✅     |
-| Open-source user-interface for monitoring/tracing | ✅  |      ❌    |    ❌    |     ❌    |     ❌     |   ✅     |
-| Works with non-LLM use-cases              | ✅  |      ❌    |    ❌    |     ❌    |     ❌     |   ✅     |
+| Criteria                                          | Burr | Langgraph | temporal | Langchain | Superagent | Hamilton |
+| ------------------------------------------------- | :--: | :-------: | :------: | :-------: | :--------: | :------: |
+| Explicitly models a state machine                 |  ✅  |    ✅     |    ❌    |    ❌     |     ❌     |    ❌    |
+| Framework-agnostic                                |  ✅  |    ✅     |    ✅    |    ✅     |     ❌     |    ✅    |
+| Asynchronous event-based orchestration            |  ❌  |    ❌     |    ✅    |    ❌     |     ❌     |    ❌    |
+| Built for core web-service logic                  |  ✅  |    ✅     |    ❌    |    ✅     |     ✅     |    ✅    |
+| Open-source user-interface for monitoring/tracing |  ✅  |    ❌     |    ❌    |    ❌     |     ❌     |    ✅    |
+| Works with non-LLM use-cases                      |  ✅  |    ❌     |    ❌    |    ❌     |     ❌     |    ✅    |
 
 ## 🌯 Why the name Burr?
 
@@ -140,19 +144,18 @@ but realized that it has a wide array of applications and decided to release it 
 
 While Burr is stable and well-tested, we have quite a few tools/features on our roadmap!
 
-1. Recursive state machines. Run Burr within Burr to get hierarchical agents/parallelism + track through to the UI.
+1. Parallelism -- support for recursive "sub-agents" through an ergonomic API (not: this is already feasible, see [recursive applications](http://localhost:8000/concepts/recursion/)).
 2. Testing & eval curation. Curating data with annotations and being able to export these annotations to create unit & integration tests.
 3. Various efficiency/usability improvements for the core library (see [planned capabilities](https://burr.dagworks.io/concepts/planned-capabilities/) for more details). This includes:
-   1. Fully typed state with validation
-   2. First-class support for retries + exception management
-   3. More integration with popular frameworks (LCEL, LLamaIndex, Hamilton, etc...)
-   4. Capturing & surfacing extra metadata, e.g. annotations for particular point in time, that you can then pull out for fine-tuning, etc.
+   1. First-class support for retries + exception management
+   2. More integration with popular frameworks (LCEL, LLamaIndex, Hamilton, etc...)
+   3. Capturing & surfacing extra metadata, e.g. annotations for particular point in time, that you can then pull out for fine-tuning, etc.
 4. Tooling for hosted execution of state machines, integrating with your infrastructure (Ray, modal, FastAPI + EC2, etc...)
 5. Storage integrations. More integrations with technologies like Redis, MongoDB, MySQL, etc. so you can run Burr on top of what you have available.
 6. More out of the box plugins for fine-grained tracing, e.g. decorators for your functions, LLM clients, etc.
 
 If you want to avoid self-hosting the above solutions we're building Burr Cloud. To let us know you're interested
- sign up [here](https://forms.gle/w9u2QKcPrztApRedA) for the waitlist to get access.
+sign up [here](https://forms.gle/w9u2QKcPrztApRedA) for the waitlist to get access.
 
 ## 🤲 Contributing
 
@@ -163,6 +166,7 @@ We welcome contributors! To get started on developing, see the [developer-facing
 ### Code contributions
 
 Users who have contributed core functionality, integrations, or examples.
+
 - [Elijah ben Izzy](https://github.com/elijahbenizzy)
 - [Stefan Krawczyk](https://github.com/skrawcz)
 - [Joseph Booth](https://github.com/jombooth)
@@ -172,7 +176,9 @@ Users who have contributed core functionality, integrations, or examples.
 - [Abdul Rafay](https://github.com/proftorch)
 
 ### Bug hunters/special mentions
+
 Users who have contributed small docs fixes, design suggestions, and found bugs
+
 - [Luke Chadwick](https://github.com/vertis)
 - [Evans](https://github.com/sudoevans)
 - [Sasmitha Manathunga](https://github.com/mmz-001)
