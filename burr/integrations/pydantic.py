@@ -77,7 +77,9 @@ def subset_model(
                 if annotation is not None:
                     new_field_info.annotation = Optional[annotation]  # type: ignore
             new_fields[name] = (new_field_info.annotation, new_field_info)
-    return pydantic.create_model(model.__name__ + model_name_suffix, **new_fields)  # type: ignore
+    return pydantic.create_model(
+        model.__name__ + model_name_suffix, __config__=model.model_config, **new_fields
+    )  # type: ignore
 
 
 def merge_to_state(model: pydantic.BaseModel, write_keys: List[str], state: State) -> State:
