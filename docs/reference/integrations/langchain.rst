@@ -1,6 +1,6 @@
-----------------
-Burr + Langchain
-----------------
+---------
+Langchain
+---------
 
 Burr works out of the box with langchain, as Burr delegates to any python code.
 

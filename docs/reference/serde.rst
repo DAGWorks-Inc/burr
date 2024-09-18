@@ -1,3 +1,5 @@
+.. _serderef:
+
 ==================================
 Serialization & Deserialization
 ==================================
@@ -20,8 +22,6 @@ This is used to identify the deserialization function to use.
 
 Out of the box Implementations
 ==============================
-
-.. _serderef:
 
 The following implementations are available assuming you have the right dependencies in your environment:
 

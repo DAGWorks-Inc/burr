@@ -1,6 +1,6 @@
-================
+============
 Integrations
-================
+============
 
 Integrations -- we will be adding more
 
@@ -12,3 +12,4 @@ Integrations -- we will be adding more
    opentelemetry
    traceloop
    langchain
+   pydantic
