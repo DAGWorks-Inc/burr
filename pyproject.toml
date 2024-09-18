@@ -109,6 +109,10 @@ tracking-server = [
   "openai", # temporary for the demo, we will likely remove
 ]
 
+pydantic = [
+  "pydantic"
+]
+
 cli = [
   "loguru",
   "click",
