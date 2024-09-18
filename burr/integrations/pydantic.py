@@ -10,7 +10,6 @@ from typing import (
     Generator,
     List,
     Optional,
-    ParamSpec,
     Tuple,
     Type,
     TypeVar,
@@ -28,8 +27,6 @@ from burr.core.action import (
     derive_inputs_from_fn,
 )
 from burr.core.typing import ActionSchema, TypingSystem
-
-Inputs = ParamSpec("Inputs")
 
 PydanticActionFunction = Callable[..., Union[pydantic.BaseModel, Awaitable[pydantic.BaseModel]]]
 

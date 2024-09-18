@@ -58,7 +58,7 @@ tests = [
   "langchain_community",
   "pandas",
   "psycopg2",
-  "pydantic",
+  "pydantic[email]",
   "pyarrow",
   "redis",
   "burr[opentelemetry]"
