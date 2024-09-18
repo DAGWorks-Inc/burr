@@ -4,6 +4,7 @@ import dataclasses
 import importlib
 import inspect
 import logging
+from functools import cached_property
 from typing import Any, Callable, Dict, Generic, Iterator, Mapping, Optional, TypeVar, Union
 
 from burr.core import serde
@@ -277,7 +278,7 @@ class State(Mapping, Generic[StateType]):
         """Copies state with a specific typing system"""
         return State(self._state, typing_system=typing_system)
 
-    @property
+    @cached_property
     def data(self) -> StateType:
         return self._typing_system.construct_data(self)  # type: ignore
 
