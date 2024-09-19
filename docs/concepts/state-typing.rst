@@ -38,6 +38,7 @@ First, define a pydantic model for your application:
 .. code-block:: python
 
     from pydantic import BaseModel
+
     class ApplicationState(pydantic.BaseModel):
         chat_history: List[dict[str, str]] = pydantic.Field(default_factory=list)
         prompt: Optional[str] = None
@@ -80,7 +81,9 @@ You can also define type computations on on the action-level:
 
 .. code-block:: python
 
-    @pydantic_action(reads=["prompt", "chat_history"], writes=["response"])
+    from burr.core import action
+
+    @action.pydantic(reads=["prompt", "chat_history"], writes=["response"])
     def image_response(state: ApplicationState, model: str = "dall-e-2") -> ApplicationState:
         client = _get_openai_client()
         result = client.images.generate(
