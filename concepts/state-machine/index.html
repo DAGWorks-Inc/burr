@@ -1,0 +1,592 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-20Z3J1CR22"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-20Z3J1CR22');
+    </script>
+    <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Transitions" href="../transitions/" /><link rel="prev" title="State" href="../state/" />
+        <link rel="canonical" href="https://burr.dagworks.io/concepts/state-machine/" />
+
+    <!-- Generated with Sphinx 8.0.2 and Furo 2024.08.06 -->
+        <title>Applications - Burr</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  --color-announcement-background: #ffba00;
+  --color-announcement-text: #091E42;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-announcement-background: #ffba00;
+  --color-announcement-text: #091E42;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-announcement-background: #ffba00;
+  --color-announcement-text: #091E42;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../"><div class="brand">Burr</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../">
+  
+  
+  <span class="sidebar-brand-text">Burr</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../search/" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Burr</span></p>
+<ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../getting_started/">Get started</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Get started</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../getting_started/why-burr/">Why Burr?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting_started/install/">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting_started/simple-example/">Quickstart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting_started/up-next/">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../examples/">Cookbook</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Cookbook</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/simple/">🧸 Toy examples</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of 🧸 Toy examples</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/simple/counter/">Counter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/simple/cowsay/">Cowsay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/simple/choose-your-own-adventure/">Choose your own adventure</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/chatbots/">📞 Chatbots</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of 📞 Chatbots</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/chatbots/basic-chatbot/">Basic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/chatbots/gpt-like-chatbot/">GPT-like multimodal chatbot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/chatbots/rag-chatbot-hamilton/">Conversational RAG with Burr and Hamilton</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/agents/">🤖 Agents</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of 🤖 Agents</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/agents/divide-and-conquer/">Divide and Conquer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/agents/agent-patterns/">Agent patterns</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/deployment/">✈ Deployment</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of ✈ Deployment</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/deployment/web-server/">Web service (FastAPI, Flask, Django, etc.)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/deployment/aws/">AWS Lambda</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/guardrails/">🚧 Guardrails</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of 🚧 Guardrails</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/guardrails/creating_tests/">Creating Test Cases</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/data-science/">🧪 Data science</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of 🧪 Data science</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/data-science/ml_training/">Hyperparameter tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/data-science/simulation/">Simulations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../">Concepts</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Concepts</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../overview/">Cheat Sheet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../actions/">Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state/">State</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../transitions/">Transitions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tracking/">Tracking Burr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state-persistence/">State Persistence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../serde/">Serialization / Deserialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../streaming-actions/">Streaming Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state-typing/">Typing State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../hooks/">Hooks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../additional-visibility/">Additional Visibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../recursion/">Recursive Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../planned-capabilities/">Planned Capabilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../reference/">API reference</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of API reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/application/">Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/application/#graph-apis">Graph APIs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/actions/">Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/state/">State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/serde/">Serialization &amp; Deserialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/persister/">State Persistence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/conditions/">Conditions/Transitions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/tracking/">Tracking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/visibility/">Tracing Inside Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/lifecycle/">Lifecycle API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/typing/">Typing</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../reference/integrations/">Integrations</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of Integrations</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/hamilton/">Hamilton</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/streamlit/">Streamlit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/opentelemetry/">OpenTelemetry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/traceloop/">Traceloop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/langchain/">Langchain</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/telemetry/">Usage analytics + data privacy</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../contributing/">Contributing</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle navigation of Contributing</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing/setup/">Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing/iterating/">Developing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing/architecture/">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing/contributing/">Contributing</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Burr Cloud</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://forms.gle/w9u2QKcPrztApRedA">Waitist</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">RESOURCES</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blog.dagworks.io/">Blog</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://discord.gg/6Zy2DwP4f3">Discord community server</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/dagworks-inc/burr">GitHub</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://twitter.com/dagworks">Twitter</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/dagworks-inc/burr/blob/main/docs/concepts/state-machine.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/dagworks-inc/burr/edit/main/docs/concepts/state-machine.rst" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="applications">
+<h1>Applications<a class="headerlink" href="#applications" title="Link to this heading">¶</a></h1>
+<div class="admonition note" id="id1">
+<p class="admonition-title">Note</p>
+<p>Applications tie everything in Burr together. They specify which actions should be included,
+how they connect (including conditional edges), and how to run.</p>
+</div>
+<p>Applications form the core representation of the state machine. You build them with the <code class="docutils literal notranslate"><span class="pre">ApplicationBuilder</span></code>.
+Here is the minimum that is required:</p>
+<ol class="arabic simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> of actions passed to <code class="docutils literal notranslate"><span class="pre">with_actions(...)</span></code></p></li>
+<li><p>Any relevant transitions (with conditions)</p></li>
+<li><p>An entry point – this is the first action to execute</p></li>
+</ol>
+<p>This is shown in the example from <a class="reference internal" href="../../getting_started/simple-example/#simpleexample"><span class="std std-ref">getting started</span></a></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">ApplicationBuilder</span><span class="p">,</span> <span class="n">default</span><span class="p">,</span> <span class="n">expr</span>
+<span class="n">app</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">ApplicationBuilder</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">with_actions</span><span class="p">(</span><span class="n">human_input</span><span class="p">,</span> <span class="n">ai_response</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">with_transitions</span><span class="p">(</span>
+        <span class="p">(</span><span class="s2">&quot;human_input&quot;</span><span class="p">,</span> <span class="s2">&quot;ai_response&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;ai_response&quot;</span><span class="p">,</span> <span class="s2">&quot;human_input&quot;</span><span class="p">)</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">with_state</span><span class="p">(</span><span class="n">chat_history</span><span class="o">=</span><span class="p">[])</span>
+    <span class="o">.</span><span class="n">with_entrypoint</span><span class="p">(</span><span class="s2">&quot;human_input&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">build</span><span class="p">()</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<section id="running">
+<h2>Running<a class="headerlink" href="#running" title="Link to this heading">¶</a></h2>
+<p>There are four APIs for executing an application.</p>
+<section id="step-astep">
+<h3><code class="docutils literal notranslate"><span class="pre">step</span></code>/<code class="docutils literal notranslate"><span class="pre">astep</span></code><a class="headerlink" href="#step-astep" title="Link to this heading">¶</a></h3>
+<p>Returns the tuple of the action, the result of that action, and the new state. Call this if you want to run the application step-by-step.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">application</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If you’re in an async context, you can run <cite>astep</cite> instead:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="k">await</span> <span class="n">application</span><span class="o">.</span><span class="n">astep</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Step can also take in <code class="docutils literal notranslate"><span class="pre">inputs</span></code> as a dictionary, which will be passed to the action’s run function as keyword arguments.
+This is specifically meant for a “human in the loop” scenario, where the action needs to ask for input from a user. In this case,
+the control flow is meant to be interrupted to allow for the user to provide input. See <a class="reference internal" href="../actions/#inputref"><span class="std std-ref">inputs</span></a> for more information.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">application</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="p">()})</span>
+</pre></div>
+</div>
+</section>
+<section id="iterate-aiterate">
+<h3><code class="docutils literal notranslate"><span class="pre">iterate</span></code>/<code class="docutils literal notranslate"><span class="pre">aiterate</span></code><a class="headerlink" href="#iterate-aiterate" title="Link to this heading">¶</a></h3>
+<p>Iterate just runs <code class="docutils literal notranslate"><span class="pre">step</span></code> in a row, functioning as a generator:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">action</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">application</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="n">halt_after</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;final_action_1&quot;</span><span class="p">,</span> <span class="s2">&quot;final_action_2&quot;</span><span class="p">]):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">action</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can also run <code class="docutils literal notranslate"><span class="pre">aiterate</span></code> in an async context:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">async</span> <span class="k">for</span> <span class="n">action</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">application</span><span class="o">.</span><span class="n">aiterate</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">action</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the synchronous context this also has a return value of a tuple of:</p>
+<ol class="arabic simple">
+<li><p>the action that was specified in <code class="docutils literal notranslate"><span class="pre">halt_after</span></code> or <code class="docutils literal notranslate"><span class="pre">halt_before</span></code>. In the <cite>after</cite> case the action will have already run. In the <code class="docutils literal notranslate"><span class="pre">before</span></code> case the action will not have run.</p></li>
+<li><p>The result of that action, in the <code class="docutils literal notranslate"><span class="pre">halt_after</span></code> case, else None in the <code class="docutils literal notranslate"><span class="pre">halt_before</span></code> case.</p></li>
+<li><p>The state of the application at the time of halting.</p></li>
+</ol>
+<p>You can access this by looking at the <code class="docutils literal notranslate"><span class="pre">value</span></code> variable of the <code class="docutils literal notranslate"><span class="pre">StopIteration</span></code> exception that is thrown
+at the end of the loop, as is standard for python generators.
+See the function implementation of <code class="docutils literal notranslate"><span class="pre">run</span></code> to show how this is done.</p>
+<p>In the async context, this does not return anything (asynchronous generators are not allowed a return value).</p>
+<p>If you want it to (attempt to) run forever, you can pass empty lists to <code class="docutils literal notranslate"><span class="pre">halt_after</span></code> and <code class="docutils literal notranslate"><span class="pre">halt_before</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can add inputs to <code class="docutils literal notranslate"><span class="pre">iterate</span></code>/<code class="docutils literal notranslate"><span class="pre">aiterate</span></code> by passing in a dictionary of inputs through the <code class="docutils literal notranslate"><span class="pre">inputs</span></code> parameter.
+This will only apply to the first action. Actions that are not the first but require inputs are considered undefined behavior.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The state machine has the capability of halting even if it does not reach one of the specified conditions – if there are
+no more transitions to take. This, however, is not a supported feature (and will log a warning). This is considered undefined behavior
+– use at your own risk, and consider adding a halting condition, or a default transition to a terminal.</p>
+</div>
+</section>
+<section id="run-arun">
+<h3><code class="docutils literal notranslate"><span class="pre">run</span></code>/<code class="docutils literal notranslate"><span class="pre">arun</span></code><a class="headerlink" href="#run-arun" title="Link to this heading">¶</a></h3>
+<p>Run just calls out to <code class="docutils literal notranslate"><span class="pre">iterate</span></code> and returns the final state.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">halt_after</span></code> and <code class="docutils literal notranslate"><span class="pre">halt_before</span></code> keyword arguments specify when to break out of running the state machine
+and return control back. <code class="docutils literal notranslate"><span class="pre">halt_after</span></code> will stop after the specified action(s) has run, and <code class="docutils literal notranslate"><span class="pre">halt_before</span></code> will stop before the specified action(s) has run.
+If multiple are specified, it will stop after the first one encountered, and the return values will be for that action.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">application</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="n">halt_after</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;final_action_1&quot;</span><span class="p">,</span> <span class="s2">&quot;final_action_2&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>In the async context, you can run <code class="docutils literal notranslate"><span class="pre">arun</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="k">await</span> <span class="n">application</span><span class="o">.</span><span class="n">arun</span><span class="p">(</span>
+    <span class="n">halt_after</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;final_action_1&quot;</span><span class="p">,</span> <span class="s2">&quot;final_action_2&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can add inputs to <code class="docutils literal notranslate"><span class="pre">run</span></code>/<code class="docutils literal notranslate"><span class="pre">arun</span></code> in the same way as you can with <code class="docutils literal notranslate"><span class="pre">iterate</span></code> – it will only apply to the first action.</p>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">run</span></code> and <code class="docutils literal notranslate"><span class="pre">arun</span></code> largely have the same behavior as <code class="docutils literal notranslate"><span class="pre">iterate</span></code> and <code class="docutils literal notranslate"><span class="pre">aiterate</span></code>.</p>
+</section>
+<section id="stream-result-astream-result">
+<h3><code class="docutils literal notranslate"><span class="pre">stream_result</span></code>/<code class="docutils literal notranslate"><span class="pre">astream_result</span></code><a class="headerlink" href="#stream-result-astream-result" title="Link to this heading">¶</a></h3>
+<p>These allow you to stream responses back. Note they work best with streaming actions.
+Read about them in the <a class="reference internal" href="../streaming-actions/#streaming"><span class="std std-ref">streaming</span></a> section.</p>
+</section>
+</section>
+<section id="graph-api">
+<h2>Graph API<a class="headerlink" href="#graph-api" title="Link to this heading">¶</a></h2>
+<p>The application exposes a graph API, allowing you to specify it as a graph separate from application concerns.
+While you likely won’t use this in your first few applications, it will become useful when you want ito run it
+in a web-server (create a graph once, application many times), import the graph from another context, or run it in multiple contexts.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">ApplicationBuilder</span><span class="p">,</span> <span class="n">default</span><span class="p">,</span> <span class="n">expr</span>
+<span class="n">graph</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">GraphBuilder</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">with_actions</span><span class="p">(</span><span class="n">human_input</span><span class="p">,</span> <span class="n">ai_response</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">with_transitions</span><span class="p">(</span>
+        <span class="p">(</span><span class="s2">&quot;human_input&quot;</span><span class="p">,</span> <span class="s2">&quot;ai_response&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;ai_response&quot;</span><span class="p">,</span> <span class="s2">&quot;human_input&quot;</span><span class="p">)</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+<span class="p">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">ApplicationBuilder</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">with_graph</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+    <span class="n">with_state</span><span class="p">(</span><span class="n">chat_history</span><span class="o">=</span><span class="p">[])</span>
+    <span class="o">.</span><span class="n">with_entrypoint</span><span class="p">(</span><span class="s2">&quot;human_input&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">build</span><span class="p">()</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>You can read more about it in the <a class="reference internal" href="../../reference/application/#burr.core.graph.GraphBuilder" title="burr.core.graph.GraphBuilder"><code class="xref py py-class docutils literal notranslate"><span class="pre">GraphBuilder</span> <span class="pre">docs</span></code></a>.</p>
+</section>
+<section id="inspection">
+<h2>Inspection<a class="headerlink" href="#inspection" title="Link to this heading">¶</a></h2>
+<p>You can ask various questions of the state machine using publicly-supported APIs:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">application.graph</span></code> will give you a static representation of the state machine with enough information to visualize</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">application.state</span></code> will give you the current state of the state machine. Note that if you modify it the results will not show up – state is immutable! Modify the state through actions.</p></li>
+</ul>
+<p>See the <a class="reference internal" href="../../reference/application/#applicationref"><span class="std std-ref">application docs</span></a></p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../transitions/">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Transitions</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../state/">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">State</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Elijah ben Izzy, Stefan Krawczyk
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Applications</a><ul>
+<li><a class="reference internal" href="#running">Running</a><ul>
+<li><a class="reference internal" href="#step-astep"><code class="docutils literal notranslate"><span class="pre">step</span></code>/<code class="docutils literal notranslate"><span class="pre">astep</span></code></a></li>
+<li><a class="reference internal" href="#iterate-aiterate"><code class="docutils literal notranslate"><span class="pre">iterate</span></code>/<code class="docutils literal notranslate"><span class="pre">aiterate</span></code></a></li>
+<li><a class="reference internal" href="#run-arun"><code class="docutils literal notranslate"><span class="pre">run</span></code>/<code class="docutils literal notranslate"><span class="pre">arun</span></code></a></li>
+<li><a class="reference internal" href="#stream-result-astream-result"><code class="docutils literal notranslate"><span class="pre">stream_result</span></code>/<code class="docutils literal notranslate"><span class="pre">astream_result</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#graph-api">Graph API</a></li>
+<li><a class="reference internal" href="#inspection">Inspection</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=187304be"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=5fa4622c"></script>
+    </body>
+</html>
