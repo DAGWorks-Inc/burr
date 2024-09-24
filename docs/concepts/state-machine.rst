@@ -146,7 +146,7 @@ Graph API
 ---------
 
 The application exposes a graph API, allowing you to specify it as a graph separate from application concerns.
-While you likely won't use this in your first few applications, it will become useful when you want ito run it
+While you likely won't use this in your first few applications, it will become useful when you want to run it
 in a web-server (create a graph once, application many times), import the graph from another context, or run it in multiple contexts.
 
 

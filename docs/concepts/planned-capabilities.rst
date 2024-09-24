@@ -49,7 +49,7 @@ if an exception is expected, the program will stop early. We will be adding the 
 on exceptions, which will allow you to transition to an error-handling (or retry) action that does not
 need the full outputs of the prior action.
 
-Here is what it would look liek in the current API:
+Here is what it would look like in the current API:
 
 .. code-block:: python
 
