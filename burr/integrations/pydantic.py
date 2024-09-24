@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import inspect
 import types
+import typing
 from typing import (
     AsyncGenerator,
     Awaitable,
@@ -110,22 +111,25 @@ def _validate_and_extract_signature_types(
             "The first argument of a pydantic "
             "action must be the state object. Got signature: {sig}."
         )
-    state_model = sig.parameters["state"].annotation
-    if state_model is inspect.Parameter.empty or not issubclass(state_model, pydantic.BaseModel):
+    type_hints = typing.get_type_hints(fn)
+
+    if (state_model := type_hints["state"]) is inspect.Parameter.empty or not issubclass(
+        state_model, pydantic.BaseModel
+    ):
         raise ValueError(
             f"Function fn: {fn.__qualname__} is not a valid pydantic action. "
             "a type annotation of a type extending: pydantic.BaseModel. Got parameter "
             "state: {state_model.__qualname__}."
         )
-    if sig.return_annotation is inspect.Parameter.empty or not issubclass(
-        sig.return_annotation, pydantic.BaseModel
+    if (ret_hint := type_hints.get("return")) is None or not issubclass(
+        ret_hint, pydantic.BaseModel
     ):
         raise ValueError(
             f"Function fn: {fn.__qualname__} is not a valid pydantic action. "
             "The return type must be a subclass of pydantic"
             ".BaseModel. Got return type: {sig.return_annotation}."
         )
-    return state_model, sig.return_annotation
+    return state_model, ret_hint
 
 
 def _validate_keys(model: Type[pydantic.BaseModel], keys: List[str], fn: Callable) -> None:
