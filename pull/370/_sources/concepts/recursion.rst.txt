@@ -1,5 +1,3 @@
-.. _recursion:
-
 ======================
 Recursive Applications
 ======================
