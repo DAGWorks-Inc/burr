@@ -2,56 +2,66 @@
 Parallelism
 ===========
 
-Burr allows for sets of actions/subgraphs to run in parallel. In this section we will go over the use-cases/how to run them!
+Burr can run multiple actions in parallel. Each parallel branch can contain one or more actions, and different branches can have different actions. This is useful when:
 
-General Idea/TL;DR
-==================
+- Trying different prompts with an LLM
+- Trying a prompt with different LLMs
+- Trying multiple prompts with multiple LLMs
+- Running multiple tools in parallel then combining/selecting from the result
+- Do semantic search and web search simultaneously for information retrieval
+
+And more! Just like Burr in general, these concepts are generic and can be applied to non-LLM applications
+This section shows how to enable parallelism and presents use cases.
+
 
 TL;DR
------
+=====
+Burr provides a high-level and a low-level API for parallelism. The high-level API supports many different patterns and should be sufficient for most use cases.
 
-Burr enables graph-level parallelism by having a "parallel action" that delegates to multiple sub-actions/graphs that run in parallel.
-While it has a lower-level API that's focused around tasks, Burr provides a blessed path that allows you to run multiple actions over the same
-state or multiple states over the same action, and join the results together in a custom way.
+- ``MapStates``: Apply an action to multiple values in state then reduce the action results (e.g., different prompts to the same LLM).
+- ``MapActions``: Apply different actions to the same state value then reduce the actions result (e.g., same prompt to different LLMs).
+- ``MapActionsAndStates``: Do the full cartesian product of actions and state values (e.g., try different prompts with multiple LLMs)
+- ``RunnableGraph``: Combined with the above options, you can replace a single Action by a Graph composed of multiple actions.
+
+With the low-level API, you can manually determine how parallel actions or subgraphs are executed.
 
 .. image:: ../_static/parallelism.png
    :align: center
 
-
-
-
 Overview
---------
+========
 
 Burr allows you to define parallel actions by expanding a single action into multiple individual actions or subgraphs which
-will execute them all and joining the results. This is a simple map-reduce pattern.
+will execute them all and joining the results. This is a simple `map-reduce <https://en.wikipedia.org/wiki/MapReduce>`_ pattern.
 
 Currently, Burr has two separate APIs for building parallel applications -- higher level (use this first), and lower level.
 Beyond that, Burr can support parallelism however you wish to run it -- see the advanced use-cases section for more details.
 
 Higher-level API
-----------------
+================
 
 You select a set of "configurations" over which you want to run, and Burr launches all of them then joins the result.
 
 This means you either:
+
 1. Vary the state and run over the same action/subgraph (think tuning LLM parameters/inputs, running simple experiments/optimization routines, etc...)
 2. Vary the action and provide the same state (think running multiple LLMs on the same input, running multiple analyses on the same data, etc...)
 
 Note we do not distinguish between subgraph and action -- under the hood it's all treated as a "sub-application" (more on that later).
 
------------------------------------------
+
 Run the same action over different states
 -----------------------------------------
 
-For case (1) (mapping states over the same action) you implement the `MapStates` class that provides the following:
+For case (1) (mapping states over the same action) you implement the ``MapStates`` class, doing the following:
 
-1. An ``action()`` function that provides the action/subgraph to run
-2. A ``states()`` function that yields a generator of states to run over
-3. A ``reduce()`` function that consumes a generator of final states (from the action/subgraph), and combines them as they come in
-4. The state fields from which the action reads
-5. The state fields to which the action writes
-
+- We define a regular action ``query_llm_action()`` using the ``@action`` decorator.
+- We also create a subclass of ``MapStates`` named ``TestMultiplePrompts``, which must implement ``.reads()``, ``.writes()``, ``.action()``, ``.states()``, and ``.reduce()``.
+    - ``.reads()`` / ``.writes()`` define the state value it can interact with, just like the ``@action`` decorator
+    - ``.action()`` leverages the ``query_llm_action()`` previously defined
+    - ``.states()`` can read value from State and yields values to pass to the . action(). In this case, it updates the prompt state value that's read by ``query_llm_action()```. (the example hardcoded a list of prompts for simplicity, but this would be read from state)
+    - ``.reduce()`` receives multiple states, one per ``.action()`` call, where the llm_output value is set by ``query_llm_action()`` in ``.action()``. Then, it must set all_llm_output as specified in the ``MapStates.writes()`` method.
+- We pass an instance of the ``TestMultiplePrompts`` class to the ApplicationBuilder, which will run the action over the states we provide.
 
 This looks as follows -- in this case we're running the same LLM over different prompts:
 
@@ -74,6 +84,9 @@ This looks as follows -- in this case we're running the same LLM over different 
             return query_llm_action.with_name("query_llm_action")
 
         def states(self, state: State) -> Generator[State, None, None]:
+            # You could easily have a list_prompts upstream action that writes to "prompts" in state
+            # And loop through those
+            # This hardcodes for simplicity
             for prompt in [
                 "What is the meaning of life?",
                 "What is the airspeed velocity of an unladen swallow?",
@@ -94,7 +107,7 @@ This looks as follows -- in this case we're running the same LLM over different 
         def writes() -> List[str]:
             return ["all_llm_outputs"]
 
-Then, to run it you just treat it is an action!
+Then, to run the application:
 
 .. code-block:: python
 
@@ -109,23 +122,25 @@ Then, to run it you just treat it is an action!
         .build()
     )
 
------------------------------------------
+
 Run different actions over the same state
 -----------------------------------------
 
-For case (2) (mapping actions over the same state) you implement te `MapActions` class that provides the following:
 
-1. A ``actions()`` function that yields a generator of actions to run
-2. A ``state()`` function that provides the state to run over
-3. A ``reduce()`` function that consumes a generator of final states (from the action/subgraph), and combines them as they come in
-4. The state fields from which the action reads
-5. The state fields to which the action writes
+For case (2) (mapping actions over the same state) you implement the ``MapActions`` class, doing the following:
 
+- We define a regular action ``query_llm_action()`` using the ``@action`` decorator. This takes in a model parameter (which we're going to bind later)
+- We also create a subclass of ``MapActions`` named ``TestMultipleModels``, which must implement ``.reads()``, ``.writes()``, ``.actions()``, ``.state()``, and ``.reduce()``.
+    - ``.reads()`` / ``.writes()`` define the state value it can interact with, just like the ``@action`` decorator
+    - ``.actions()`` leverages the ``query_llm_action()`` previously defined, binding with the different models we want to test
+    - ``.state()`` can read value from State and produces the state to pass to the actions produced by ``actions()``. In this case, it updates the prompt state value that's read by ``query_llm_action()``.
+    - ``.reduce()`` receives multiple states, one per result of the ``.actions()`` call, where the llm_output value is set by ``query_llm_action()`` in ``.actions()``. Then, it must set all_llm_output as specified in the ``MapStates.writes()`` method.
+- We pass an instance of the ``TestMultipleModels`` class to the ``ApplicationBuilder``, which will run the action over the states we provide.
 
 .. code-block:: python
 
     from burr.core import action, state
-    from burr.core.parallelism import MapStates, RunnableGraph
+    from burr.core.parallelism import MapActions, RunnableGraph
     from typing import Callable, Generator, List
 
     @action(reads=["prompt", "model"], writes=["llm_output"])
@@ -161,7 +176,7 @@ For case (2) (mapping actions over the same state) you implement te `MapActions`
             return ["all_llm_outputs"]
 
 
-Then, it's exactly the same as above:
+Then, it's almost identical to the ``MapStates`` case:
 
 .. code-block:: python
 
@@ -177,7 +192,65 @@ Then, it's exactly the same as above:
     )
 
 
----------
+Full cartesian product
+----------------------
+
+If you want to run all possible combinations of actions/states, you can use the ``MapActionsAndStates`` class  -- this is actually the
+base class for the above two classes. For this, you provide a generator of actions and a generator of states, and Burr will run all possible
+combinations.
+
+For tracking which states/actions belong to which actions, we recommend you use the values stored in the state (see example).
+
+.. code-block:: python
+
+    from burr.core import action, state
+    from burr.core.parallelism import MapActionsAndStates, RunnableGraph
+    from typing import Callable, Generator, List
+
+    @action(reads=["prompt", "model"], writes=["llm_output"])
+    def query_llm(state: State, model: str) -> State:
+        # TODO -- implement _query_my_llm to call litellm or something
+        return state.update(llm_output=_query_my_llm(prompt=state["prompt"], model=model))
+
+    class TestModelsOverPrompts(MapActionsAndStates):
+
+        def actions(self, state: State) -> Generator[Action | Callable | RunnableGraph, None, None]:
+            # make sure to add a name to the action
+            # This is not necessary for subgraphs, as actions will already have names
+            for action in [
+                query_llm.bind(model="gpt-4").with_name("gpt_4_answer"),
+                query_llm.bind(model="o1").with_name("o1_answer"),
+                query_llm.bind(model="claude").with_name("claude_answer"),
+            ]
+                yield action
+
+        def states(self, state: State) -> Generator[State, None, None]:
+            for prompt in [
+                "What is the meaning of life?",
+                "What is the airspeed velocity of an unladen swallow?",
+                "What is the best way to cook a steak?",
+            ]:
+                yield state.update(prompt=prompt)
+
+        def reduce(self, states: Generator[State, None, None]) -> State:
+            all_llm_outputs = []
+            for state in states:
+                all_llm_outputs.append(
+                    {
+                        "output" : state["llm_output"],
+                        "model" : state["model"],
+                        "prompt" : state["prompt"],
+                    }
+                )
+            return state.update(all_llm_outputs=all_llm_outputs)
+
+        def reads() -> List[str]:
+            return ["prompts"]
+
+        def writes() -> List[str]:
+            return ["all_llm_outputs"]
+
+
 Subgraphs
 ---------
 
@@ -243,7 +316,7 @@ In the code above, we're effectively treating the graph like an action -- due to
 it can run just as the single prompt we did above. Note this is also doable for running multiple actions over the same state.
 
 
---------------
+
 Passing inputs
 --------------
 
@@ -254,7 +327,7 @@ Passing inputs
 
 Each of these can (optionally) produce ``inputs`` by yielding/returning a tuple from the ``states``/``actions`` function.
 
-This is useful if you want to vary the inputs. Note this is the same as passing ``inputs=`` to app.run.
+This is useful if you want to vary the inputs. Note this is the same as passing ``inputs=`` to ``app.run``.
 
 
 .. code-block:: python
@@ -304,74 +377,20 @@ This is useful if you want to vary the inputs. Note this is the same as passing 
 
         ... # same as above
 
-----------------------
-Full Cartesian Product
-----------------------
-
-If you want to run all possible combinations of actions/states, you can use the ``MapActionsAndStates`` class  -- this is actually the
-base class for the above two classes. For this, you provide a generator of actions and a generator of states, and Burr will run all possible
-combinations.
-
-For tracking which states/actions belong to which actions, we recommend you use the values stored in the state (see example).
-
-.. code-block:: python
-
-    from burr.core import action, state
-    from burr.core.parallelism import MapStates, RunnableGraph
-    from typing import Callable, Generator, List
-
-    @action(reads=["prompt", "model"], writes=["llm_output"])
-    def query_llm(state: State, model: str) -> State:
-        # TODO -- implement _query_my_llm to call litellm or something
-        return state.update(llm_output=_query_my_llm(prompt=state["prompt"], model=model))
-
-    class TestMultipleModels(MapActions):
-
-        def actions(self, state: State) -> Generator[Action | Callable | RunnableGraph, None, None]:
-            # make sure to add a name to the action
-            # This is not necessary for subgraphs, as actions will already have names
-            for action in [
-                query_llm.bind(model="gpt-4").with_name("gpt_4_answer"),
-                query_llm.bind(model="o1").with_name("o1_answer"),
-                query_llm.bind(model="claude").with_name("claude_answer"),
-            ]
-                yield action
-
-        def states(self, state: State) -> Generator[State, None, None]:
-            for prompt in [
-                "What is the meaning of life?",
-                "What is the airspeed velocity of an unladen swallow?",
-                "What is the best way to cook a steak?",
-            ]:
-                yield state.update(prompt=prompt)
-
-        def reduce(self, states: Generator[State, None, None]) -> State:
-            all_llm_outputs = []
-            for state in states:
-                all_llm_outputs.append(
-                    {
-                        "output" : state["llm_output"],
-                        "model" : state["model"],
-                        "prompt" : state["prompt"],
-                    }
-                )
-            return state.update(all_llm_outputs=all_llm_outputs)
-
-        def reads() -> List[str]:
-            return ["prompts"]
-
-        def writes() -> List[str]:
-            return ["all_llm_outputs"]
 
 
 Lower-level API
----------------
+===============
 
 The above compile into a set of "tasks" -- sub-applications to run. If, however, you want to have more control, you
 can use the lower-level API to simply define the tasks. This allows you to provide any combination of actions, input, and state
 to the tasks.
 
-For those who are curious, this is what the above APIs extend from.
+All of the aforementioned high-level API are implemented as subclasses of TaskBasedParallelAction.
+You can subclass it directly and implement the ``.tasks()`` method that yields SubGraphTask,
+which can be actions or subgraphs. These tasks are then executed by the ``burr.Executor`` implementations
+
+This looks as follows:
 
 .. code-block:: python
 
@@ -415,11 +434,11 @@ For those who are curious, this is what the above APIs extend from.
 
 
 Advanced Usage
---------------
+==============
 
 We anticipate the above should cover most of what you want to do, but we have a host of advanced tuning capabilities.
 
----------
+
 Execution
 ---------
 
@@ -429,6 +448,8 @@ To enable execution, you need to pass a ``burr.Executor`` to the application, or
 - ``burr.parallelism.MultiProcessExecutor`` -- runs the tasks in parallel using processes
 - ``burr.parallelism.RayExecutor`` -- runs the tasks in parallel using `Ray <https://docs.ray.io/en/latest/index.html>`_
 - ``burr.parallelism.Dask`` -- runs the tasks in parallel using `Dask <https://dask.org/>`_
+
+Or, you can implement your own by subclassing the ``burr.Executor`` class and passing to your favorite execution tool.
 
 For async, we only allow the ``burr.parallelism.AsyncExecutor`` (default), which uses ``asyncio.gather`` to run the tasks in parallel.
 
@@ -459,12 +480,11 @@ Specifying it as part of the action -- will override the global executor:
         ... # same as above
 
 
---------------------
 Persistence/Tracking
 --------------------
 
 By default, the trackers/persisters will be passed from the parent application to the child application. The application IDs
-will form a stable hash (presuming the order is constant) to ensure that the same application ID is used for the same task every time.
+will be created as a a stable hash of the parent ID + the index of the child ID, requiring the order to be constant to ensure that the same application ID is used for the same task every time.
 
 It will also utilize the same persister to load from the prior state, if that is used on the application level (see the state-persistence section).
 
@@ -473,7 +493,7 @@ This enables the following:
 1. Tracking will automatically be associated with the same application (and sub-application) when reloaded
 2. If the concurrent application quits halfway through, bthe application will be able to pick up where it left off, as will all sub-applications
 
-You can disable either tracking or persistence at the sub-application level by passing ``track=False`` or ``persist=False`` to the constructor of the application method.
+You can disable either tracking or persistence at the sub-application level by passing ``track=False`` or ``persist=False`` to the constructor of the parallel action superclass.
 
 You can also disable it globally using the application builder:
 
@@ -496,17 +516,17 @@ You can also disable it globally using the application builder:
 
         ... # same as above
 
------
+
 Other
 -----
 
 Things we will consider after the initial release:
 
-- customizing execution on a per-action basis -- likely a parameter to ``RunnableGraph``
+- Customizing execution on a per-action basis -- likely a parameter to ``RunnableGraph``
+- Customizing tracking keys for parallelism
 - Streaming -- interleaving parallel streaming actions and giving results as they come
 - More examples for inter-graph communication/cancellation of one action based on the result of another
-- graceful failure of sub-actions
-
+- Graceful failure of sub-actions
 
 Under the hood
 ==============
@@ -519,8 +539,8 @@ Beneath the APIs, all this does is simplify the :ref:`recursion <recursion>`: AP
 In the UI, this will show up as a "child" application -- see the :ref:`recursion <recursion>`: section for more details.
 
 
-Advanced Use-cases
-==================
+Additional Use-cases
+====================
 
 As this is all just syntactic sugar for recursion, you can use the recursion to get more advanced capabilities.
 
