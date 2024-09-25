@@ -39,14 +39,6 @@ jobs:
           number: ${{ github.event.number }}
           id: deploy-preview
           message: "Starting deployment of preview ⏳..."
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        with:
-          publish_branch: gh-pages
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: _build/
-          # force_orphan: true # TODO -- determine whether this is the right approach
       - name: Build PR preview website
         uses: peaceiris/actions-gh-pages@v3
         if: github.ref != 'refs/heads/main'
@@ -54,6 +46,14 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: _build/
           destination_dir: ${{ env.PR_PATH }} # TODO you need to set this if you're using a custom domain. Otherwise you can remove it.
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        with:
+          publish_branch: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: _build/
+          keep_files: true # Add this line to keep existing files in the gh-pages branch
       - name: Update comment
         uses: hasura/comment-progress@v2.2.0
         if: github.ref != 'refs/heads/main'
