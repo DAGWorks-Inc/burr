@@ -6,14 +6,20 @@ on:
       - main # Triggers the workflow on push events to the main branch
   pull_request:
     # Triggers the workflow on pull request events for any branch
-    types: [ opened, synchronize, reopened ]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
+  pull-requests: write
+
+concurrency: ci-${{ github.ref }}
 
 jobs:
   docs:
     runs-on: ubuntu-latest
+    env:
+      PR_PATH: pull/${{github.event.number}}
+      BASE_URL: https://burr.dagworks.io/pull/${{github.event.number}}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
@@ -24,6 +30,15 @@ jobs:
         run: |
           sphinx-build docs -b dirhtml _build
           echo "burr.dagworks.io" > _build/CNAME # keep the cname file which this clobbers -- todo, unhardcode
+      - name: Comment on PR
+        uses: hasura/comment-progress@v2.2.0
+        if: github.ref != 'refs/heads/main'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          number: ${{ github.event.number }}
+          id: deploy-preview
+          message: "Starting deployment of preview ⏳..."
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -31,4 +46,20 @@ jobs:
           publish_branch: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: _build/
-          force_orphan: true
+          # force_orphan: true # TODO -- determine whether this is the right approach
+      - name: Build PR preview website
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref != 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: _build/
+          destination_dir: ${{ env.PR_PATH }} # TODO you need to set this if you're using a custom domain. Otherwise you can remove it.
+      - name: Update comment
+        uses: hasura/comment-progress@v2.2.0
+        if: github.ref != 'refs/heads/main'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          number: ${{ github.event.number }}
+          id: deploy-preview
+          message: "A preview of ${{ github.event.after }} is uploaded and can be seen here:\n\n ✨ ${{ env.BASE_URL }} ✨\n\nChanges may take a few minutes to propagate. Since this is a preview of production, content with `draft: true` will not be rendered. The source is here: https://github.com/${{ github.repository }}/tree/gh-pages/${{ env.PR_PATH }}/"
