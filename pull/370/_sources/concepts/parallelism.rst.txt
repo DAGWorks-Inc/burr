@@ -385,7 +385,7 @@ For those who are curious, this is what the above APIs extend from.
         return state.update(llm_output=_query_my_llm(prompt=state["prompt"], model=model))
 
     class MultipleTaskExample(TaskBasedParallelAction):
-        def tasks(state: State, context: ApplicationContext) -> Generator[SubGraphTask]:
+        def tasks(state: State, context: ApplicationContext) -> Generator[SubGraphTask, None, None]:
             for prompt in state["prompts"]:
                 for action in [
                     query_llm.bind(model="gpt-4").with_name("gpt_4_answer"),
