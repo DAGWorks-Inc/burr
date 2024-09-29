@@ -50,6 +50,78 @@ type InsightWithoutIndividualValues = InsightBase & {
 
 type Insight = InsightWithIndividualValues | InsightWithoutIndividualValues;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const getCostPerTokenModelCents = (model: string): number => {
+  // TODO -- unhardcode this!
+  return 500 / 1_000_000;
+};
+
+type CostProps = {
+  costCents: number;
+  currency?: string; // Optional currency prop
+};
+
+const Cost: React.FC<CostProps> = ({ costCents, currency = 'USD' }) => {
+  const costInDollars = costCents / 100;
+  // Determine the number of decimal places needed, up to a maximum of 5
+  const decimalPlaces = Math.min(
+    (costInDollars.toString().split('.')[1] || '').length, // Count the number of decimals
+    5 // Set the maximum number of decimal places to 5
+  );
+
+  // Format the number with dynamic decimal places
+  const formattedCost = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: decimalPlaces,
+    maximumFractionDigits: decimalPlaces // Ensures consistency in the display
+  }).format(costInDollars);
+
+  return (
+    <div className="bg-dwlightblue/10 text-dwdarkblue text-sm font-medium px-2 py-1 rounded">
+      {formattedCost}
+    </div>
+  );
+};
+
+const gatherCostAttributes = (allAttributes: AttributeModel[]): AttributeModel[] => {
+  const modelAttributesBySpanID = allAttributes.reduce((acc, attribute) => {
+    if (attribute.key === 'gen_ai.response.model') {
+      acc.set(attribute.span_id || '', attribute);
+    }
+    return acc;
+  }, new Map<string, AttributeModel>());
+
+  const tokensUsedBySpanID = allAttributes.reduce((acc, attribute) => {
+    if (attribute.key === 'llm.usage.total_tokens') {
+      acc.set(
+        attribute.span_id || '',
+        (acc.get(attribute.span_id || '') || 0) + (attribute.value as number)
+      );
+    }
+    return acc;
+  }, new Map<string, number>());
+  const totalCostBySpanID = new Map<string, number>();
+  tokensUsedBySpanID.forEach((tokensUsed, spanID) => {
+    const modelAttribute = modelAttributesBySpanID.get(spanID);
+    if (modelAttribute) {
+      const costPerToken = getCostPerTokenModelCents(modelAttribute.value as string);
+      totalCostBySpanID.set(spanID, tokensUsed * costPerToken);
+    }
+  });
+  return Array.from(totalCostBySpanID.entries()).map(([spanID, cost]) => {
+    const modelAttribute = modelAttributesBySpanID.get(spanID);
+    return {
+      key: spanID,
+      action_sequence_id: modelAttribute?.action_sequence_id || 0,
+      value: cost,
+      span_id: spanID,
+      timestamp: modelAttribute?.time_logged || 0,
+      tags: {}
+    };
+  });
+};
+
 const REGISTERED_INSIGHTS: Insight[] = [
   {
     category: 'llm',
@@ -146,6 +218,29 @@ const REGISTERED_INSIGHTS: Insight[] = [
     },
     RenderIndividualValue: (props: { attribute: AttributeModel }) => {
       return <p>{props.attribute.value?.toString()}</p>;
+    }
+  },
+  {
+    category: 'llm',
+    hasInsight: (allAttributes) => {
+      return allAttributes.some(
+        (attribute) => attribute.key.endsWith('prompt_tokens') && attribute.key.startsWith('gen_ai')
+      );
+    },
+    insightName: 'Total LLM Cost',
+    RenderInsightValue: (props) => {
+      const costAttributes = gatherCostAttributes(props.attributes);
+      const totalCost = costAttributes.reduce((acc, attribute) => {
+        return acc + (attribute.value as number);
+      }, 0);
+      return <Cost costCents={totalCost} />;
+    },
+    captureIndividualValues: (allAttributes) => {
+      return gatherCostAttributes(allAttributes);
+    },
+    RenderIndividualValue: (props: { attribute: AttributeModel }) => {
+      return <Cost costCents={props.attribute.value as number} />;
+      // return <p>{props.attribute.value?.toString()}</p>;
     }
   }
 ];
