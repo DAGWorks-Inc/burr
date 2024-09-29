@@ -51,9 +51,9 @@ type InsightWithoutIndividualValues = InsightBase & {
 type Insight = InsightWithIndividualValues | InsightWithoutIndividualValues;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getCostPerTokenModelCents = (model: string): number => {
+const getCostPerTokenModelCents = (model: string) => {
   // TODO -- unhardcode this!
-  return 500 / 1_000_000;
+  return { promptCost: 500 / 1_000_000, completionCost: 500 / 1_000_000 };
 };
 
 type CostProps = {
@@ -93,20 +93,33 @@ const gatherCostAttributes = (allAttributes: AttributeModel[]): AttributeModel[]
   }, new Map<string, AttributeModel>());
 
   const tokensUsedBySpanID = allAttributes.reduce((acc, attribute) => {
-    if (attribute.key === 'llm.usage.total_tokens') {
-      acc.set(
-        attribute.span_id || '',
-        (acc.get(attribute.span_id || '') || 0) + (attribute.value as number)
-      );
+    if (attribute.key === 'gen_ai.usage.completion_tokens') {
+      const currentValue = acc.get(attribute.span_id || '') || { prompt: 0, completion: 0 };
+      acc.set(attribute.span_id || '', {
+        prompt: currentValue.prompt + (attribute.value as number),
+        completion: currentValue.completion
+      });
+    }
+    if (attribute.key === 'gen_ai.usage.prompt_tokens') {
+      const currentValue = acc.get(attribute.span_id || '') || { prompt: 0, completion: 0 };
+      acc.set(attribute.span_id || '', {
+        prompt: currentValue.prompt,
+        completion: currentValue.completion + (attribute.value as number)
+      });
     }
     return acc;
-  }, new Map<string, number>());
+  }, new Map<string, { prompt: number; completion: number }>());
   const totalCostBySpanID = new Map<string, number>();
   tokensUsedBySpanID.forEach((tokensUsed, spanID) => {
     const modelAttribute = modelAttributesBySpanID.get(spanID);
     if (modelAttribute) {
-      const costPerToken = getCostPerTokenModelCents(modelAttribute.value as string);
-      totalCostBySpanID.set(spanID, tokensUsed * costPerToken);
+      const { promptCost, completionCost } = getCostPerTokenModelCents(
+        modelAttribute.value as string
+      );
+      totalCostBySpanID.set(
+        spanID,
+        tokensUsed.prompt * promptCost + tokensUsed.completion * completionCost
+      );
     }
   });
   return Array.from(totalCostBySpanID.entries()).map(([spanID, cost]) => {
