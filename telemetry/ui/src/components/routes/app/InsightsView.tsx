@@ -1,6 +1,6 @@
 import { AttributeModel, Span, Step } from '../../../api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../common/table';
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { AppViewHighlightContext } from './AppView';
 import { Chip } from '../../common/chip';
@@ -61,33 +61,69 @@ const getCostPerTokenModelDollars = (model: string) => {
 };
 
 type CostProps = {
-  cost: number;
-  currency?: string; // Optional currency prop
+  totalCost: number;
+  costDetails?: {
+    costPerPromptToken: number;
+    costPerCompletionToken: number;
+    promptTokens: number;
+    completionTokens: number;
+  };
+  currency?: string;
 };
+const Cost: React.FC<CostProps> = ({ currency = 'USD', totalCost, costDetails }) => {
+  const [showDetails, setShowDetails] = useState(false);
 
-const Cost: React.FC<CostProps> = ({ cost, currency = 'USD' }) => {
   // Determine the number of decimal places needed, up to a maximum of 5
-  const decimalPlaces = Math.min(
-    (cost.toString().split('.')[1] || '').length, // Count the number of decimals
-    5 // Set the maximum number of decimal places to 5
-  );
+
+  // Inline function to apply decimal places logic
+  const applyDecimalPlaces = (num: number) => {
+    const decimalPlaces = Math.min((num.toString().split('.')[1] || '').length, 5);
+    return num.toFixed(decimalPlaces);
+  };
+  const decimalPlaces = Math.min((totalCost.toString().split('.')[1] || '').length, 5);
 
   // Format the number with dynamic decimal places
   const formattedCost = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: decimalPlaces,
-    maximumFractionDigits: decimalPlaces // Ensures consistency in the display
-  }).format(cost);
+    maximumFractionDigits: decimalPlaces
+  }).format(totalCost);
 
   return (
-    <div className="bg-dwlightblue/10 text-dwdarkblue text-sm font-medium px-2 py-1 rounded">
-      {formattedCost}
+    <div className="relative bg-dwlightblue/10 text-dwdarkblue text-sm font-medium px-2 py-1 rounded-sm">
+      <div
+        onMouseLeave={() => setShowDetails(false)}
+        onMouseEnter={() => setShowDetails((prev) => !prev)}
+        className="cursor-pointer"
+      >
+        {formattedCost}
+      </div>
+      {costDetails && showDetails && (
+        <div className="absolute right-full top-0 h-full w-min min-w-max p-3 bg-white  border-gray-200 z-50 rounded-sm flex flex-row items-center">
+          <p className="flex flex-row gap-0 justify-center items-center p-2">
+            {'$'}
+            {applyDecimalPlaces(totalCost)} = {costDetails.promptTokens} prompt tokens * {'$'}
+            {applyDecimalPlaces(costDetails.costPerPromptToken)} + {costDetails.completionTokens}{' '}
+            completion tokens * {'$'}
+            {applyDecimalPlaces(costDetails.costPerCompletionToken)}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
 
-const gatherCostAttributes = (allAttributes: AttributeModel[]): AttributeModel[] => {
+type CostAttributeModel = AttributeModel & {
+  value: {
+    promptTokens: number;
+    completionTokens: number;
+    costPerPromptToken: number;
+    costPerCompletionToken: number;
+  };
+};
+
+const gatherCostAttributes = (allAttributes: AttributeModel[]): CostAttributeModel[] => {
   const modelAttributesBySpanID = allAttributes.reduce((acc, attribute) => {
     if (attribute.key === 'gen_ai.response.model') {
       acc.set(attribute.span_id || '', attribute);
@@ -107,12 +143,20 @@ const gatherCostAttributes = (allAttributes: AttributeModel[]): AttributeModel[]
       const currentValue = acc.get(attribute.span_id || '') || { prompt: 0, completion: 0 };
       acc.set(attribute.span_id || '', {
         prompt: currentValue.prompt + (attribute.value as number),
-        completion: currentValue.prompt
+        completion: currentValue.completion
       });
     }
     return acc;
   }, new Map<string, { prompt: number; completion: number }>());
-  const totalCostBySpanID = new Map<string, number>();
+  const costDataBySpanID = new Map<
+    string,
+    {
+      promptTokens: number;
+      completionTokens: number;
+      costPerPromptToken: number;
+      costPerCompletionToken: number;
+    }
+  >();
   tokensUsedBySpanID.forEach((tokensUsed, spanID) => {
     const modelAttribute = modelAttributesBySpanID.get(spanID);
     if (modelAttribute) {
@@ -120,13 +164,19 @@ const gatherCostAttributes = (allAttributes: AttributeModel[]): AttributeModel[]
         modelAttribute.value as string
       );
       // console.log('promptCost', promptCost, 'completionCost', completionCost, 'tokensUsed', tokensUsed);
-      totalCostBySpanID.set(
+      costDataBySpanID.set(
         spanID,
-        tokensUsed.prompt * promptCost + tokensUsed.completion * completionCost
+        {
+          promptTokens: tokensUsed.prompt,
+          completionTokens: tokensUsed.completion,
+          costPerPromptToken: promptCost,
+          costPerCompletionToken: completionCost
+        }
+        // tokensUsed.prompt * promptCost + tokensUsed.completion * completionCost
       );
     }
   });
-  return Array.from(totalCostBySpanID.entries()).map(([spanID, cost]) => {
+  return Array.from(costDataBySpanID.entries()).map(([spanID, cost]) => {
     const modelAttribute = modelAttributesBySpanID.get(spanID);
     return {
       key: spanID,
@@ -247,16 +297,33 @@ const REGISTERED_INSIGHTS: Insight[] = [
     insightName: 'Total LLM Cost',
     RenderInsightValue: (props) => {
       const costAttributes = gatherCostAttributes(props.attributes);
-      const totalCost = costAttributes.reduce((acc, attribute) => {
-        return acc + (attribute.value as number);
-      }, 0);
-      return <Cost cost={totalCost} />;
+      let totalCost = 0;
+      costAttributes.forEach((attribute) => {
+        totalCost +=
+          attribute.value.promptTokens * attribute.value.costPerPromptToken +
+          attribute.value.completionTokens * attribute.value.costPerCompletionToken;
+      });
+      return <Cost totalCost={totalCost} />;
     },
     captureIndividualValues: (allAttributes) => {
       return gatherCostAttributes(allAttributes);
     },
     RenderIndividualValue: (props: { attribute: AttributeModel }) => {
-      return <Cost cost={props.attribute.value as number} />;
+      const cast = props.attribute as CostAttributeModel;
+      return (
+        <Cost
+          totalCost={
+            cast.value.promptTokens * cast.value.costPerPromptToken +
+            cast.value.completionTokens * cast.value.costPerCompletionToken
+          }
+          costDetails={{
+            costPerPromptToken: cast.value.costPerPromptToken,
+            costPerCompletionToken: cast.value.costPerCompletionToken,
+            promptTokens: cast.value.promptTokens,
+            completionTokens: cast.value.completionTokens
+          }}
+        />
+      );
       // return <p>{props.attribute.value?.toString()}</p>;
     }
   }
@@ -288,7 +355,7 @@ const InsightSubTable = (props: {
   return (
     <>
       <TableRow
-        className="hover:bg-gray-50 cursor-pointer"
+        className="hover:bg-gray-50 cursor-pointer "
         onClick={() => {
           if (canExpand) {
             setIsExpanded(!isExpanded);
@@ -368,7 +435,7 @@ export const InsightsView = (props: { steps: Step[] }) => {
   const allSpans = props.steps.flatMap((step) => step.spans);
 
   const out = (
-    <div className="pt-0 flex flex-col">
+    <div className="pt-0 flex flex-col hide-scrollbar">
       <Table dense={1}>
         <TableHead>
           <TableRow className="hover:bg-gray-100">
