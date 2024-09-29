@@ -4,6 +4,7 @@ import React, { useContext } from 'react';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { AppViewHighlightContext } from './AppView';
 import { Chip } from '../../common/chip';
+import { modelCosts } from '../../common/modelCost';
 
 /**
  * Insights allow us to visualize and surface attributes stored in steps.
@@ -51,21 +52,23 @@ type InsightWithoutIndividualValues = InsightBase & {
 type Insight = InsightWithIndividualValues | InsightWithoutIndividualValues;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getCostPerTokenModelCents = (model: string) => {
+const getCostPerTokenModelDollars = (model: string) => {
   // TODO -- unhardcode this!
-  return { promptCost: 500 / 1_000_000, completionCost: 500 / 1_000_000 };
+  const promptCost = modelCosts[model]?.input_cost_per_token || 0;
+  const completionCost = modelCosts[model]?.output_cost_per_token || 0;
+  return { promptCost, completionCost };
+  // return { promptCost: 500 / 1_000_000, completionCost: 500 / 1_000_000 };
 };
 
 type CostProps = {
-  costCents: number;
+  cost: number;
   currency?: string; // Optional currency prop
 };
 
-const Cost: React.FC<CostProps> = ({ costCents, currency = 'USD' }) => {
-  const costInDollars = costCents / 100;
+const Cost: React.FC<CostProps> = ({ cost, currency = 'USD' }) => {
   // Determine the number of decimal places needed, up to a maximum of 5
   const decimalPlaces = Math.min(
-    (costInDollars.toString().split('.')[1] || '').length, // Count the number of decimals
+    (cost.toString().split('.')[1] || '').length, // Count the number of decimals
     5 // Set the maximum number of decimal places to 5
   );
 
@@ -75,7 +78,7 @@ const Cost: React.FC<CostProps> = ({ costCents, currency = 'USD' }) => {
     currency: currency,
     minimumFractionDigits: decimalPlaces,
     maximumFractionDigits: decimalPlaces // Ensures consistency in the display
-  }).format(costInDollars);
+  }).format(cost);
 
   return (
     <div className="bg-dwlightblue/10 text-dwdarkblue text-sm font-medium px-2 py-1 rounded">
@@ -96,15 +99,15 @@ const gatherCostAttributes = (allAttributes: AttributeModel[]): AttributeModel[]
     if (attribute.key === 'gen_ai.usage.completion_tokens') {
       const currentValue = acc.get(attribute.span_id || '') || { prompt: 0, completion: 0 };
       acc.set(attribute.span_id || '', {
-        prompt: currentValue.prompt + (attribute.value as number),
-        completion: currentValue.completion
+        prompt: currentValue.prompt,
+        completion: currentValue.completion + (attribute.value as number)
       });
     }
     if (attribute.key === 'gen_ai.usage.prompt_tokens') {
       const currentValue = acc.get(attribute.span_id || '') || { prompt: 0, completion: 0 };
       acc.set(attribute.span_id || '', {
-        prompt: currentValue.prompt,
-        completion: currentValue.completion + (attribute.value as number)
+        prompt: currentValue.prompt + (attribute.value as number),
+        completion: currentValue.prompt
       });
     }
     return acc;
@@ -113,9 +116,10 @@ const gatherCostAttributes = (allAttributes: AttributeModel[]): AttributeModel[]
   tokensUsedBySpanID.forEach((tokensUsed, spanID) => {
     const modelAttribute = modelAttributesBySpanID.get(spanID);
     if (modelAttribute) {
-      const { promptCost, completionCost } = getCostPerTokenModelCents(
+      const { promptCost, completionCost } = getCostPerTokenModelDollars(
         modelAttribute.value as string
       );
+      // console.log('promptCost', promptCost, 'completionCost', completionCost, 'tokensUsed', tokensUsed);
       totalCostBySpanID.set(
         spanID,
         tokensUsed.prompt * promptCost + tokensUsed.completion * completionCost
@@ -246,13 +250,13 @@ const REGISTERED_INSIGHTS: Insight[] = [
       const totalCost = costAttributes.reduce((acc, attribute) => {
         return acc + (attribute.value as number);
       }, 0);
-      return <Cost costCents={totalCost} />;
+      return <Cost cost={totalCost} />;
     },
     captureIndividualValues: (allAttributes) => {
       return gatherCostAttributes(allAttributes);
     },
     RenderIndividualValue: (props: { attribute: AttributeModel }) => {
-      return <Cost costCents={props.attribute.value as number} />;
+      return <Cost cost={props.attribute.value as number} />;
       // return <p>{props.attribute.value?.toString()}</p>;
     }
   }
