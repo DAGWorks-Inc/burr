@@ -48,7 +48,7 @@ def _order_coffee_tool(
     # Replace this with actual coffee shop API logic
     return {
         "action": (
-            f"Ordered a {size} {coffee_preparation}" + "with {any_modifications}"
+            f"Ordered a {size} {coffee_preparation}" + f"with {any_modifications}"
             if any_modifications
             else ""
         )
