@@ -143,7 +143,7 @@ const gatherCostAttributes = (allAttributes: AttributeModel[]): CostAttributeMod
       const currentValue = acc.get(attribute.span_id || '') || { prompt: 0, completion: 0 };
       acc.set(attribute.span_id || '', {
         prompt: currentValue.prompt + (attribute.value as number),
-        completion: currentValue.prompt
+        completion: currentValue.completion
       });
     }
     return acc;
