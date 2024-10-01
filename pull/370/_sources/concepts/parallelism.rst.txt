@@ -170,7 +170,7 @@ For case (2) (mapping actions over the same state) you implement the ``MapAction
             return state.update(all_llm_outputs=all_llm_outputs)
 
         def reads() -> List[str]:
-            return ["prompts"]
+            return ["prompt"] # we're just running this on a single prompt, for multiple actions
 
         def writes() -> List[str]:
             return ["all_llm_outputs"]
@@ -274,7 +274,7 @@ This might look as follows -- say we have a simple subflow that takes in a raw p
     def process_prompt(state: State) -> State:
         processed_prompt = f"The user has asked: {state['prompt']}. Please respond directly to that prompt, but only in riddles."
         return state.update(
-            prompt=state["prompt"],
+            processed_prompt=state["prompt"],
         )
 
     @action(reads=["processed_prompt"], writes=["llm_output"])
