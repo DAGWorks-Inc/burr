@@ -503,8 +503,10 @@ Beyond that, Burr can support parallelism however you wish to run it – see the
 <span class="k">class</span> <span class="nc">TestMultipleModels</span><span class="p">(</span><span class="n">MapActions</span><span class="p">):</span>
 
     <span class="k">def</span> <span class="nf">actions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
-        <span class="c1"># make sure to add a name to the action</span>
-        <span class="c1"># This is not necessary for subgraphs, as actions will already have names</span>
+        <span class="c1"># Make sure to add a name to the action if you use bind() with a function,</span>
+        <span class="c1"># note that these can be different actions, functions, etc...</span>
+        <span class="c1"># in this case we&#39;re using `.bind()` to create multiple actions, but we can use some mix of</span>
+        <span class="c1"># subgraphs, functions, action objects, etc...</span>
         <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="p">[</span>
             <span class="n">query_llm</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">with_name</span><span class="p">(</span><span class="s2">&quot;gpt_4_answer&quot;</span><span class="p">),</span>
             <span class="n">query_llm</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;o1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">with_name</span><span class="p">(</span><span class="s2">&quot;o1_answer&quot;</span><span class="p">),</span>
@@ -512,7 +514,7 @@ Beyond that, Burr can support parallelism however you wish to run it – see the
         <span class="p">]</span>
             <span class="k">yield</span> <span class="n">action</span>
 
-    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">::</span>
+    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;What is the meaning of life?&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">states</span><span class="p">:</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>

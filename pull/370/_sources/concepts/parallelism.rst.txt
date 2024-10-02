@@ -151,8 +151,10 @@ For case (2) (mapping actions over the same state) you implement the ``MapAction
     class TestMultipleModels(MapActions):
 
         def actions(self, state: State) -> Generator[Action | Callable | RunnableGraph, None, None]:
-            # make sure to add a name to the action
-            # This is not necessary for subgraphs, as actions will already have names
+            # Make sure to add a name to the action if you use bind() with a function,
+            # note that these can be different actions, functions, etc...
+            # in this case we're using `.bind()` to create multiple actions, but we can use some mix of
+            # subgraphs, functions, action objects, etc...
             for action in [
                 query_llm.bind(model="gpt-4").with_name("gpt_4_answer"),
                 query_llm.bind(model="o1").with_name("o1_answer"),
@@ -160,7 +162,7 @@ For case (2) (mapping actions over the same state) you implement the ``MapAction
             ]
                 yield action
 
-        def state(self, state: State) -> State::
+        def state(self, state: State) -> State:
             return state.update(prompt="What is the meaning of life?")
 
         def reduce(self, states: Generator[State, None, None]) -> State:
