@@ -32,6 +32,7 @@ try:
 
     # dynamic importing due to the dashes (which make reading the examples on github easier)
     email_assistant = importlib.import_module("burr.examples.email-assistant.server")
+    email_assistant_typed = importlib.import_module("burr.examples.fastapi.server")
     chatbot = importlib.import_module("burr.examples.multi-modal-chatbot.server")
     streaming_chatbot = importlib.import_module("burr.examples.streaming-fastapi.server")
 
@@ -249,6 +250,7 @@ async def version() -> dict:
 # Examples -- todo -- put them behind `if` statements
 app.include_router(chatbot.router, prefix="/api/v0/chatbot")
 app.include_router(email_assistant.router, prefix="/api/v0/email_assistant")
+app.include_router(email_assistant_typed.router, prefix="/api/v0/email_assistant_typed")
 app.include_router(streaming_chatbot.router, prefix="/api/v0/streaming_chatbot")
 
 if SERVE_STATIC:
