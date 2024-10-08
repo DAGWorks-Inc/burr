@@ -24,7 +24,11 @@ export const TelemetryWithSelector = (props: {
           createNewApp={props.createNewApp}
         />
       </div>
-      <MiniTelemetry projectId={props.projectId} appId={props.currentApp?.app_id}></MiniTelemetry>
+      <MiniTelemetry
+        projectId={props.projectId}
+        appId={props.currentApp?.app_id}
+        partitionKey={null}
+      ></MiniTelemetry>
     </div>
   );
 };
