@@ -1,6 +1,6 @@
 import collections
 import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import pydantic
 from pydantic import fields
@@ -182,3 +182,52 @@ class BackendSpec(pydantic.BaseModel):
     indexing: bool
     snapshotting: bool
     supports_demos: bool
+    supports_annotations: bool
+
+
+class AnnotationDataPointer(pydantic.BaseModel):
+    type: Literal["state_field", "attribute"]
+    field_name: str  # key of attribute/state field
+    span_id: Optional[
+        str
+    ]  # span_id if it's associated with a span, otherwise it's associated with an action
+
+
+AllowedDataField = Literal["note", "ground_truth"]
+
+
+class AnnotationObservation(pydantic.BaseModel):
+    data_fields: dict[str, Any]
+    thumbs_up_thumbs_down: Optional[bool]
+    data_pointers: List[AnnotationDataPointer]
+
+
+class AnnotationCreate(pydantic.BaseModel):
+    """Generic link for indexing job -- can be exposed in 'admin mode' in the UI"""
+
+    span_id: Optional[str]
+    step_name: str  # Should be able to look it up but including for now
+    tags: List[str]
+    observations: List[AnnotationObservation]
+
+
+class AnnotationUpdate(AnnotationCreate):
+    """Generic link for indexing job -- can be exposed in 'admin mode' in the UI"""
+
+    # Identification for association
+    span_id: Optional[str] = None
+    tags: Optional[List[str]] = []
+    observations: List[AnnotationObservation]
+
+
+class AnnotationOut(AnnotationCreate):
+    """Generic link for indexing job -- can be exposed in 'admin mode' in the UI"""
+
+    id: int
+    # Identification for association
+    project_id: str  # associated project ID
+    app_id: str
+    partition_key: Optional[str]
+    step_sequence_id: int
+    created: datetime.datetime
+    updated: datetime.datetime
