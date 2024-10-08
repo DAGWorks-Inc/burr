@@ -8,6 +8,11 @@ export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
 export type { ActionModel } from './models/ActionModel';
+export type { AnnotationCreate } from './models/AnnotationCreate';
+export { AnnotationDataPointer } from './models/AnnotationDataPointer';
+export type { AnnotationObservation } from './models/AnnotationObservation';
+export type { AnnotationOut } from './models/AnnotationOut';
+export type { AnnotationUpdate } from './models/AnnotationUpdate';
 export type { ApplicationLogs } from './models/ApplicationLogs';
 export type { ApplicationModel } from './models/ApplicationModel';
 export type { ApplicationPage } from './models/ApplicationPage';

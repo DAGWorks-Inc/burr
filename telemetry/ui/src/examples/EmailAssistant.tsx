@@ -359,7 +359,11 @@ export const TelemetryWithSelector = (props: {
           placeholder={'Select a conversation or create a new one by typing...'}
         ></EmailAssistantAppSelector>
       </div>
-      <MiniTelemetry projectId={props.projectId} appId={props.currentApp?.app_id}></MiniTelemetry>
+      <MiniTelemetry
+        projectId={props.projectId}
+        appId={props.currentApp?.app_id}
+        partitionKey={null}
+      ></MiniTelemetry>
     </div>
   );
 };

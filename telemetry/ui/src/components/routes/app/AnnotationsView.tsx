@@ -1185,6 +1185,8 @@ export const AnnotationsViewContainer = () => {
   const { data, refetch } = useQuery(['annotations', projectId], () =>
     DefaultService.getAnnotationsApiV0ProjectIdAnnotationsGet(projectId as string)
   );
+  // dummy value as this will not be linked to if annotations are not supported
+
   if (data === undefined || backendSpec === undefined) return <Loading />;
   return (
     <AnnotationsTable
