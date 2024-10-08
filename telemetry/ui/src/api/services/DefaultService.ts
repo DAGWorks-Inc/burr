@@ -2,6 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { AnnotationCreate } from '../models/AnnotationCreate';
+import type { AnnotationOut } from '../models/AnnotationOut';
+import type { AnnotationUpdate } from '../models/AnnotationUpdate';
 import type { ApplicationLogs } from '../models/ApplicationLogs';
 import type { ApplicationPage } from '../models/ApplicationPage';
 import type { BackendSpec } from '../models/BackendSpec';
@@ -118,6 +121,97 @@ export class DefaultService {
         project_id: projectId,
         app_id: appId,
         partition_key: partitionKey
+      },
+      errors: {
+        422: `Validation Error`
+      }
+    });
+  }
+  /**
+   * Create Annotation
+   * @param projectId
+   * @param appId
+   * @param partitionKey
+   * @param sequenceId
+   * @param requestBody
+   * @returns AnnotationOut Successful Response
+   * @throws ApiError
+   */
+  public static createAnnotationApiV0ProjectIdAppIdPartitionKeySequenceIdAnnotationsPost(
+    projectId: string,
+    appId: string,
+    partitionKey: string,
+    sequenceId: number,
+    requestBody: AnnotationCreate
+  ): CancelablePromise<AnnotationOut> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v0/{project_id}/{app_id}/{partition_key}/{sequence_id}/annotations',
+      path: {
+        project_id: projectId,
+        app_id: appId,
+        partition_key: partitionKey,
+        sequence_id: sequenceId
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`
+      }
+    });
+  }
+  /**
+   * Update Annotation
+   * @param projectId
+   * @param annotationId
+   * @param requestBody
+   * @returns AnnotationOut Successful Response
+   * @throws ApiError
+   */
+  public static updateAnnotationApiV0ProjectIdAnnotationIdUpdateAnnotationsPut(
+    projectId: string,
+    annotationId: number,
+    requestBody: AnnotationUpdate
+  ): CancelablePromise<AnnotationOut> {
+    return __request(OpenAPI, {
+      method: 'PUT',
+      url: '/api/v0/{project_id}/{annotation_id}/update_annotations',
+      path: {
+        project_id: projectId,
+        annotation_id: annotationId
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`
+      }
+    });
+  }
+  /**
+   * Get Annotations
+   * @param projectId
+   * @param appId
+   * @param partitionKey
+   * @param stepSequenceId
+   * @returns AnnotationOut Successful Response
+   * @throws ApiError
+   */
+  public static getAnnotationsApiV0ProjectIdAnnotationsGet(
+    projectId: string,
+    appId?: string | null,
+    partitionKey?: string | null,
+    stepSequenceId?: number | null
+  ): CancelablePromise<Array<AnnotationOut>> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v0/{project_id}/annotations',
+      path: {
+        project_id: projectId
+      },
+      query: {
+        app_id: appId,
+        partition_key: partitionKey,
+        step_sequence_id: stepSequenceId
       },
       errors: {
         422: `Validation Error`

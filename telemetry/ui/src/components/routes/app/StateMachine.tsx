@@ -1,4 +1,4 @@
-import { ApplicationModel, Step } from '../../../api';
+import { AnnotationOut, ApplicationModel, Step } from '../../../api';
 import { Tabs } from '../../common/tabs';
 import { DataView } from './DataView';
 import { ActionView } from './ActionView';
@@ -7,8 +7,9 @@ import { InsightsView } from './InsightsView';
 import { ReproduceView } from './ReproduceView';
 import { useParams } from 'react-router-dom';
 import { useContext } from 'react';
-import { AppViewHighlightContext } from './AppView';
+import { AppContext } from './AppView';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { AnnotationsView } from './AnnotationsView';
 
 const NoStepSelected = () => {
   return (
@@ -28,8 +29,11 @@ export const AppStateView = (props: {
   setMinimized: (minimized: boolean) => void;
   isMinimized: boolean;
   allowMinimized: boolean;
+  annotations?: AnnotationOut[];
+  restrictTabs?: string[];
+  allowAnnotations?: boolean;
 }) => {
-  const { tab, setTab } = useContext(AppViewHighlightContext);
+  const { tab, setTab } = useContext(AppContext);
   const currentStep = props.steps.find(
     (step) => step.step_start_log.sequence_id === props.currentSequenceID
   );
@@ -45,9 +49,13 @@ export const AppStateView = (props: {
     { id: 'data', displayName: 'Data' },
     { id: 'code', displayName: 'Code' },
     { id: 'reproduce', displayName: 'Reproduce' },
-    { id: 'insights', displayName: 'Insights' }
-  ];
-  if (props.displayGraphAsTab) {
+    { id: 'insights', displayName: 'Insights' },
+    ...(props.allowAnnotations ? [{ id: 'annotations', displayName: 'Annotations' }] : [])
+  ].filter((tab) => !props.restrictTabs || props.restrictTabs.includes(tab.id));
+  if (
+    props.displayGraphAsTab &&
+    (props.restrictTabs === undefined || props.restrictTabs.includes('graph'))
+  ) {
     tabs.push({ id: 'graph', displayName: 'Graph' });
   }
   const MinimizeTableIcon = props.isMinimized ? ChevronLeftIcon : ChevronRightIcon;
@@ -90,6 +98,16 @@ export const AppStateView = (props: {
           ) : (
             <NoStepSelected />
           ))}
+        {tab === 'annotations' && (
+          <AnnotationsView
+            currentStep={currentStep}
+            allSteps={props.steps}
+            appId={appId as string}
+            partitionKey={partitionKey === 'null' ? null : partitionKey || null}
+            projectId={projectId as string}
+            allAnnotations={props.annotations || []}
+          />
+        )}
       </div>
     </>
   );

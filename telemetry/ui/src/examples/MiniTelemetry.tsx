@@ -1,8 +1,12 @@
 import { AppView } from '../components/routes/app/AppView';
 
-export const MiniTelemetry = (props: { projectId: string; appId: string | undefined }) => {
+export const MiniTelemetry = (props: {
+  projectId: string;
+  partitionKey: string | null;
+  appId: string | undefined;
+}) => {
   //TODO -- put this upstream
-  const { projectId, appId } = props;
+  const { projectId, appId, partitionKey } = props;
   if (appId === undefined) {
     return <div></div>;
   }
@@ -13,7 +17,9 @@ export const MiniTelemetry = (props: { projectId: string; appId: string | undefi
       orientation="stacked_vertical"
       defaultAutoRefresh={true}
       enableFullScreenStepView={false}
-      enableMinizedStepView={false}
+      enableMinimizedStepView={false}
+      allowAnnotations={false}
+      partitionKey={partitionKey === 'null' ? null : partitionKey}
     />
   );
 };

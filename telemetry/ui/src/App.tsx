@@ -10,6 +10,7 @@ import { Counter } from './examples/Counter';
 import { EmailAssistantWithTelemetry } from './examples/EmailAssistant';
 import { StreamingChatbotWithTelemetry } from './examples/StreamingChatbot';
 import { AdminView } from './components/routes/AdminView';
+import { AnnotationsViewContainer } from './components/routes/app/AnnotationsView';
 
 /**
  * Basic application. We have an AppContainer -- this has a breadcrumb and a sidebar.
@@ -37,6 +38,7 @@ const App = () => {
             <Route path="/project/:projectId" element={<AppList />} />
             <Route path="/project/:projectId/:partitionKey" element={<AppList />} />
             <Route path="/project/:projectId/:partitionKey/:appId" element={<AppViewContainer />} />
+            <Route path="/annotations/:projectId/" element={<AnnotationsViewContainer />} />
             <Route path="/demos/counter" element={<Counter />} />
             <Route path="/demos/chatbot" element={<ChatbotWithTelemetry />} />
             <Route path="/demos/streaming-chatbot" element={<StreamingChatbotWithTelemetry />} />

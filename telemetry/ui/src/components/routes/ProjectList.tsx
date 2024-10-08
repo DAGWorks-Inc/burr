@@ -5,13 +5,14 @@ import { Loading } from '../common/loading';
 import { DateDisplay } from '../common/dates';
 import { Chip } from '../common/chip';
 import { LinkText } from '../common/href';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaRegEdit } from 'react-icons/fa';
 
 /**
  * Table of a project list. Uses the tailwind catalyst component.
  * This does not load or fetch any data, just renders it
  */
-export const ProjectListTable = (props: { projects: Project[] }) => {
+export const ProjectListTable = (props: { projects: Project[]; includeAnnotations: boolean }) => {
   const navigate = useNavigate();
   const projectsCopy = [...props.projects];
   const projectsSorted = projectsCopy.sort((a, b) => {
@@ -26,6 +27,7 @@ export const ProjectListTable = (props: { projects: Project[] }) => {
           <TableHeader>Last Run</TableHeader>
           <TableHeader>Link</TableHeader>
           <TableHeader>App Runs</TableHeader>
+          {props.includeAnnotations && <TableHeader className="w-10">Annotations</TableHeader>}
           <TableHeader></TableHeader>
         </TableRow>
       </TableHead>
@@ -67,6 +69,20 @@ export const ProjectListTable = (props: { projects: Project[] }) => {
                 />
               </TableCell>
               <TableCell>{project.num_apps}</TableCell>
+              {props.includeAnnotations && (
+                <TableCell>
+                  <Link to={`/annotations/${project.id}`}>
+                    <FaRegEdit
+                      className="hover:underline hover:scale-125"
+                      onClick={(e) => {
+                        navigate(`/annotations/${project.id}`);
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
+                    ></FaRegEdit>
+                  </Link>
+                </TableCell>
+              )}
             </TableRow>
           );
         })}
@@ -80,11 +96,16 @@ export const ProjectListTable = (props: { projects: Project[] }) => {
  */
 export const ProjectList = () => {
   const { data, error } = useQuery('projects', DefaultService.getProjectsApiV0ProjectsGet);
+  const { data: backendSpec } = useQuery(['backendSpec'], () =>
+    DefaultService.getAppSpecApiV0MetadataAppSpecGet().then((response) => {
+      return response;
+    })
+  );
   if (error) return <div>Error loading projects</div>;
-  if (data === undefined) return <Loading />;
+  if (data === undefined || backendSpec === undefined) return <Loading />;
   return (
     <div className="">
-      <ProjectListTable projects={data} />
+      <ProjectListTable projects={data} includeAnnotations={backendSpec?.supports_annotations} />
     </div>
   );
 };
