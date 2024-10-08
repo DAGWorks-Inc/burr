@@ -4,6 +4,7 @@ import importlib
 import json
 import os.path
 import sys
+from datetime import datetime
 from typing import Any, Optional, Sequence, Tuple, Type, TypeVar
 
 import aiofiles
@@ -15,7 +16,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from burr.tracking.common import models
 from burr.tracking.common.models import ChildApplicationModel
 from burr.tracking.server import schema
-from burr.tracking.server.schema import ApplicationLogs, ApplicationSummary, Step
+from burr.tracking.server.schema import (
+    AnnotationCreate,
+    AnnotationOut,
+    AnnotationUpdate,
+    ApplicationLogs,
+    ApplicationSummary,
+    Step,
+)
 
 T = TypeVar("T")
 
@@ -56,6 +64,61 @@ class IndexingBackendMixin(abc.ABC):
         self, offset: int = 0, limit: int = 100, filter_empty: bool = True
     ) -> Sequence[schema.IndexingJob]:
         """Returns the indexing jobs"""
+        pass
+
+
+class AnnotationsBackendMixin(abc.ABC):
+    @abc.abstractmethod
+    async def create_annotation(
+        self,
+        annotation: AnnotationCreate,
+        project_id: str,
+        partition_key: Optional[str],
+        app_id: str,
+        step_sequence_id: int,
+    ) -> AnnotationOut:
+        """Createse an annotation -- annotation has annotation data, the other pointers are given in the parameters.
+
+        :param annotation: Annotation object to create
+        :param partition_key: Partition key to associate with
+        :param project_id: Project ID to associate with
+        :param app_id: App ID to associate with
+        :param step_sequence_id: Step sequence ID to associate with
+        :return:
+        """
+
+    @abc.abstractmethod
+    async def update_annotation(
+        self,
+        annotation: AnnotationUpdate,
+        project_id: str,
+        annotation_id: int,
+    ) -> AnnotationOut:
+        """Updates an annotation -- annotation has annotation data, the other pointers are given in the parameters.
+
+        :param annotation: Annotation object to update
+        :param project_id: Project ID to associate with
+        :param annotation_id: Annotation ID to update. We include this as we may have multiple...
+        :return: Updated annotation
+        """
+
+    @abc.abstractmethod
+    async def get_annotations(
+        self,
+        project_id: str,
+        partition_key: Optional[str] = None,
+        app_id: Optional[str] = None,
+        step_sequence_id: Optional[int] = None,
+    ) -> Sequence[AnnotationOut]:
+        """Returns annotations for a given project, partition_key, app_id, and step sequence ID.
+        If these are None it does not filter by them.
+
+        :param project_id: Project ID to query for
+        :param partition_key: Partition key to query for
+        :param app_id: App ID to query for
+        :param step_sequence_id: Step sequence ID to query for
+        :return: Annotations
+        """
         pass
 
 
@@ -188,7 +251,7 @@ def get_uri(project_id: str) -> str:
 DEFAULT_PATH = os.path.expanduser("~/.burr")
 
 
-class LocalBackend(BackendBase):
+class LocalBackend(BackendBase, AnnotationsBackendMixin):
     """Quick implementation of a local backend for testing purposes. This is not a production backend.
 
     To override the path, set a `burr_path` environment variable to the path you want to use.
@@ -196,6 +259,122 @@ class LocalBackend(BackendBase):
 
     def __init__(self, path: str = DEFAULT_PATH):
         self.path = path
+
+    def _get_annotation_path(self, project_id: str) -> str:
+        return os.path.join(self.path, project_id, "annotations.jsonl")
+
+    async def _load_project_annotations(self, project_id: str):
+        annotations_path = self._get_annotation_path(project_id)
+        annotations = []
+        if os.path.exists(annotations_path):
+            async with aiofiles.open(annotations_path) as f:
+                for line in await f.readlines():
+                    annotations.append(AnnotationOut.parse_raw(line))
+        return annotations
+
+    async def create_annotation(
+        self,
+        annotation: AnnotationCreate,
+        project_id: str,
+        partition_key: Optional[str],
+        app_id: str,
+        step_sequence_id: int,
+    ) -> AnnotationOut:
+        """Creates an annotation by loading all annotations, finding the max ID, and then appending the new annotation.
+        This is not efficient but it's OK -- this is the local version and the number of annotations will be unlikely to be
+        huge.
+
+        :param annotation: Annotation to create
+        :param project_id: ID of the associated project
+        :param partition_key: Partition key to associate with
+        :param app_id: App ID to associate with
+        :param step_sequence_id: Step sequence ID to associate with
+        :return: The created annotation, complete with an ID + timestamps
+        """
+        all_annotations = await self._load_project_annotations(project_id)
+        annotation_id = (
+            max([a.id for a in all_annotations], default=-1) + 1
+        )  # get the ID, increment
+        annotation_out = AnnotationOut(
+            id=annotation_id,
+            project_id=project_id,
+            app_id=app_id,
+            partition_key=partition_key,
+            step_sequence_id=step_sequence_id,
+            created=datetime.now(),
+            updated=datetime.now(),
+            **annotation.dict(),
+        )
+        annotations_path = self._get_annotation_path(project_id)
+        async with aiofiles.open(annotations_path, "a") as f:
+            await f.write(annotation_out.json() + "\n")
+        return annotation_out
+
+    async def update_annotation(
+        self,
+        annotation: AnnotationUpdate,
+        project_id: str,
+        annotation_id: int,
+    ) -> AnnotationOut:
+        """Updates an annotation by loading all annotations, finding the annotation, updating it, and then writing it back.
+        Again, inefficient, but this is the local backend and we don't expect huge numbers of annotations.
+
+        :param annotation: Annotation to update -- this is just the update fields to the full annotation
+        :param project_id: ID of the associated project
+        :param annotation_id: ID of the associated annotation, created by the backend
+        :return: The updated annotation, complete with an ID + timestamps
+        """
+        all_annotations = await self._load_project_annotations(project_id)
+        annotation_out = None
+        for idx, a in enumerate(all_annotations):
+            if a.id == annotation_id:
+                annotation_out = a
+                all_annotations[idx] = annotation_out.copy(
+                    update={**annotation.dict(), "updated": datetime.now()}
+                )
+                break
+        if annotation_out is None:
+            raise fastapi.HTTPException(
+                status_code=404,
+                detail=f"Annotation: {annotation_id} from project: {project_id} not found",
+            )
+        annotations_path = self._get_annotation_path(project_id)
+        async with aiofiles.open(annotations_path, "w") as f:
+            for a in all_annotations:
+                await f.write(a.json() + "\n")
+        return annotation_out
+
+    async def get_annotations(
+        self,
+        project_id: str,
+        partition_key: Optional[str] = None,
+        app_id: Optional[str] = None,
+        step_sequence_id: Optional[int] = None,
+    ) -> Sequence[AnnotationOut]:
+        """Gets the annotation by loading all annotations and filtering by the parameters. Will return all annotations
+        that match. Only project is required.
+
+
+        :param project_id:
+        :param partition_key:
+        :param app_id:
+        :param step_sequence_id:
+        :return:
+        """
+        annotation_path = self._get_annotation_path(project_id)
+        if not os.path.exists(annotation_path):
+            return []
+        annotations = []
+        async with aiofiles.open(annotation_path) as f:
+            for line in await f.readlines():
+                parsed = AnnotationOut.parse_raw(line)
+                if (
+                    (partition_key is None or parsed.partition_key == partition_key)
+                    and (app_id is None or parsed.app_id == app_id)
+                    and (step_sequence_id is None or parsed.step_sequence_id == step_sequence_id)
+                ):
+                    annotations.append(parsed)
+        return annotations
 
     async def list_projects(self, request: fastapi.Request) -> Sequence[schema.Project]:
         out = []

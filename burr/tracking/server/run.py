@@ -3,13 +3,18 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from importlib.resources import files
-from typing import Sequence
+from typing import Optional, Sequence
 
 from starlette import status
 
 # TODO -- remove this, just for testing
 from burr.log_setup import setup_logging
-from burr.tracking.server.backend import BackendBase, IndexingBackendMixin, SnapshottingBackendMixin
+from burr.tracking.server.backend import (
+    AnnotationsBackendMixin,
+    BackendBase,
+    IndexingBackendMixin,
+    SnapshottingBackendMixin,
+)
 
 setup_logging(logging.INFO)
 
@@ -23,7 +28,10 @@ try:
     from starlette.templating import Jinja2Templates
 
     from burr.tracking.server import schema
-    from burr.tracking.server.schema import (
+    from burr.tracking.server.schema import (  # AnnotationUpdate,
+        AnnotationCreate,
+        AnnotationOut,
+        AnnotationUpdate,
         ApplicationLogs,
         ApplicationPage,
         BackendSpec,
@@ -130,11 +138,13 @@ def is_ready():
 def get_app_spec():
     is_indexing_backend = isinstance(backend, IndexingBackendMixin)
     is_snapshotting_backend = isinstance(backend, SnapshottingBackendMixin)
+    is_annotations_backend = isinstance(backend, AnnotationsBackendMixin)
     supports_demos = backend.supports_demos()
     return BackendSpec(
         indexing=is_indexing_backend,
         snapshotting=is_snapshotting_backend,
         supports_demos=supports_demos,
+        supports_annotations=is_annotations_backend,
     )
 
 
@@ -215,6 +225,66 @@ async def get_application_logs(
     return await backend.get_application_logs(
         request, project_id=project_id, app_id=app_id, partition_key=partition_key
     )
+
+
+@app.post(
+    "/api/v0/{project_id}/{app_id}/{partition_key}/{sequence_id}/annotations",
+    response_model=AnnotationOut,
+)
+async def create_annotation(
+    request: Request,
+    project_id: str,
+    app_id: str,
+    partition_key: str,
+    sequence_id: int,
+    annotation: AnnotationCreate,
+):
+    if partition_key == SENTINEL_PARTITION_KEY:
+        partition_key = None
+    spec = get_app_spec()
+    if not spec.supports_annotations:
+        return []  # empty default -- the case that we don't support annotations
+    return await backend.create_annotation(
+        annotation, project_id, partition_key, app_id, sequence_id
+    )
+
+
+#
+# # TODO -- take out these parameters cause we have the annotation ID
+@app.put(
+    "/api/v0/{project_id}/{annotation_id}/update_annotations",
+    response_model=AnnotationOut,
+)
+async def update_annotation(
+    request: Request,
+    project_id: str,
+    annotation_id: int,
+    annotation: AnnotationUpdate,
+):
+    return await backend.update_annotation(
+        annotation_id=annotation_id, annotation=annotation, project_id=project_id
+    )
+
+
+@app.get("/api/v0/{project_id}/annotations", response_model=Sequence[AnnotationOut])
+async def get_annotations(
+    request: Request,
+    project_id: str,
+    app_id: Optional[str] = None,
+    partition_key: Optional[str] = None,
+    step_sequence_id: Optional[int] = None,
+):
+    # Handle the sentinel value for partition_key
+    if partition_key == SENTINEL_PARTITION_KEY:
+        partition_key = None
+    backend_spec = get_app_spec()
+
+    if not backend_spec.supports_annotations:
+        # makes it easier to wire through to the FE
+        return []
+
+    # Logic to retrieve the annotations
+    return await backend.get_annotations(project_id, partition_key, app_id, step_sequence_id)
 
 
 @app.get("/api/v0/ready")

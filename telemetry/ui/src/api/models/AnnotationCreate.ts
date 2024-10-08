@@ -2,12 +2,13 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { AnnotationObservation } from './AnnotationObservation';
 /**
  * Generic link for indexing job -- can be exposed in 'admin mode' in the UI
  */
-export type BackendSpec = {
-  indexing: boolean;
-  snapshotting: boolean;
-  supports_demos: boolean;
-  supports_annotations: boolean;
+export type AnnotationCreate = {
+  span_id: string | null;
+  step_name: string;
+  tags: Array<string>;
+  observations: Array<AnnotationObservation>;
 };
