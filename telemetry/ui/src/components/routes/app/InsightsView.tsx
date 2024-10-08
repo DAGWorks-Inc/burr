@@ -2,7 +2,7 @@ import { AttributeModel, Span, Step } from '../../../api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../common/table';
 import React, { useContext, useState } from 'react';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
-import { AppViewHighlightContext } from './AppView';
+import { AppContext } from './AppView';
 import { Chip } from '../../common/chip';
 import { modelCosts } from '../../common/modelCost';
 
@@ -350,7 +350,7 @@ const InsightSubTable = (props: {
   }, new Map<number, Step>());
 
   const { currentSelectedIndex, setCurrentSelectedIndex, currentHoverIndex, setCurrentHoverIndex } =
-    useContext(AppViewHighlightContext);
+    useContext(AppContext);
 
   return (
     <>

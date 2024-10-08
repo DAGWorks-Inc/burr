@@ -7,7 +7,7 @@ import { Label } from '../../common/fieldset';
 import { classNames } from '../../../utils/tailwind';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/20/solid';
 import { getUniqueAttributeID } from '../../../utils';
-import { AppViewHighlightContext } from './AppView';
+import { AppContext } from './AppView';
 import { MinusIcon } from '@heroicons/react/24/outline';
 
 /**
@@ -408,7 +408,7 @@ export const AttributeView = (props: {
 }) => {
   const { attribute, viewRawData, isExpanded } = props;
   const attributeAsObject = { [attribute.key]: attribute.value };
-  const { attributesHighlighted } = useContext(AppViewHighlightContext);
+  const { attributesHighlighted } = useContext(AppContext);
   const uniqueID = getUniqueAttributeID(attribute);
   const attributeHighlighted = attributesHighlighted
     .map((item) => getUniqueAttributeID(item))
