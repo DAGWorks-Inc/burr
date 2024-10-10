@@ -3,10 +3,10 @@ import dataclasses
 import inspect
 import logging
 import pathlib
-from typing import Any, Callable, List, Literal, Optional, Set, Tuple, Union
+from typing import Any, Callable, List, Literal, Optional, Sequence, Set, Tuple, Union
 
 from burr import telemetry
-from burr.core.action import Action, Condition, create_action, default
+from burr.core.action import Action, Condition, Select, create_action, default
 from burr.core.state import State
 from burr.core.validation import BASE_ERROR_MESSAGE, assert_set
 
@@ -118,6 +118,13 @@ class Graph:
             return self._action_map[entrypoint]
         possibilities = self._adjacency_map[prior_step]
         for next_action, condition in possibilities:
+            # When `Select` is used, all possibilities have the same `condition` attached.
+            # Hitting a `Select` will necessarily exit the for loop
+            if isinstance(condition, Select):
+                possible_actions = [self._action_map[p[0]] for p in possibilities]
+                selected_action = condition.run(state, possible_actions)
+                return self._action_map[selected_action]
+
             if condition.run(state)[Condition.KEY]:
                 return self._action_map[next_action]
         return None
@@ -235,7 +242,7 @@ class GraphBuilder:
 
     def __init__(self):
         """Initializes the graph builder."""
-        self.transitions: Optional[List[Tuple[str, str, Condition]]] = None
+        self.transitions: Optional[List[Tuple[str, str, Union[Condition, Select]]]] = None
         self.actions: Optional[List[Action]] = None
 
     def with_actions(
@@ -269,7 +276,8 @@ class GraphBuilder:
     def with_transitions(
         self,
         *transitions: Union[
-            Tuple[Union[str, list[str]], str], Tuple[Union[str, list[str]], str, Condition]
+            Tuple[Union[str, Sequence[str]], Union[str, Sequence[str]]],
+            Tuple[Union[str, Sequence[str]], Union[str, Sequence[str]], Union[Condition, Select]],
         ],
     ) -> "GraphBuilder":
         """Adds transitions to the graph. Transitions are specified as tuples of either:
@@ -291,14 +299,25 @@ class GraphBuilder:
                 condition = conditions[0]
             else:
                 condition = default
-            if not isinstance(from_, list):
+            # check required because issubclass(str, Sequence) == True
+            if isinstance(from_, Sequence) and not isinstance(from_, str):
+                from_ = [*from_]
+            else:
                 from_ = [from_]
-            for action in from_:
-                if not isinstance(action, str):
-                    raise ValueError(f"Transition source must be a string, not {action}")
-                if not isinstance(to_, str):
-                    raise ValueError(f"Transition target must be a string, not {to_}")
-                self.transitions.append((action, to_, condition))
+            if isinstance(to_, Sequence) and not isinstance(to_, str):
+                if not isinstance(condition, Select):
+                    raise ValueError(
+                        "Transition with multiple targets require a `Select` condition."
+                    )
+            else:
+                to_ = [to_]
+            for source in from_:
+                for target in to_:
+                    if not isinstance(source, str):
+                        raise ValueError(f"Transition source must be a string, not {source}")
+                    if not isinstance(target, str):
+                        raise ValueError(f"Transition target must be a string, not {to_}")
+                    self.transitions.append((source, target, condition))
         return self
 
     def build(self) -> Graph:
