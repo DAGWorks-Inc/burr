@@ -831,6 +831,18 @@ const ObservationForm = (props: {
               props.setObservation(observation);
             }}
             placeholder="Select data (fields in state/attributes) associated with your observation"
+            styles={{
+              placeholder: (provided) => ({
+                ...provided,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }),
+              control: (provided) => ({
+                ...provided,
+                resize: 'horizontal'
+              })
+            }}
             className="w-full"
             // TODO: Create and use a custom component for the menu items
             components={{
