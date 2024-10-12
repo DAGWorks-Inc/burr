@@ -897,14 +897,7 @@ const ObservationForm = (props: {
         >
           <FaClipboardList className="h-4 w-4" />
         </button>
-        <button
-          className="w-10 inline-flex justify-center items-center rounded-md bg-dwdarkblue/80 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-600/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-700/70"
-          onClick={() => {
-            props.addObservation();
-          }}
-        >
-          {'+'}
-        </button>
+
         {props.allowDelete && (
           <button
             className="w-10 inline-flex justify-center items-center rounded-md bg-dwred/80 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-600/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-700/70"
@@ -915,6 +908,14 @@ const ObservationForm = (props: {
             <XMarkIcon className="h-6 w-6" />
           </button>
         )}
+        <button
+          className="w-10 inline-flex justify-center items-center rounded-md bg-dwdarkblue/80 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-600/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-700/70"
+          onClick={() => {
+            props.addObservation();
+          }}
+        >
+          {'+'}
+        </button>
       </div>
       {observation.data_pointers.length > 0 && (
         <pre className=" text-sm mt-2 whitespace-pre-wrap">
