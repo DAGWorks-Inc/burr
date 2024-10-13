@@ -32,3 +32,30 @@ Note we will be adding two things to this demo:
 Open the notebook <a target="_blank" href="https://colab.research.google.com/github/dagworks-inc/burr/blob/main/examples/email-assistant/notebook.ipynb">
   <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
+
+## Running the UI with Email Server Backend in a Docker Container
+
+We have added Docker support along with a compose file and nginx as a proxy for the API and Burr UI. To run the email assistant app with these new features:
+
+1. Run the following command:
+   ```
+   docker compose up --build
+   ```
+
+2. This will start the email assistant app along with nginx, which allows you to access:
+   - BURR UI on `telemetry.localhost`
+   - API on `api.localhost`
+
+3. If you prefer not to use subdomains powered by nginx, you can also access:
+   - Email server running Burr: Navigate to `localhost:7242/docs`
+   - Burr UI: Navigate to `localhost:7241`
+
+4. If you don't have a UI, go to demos and play with the email-assistant. Otherwise, connect to the Burr email server with your UI code.
+
+Note: This setup does not mount a persistent volume, so state is lost once the container goes down.
+
+## Additional Information
+
+We will be adding two things to this demo:
+1. An integration with the Burr web app
+2. A standalone server example with a walkthrough

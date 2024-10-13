@@ -85,7 +85,7 @@ def _get_application(project_id: str, app_id: str) -> Application:
     return builder.build()
 
 
-def _run_through(project_id: str, app_id: [str], inputs: Dict[str, Any]) -> EmailAssistantState:
+def _run_through(project_id: str, app_id: str, inputs: Dict[str, Any]) -> EmailAssistantState:
     """This advances the state machine, moving through to the next 'halting' point"""
     if app_id == "create_new":  # quick hack to allow for null
         app_id = None
@@ -187,9 +187,15 @@ def validate_environment() -> Optional[str]:
     )
 
 
+app.include_router(router, prefix="/email_assistant", tags=["email-assistant-api"])
+
+
+@app.get("/")
+def root():
+    return {"message": "Email Assistant API"}
+
+
 if __name__ == "__main__":
     import uvicorn
-
-    app.include_router(router, prefix="/")
 
     uvicorn.run(app, host="localhost", port=7242)
