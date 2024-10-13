@@ -1,4 +1,7 @@
-# Use an official Python runtime as a parent image
+# Dockerfile for Email Assistant
+# This container sets up a Python environment for running the Email Assistant server
+# along with the Burr UI. It exposes ports 7241 and 7242 for the UI and API respectively.
+
 FROM python:3.11-bookworm
 
 # Set the working directory in the container
