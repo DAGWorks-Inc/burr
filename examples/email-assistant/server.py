@@ -186,11 +186,14 @@ def validate_environment() -> Optional[str]:
         "You can still look at chat history/examples."
     )
 
+
 app.include_router(router, prefix="/email_assistant", tags=["email-assistant-api"])
+
 
 @app.get("/")
 def root():
     return {"message": "Email Assistant API"}
+
 
 if __name__ == "__main__":
     import uvicorn
