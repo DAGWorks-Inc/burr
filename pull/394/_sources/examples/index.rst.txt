@@ -15,6 +15,6 @@ Examples of more complex/powerful use-cases of Burr. Download/copy these to adap
     simple/index
     chatbots/index
     agents/index
-    deployment
+    deployment.rst
     guardrails/index
     data-science/index

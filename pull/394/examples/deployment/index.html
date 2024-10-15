@@ -12,11 +12,11 @@
         gtag('js', new Date());
         gtag('config', 'G-20Z3J1CR22');
     </script>
-    <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Hyperparameter tuning" href="ml_training/" /><link rel="prev" title="Creating Test Cases" href="../guardrails/creating_tests/" />
-        <link rel="canonical" href="https://burr.dagworks.io/examples/data-science/" />
+    <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="🚧 Guardrails" href="../guardrails/" /><link rel="prev" title="Agent patterns" href="../agents/agent-patterns/" />
+        <link rel="canonical" href="https://burr.dagworks.io/examples/deployment/" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
-        <title>🧪 Data science - Burr</title>
+        <title>✈ Deployment - Burr</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
@@ -195,7 +195,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -242,14 +242,14 @@
 <li class="toctree-l3"><a class="reference internal" href="../agents/agent-patterns/">Agent patterns</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../deployment/">✈ Deployment</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">✈ Deployment</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../guardrails/">🚧 Guardrails</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of 🚧 Guardrails</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../guardrails/creating_tests/">Creating Test Cases</a></li>
 </ul>
 </li>
-<li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">🧪 Data science</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of 🧪 Data science</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="ml_training/">Hyperparameter tuning</a></li>
-<li class="toctree-l3"><a class="reference internal" href="simulation/">Simulations</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../data-science/">🧪 Data science</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of 🧪 Data science</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../data-science/ml_training/">Hyperparameter tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../data-science/simulation/">Simulations</a></li>
 </ul>
 </li>
 </ul>
@@ -332,12 +332,12 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="https://github.com/dagworks-inc/burr/blob/main/docs/examples/data-science/index.rst?plain=true" title="View this page">
+  <a class="muted-link" href="https://github.com/dagworks-inc/burr/blob/main/docs/examples/deployment.rst?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
 </div><div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/dagworks-inc/burr/edit/main/docs/examples/data-science/index.rst" title="Edit this page">
+  <a class="muted-link" href="https://github.com/dagworks-inc/burr/edit/main/docs/examples/deployment.rst" title="Edit this page">
     <svg><use href="#svg-pencil"></use></svg>
     <span class="visually-hidden">Edit this page</span>
   </a>
@@ -350,33 +350,78 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="data-science">
-<h1>🧪 Data science<a class="headerlink" href="#data-science" title="Link to this heading">¶</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="ml_training/">Hyperparameter tuning</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ml_training/#high-level-view">High-level view</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ml_training/#more-granular-training-routines">More granular training routines</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ml_training/#human-in-the-loop">Human in the loop</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ml_training/#hyperparameter-training">Hyperparameter training</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ml_training/#code-example">Code example</a></li>
+          <section id="deployment">
+<h1>✈ Deployment<a class="headerlink" href="#deployment" title="Link to this heading">¶</a></h1>
+<p>Burr is specifically meant to make getting your product in production easier and faster.
+This section covers examples of getting Burr to production, as well as a brief overview of approaches/requirements.</p>
+<p>To deploy Burr in production, you need to do three things:</p>
+<ol class="arabic simple">
+<li><p>Place your application in a web server</p></li>
+<li><p>Provisioning infrastructure</p></li>
+<li><p>Monitor your application in production (highly recommended, but not required)</p></li>
+</ol>
+<p>Due to the large number of methods people have for deploying applications, we will not cover all of them here. That said,
+we really appreciate contributions! Please <a class="reference external" href="https://github.com/DAGWorks-Inc/burr/issues/new?assignees=&amp;labels=&amp;projects=&amp;template=feature_request.md&amp;title=">open an issue</a> if there’s an example you’d like, and <a class="reference internal" href="../../contributing/contributing/#contributing"><span class="std std-ref">contribute back</span></a> if you
+have an example that would add to this guide. We have created a variety of issues with placeholders</p>
+<section id="burr-in-a-web-server">
+<h2>Burr in a web server<a class="headerlink" href="#burr-in-a-web-server" title="Link to this heading">¶</a></h2>
+<p>We largely use <a class="reference external" href="https://fastapi.tiangolo.com/">fastAPI</a> as our web server, but Burr can work with any python-friendly server framework
+(<a class="reference external" href="https://www.djangoproject.com">django</a>, <a class="reference external" href="https://flask.palletsprojects.com/">flask</a>, etc…).</p>
+<p>To run Burr in a FastAPI server, see the following examples:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/web-server">Human in the loop FastAPI server</a> (<a class="reference external" href="https://towardsdatascience.com/building-an-email-assistant-application-with-burr-324bc34c547d">TDS blog post</a> )</p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/openai-compatible-agent">OpenAI-compatible agent with FastAPI</a></p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/streaming-fastapi">Streaming server using SSE + FastAPI</a>  (<a class="reference external" href="https://towardsdatascience.com/how-to-build-a-streaming-agent-with-burr-fastapi-and-react-e2459ef527a8">TDS blog post</a> )</p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/typed-state">Use typed state with Pydantic + FastAPI</a></p></li>
 </ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="simulation/">Simulations</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="simulation/#time-series-forecast">Time-series Forecast</a></li>
-<li class="toctree-l2"><a class="reference internal" href="simulation/#portfolio-construction">Portfolio Construction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="simulation/#multi-agent-simulation">Multi-agent simulation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="simulation/#code-example">Code example</a></li>
+<section id="connecting-to-a-database">
+<h3>Connecting to a database<a class="headerlink" href="#connecting-to-a-database" title="Link to this heading">¶</a></h3>
+<p>To connect Burr to a database, you can use one of the provided persisters, or build your own:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../concepts/state-persistence/#id1"><span class="std std-ref">Documentation on persistence</span></a></p></li>
+<li><p><a class="reference internal" href="../../reference/persister/#persistersref"><span class="std std-ref">Set of available persisters</span></a></p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/blob/main/examples/simple-chatbot-intro/notebook.ipynb">Simple chatbot intro with persistence to SQLLite</a></p></li>
 </ul>
-</li>
+</section>
+</section>
+<section id="provisioning-infrastructure-deploying">
+<h2>Provisioning Infrastructure/Deploying<a class="headerlink" href="#provisioning-infrastructure-deploying" title="Link to this heading">¶</a></h2>
+<p>Burr is not opinionated about the method of deployment/cloud one uses. Any method that can run a python server will work
+(AWS, vercel, etc…). Note we aim to have more examples here – see <a class="reference external" href="https://github.com/DAGWorks-Inc/burr/issues/390">this issue</a> to track!</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/deployment/aws/lambda">Deploying Burr in an AWS lambda function</a></p></li>
 </ul>
-</div>
+</section>
+<section id="monitoring-in-production">
+<h2>Monitoring in Production<a class="headerlink" href="#monitoring-in-production" title="Link to this heading">¶</a></h2>
+<p>Burr’s telemetry UI is meant both for debugging and running in production. It can consume <a class="reference external" href="https://burr.dagworks.io/reference/integrations/opentelemetry/">OpenTelemetry traces</a>,
+and has a suite of useful capabilities for debugging Burr applications.</p>
+<p>It has two (current) implementations:</p>
+<ol class="arabic simple">
+<li><p><a class="reference external" href="https://burr.dagworks.io/concepts/tracking/">Local (filesystem) tracking</a> (default, for debugging or lower-scale production use-cases with a distributed file-system)</p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/blob/main/burr/tracking/server/s3/README.md">S3-based tracking</a> (meant for production use-cases)</p></li>
+</ol>
+<p>Which each come with an implementation of data storage on the server.</p>
+<p>To deploy these in production, you can follow the following examples:</p>
+<ol class="arabic simple">
+<li><p><a class="reference external" href="https://github.com/mdrideout/burr-fastapi-docker-compose">Burr + FastAPI + docker</a> by <a class="reference external" href="https://github.com/mdrideout">Matthew Rideout</a>. This contains a sample API + UI + tracking server all bundled in one!</p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/email-assistant#running-the-ui-with-email-server-backend-in-a-docker-container">Docker compose + nginx proxy</a> by <a class="reference external" href="https://github.com/97k">Aditha Kaushik</a> for the email assistant example, demonstrates running the docker image with the tracking server.</p></li>
+</ol>
+<p>We also have a few issues to document deploying Burr’s monitoring system in production:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/issues/391">deploy on AWS</a></p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/issues/392">deploy on GCP</a></p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/issues/393">deploy on Azure</a></p></li>
+</ul>
+<p>We expect to develop this page significantly over time – Burr will soon have more builtin deployment tooling/ways to make it easier
+to get your app to production!</p>
+</section>
 </section>
 
         </article>
@@ -384,23 +429,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="ml_training/">
+          <a class="next-page" href="../guardrails/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Hyperparameter tuning</div>
+                <div class="title">🚧 Guardrails</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../guardrails/creating_tests/">
+          <a class="prev-page" href="../agents/agent-patterns/">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Creating Test Cases</div>
+                <div class="title">Agent patterns</div>
                 
               </div>
             </a>
@@ -422,8 +467,32 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">✈ Deployment</a><ul>
+<li><a class="reference internal" href="#burr-in-a-web-server">Burr in a web server</a><ul>
+<li><a class="reference internal" href="#connecting-to-a-database">Connecting to a database</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#provisioning-infrastructure-deploying">Provisioning Infrastructure/Deploying</a></li>
+<li><a class="reference internal" href="#monitoring-in-production">Monitoring in Production</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
