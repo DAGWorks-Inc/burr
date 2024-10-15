@@ -1,0 +1,8 @@
+-------------------------------------
+Provisioning Infrastructure/Deploying
+-------------------------------------
+
+Burr is not opinionated about the method of deployment/cloud one uses. Any method that can run a python server will work
+(AWS, vercel, etc...). Note we aim to have more examples here -- see `this issue <https://github.com/DAGWorks-Inc/burr/issues/390>`_ to track!
+
+- `Deploying Burr in an AWS lambda function <https://github.com/DAGWorks-Inc/burr/tree/main/examples/deployment/aws/lambda>`_

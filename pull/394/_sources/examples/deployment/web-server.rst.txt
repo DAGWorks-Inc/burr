@@ -1,0 +1,22 @@
+--------------------
+Burr in a web server
+--------------------
+
+We largely use `fastAPI <https://fastapi.tiangolo.com/>`_ as our web server, but Burr can work with any python-friendly server framework
+(`django <https://www.djangoproject.com>`_, `flask <https://flask.palletsprojects.com/>`_, etc...).
+
+To run Burr in a FastAPI server, see the following examples:
+
+- `Human in the loop FastAPI server <https://github.com/DAGWorks-Inc/burr/tree/main/examples/web-server>`_ (`TDS blog post <https://towardsdatascience.com/building-an-email-assistant-application-with-burr-324bc34c547d>`__ )
+- `OpenAI-compatible agent with FastAPI <https://github.com/DAGWorks-Inc/burr/tree/main/examples/openai-compatible-agent>`_
+- `Streaming server using SSE + FastAPI <https://github.com/DAGWorks-Inc/burr/tree/main/examples/streaming-fastapi>`_  (`TDS blog post <https://towardsdatascience.com/how-to-build-a-streaming-agent-with-burr-fastapi-and-react-e2459ef527a8>`__ )
+- `Use typed state with Pydantic + FastAPI <https://github.com/DAGWorks-Inc/burr/tree/main/examples/typed-state>`_
+
+Connecting to a database
+------------------------
+
+To connect Burr to a database, you can use one of the provided persisters, or build your own:
+
+- :ref:`Documentation on persistence <state-persistence>`
+- :ref:`Set of available persisters <persistersref>`
+- `Simple chatbot intro with persistence to SQLLite <https://github.com/DAGWorks-Inc/burr/blob/main/examples/simple-chatbot-intro/notebook.ipynb>`_

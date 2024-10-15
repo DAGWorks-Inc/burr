@@ -12,11 +12,11 @@
         gtag('js', new Date());
         gtag('config', 'G-20Z3J1CR22');
     </script>
-    <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="🧪 Data science" href="../../data-science/" /><link rel="prev" title="🚧 Guardrails" href="../" />
-        <link rel="canonical" href="https://burr.dagworks.io/examples/guardrails/creating_tests/" />
+    <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" />
+        <link rel="canonical" href="https://burr.dagworks.io/examples/deployment/monitoring/" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
-        <title>Creating Test Cases - Burr</title>
+        <title>Monitoring in Production - Burr</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
@@ -195,7 +195,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -216,7 +216,7 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Burr</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../getting_started/">Get started</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Get started</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../getting_started/why-burr/">Why Burr?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../getting_started/install/">Installation</a></li>
@@ -224,7 +224,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../getting_started/up-next/">Next Steps</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current has-children"><a class="reference internal" href="../../">Cookbook</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Cookbook</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../">Cookbook</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Cookbook</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../simple/">🧸 Toy examples</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of 🧸 Toy examples</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../simple/counter/">Counter</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../simple/cowsay/">Cowsay</a></li>
@@ -242,8 +242,8 @@
 <li class="toctree-l3"><a class="reference internal" href="../../agents/agent-patterns/">Agent patterns</a></li>
 </ul>
 </li>
-<li class="toctree-l2 current has-children"><a class="reference internal" href="../">🚧 Guardrails</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of 🚧 Guardrails</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Creating Test Cases</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../guardrails/">🚧 Guardrails</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of 🚧 Guardrails</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../guardrails/creating_tests/">Creating Test Cases</a></li>
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../data-science/">🧪 Data science</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of 🧪 Data science</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -331,12 +331,12 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="https://github.com/dagworks-inc/burr/blob/main/docs/examples/guardrails/creating_tests.rst?plain=true" title="View this page">
+  <a class="muted-link" href="https://github.com/dagworks-inc/burr/blob/main/docs/examples/deployment/monitoring.rst?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
 </div><div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/dagworks-inc/burr/edit/main/docs/examples/guardrails/creating_tests.rst" title="Edit this page">
+  <a class="muted-link" href="https://github.com/dagworks-inc/burr/edit/main/docs/examples/deployment/monitoring.rst" title="Edit this page">
     <svg><use href="#svg-pencil"></use></svg>
     <span class="visually-hidden">Edit this page</span>
   </a>
@@ -349,67 +349,33 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="creating-test-cases">
-<h1>Creating Test Cases<a class="headerlink" href="#creating-test-cases" title="Link to this heading">¶</a></h1>
-<p>With Burr tracking state is part of the framework. This means creating a realistic test case
-for an action involves turning a persister or tracker on and then pulling that state out
-for a test case. The following example demonstrates how to create a test case
-using the <cite>burr-test-case</cite> command.</p>
-<p>Note: writing test cases for GenAI projects can be tricky. The same LLM API calls
-can result in different outputs. This means that ‘exact’ equality tests may not work,
-and you’ll need to resort to more fuzzy tests like checking for the presence of certain
-words or phrases, or using LLMs to grade the output, etc. We aren’t opinionated on how you
-do this, but in any case, you’ll need to write a test case to exercise things, and this
-is what we’re showing you how to do here.</p>
-<section id="test-case-creation-example">
-<h2>Test Case Creation Example<a class="headerlink" href="#test-case-creation-example" title="Link to this heading">¶</a></h2>
-<p>Video walkthrough:</p>
-<div>
-  <iframe width="800" height="455" src="https://www.youtube.com/embed/9U_CMsh0VBI?si=Z-powULn_RO2-2pB" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-</div><p>Steps:</p>
-<ol class="arabic">
-<li><p>You have built some part of your Burr application.</p></li>
-<li><p>You have found some state you want to test / iterate on.</p></li>
-<li><p>Note the project name, partition key, app id, and sequence id for the state you want to test.
-See orange lines indicating what to pull from the UI in the image below.</p>
-<blockquote>
-<div><img alt="What you need to pull from the UI for running the command." class="align-center" src="../../../_images/_creating_tests.png" />
-</div></blockquote>
-</li>
-<li><p>Run the following command &amp; cut and paste the test to a test file. This will create a <cite>pytest</cite> test.</p></li>
-<li><p>Adjust the test as needed, e.g. what you’re validating or asserting and how.</p></li>
-</ol>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>burr-test-case<span class="w"> </span>create<span class="w">  </span><span class="se">\</span>
-<span class="w">  </span>--project-name<span class="w"> </span><span class="s2">&quot;SOME_NAME&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--partition-key<span class="w"> </span><span class="s2">&quot;SOME_KEY&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--app-id<span class="w"> </span><span class="s2">&quot;SOME_ID&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--sequence-id<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--target-file-name<span class="w"> </span>/tmp/test-case.json
-</pre></div>
-</div>
-<p>See <a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/test-case-creation">github repository example</a>
-for an example.</p>
-<p>Note (1): if you have custom serialization/deserialization logic, you will want to pass in <cite>–serde-module</cite> to the
-test case with the module name of your serialization logic.</p>
-<p>Note (2): you can pass in <cite>–action-name</cite> to override the action name in the test case. This is useful if you want
-to use the output of one action as the input to another action; there are corner cases where this is useful.</p>
-</section>
-<section id="future-work">
-<h2>Future Work<a class="headerlink" href="#future-work" title="Link to this heading">¶</a></h2>
-<p>We see many more improvements here:</p>
+          <section id="monitoring-in-production">
+<h1>Monitoring in Production<a class="headerlink" href="#monitoring-in-production" title="Link to this heading">¶</a></h1>
+<p>Burr’s telemetry UI is meant both for debugging and running in production. It can consume <a class="reference external" href="https://burr.dagworks.io/reference/integrations/opentelemetry/">OpenTelemetry traces</a>,
+and has a suite of useful capabilities for debugging Burr applications.</p>
+<p>It has two (current) implementations:</p>
 <ol class="arabic simple">
-<li><p>Annotating data in the UI to make it easier to pull out.</p></li>
-<li><p>Automatically suggesting tests cases for you to add.</p></li>
-<li><p>Data export / integration with evaluation tools.</p></li>
-<li><p>etc. Please let us know what you need!</p></li>
+<li><p><a class="reference external" href="https://burr.dagworks.io/concepts/tracking/">Local (filesystem) tracking</a> (default, for debugging or lower-scale production use-cases with a distributed file-system)</p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/blob/main/burr/tracking/server/s3/README.md">S3-based tracking</a> (meant for production use-cases)</p></li>
 </ol>
-</section>
+<p>Which each come with an implementation of data storage on the server.</p>
+<p>To deploy these in production, you can follow the following examples:</p>
+<ol class="arabic simple">
+<li><p><a class="reference external" href="https://github.com/mdrideout/burr-fastapi-docker-compose">Burr + FastAPI + docker</a> by <a class="reference external" href="https://github.com/mdrideout">Matthew Rideout</a>. This contains a sample API + UI + tracking server all bundled in one!</p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/email-assistant#running-the-ui-with-email-server-backend-in-a-docker-container">Docker compose + nginx proxy</a> by <a class="reference external" href="https://github.com/97k">Aditha Kaushik</a> for the email assistant example, demonstrates running the docker image with the tracking server.</p></li>
+</ol>
+<p>We also have a few issues to document deploying Burr’s monitoring system in production:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/issues/391">deploy on AWS</a></p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/issues/392">deploy on GCP</a></p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/issues/393">deploy on Azure</a></p></li>
+</ul>
 </section>
 
         </article>
@@ -417,26 +383,8 @@ to use the output of one action as the input to another action; there are corner
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../../data-science/">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">🧪 Data science</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="../">
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-              <div class="page-info">
-                <div class="context">
-                  <span>Previous</span>
-                </div>
-                
-                <div class="title">🚧 Guardrails</div>
-                
-              </div>
-            </a>
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -455,28 +403,8 @@ to use the output of one action as the input to another action; there are corner
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">Creating Test Cases</a><ul>
-<li><a class="reference internal" href="#test-case-creation-example">Test Case Creation Example</a></li>
-<li><a class="reference internal" href="#future-work">Future Work</a></li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>
