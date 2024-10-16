@@ -12,11 +12,11 @@
         gtag('js', new Date());
         gtag('config', 'G-20Z3J1CR22');
     </script>
-    <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="AWS Lambda" href="../aws/" /><link rel="prev" title="✈ Deployment" href="../" />
+    <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="Provisioning Infrastructure/Deploying" href="../infrastructure/" /><link rel="prev" title="✈ Deployment" href="../" />
         <link rel="canonical" href="https://burr.dagworks.io/examples/deployment/web-server/" />
 
-    <!-- Generated with Sphinx 8.1.2 and Furo 2024.08.06 -->
-        <title>Web service (FastAPI, Flask, Django, etc.) - Burr</title>
+    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+        <title>Burr in a web server - Burr</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
@@ -243,8 +243,9 @@
 </ul>
 </li>
 <li class="toctree-l2 current has-children"><a class="reference internal" href="../">✈ Deployment</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of ✈ Deployment</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Web service (FastAPI, Flask, Django, etc.)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../aws/">AWS Lambda</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Burr in a web server</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../infrastructure/">Provisioning Infrastructure/Deploying</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../monitoring/">Monitoring in Production</a></li>
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../guardrails/">🚧 Guardrails</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of 🚧 Guardrails</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -293,6 +294,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../reference/integrations/opentelemetry/">OpenTelemetry</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../reference/integrations/traceloop/">Traceloop</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../reference/integrations/langchain/">Langchain</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../reference/integrations/pydantic/">Pydantic</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../reference/telemetry/">Usage analytics + data privacy</a></li>
@@ -336,12 +338,12 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="https://github.com/dagworks-inc/burr/blob/main/docs/examples/deployment/web-server.md?plain=true" title="View this page">
+  <a class="muted-link" href="https://github.com/dagworks-inc/burr/blob/main/docs/examples/deployment/web-server.rst?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
 </div><div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/dagworks-inc/burr/edit/main/docs/examples/deployment/web-server.md" title="Edit this page">
+  <a class="muted-link" href="https://github.com/dagworks-inc/burr/edit/main/docs/examples/deployment/web-server.rst" title="Edit this page">
     <svg><use href="#svg-pencil"></use></svg>
     <span class="visually-hidden">Edit this page</span>
   </a>
@@ -360,213 +362,26 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="web-service-fastapi-flask-django-etc">
-<h1>Web service (FastAPI, Flask, Django, etc.)<a class="headerlink" href="#web-service-fastapi-flask-django-etc" title="Link to this heading">¶</a></h1>
-<p>Burr is meant to run interactive apps. This means running it as part of a web-service that
-responds to requests, manages state, and documents its capabilities. The interactive nature of Burr
-(moving in/out of programmatic control) means we want to think carefully about how to expose
-our Burr applications to the web. Burr makes it natural to integrate with a web-server such as FastAPI.</p>
-<p>In this tutorial we will use the <a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/email-assistant">email assistant example</a> as a walk-through.
-Our goal is to expose the email assistant in a web-server that a UI can easily be built on top of.
-While we will not be building the UI here, we will link out to the final product for you to explore.</p>
-<section id="email-assistant">
-<h2>Email Assistant<a class="headerlink" href="#email-assistant" title="Link to this heading">¶</a></h2>
-<p>The email assistant is an example of a “human-in-the-loop” generative AI application. This means that
-it requires human assistance at multiple points to build a better product.</p>
-<section id="running-the-example">
-<h3>Running the example<a class="headerlink" href="#running-the-example" title="Link to this heading">¶</a></h3>
-<p>If you want to get a sense for how this looks, open the burr UI:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[start]&quot;</span>
-burr
-</pre></div>
-</div>
-<p>Then navigate to the email assistant via http://localhost:7241/demos/email-assistant,</p>
-<p>You can create a new “application” and see it run through, with the telemetry on the right side.</p>
-</section>
-<section id="conceptual-model">
-<h3>Conceptual Model<a class="headerlink" href="#conceptual-model" title="Link to this heading">¶</a></h3>
-<p>At a high-level, the email assistant does the following:</p>
-<ol class="arabic simple">
-<li><p>Accepts an email + instructions to respond</p></li>
-<li><p>Comes up with a set of clarifying questions (if the LLM deems it required)</p></li>
-<li><p>Using the answer to those questions, generates a draft</p></li>
-<li><p>Accepts feedback to that draft and generates another one, repeating until the user is happy</p></li>
-<li><p>Returns the final draft</p></li>
-</ol>
-<p>Due to the stochastic, often complex nature of LLMs, this has been shown to be one of the most promising
-applications – a collaboration between humans and AI to quickly build high-quality responses.</p>
-</section>
-<section id="modeling-with-burr">
-<h3>Modeling with Burr<a class="headerlink" href="#modeling-with-burr" title="Link to this heading">¶</a></h3>
-<p>This is a brief overview, for a more in-depth look at the email assistant, see the <a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/email-assistant">email assistant example</a>.
-To model our email assistant with burr, we can use the following diagram:</p>
-<p><img alt="Modeling" src="../../../_images/_web-server.png" /></p>
-<p>There are three points at which the user can interact:</p>
-<ol class="arabic simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">process_input</span></code>: This is where the user inputs the email and instructions</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">clarify_instructions</span></code>: The LLM has created a set of clarification questions</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">process_feedback</span></code>: The user has provided feedback on the draft</p></li>
-</ol>
-<p>(3) repeats until the user is happy with the draft (in our implementation this occurs when the feedback they provide is empty)</p>
-<p>Recall that we use the word “application” in Burr to refer to an instance of this process above
-(with persisted state).</p>
-<p>You can see the full application in <a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/email-assistant/application.py">application.py</a>.</p>
-</section>
-</section>
-<section id="integrating-in-a-web-server">
-<h2>Integrating in a web server<a class="headerlink" href="#integrating-in-a-web-server" title="Link to this heading">¶</a></h2>
-<p>For this example we will use <a class="reference external" href="https://fastapi.tiangolo.com/">FastApi</a> and <a class="reference external" href="https://docs.pydantic.dev/latest/">pydantic</a>,
-but it should work with any other web-stack that uses python.</p>
-<section id="endpoints">
-<h3>Endpoints<a class="headerlink" href="#endpoints" title="Link to this heading">¶</a></h3>
-<p>We construct the following endpoints:</p>
-<ol class="arabic simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/create</span></code>: This will create a new application and return the ID</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">PUT</span> <span class="pre">/initialize_draft/{id}/</span></code>: This calls out to <code class="docutils literal notranslate"><span class="pre">process_input</span></code>, passing in the email and instructions</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">PUT</span> <span class="pre">/clarify_instructions/{id}</span></code>: This will gives answers back to the LLM</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">PUT</span> <span class="pre">/process_feedback/{id}</span></code>: This will give feedback back to the LLM</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/{id}/state</span></code>: This will return the current state of the application</p></li>
-</ol>
-<p>The <code class="docutils literal notranslate"><span class="pre">GET</span></code> endpoint allows us to get the current state of the application – this enables
-the user to reload if they quit the browser/get distracted. Each of these endpoints will return the full state of the application,
-which can be rendered on the frontend.  Furthermore, it will indicate the next API endpoint
-we call, which allows the UI to render the appropriate form and</p>
-<p>Using FastAPI + Pydantic, this becomes very simple to implement. First, let’s add a utility to
-get the <code class="docutils literal notranslate"><span class="pre">application</span></code> object. This will use a cached version or instantiate it:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">_get_application</span><span class="p">(</span><span class="n">app_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Application</span><span class="p">:</span>
-    <span class="n">app</span> <span class="o">=</span> <span class="n">email_assistant_application</span><span class="o">.</span><span class="n">application</span><span class="p">(</span><span class="n">app_id</span><span class="o">=</span><span class="n">app_id</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">app</span>
-</pre></div>
-</div>
-<p>All this does is call to our function <code class="docutils literal notranslate"><span class="pre">application</span></code> in <code class="docutils literal notranslate"><span class="pre">email_assistant</span></code> that
-recreates the application. We have not included the <code class="docutils literal notranslate"><span class="pre">create</span></code> function here,
-but it calls out to the same API.</p>
-</section>
-<section id="data-model">
-<h3>Data Model<a class="headerlink" href="#data-model" title="Link to this heading">¶</a></h3>
-<p>Let’s then define a pydantic model to represent the state, and the app object in FastAPI:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
-<span class="k">class</span> <span class="nc">EmailAssistantState</span><span class="p">(</span><span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">app_id</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">email_to_respond</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-    <span class="n">response_instructions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-    <span class="n">questions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
-    <span class="n">answers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
-    <span class="n">drafts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-    <span class="n">feedback_history</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-    <span class="n">final_draft</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-    <span class="c1"># This stores the next step, which tells the frontend which ones to call</span>
-    <span class="n">next_step</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;process_input&quot;</span><span class="p">,</span> <span class="s2">&quot;clarify_instructions&quot;</span><span class="p">,</span> <span class="s2">&quot;process_feedback&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
-
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">from_app</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">Application</span><span class="p">):</span>
-        <span class="c1"># implementation left out, call app.state and translate to pydantic model</span>
-        <span class="c1"># we can use `app.get_next_action()` to get the next step and return it to the user</span>
-        <span class="o">...</span>
-</pre></div>
-</div>
-</section>
-<section id="execution">
-<h3>Execution<a class="headerlink" href="#execution" title="Link to this heading">¶</a></h3>
-<p>Next, we can run through to the next step, starting from any point:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_run_through</span><span class="p">(</span><span class="n">project_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">app_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">EmailAssistantState</span><span class="p">:</span>
-    <span class="n">email_assistant_app</span> <span class="o">=</span> <span class="n">_get_application</span><span class="p">(</span><span class="n">project_id</span><span class="p">,</span> <span class="n">app_id</span><span class="p">)</span>
-    <span class="n">email_assistant_app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>  <span class="c1"># Using this as a side-effect, we&#39;ll just get the state aft</span>
-        <span class="n">halt_before</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;clarify_instructions&quot;</span><span class="p">,</span> <span class="s2">&quot;process_feedback&quot;</span><span class="p">],</span>
-        <span class="n">halt_after</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;final_result&quot;</span><span class="p">],</span>
-        <span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">return</span> <span class="n">EmailAssistantState</span><span class="o">.</span><span class="n">from_app</span><span class="p">(</span><span class="n">email_assistant_app</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>We <code class="docutils literal notranslate"><span class="pre">halt_before</span></code> the steps that require user instructions, and <code class="docutils literal notranslate"><span class="pre">halt_after</span></code>
-the final result. This allows us to get the state after each step.</p>
-<p>Finally, we can define our endpoints. For instance:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/provide_feedback/</span><span class="si">{id}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">provide_feedback</span><span class="p">(</span><span class="n">project_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">app_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">feedback</span><span class="p">:</span> <span class="n">Feedback</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EmailAssistantState</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">_run_through</span><span class="p">(</span><span class="n">project_id</span><span class="p">,</span> <span class="n">app_id</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">feedback</span><span class="o">=</span><span class="n">feedback</span><span class="o">.</span><span class="n">feedback</span><span class="p">))</span>
-</pre></div>
-</div>
-<p>This represents a simple but powerful architecture. We can continue calling these endpoints
-until we’re at a “terminal” state, at which point we can always ask for the state.
-If we decide to add more input steps, we can modify the state machine and add more input steps.
-We are not required to hold state in the app (it is all delegated to Burr’s persistence),
-so we can easily load up from any given point, allowing the user to wait for seconds,
-minutes, hours, or even days before continuing.</p>
-<p>As the frontend simply renders based on the current state and the next step, it will always
-be correct, and the user can always pick up where they left off. With Burr’s telemetry capabilities
-they can debug any state-related issues, ensuring a smooth user experience.</p>
-</section>
-<section id="persistence">
-<h3>Persistence<a class="headerlink" href="#persistence" title="Link to this heading">¶</a></h3>
-<p>Note that we never called out to databases. It all just magically worked.. This is all because we decouple the persistence
-layer from the web-call. The application will be persisted (to whatever database you want),
-by burr’s plugin capabilities – read more <a class="reference external" href="https://burr.dagworks.io/concepts/state-persistence/">here</a>.
-This greatly reduces the amount you have to think about when developing. As Burr persistence is
-pluggable, you can write to your own database with whichever schema you prefer, customizing
-the schema for your project or using a generic one (state is just a JSON object – you can easily serialize/deseriealize it).</p>
-</section>
-<section id="additional-concerns">
-<h3>Additional concerns<a class="headerlink" href="#additional-concerns" title="Link to this heading">¶</a></h3>
-<section id="scaling">
-<h4>Scaling<a class="headerlink" href="#scaling" title="Link to this heading">¶</a></h4>
-<p>But <a class="reference external" href="https://www.youtube.com/watch?v=b2F-DItXtZs">is this webscale</a>? As anything, it depends on how you implement it.
-Two factors determine the scalability of this system:</p>
-<ol class="arabic simple">
-<li><p>database layer – can the database support the volume of inputs/outputs?</p></li>
-<li><p>compute layer – can the server run fast enough to keep up with the users?</p></li>
-</ol>
-<p>For the database layer, it depends largely on the underlying database, as well as the
-schema you use. That said, Burr makes it easier due to natural partitioning of the data
-into <code class="docutils literal notranslate"><span class="pre">application_id</span></code> and <code class="docutils literal notranslate"><span class="pre">partition_key</span></code> (the latter could be the <code class="docutils literal notranslate"><span class="pre">user</span> <span class="pre">ID</span></code>), allowing common
-operations (such as <em>give me all applications for X user</em> and <em>give me the state of application Y</em>)
-simple if you index your state table on the application ID and <code class="docutils literal notranslate"><span class="pre">partition_key</span></code>.</p>
-<p>For the compute layer, you can simply scale horizontally. The only tricky aspect is ensuring state synchronization
-and locking. As we cached the application object, we could potentially get into a position
-in which the state is out of sync. To solve this, you can either:</p>
-<ol class="arabic simple">
-<li><p>Use a locking method (either in the database) to ensure that only one server is running a given application at any point</p></li>
-<li><p>Use sticky sessions/sharding to ensure that a given user always hits the same server</p></li>
-<li><p>Handle forking/resolution of state at the persistence layer with a custom implementation</p></li>
-</ol>
-<p>Or possibly some combination of the above.</p>
-</section>
-<section id="async">
-<h4>Async<a class="headerlink" href="#async" title="Link to this heading">¶</a></h4>
-<p>While we implemented synchronous calls, you can easily make these async by using <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">def</span></code> and <code class="docutils literal notranslate"><span class="pre">await</span></code> in the appropriate places,
-and using the <code class="docutils literal notranslate"><span class="pre">arun</span></code> method in Burr. Read more about async capabilities in <a class="reference external" href="https://burr.dagworks.io/concepts/state-machine/">applications</a>,
-and <a class="reference external" href="https://burr.dagworks.io/concepts/actions/">actions</a>.</p>
-</section>
-<section id="streaming">
-<h4>Streaming<a class="headerlink" href="#streaming" title="Link to this heading">¶</a></h4>
-<p>You can use streaming to send back the stream of the output at any given point. You do this by creating a
-<a class="reference external" href="https://burr.dagworks.io/concepts/streaming-actions/">streaming action</a>. You can then integrate with the
-streaming respose in FastAPI to send back the stream of the output. You can do this with any steps
-(intermediate or final) in your application.</p>
-</section>
-<section id="authentication-data-access">
-<h4>Authentication/Data access<a class="headerlink" href="#authentication-data-access" title="Link to this heading">¶</a></h4>
-<p>While Burr does not operate at the data access layer, this can be easily handles at the  application layer.
-Any authentication system will tell you the user ID, which you can look in your DB to determine access
-to your partition key.</p>
-</section>
-</section>
-</section>
-<section id="wrap-up">
-<h2>Wrap-up<a class="headerlink" href="#wrap-up" title="Link to this heading">¶</a></h2>
-<p>In this tutorial we showed how to integrate Burr into a web-server. We used FastAPI and Pydantic
-to create a simple but powerful API that allows users to interact with the email assistant, leveraging
-Burr’s persistence capabilities to ensure that the user can always pick up where they left off.</p>
-<p>At a high-level, the real value of representing your application as a state machine (as Burr does)
-is that it all becomes easier to think about. You don’t have to conceptually model state persistence,
-dataflow, and the web infrastructure in one piece – they can all be built separately.</p>
-<p>In the future we will be automating this process, allowing you to generate a FastAPI app from the Burr application.</p>
-<p>For now though, you can find the resources for the current implementation:</p>
+          <section id="burr-in-a-web-server">
+<h1>Burr in a web server<a class="headerlink" href="#burr-in-a-web-server" title="Link to this heading">¶</a></h1>
+<p>We like <a class="reference external" href="https://fastapi.tiangolo.com/">fastAPI</a>, but Burr can work with any python-friendly server framework
+(<a class="reference external" href="https://www.djangoproject.com">django</a>, <a class="reference external" href="https://flask.palletsprojects.com/">flask</a>, etc…).</p>
+<p>To run Burr in a FastAPI server, see the following examples:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/email-assistant/application.py">application.py</a></p></li>
-<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/email-assistant/server.py">server.py</a></p></li>
-<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/telemetry/ui/src/examples/EmailAssistant.tsx">ui</a> – this uses <a class="reference external" href="https://tanstack.com/query/latest/docs/framework/react/overview">ReactQuery</a> to call the API and <a class="reference external" href="https://react.dev/">react</a> to render the state.</p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/web-server">Human in the loop FastAPI server</a> (<a class="reference external" href="https://towardsdatascience.com/building-an-email-assistant-application-with-burr-324bc34c547d">TDS blog post</a> )</p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/openai-compatible-agent">OpenAI-compatible agent with FastAPI</a></p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/streaming-fastapi">Streaming server using SSE + FastAPI</a>  (<a class="reference external" href="https://towardsdatascience.com/how-to-build-a-streaming-agent-with-burr-fastapi-and-react-e2459ef527a8">TDS blog post</a> )</p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/typed-state">Use typed state with Pydantic + FastAPI</a></p></li>
+<li><p><a class="reference external" href="https://github.com/mdrideout/burr-fastapi-docker-compose">Burr + FastAPI + docker</a> by <a class="reference external" href="https://github.com/mdrideout">Matthew Rideout</a>. This contains a sample web server API + UI + tracking server all bundled in one!</p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/email-assistant#running-the-ui-with-email-server-backend-in-a-docker-container">Docker compose + nginx proxy</a> by <a class="reference external" href="https://github.com/97k">Aditha Kaushik</a> for the email assistant example, demonstrates running the docker image with the tracking server.</p></li>
+</ul>
+<section id="connecting-to-a-database">
+<h2>Connecting to a database<a class="headerlink" href="#connecting-to-a-database" title="Link to this heading">¶</a></h2>
+<p>To connect Burr to a database, you can use one of the provided persisters, or build your own:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../../concepts/state-persistence/#id1"><span class="std std-ref">Documentation on persistence</span></a></p></li>
+<li><p><a class="reference internal" href="../../../reference/persister/#persistersref"><span class="std std-ref">Set of available persisters</span></a></p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/blob/main/examples/simple-chatbot-intro/notebook.ipynb">Simple chatbot intro with persistence to SQLLite</a></p></li>
 </ul>
 </section>
 </section>
@@ -576,12 +391,12 @@ dataflow, and the web infrastructure in one piece – they can all be built sepa
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../aws/">
+          <a class="next-page" href="../infrastructure/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">AWS Lambda</div>
+                <div class="title">Provisioning Infrastructure/Deploying</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -626,28 +441,8 @@ dataflow, and the web infrastructure in one piece – they can all be built sepa
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">Web service (FastAPI, Flask, Django, etc.)</a><ul>
-<li><a class="reference internal" href="#email-assistant">Email Assistant</a><ul>
-<li><a class="reference internal" href="#running-the-example">Running the example</a></li>
-<li><a class="reference internal" href="#conceptual-model">Conceptual Model</a></li>
-<li><a class="reference internal" href="#modeling-with-burr">Modeling with Burr</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#integrating-in-a-web-server">Integrating in a web server</a><ul>
-<li><a class="reference internal" href="#endpoints">Endpoints</a></li>
-<li><a class="reference internal" href="#data-model">Data Model</a></li>
-<li><a class="reference internal" href="#execution">Execution</a></li>
-<li><a class="reference internal" href="#persistence">Persistence</a></li>
-<li><a class="reference internal" href="#additional-concerns">Additional concerns</a><ul>
-<li><a class="reference internal" href="#scaling">Scaling</a></li>
-<li><a class="reference internal" href="#async">Async</a></li>
-<li><a class="reference internal" href="#streaming">Streaming</a></li>
-<li><a class="reference internal" href="#authentication-data-access">Authentication/Data access</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#wrap-up">Wrap-up</a></li>
+<li><a class="reference internal" href="#">Burr in a web server</a><ul>
+<li><a class="reference internal" href="#connecting-to-a-database">Connecting to a database</a></li>
 </ul>
 </li>
 </ul>

@@ -12,10 +12,10 @@
         gtag('js', new Date());
         gtag('config', 'G-20Z3J1CR22');
     </script>
-    <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Web service (FastAPI, Flask, Django, etc.)" href="web-server/" /><link rel="prev" title="Agent patterns" href="../agents/agent-patterns/" />
+    <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Burr in a web server" href="web-server/" /><link rel="prev" title="Agent patterns" href="../agents/agent-patterns/" />
         <link rel="canonical" href="https://burr.dagworks.io/examples/deployment/" />
 
-    <!-- Generated with Sphinx 8.1.2 and Furo 2024.08.06 -->
+    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>✈ Deployment - Burr</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
@@ -243,8 +243,9 @@
 </ul>
 </li>
 <li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">✈ Deployment</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of ✈ Deployment</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="web-server/">Web service (FastAPI, Flask, Django, etc.)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="aws/">AWS Lambda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="web-server/">Burr in a web server</a></li>
+<li class="toctree-l3"><a class="reference internal" href="infrastructure/">Provisioning Infrastructure/Deploying</a></li>
+<li class="toctree-l3"><a class="reference internal" href="monitoring/">Monitoring in Production</a></li>
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../guardrails/">🚧 Guardrails</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of 🚧 Guardrails</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -293,6 +294,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/opentelemetry/">OpenTelemetry</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/traceloop/">Traceloop</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/langchain/">Langchain</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/pydantic/">Pydantic</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../reference/telemetry/">Usage analytics + data privacy</a></li>
@@ -362,19 +364,25 @@
         <article role="main" id="furo-main-content">
           <section id="deployment">
 <h1>✈ Deployment<a class="headerlink" href="#deployment" title="Link to this heading">¶</a></h1>
+<p>Burr is specifically meant to make getting your product in production easier and faster.
+This section covers examples of getting Burr to production, as well as a brief overview of approaches/requirements.</p>
+<p>To deploy a Burr application in production, you need to do three things:</p>
+<ol class="arabic simple">
+<li><p>Place your Burr application in some place you can trigger it. E.g. a web-service, a script, a library, etc.</p></li>
+<li><p>Provision infrastructure to run (1)</p></li>
+<li><p>Monitor your application in production (highly recommended, but not required)</p></li>
+</ol>
+<p>Due to the large number of methods people have for deploying applications, we will not cover all of them here. That said,
+we really appreciate contributions! Please <a class="reference external" href="https://github.com/DAGWorks-Inc/burr/issues/new?assignees=&amp;labels=&amp;projects=&amp;template=feature_request.md&amp;title=">open an issue</a> if there’s an example you’d like, and <a class="reference internal" href="../../contributing/contributing/#contributing"><span class="std std-ref">contribute back</span></a> if you
+have an example that would add to this guide. We have created a variety of issues with placeholders and link to them in the docs.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="web-server/">Web service (FastAPI, Flask, Django, etc.)</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="web-server/#email-assistant">Email Assistant</a></li>
-<li class="toctree-l2"><a class="reference internal" href="web-server/#integrating-in-a-web-server">Integrating in a web server</a></li>
-<li class="toctree-l2"><a class="reference internal" href="web-server/#wrap-up">Wrap-up</a></li>
+<li class="toctree-l1"><a class="reference internal" href="web-server/">Burr in a web server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="web-server/#connecting-to-a-database">Connecting to a database</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="aws/">AWS Lambda</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="aws/#prerequisites">Prerequisites</a></li>
-<li class="toctree-l2"><a class="reference internal" href="aws/#step-by-step-guide">Step-by-Step Guide</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="infrastructure/">Provisioning Infrastructure/Deploying</a></li>
+<li class="toctree-l1"><a class="reference internal" href="monitoring/">Monitoring in Production</a></li>
 </ul>
 </div>
 </section>
@@ -389,7 +397,7 @@
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Web service (FastAPI, Flask, Django, etc.)</div>
+                <div class="title">Burr in a web server</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
