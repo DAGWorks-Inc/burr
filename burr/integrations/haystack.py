@@ -80,7 +80,7 @@ class HaystackAction(Action):
 
         # here, precedence matters. Alternatively, we could unpack all dictionaries at once
         # which would throw an error for key collisions
-        for param, value in self._bound_params:
+        for param, value in self._bound_params.items():
             values[param] = value
 
         for param in self.reads:
