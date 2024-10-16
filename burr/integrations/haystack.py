@@ -86,7 +86,7 @@ class HaystackAction(Action):
         for param in self.reads:
             values[param] = state[param]
 
-        for param, value in run_kwargs.keys():
+        for param, value in run_kwargs.items():
             values[param] = value
 
         return self._component.run(**values)
