@@ -364,7 +364,7 @@
         <article role="main" id="furo-main-content">
           <section id="burr-in-a-web-server">
 <h1>Burr in a web server<a class="headerlink" href="#burr-in-a-web-server" title="Link to this heading">¶</a></h1>
-<p>We largely use <a class="reference external" href="https://fastapi.tiangolo.com/">fastAPI</a> as our web server, but Burr can work with any python-friendly server framework
+<p>We like <a class="reference external" href="https://fastapi.tiangolo.com/">fastAPI</a>, but Burr can work with any python-friendly server framework
 (<a class="reference external" href="https://www.djangoproject.com">django</a>, <a class="reference external" href="https://flask.palletsprojects.com/">flask</a>, etc…).</p>
 <p>To run Burr in a FastAPI server, see the following examples:</p>
 <ul class="simple">
@@ -372,6 +372,8 @@
 <li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/openai-compatible-agent">OpenAI-compatible agent with FastAPI</a></p></li>
 <li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/streaming-fastapi">Streaming server using SSE + FastAPI</a>  (<a class="reference external" href="https://towardsdatascience.com/how-to-build-a-streaming-agent-with-burr-fastapi-and-react-e2459ef527a8">TDS blog post</a> )</p></li>
 <li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/typed-state">Use typed state with Pydantic + FastAPI</a></p></li>
+<li><p><a class="reference external" href="https://github.com/mdrideout/burr-fastapi-docker-compose">Burr + FastAPI + docker</a> by <a class="reference external" href="https://github.com/mdrideout">Matthew Rideout</a>. This contains a sample web server API + UI + tracking server all bundled in one!</p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/email-assistant#running-the-ui-with-email-server-backend-in-a-docker-container">Docker compose + nginx proxy</a> by <a class="reference external" href="https://github.com/97k">Aditha Kaushik</a> for the email assistant example, demonstrates running the docker image with the tracking server.</p></li>
 </ul>
 <section id="connecting-to-a-database">
 <h2>Connecting to a database<a class="headerlink" href="#connecting-to-a-database" title="Link to this heading">¶</a></h2>

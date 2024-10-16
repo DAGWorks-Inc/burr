@@ -5,10 +5,10 @@
 Burr is specifically meant to make getting your product in production easier and faster.
 This section covers examples of getting Burr to production, as well as a brief overview of approaches/requirements.
 
-To deploy Burr in production, you need to do three things:
+To deploy a Burr application in production, you need to do three things:
 
-1. Place your application in a web server
-2. Provisioning infrastructure
+1. Place your Burr application in some place you can trigger it. E.g. a web-service, a script, a library, etc.
+2. Provision infrastructure to run (1)
 3. Monitor your application in production (highly recommended, but not required)
 
 Due to the large number of methods people have for deploying applications, we will not cover all of them here. That said,
