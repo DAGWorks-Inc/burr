@@ -19,6 +19,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Sequence,
     Set,
     Tuple,
     TypeVar,
@@ -37,6 +38,7 @@ from burr.core.action import (
     Condition,
     Function,
     Reducer,
+    Select,
     SingleStepAction,
     SingleStepStreamingAction,
     StreamingAction,
@@ -2064,7 +2066,8 @@ class ApplicationBuilder(Generic[StateType]):
     def with_transitions(
         self,
         *transitions: Union[
-            Tuple[Union[str, list[str]], str], Tuple[Union[str, list[str]], str, Condition]
+            Tuple[Union[str, Sequence[str]], Union[str, Sequence[str]]],
+            Tuple[Union[str, Sequence[str]], Union[str, Sequence[str]], Union[Condition, Select]],
         ],
     ) -> "ApplicationBuilder[StateType]":
         """Adds transitions to the application. Transitions are specified as tuples of either:
