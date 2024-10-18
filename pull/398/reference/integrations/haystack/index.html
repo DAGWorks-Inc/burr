@@ -195,7 +195,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -356,7 +356,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -365,6 +365,46 @@
           <section id="haystack">
 <h1>Haystack<a class="headerlink" href="#haystack" title="Link to this heading">¶</a></h1>
 <p>The Haystack integration allows you to use <code class="docutils literal notranslate"><span class="pre">Component</span></code> as Burr <code class="docutils literal notranslate"><span class="pre">Action</span></code> using the <code class="docutils literal notranslate"><span class="pre">HaystackAction</span></code> construct. You can visit the examples in <code class="docutils literal notranslate"><span class="pre">burr/examples/haystack-integration</span></code> for a notebook tutorial.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="burr.integrations.haystack.HaystackAction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.haystack.</span></span><span class="sig-name descname"><span class="pre">HaystackAction</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">component</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Component</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">reads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">writes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">bound_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.haystack.HaystackAction" title="Link to this definition">¶</a></dt>
+<dd><p>Burr <code class="docutils literal notranslate"><span class="pre">Action</span></code> wrapping a Haystack <code class="docutils literal notranslate"><span class="pre">Component</span></code>.</p>
+<p>Haystack <code class="docutils literal notranslate"><span class="pre">Component</span></code> is the basic block of a Haystack <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code>.
+A <code class="docutils literal notranslate"><span class="pre">Component</span></code> is instantiated, then it receives inputs for its <code class="docutils literal notranslate"><span class="pre">.run()</span></code> method
+and returns output values.</p>
+<p>Learn more about components here: <a class="reference external" href="https://docs.haystack.deepset.ai/docs/custom-components">https://docs.haystack.deepset.ai/docs/custom-components</a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="burr.integrations.haystack.haystack_pipeline_to_burr_graph">
+<span class="sig-prename descclassname"><span class="pre">burr.integrations.haystack.</span></span><span class="sig-name descname"><span class="pre">haystack_pipeline_to_burr_graph</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">pipeline</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Pipeline</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../../application/#burr.core.graph.Graph" title="burr.core.graph.Graph"><span class="pre">Graph</span></a></span></span><a class="headerlink" href="#burr.integrations.haystack.haystack_pipeline_to_burr_graph" title="Link to this definition">¶</a></dt>
+<dd><p>Convert a Haystack <cite>Pipeline</cite> to a Burr <cite>Graph</cite>.</p>
+<p>NOTE. This currently doesn’t support Haystack pipelines with
+parallel branches. Learn more <a class="reference external" href="https://docs.haystack.deepset.ai/docs/pipelines#branching">https://docs.haystack.deepset.ai/docs/pipelines#branching</a></p>
+<p>From the Haystack <cite>Pipeline</cite>, we can easily retrieve transitions.
+For actions, we need to create <cite>HaystackAction</cite> from components
+and map their sockets to Burr state fields</p>
+<p>EXPERIMENTAL: This feature is experimental and may change in the future.
+Changes to Haystack or Burr could impact this function. Please let us know if
+you encounter any issues.</p>
+</dd></dl>
+
 </section>
 
         </article>
@@ -392,8 +432,28 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Haystack</a><ul>
+<li><a class="reference internal" href="#burr.integrations.haystack.HaystackAction"><code class="docutils literal notranslate"><span class="pre">HaystackAction</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.haystack.haystack_pipeline_to_burr_graph"><code class="docutils literal notranslate"><span class="pre">haystack_pipeline_to_burr_graph()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
