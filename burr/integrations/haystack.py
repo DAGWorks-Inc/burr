@@ -189,7 +189,6 @@ class HaystackAction(Action):
                     raise ValueError(
                         f"Socket `{output_socket_name}` missing from output of `Component.run()`"
                     ) from e
-        print(state_update)
         return state.update(**state_update)
 
     def get_source(self) -> str:

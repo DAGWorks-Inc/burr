@@ -115,7 +115,7 @@ pydantic = [
 ]
 
 haystack = [
-  "haystack"
+  "haystack-ai"
 ]
 
 cli = [
