@@ -62,6 +62,7 @@ tests = [
   "pyarrow",
   "redis",
   "burr[opentelemetry]"
+  "burr[haystack]"
 ]
 
 documentation = [
@@ -111,6 +112,10 @@ tracking-server = [
 
 pydantic = [
   "pydantic"
+]
+
+haystack = [
+  "haystack"
 ]
 
 cli = [
