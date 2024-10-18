@@ -61,7 +61,7 @@ tests = [
   "pydantic[email]",
   "pyarrow",
   "redis",
-  "burr[opentelemetry]"
+  "burr[opentelemetry]",
   "burr[haystack]"
 ]
 
