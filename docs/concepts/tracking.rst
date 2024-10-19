@@ -48,28 +48,34 @@ Debugging via Reloading Prior State
 Because the tracking client writes to the file system, you can reload the state of the state machine at any time. This is
 useful for debugging, because you can quickly recreate the issue by running the state machine with the same point in time.
 
-To do so, you'd use the classmethod _load_state()_ on the :py:class:`LocalTrackingClient <burr.tracking.LocalTrackingClient>`.
+To do so, you'd use the classmethod _load()_ on the :py:class:`LocalTrackingClient <burr.tracking.LocalTrackingClient>`.
 
-For example, as you initialize the Burr Application, you'd have some control flow like this:
+For example, to debug your Burr Application, you'd have some control flow like this using the `.initialize_from(...)` and `fork_from_*` functionality:
 
 .. code-block:: python
 
-    from burr.tracking import client
+    from burr.tracking import LocalTrackingClient
 
-    project_name = "demo_hamilton-multi-agent"
-    if app_instance_id:
-        initial_state, entry_point = client.LocalTrackingClient.load_state(
-            project_name, app_instance_id
-        )
-        # TODO: any custom logic for re-creating the state if it's some object that needs to be re-instantiated
-    else:
-        initial_state, entry_point = default_state_and_entry_point()
+    prior_app_id = ... # some value
+    sequence_id = ... # None or some prior step
+    partition_key = "SOME_VALUE" # use None if not using a partition key
 
+    project_name = "PROJECT_NAME"
+    tracker = LocalTrackingClient(project=project_name)
     app = (
         ApplicationBuilder()
-        .with_state(**initial_state)
-        .with_entry_point(entry_point)
-        # ... etc fill in the rest here
+        .with_graph(base_graph) # your graph
+        .initialize_from(
+            tracker, # local tracker above
+            resume_at_next_action=True,
+            default_state={}, # your default state
+            default_entrypoint="SOME_DEFAULT", # your default entry point
+            fork_from_app_id=prior_app_id,
+            fork_from_sequence_id=sequence_id,
+            fork_from_partition_key=partition_key
+        )
+        .with_tracker(tracker)  # tracking + checkpointing; one line 🪄.
+        .build()
     )
 
 ---------------
