@@ -67,7 +67,7 @@ For example, to debug your Burr Application, you'd have some control flow like t
         .with_graph(base_graph) # your graph
         .initialize_from(
             tracker, # local tracker above
-            resume_at_next_action=True, 
+            resume_at_next_action=True,
             default_state={}, # your default state
             default_entrypoint="SOME_DEFAULT", # your default entry point
             fork_from_app_id=prior_app_id,
