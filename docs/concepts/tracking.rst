@@ -60,7 +60,7 @@ For example, as you initialize the Burr Application, you'd have some control flo
     sequence_id = ... # None or some prior step
     partition_key = "SOME_VALUE" # use None if not using a partition key
 
-    project_name = "PROEJCT_NAME"
+    project_name = "PROJECT_NAME"
     tracker = LocalTrackingClient(project=project_name)
     app = (
         ApplicationBuilder()
