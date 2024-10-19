@@ -48,9 +48,9 @@ Debugging via Reloading Prior State
 Because the tracking client writes to the file system, you can reload the state of the state machine at any time. This is
 useful for debugging, because you can quickly recreate the issue by running the state machine with the same point in time.
 
-To do so, you'd use the classmethod _load_state()_ on the :py:class:`LocalTrackingClient <burr.tracking.LocalTrackingClient>`.
+To do so, you'd use the classmethod _load()_ on the :py:class:`LocalTrackingClient <burr.tracking.LocalTrackingClient>`.
 
-For example, as you initialize the Burr Application, you'd have some control flow like this:
+For example, to debug your Burr Application, you'd have some control flow like this using the `.initialize_from(...)` and `fork_from_*` functionality:
 
 .. code-block:: python
 
