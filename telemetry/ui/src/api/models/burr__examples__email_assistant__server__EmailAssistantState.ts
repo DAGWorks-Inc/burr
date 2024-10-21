@@ -2,7 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type EmailAssistantState = {
+export type burr__examples__email_assistant__server__EmailAssistantState = {
   app_id: string;
   email_to_respond: string | null;
   response_instructions: string | null;
@@ -11,9 +11,9 @@ export type EmailAssistantState = {
   drafts: Array<string>;
   feedback_history: Array<string>;
   final_draft: string | null;
-  next_step: EmailAssistantState.next_step;
+  next_step: burr__examples__email_assistant__server__EmailAssistantState.next_step;
 };
-export namespace EmailAssistantState {
+export namespace burr__examples__email_assistant__server__EmailAssistantState {
   export enum next_step {
     PROCESS_INPUT = 'process_input',
     CLARIFY_INSTRUCTIONS = 'clarify_instructions',
