@@ -428,6 +428,13 @@ class State(Mapping, Generic[StateType]):
         )
 
     def __getitem__(self, __k: str) -> Any:
+        if __k not in self._state:
+            raise KeyError(
+                f"Key \"{__k}\" not found in state. Keys state knows about are: {[key for key in self._state.keys() if not key.startswith('__')]}. "
+                "If you hit this within the context of an application, you want to "
+                "(a) ensure that an upstream action has produced this state/it is set as an initial state value and "
+                "(b) ensure that your action declares this as a read key."
+            )
         return self._state[__k]
 
     def __len__(self) -> int:

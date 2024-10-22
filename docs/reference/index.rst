@@ -21,6 +21,7 @@ need functionality that is not publicly exposed, please open an issue and we can
     tracking
     visibility
     lifecycle
+    parallelism
     typing
     integrations/index
     telemetry
