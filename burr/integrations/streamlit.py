@@ -1,13 +1,22 @@
+import asyncio
 import colorsys
 import dataclasses
 import inspect
 import json
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 from burr.core import Application
 from burr.core.action import FunctionBasedAction
 from burr.integrations.base import require_plugin
-from burr.integrations.hamilton import Hamilton, StateSource
+from burr.tracking.server.backend import LocalBackend
+from burr.tracking.server.schema import ApplicationLogs, ApplicationSummary, Project, Span, Step
+
+try:
+    from burr.integrations.hamilton import Hamilton, StateSource
+
+    HAMILTON_AVAILABLE = True
+except ImportError:
+    HAMILTON_AVAILABLE = False
 
 try:
     import graphviz
@@ -178,7 +187,11 @@ def render_action(state: AppState):
         return
     st.header(f"`{current_node}`")
     action_object = actions[current_node]
-    is_hamilton = isinstance(action_object, Hamilton)
+    if HAMILTON_AVAILABLE:
+        is_hamilton = isinstance(action_object, Hamilton)
+    else:
+        is_hamilton = False
+
     is_function_api = isinstance(action_object, FunctionBasedAction)
 
     def format_read(var):
@@ -286,3 +299,152 @@ def render_explorer(app_state: AppState):
             with data_view:
                 render_state_results(app_state)
     update_state(app_state)
+
+
+def get_projects(backend: LocalBackend) -> Sequence[Project]:
+    """Get projects from Burr backend"""
+    return asyncio.run(backend.list_projects({}))
+
+
+def get_applications(project: Project, backend: LocalBackend) -> Sequence[ApplicationSummary]:
+    """Get project's applications from Burr backend"""
+    return asyncio.run(backend.list_apps({}, project_id=project.id, partition_key=None))
+
+
+def get_logs(
+    project: Project, application: ApplicationSummary, backend: LocalBackend
+) -> ApplicationLogs:
+    """Get application's logs from Burr backend"""
+    return asyncio.run(
+        backend.get_application_logs(
+            {}, project_id=project.id, app_id=application.app_id, partition_key=None
+        )
+    )
+
+
+def get_steps(
+    project: Project, application: ApplicationSummary, backend: LocalBackend
+) -> Sequence[Step]:
+    """Get application's steps contained in logs from Burr backend"""
+    logs = get_logs(project=project, application=application, backend=backend)
+    return logs.steps
+
+
+def get_spans(step: Step) -> Sequence[Span]:
+    """Get step's spans"""
+    return step.spans
+
+
+def project_selectbox(projects: Sequence[Project] = None, backend: LocalBackend = None) -> Project:
+    """Create a streamlit selectbox for projects that automatically updates the URL query params"""
+    if projects and backend:
+        raise ValueError("Pass either `projects` OR `backend`, but not both.")
+
+    if backend:
+        projects = asyncio.run(backend.list_projects({}))
+
+    selection = 0
+    if project_name := st.query_params.get("project"):
+        for idx, project in enumerate(projects):
+            if project.name == project_name:
+                selection = idx
+                break
+
+    selected_project = st.selectbox(
+        "Project",
+        options=projects,
+        format_func=lambda project: project.name,
+        index=selection,
+    )
+    st.query_params["project"] = selected_project.name
+    return selected_project
+
+
+def application_selectbox(
+    applications: Sequence[ApplicationSummary] = None,
+    project: Project = None,
+    backend: LocalBackend = None,
+) -> ApplicationSummary:
+    """Create a streamlit selectbox for applications that automatically updates the URL query params"""
+    if applications and project:
+        raise ValueError("Pass either `applications` OR `project`, but not both.")
+
+    if project:
+        if backend is None:
+            raise ValueError("If passing `project`, you must also pass `backend`")
+
+        applications = get_applications(project=project, backend=backend)
+
+    selection = 0
+    if app_id := st.query_params.get("app_id"):
+        for idx, app in enumerate(applications):
+            if app.app_id == app_id:
+                selection = idx
+                break
+
+    selected_app = st.selectbox(
+        "Application",
+        options=applications,
+        format_func=lambda app: app.app_id,
+        index=selection,
+    )
+    st.query_params["app_id"] = selected_app.app_id
+    return selected_app
+
+
+def step_selectbox(
+    steps: Sequence[Step] = None,
+    application: ApplicationSummary = None,
+    project: Project = None,
+    backend: LocalBackend = None,
+) -> Step:
+    """Create a streamlit selectbox for steps that automatically updates the URL query params"""
+    if steps and application:
+        raise ValueError("Pass either `steps` OR `application`, but not both.")
+
+    if application:
+        if not backend or not project:
+            raise ValueError("If passing `application`, you must also pass `project` and `backend`")
+
+        steps = get_steps(project=project, application=application, backend=backend)
+
+    selection = 0
+    if step_id := st.query_params.get("step"):
+        for idx, step in enumerate(steps):
+            if step.step_start_log.sequence_id == step_id:
+                selection = idx
+                break
+
+    selected_step = st.selectbox(
+        "Step",
+        options=steps,
+        format_func=lambda step: f"{step.step_start_log.sequence_id}::{step.step_start_log.action}",
+        index=selection,
+    )
+    st.query_params["step"] = str(selected_step.step_start_log.sequence_id)
+    return selected_step
+
+
+def span_selectbox(spans: Sequence[Span] = None, step: Step = None) -> Span:
+    """Create a streamlit selectbox for spans that automatically updates the URL query params"""
+    if spans and step:
+        raise ValueError("Pass either `spans` OR `step`, but not both.")
+
+    if step:
+        spans = get_spans(step)
+
+    selection = 0
+    if span_id := st.query_params.get("span"):
+        for idx, span in enumerate(spans):
+            if span.begin_entry.span_id == span_id:
+                selection = idx
+                break
+
+    selected_span = st.selectbox(
+        "Span",
+        options=spans,
+        format_func=lambda span: f"{span.begin_entry.sequence_id}::{span.begin_entry.span_name}",
+        index=selection,
+    )
+    st.query_params["span"] = str(selected_span.begin_entry.span_id)
+    return selected_span
