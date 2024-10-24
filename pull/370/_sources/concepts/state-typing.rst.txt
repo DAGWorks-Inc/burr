@@ -50,7 +50,7 @@ Then, we can use this model to type our application:
 .. code-block:: python
 
     from burr import ApplicationBuilder
-    from burr.core.typing import PydanticTypingSystem
+    from burr.integrations.pydantic import PydanticTypingSystem
 
     app = (
         ApplicationBuilder()

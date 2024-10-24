@@ -15,7 +15,7 @@
     <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="State Persistence" href="../state-persistence/" /><link rel="prev" title="Transitions" href="../transitions/" />
         <link rel="canonical" href="https://burr.dagworks.io/concepts/tracking/" />
 
-    <!-- Generated with Sphinx 8.0.2 and Furo 2024.08.06 -->
+    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>Tracking Burr - Burr</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
@@ -244,8 +244,9 @@
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/deployment/">✈ Deployment</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of ✈ Deployment</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../examples/deployment/web-server/">Web service (FastAPI, Flask, Django, etc.)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../examples/deployment/aws/">AWS Lambda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/deployment/web-server/">Burr in a web server</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/deployment/infrastructure/">Provisioning Infrastructure/Deploying</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/deployment/monitoring/">Monitoring in Production</a></li>
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/guardrails/">🚧 Guardrails</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of 🚧 Guardrails</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -295,6 +296,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/opentelemetry/">OpenTelemetry</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/traceloop/">Traceloop</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/langchain/">Langchain</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/pydantic/">Pydantic</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../reference/telemetry/">Usage analytics + data privacy</a></li>
@@ -406,24 +408,30 @@ writes to a local file system, although we will be making it pluggable in the fu
 <h3>Debugging via Reloading Prior State<a class="headerlink" href="#debugging-via-reloading-prior-state" title="Link to this heading">¶</a></h3>
 <p>Because the tracking client writes to the file system, you can reload the state of the state machine at any time. This is
 useful for debugging, because you can quickly recreate the issue by running the state machine with the same point in time.</p>
-<p>To do so, you’d use the classmethod _load_state()_ on the <a class="reference internal" href="../../reference/tracking/#burr.tracking.LocalTrackingClient" title="burr.tracking.LocalTrackingClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">LocalTrackingClient</span></code></a>.</p>
-<p>For example, as you initialize the Burr Application, you’d have some control flow like this:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.tracking</span> <span class="kn">import</span> <span class="n">client</span>
+<p>To do so, you’d use the classmethod _load()_ on the <a class="reference internal" href="../../reference/tracking/#burr.tracking.LocalTrackingClient" title="burr.tracking.LocalTrackingClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">LocalTrackingClient</span></code></a>.</p>
+<p>For example, to debug your Burr Application, you’d have some control flow like this using the <cite>.initialize_from(…)</cite> and <cite>fork_from_*</cite> functionality:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.tracking</span> <span class="kn">import</span> <span class="n">LocalTrackingClient</span>
 
-<span class="n">project_name</span> <span class="o">=</span> <span class="s2">&quot;demo_hamilton-multi-agent&quot;</span>
-<span class="k">if</span> <span class="n">app_instance_id</span><span class="p">:</span>
-    <span class="n">initial_state</span><span class="p">,</span> <span class="n">entry_point</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">LocalTrackingClient</span><span class="o">.</span><span class="n">load_state</span><span class="p">(</span>
-        <span class="n">project_name</span><span class="p">,</span> <span class="n">app_instance_id</span>
-    <span class="p">)</span>
-    <span class="c1"># TODO: any custom logic for re-creating the state if it&#39;s some object that needs to be re-instantiated</span>
-<span class="k">else</span><span class="p">:</span>
-    <span class="n">initial_state</span><span class="p">,</span> <span class="n">entry_point</span> <span class="o">=</span> <span class="n">default_state_and_entry_point</span><span class="p">()</span>
+<span class="n">prior_app_id</span> <span class="o">=</span> <span class="o">...</span> <span class="c1"># some value</span>
+<span class="n">sequence_id</span> <span class="o">=</span> <span class="o">...</span> <span class="c1"># None or some prior step</span>
+<span class="n">partition_key</span> <span class="o">=</span> <span class="s2">&quot;SOME_VALUE&quot;</span> <span class="c1"># use None if not using a partition key</span>
 
+<span class="n">project_name</span> <span class="o">=</span> <span class="s2">&quot;PROJECT_NAME&quot;</span>
+<span class="n">tracker</span> <span class="o">=</span> <span class="n">LocalTrackingClient</span><span class="p">(</span><span class="n">project</span><span class="o">=</span><span class="n">project_name</span><span class="p">)</span>
 <span class="n">app</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">ApplicationBuilder</span><span class="p">()</span>
-    <span class="o">.</span><span class="n">with_state</span><span class="p">(</span><span class="o">**</span><span class="n">initial_state</span><span class="p">)</span>
-    <span class="o">.</span><span class="n">with_entry_point</span><span class="p">(</span><span class="n">entry_point</span><span class="p">)</span>
-    <span class="c1"># ... etc fill in the rest here</span>
+    <span class="o">.</span><span class="n">with_graph</span><span class="p">(</span><span class="n">base_graph</span><span class="p">)</span> <span class="c1"># your graph</span>
+    <span class="o">.</span><span class="n">initialize_from</span><span class="p">(</span>
+        <span class="n">tracker</span><span class="p">,</span> <span class="c1"># local tracker above</span>
+        <span class="n">resume_at_next_action</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">default_state</span><span class="o">=</span><span class="p">{},</span> <span class="c1"># your default state</span>
+        <span class="n">default_entrypoint</span><span class="o">=</span><span class="s2">&quot;SOME_DEFAULT&quot;</span><span class="p">,</span> <span class="c1"># your default entry point</span>
+        <span class="n">fork_from_app_id</span><span class="o">=</span><span class="n">prior_app_id</span><span class="p">,</span>
+        <span class="n">fork_from_sequence_id</span><span class="o">=</span><span class="n">sequence_id</span><span class="p">,</span>
+        <span class="n">fork_from_partition_key</span><span class="o">=</span><span class="n">partition_key</span>
+    <span class="p">)</span>
+    <span class="o">.</span><span class="n">with_tracker</span><span class="p">(</span><span class="n">tracker</span><span class="p">)</span>  <span class="c1"># tracking + checkpointing; one line 🪄.</span>
+    <span class="o">.</span><span class="n">build</span><span class="p">()</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -531,7 +539,7 @@ run it with the following command:</p>
     </aside>
   </div>
 </div><script src="../../_static/documentation_options.js?v=187304be"></script>
-    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/scripts/furo.js?v=5fa4622c"></script>
     </body>

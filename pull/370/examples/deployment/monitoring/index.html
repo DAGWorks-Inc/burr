@@ -12,11 +12,11 @@
         gtag('js', new Date());
         gtag('config', 'G-20Z3J1CR22');
     </script>
-    <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="🚧 Guardrails" href="../../guardrails/" /><link rel="prev" title="Web service (FastAPI, Flask, Django, etc.)" href="../web-server/" />
-        <link rel="canonical" href="https://burr.dagworks.io/examples/deployment/aws/" />
+    <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="🚧 Guardrails" href="../../guardrails/" /><link rel="prev" title="Provisioning Infrastructure/Deploying" href="../infrastructure/" />
+        <link rel="canonical" href="https://burr.dagworks.io/examples/deployment/monitoring/" />
 
-    <!-- Generated with Sphinx 8.0.2 and Furo 2024.08.06 -->
-        <title>AWS Lambda - Burr</title>
+    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+        <title>Monitoring in Production - Burr</title>
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=a746c00c" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
@@ -196,7 +196,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -244,8 +244,9 @@
 </ul>
 </li>
 <li class="toctree-l2 current has-children"><a class="reference internal" href="../">✈ Deployment</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of ✈ Deployment</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="../web-server/">Web service (FastAPI, Flask, Django, etc.)</a></li>
-<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">AWS Lambda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../web-server/">Burr in a web server</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../infrastructure/">Provisioning Infrastructure/Deploying</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Monitoring in Production</a></li>
 </ul>
 </li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../guardrails/">🚧 Guardrails</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of 🚧 Guardrails</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -295,6 +296,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../reference/integrations/opentelemetry/">OpenTelemetry</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../reference/integrations/traceloop/">Traceloop</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../reference/integrations/langchain/">Langchain</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../reference/integrations/pydantic/">Pydantic</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../reference/telemetry/">Usage analytics + data privacy</a></li>
@@ -338,12 +340,12 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="https://github.com/dagworks-inc/burr/blob/main/docs/examples/deployment/aws.md?plain=true" title="View this page">
+  <a class="muted-link" href="https://github.com/dagworks-inc/burr/blob/main/docs/examples/deployment/monitoring.rst?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
 </div><div class="edit-this-page">
-  <a class="muted-link" href="https://github.com/dagworks-inc/burr/edit/main/docs/examples/deployment/aws.md" title="Edit this page">
+  <a class="muted-link" href="https://github.com/dagworks-inc/burr/edit/main/docs/examples/deployment/monitoring.rst" title="Edit this page">
     <svg><use href="#svg-pencil"></use></svg>
     <span class="visually-hidden">Edit this page</span>
   </a>
@@ -356,107 +358,33 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="aws-lambda">
-<h1>AWS Lambda<a class="headerlink" href="#aws-lambda" title="Link to this heading">¶</a></h1>
-<p><a class="reference external" href="https://aws.amazon.com/lambda/">AWS Lambda</a> - serverless computation service in AWS.</p>
-<p>Here we have an example how to deploy “hello-world” AWS Lambda with a simple Burr application.
-This example is based on the official instruction: https://docs.aws.amazon.com/lambda/latest/dg/python-image.html#python-image-instructions</p>
-<p>Burr can be deployed within a Lambda function. This is a good option if you want to run your
-application in response to events, or if you want to run your application in a serverless environment.</p>
-<p>See the <a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/deployment/aws/lambda">repository on GitHub</a> for the full code example and for step-by-step instructions on how to deploy a Burr application to AWS Lambda.</p>
-<section id="prerequisites">
-<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
+          <section id="monitoring-in-production">
+<h1>Monitoring in Production<a class="headerlink" href="#monitoring-in-production" title="Link to this heading">¶</a></h1>
+<p>Burr’s telemetry UI is meant both for debugging and running in production. It can consume <a class="reference external" href="https://burr.dagworks.io/reference/integrations/opentelemetry/">OpenTelemetry traces</a>,
+and has a suite of useful capabilities for debugging Burr applications.</p>
+<p>It has two (current) implementations:</p>
+<ol class="arabic simple">
+<li><p><a class="reference external" href="https://burr.dagworks.io/concepts/tracking/">Local (filesystem) tracking</a> (default, for debugging or lower-scale production use-cases with a distributed file-system)</p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/blob/main/burr/tracking/server/s3/README.md">S3-based tracking</a> (meant for production use-cases)</p></li>
+</ol>
+<p>Which each come with an implementation of data storage on the server.</p>
+<p>To deploy these in production, you can follow the following examples:</p>
+<ol class="arabic simple">
+<li><p><a class="reference external" href="https://github.com/mdrideout/burr-fastapi-docker-compose">Burr + FastAPI + docker</a> by <a class="reference external" href="https://github.com/mdrideout">Matthew Rideout</a>. This contains a sample API + UI + tracking server all bundled in one!</p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/email-assistant#running-the-ui-with-email-server-backend-in-a-docker-container">Docker compose + nginx proxy</a> by <a class="reference external" href="https://github.com/97k">Aditha Kaushik</a> for the email assistant example, demonstrates running the docker image with the tracking server.</p></li>
+</ol>
+<p>We also have a few issues to document deploying Burr’s monitoring system in production:</p>
 <ul class="simple">
-<li><p><strong>AWS CLI Setup</strong>: Make sure the AWS CLI is set up on your machine. If you haven’t done this yet, no worries! You can follow the <a class="reference external" href="https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html">Quick Start guide</a> for easy setup instructions.</p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/issues/391">deploy on AWS</a></p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/issues/392">deploy on GCP</a></p></li>
+<li><p><a class="reference external" href="https://github.com/DAGWorks-Inc/burr/issues/393">deploy on Azure</a></p></li>
 </ul>
-</section>
-<section id="step-by-step-guide">
-<h2>Step-by-Step Guide<a class="headerlink" href="#step-by-step-guide" title="Link to this heading">¶</a></h2>
-<section id="build-docker-image">
-<h3>1. Build Docker image:<a class="headerlink" href="#build-docker-image" title="Link to this heading">¶</a></h3>
-<ul>
-<li><p><strong>Build Docker image for deploy in AWS ECR</strong></p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>--platform<span class="w"> </span>linux/amd64<span class="w"> </span>-t<span class="w"> </span>aws-lambda-burr<span class="w"> </span>.
-</pre></div>
-</div>
-</li>
-<li><p><strong>Local tests:</strong></p>
-<p>Run Docker container:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">9000</span>:8080<span class="w"> </span>aws-lambda-burr
-</pre></div>
-</div>
-<p>Send test request to check if Docker container executes it correctly:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-XPOST<span class="w"> </span><span class="s2">&quot;http://localhost:9000/2015-03-31/functions/function/invocations&quot;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;body&quot;: {&quot;number&quot;:3}}&#39;</span>
-</pre></div>
-</div>
-</li>
-</ul>
-</section>
-<section id="create-aws-ecr-repository">
-<h3>2. Create AWS ECR repository:<a class="headerlink" href="#create-aws-ecr-repository" title="Link to this heading">¶</a></h3>
-<p>Ensure the AWS account number (<code class="docutils literal notranslate"><span class="pre">111122223333</span></code>) is correctly replaced with yours:</p>
-<ul>
-<li><p><strong>Authenticate Docker to Amazon ECR</strong>:</p>
-<p>Retrieve an authentication token to authenticate your Docker client to your Amazon Elastic Container Registry (ECR):</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>aws<span class="w"> </span>ecr<span class="w"> </span>get-login-password<span class="w"> </span>--region<span class="w"> </span>us-east-1<span class="w"> </span><span class="p">|</span><span class="w"> </span>docker<span class="w"> </span>login<span class="w"> </span>--username<span class="w"> </span>AWS<span class="w"> </span>--password-stdin<span class="w"> </span><span class="m">111122223333</span>.dkr.ecr.us-east-1.amazonaws.com
-</pre></div>
-</div>
-</li>
-<li><p><strong>Create the ECR Repository</strong>:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>aws<span class="w"> </span>ecr<span class="w"> </span>create-repository<span class="w"> </span>--repository-name<span class="w"> </span>aws-lambda-burr<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--region<span class="w"> </span>us-east-1<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--image-scanning-configuration<span class="w"> </span><span class="nv">scanOnPush</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--image-tag-mutability<span class="w"> </span>MUTABLE
-</pre></div>
-</div>
-</li>
-</ul>
-</section>
-<section id="deploy-the-image-to-aws-ecr">
-<h3>3. Deploy the Image to AWS ECR<a class="headerlink" href="#deploy-the-image-to-aws-ecr" title="Link to this heading">¶</a></h3>
-<p>Ensure the AWS account number (<code class="docutils literal notranslate"><span class="pre">111122223333</span></code>) is correctly replaced with yours:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>tag<span class="w"> </span>aws-lambda-burr<span class="w"> </span><span class="m">111122223333</span>.dkr.ecr.us-east-1.amazonaws.com/aws-lambda-burr:latest
-docker<span class="w"> </span>push<span class="w"> </span><span class="m">111122223333</span>.dkr.ecr.us-east-1.amazonaws.com/aws-lambda-burr:latest
-</pre></div>
-</div>
-</section>
-<section id="create-a-simple-aws-lambda-role">
-<h3>4. Create a simple AWS Lambda role:<a class="headerlink" href="#create-a-simple-aws-lambda-role" title="Link to this heading">¶</a></h3>
-<p>Example of creating an AWS Role for Lambda execution:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>aws<span class="w"> </span>iam<span class="w"> </span>create-role<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--role-name<span class="w"> </span>lambda-ex<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--assume-role-policy-document<span class="w"> </span><span class="s1">&#39;{&quot;Version&quot;: &quot;2012-10-17&quot;,&quot;Statement&quot;: [{ &quot;Effect&quot;: &quot;Allow&quot;, &quot;Principal&quot;: {&quot;Service&quot;: &quot;lambda.amazonaws.com&quot;}, &quot;Action&quot;: &quot;sts:AssumeRole&quot;}]}&#39;</span>
-</pre></div>
-</div>
-</section>
-<section id="create-aws-lambda">
-<h3>5. Create AWS Lambda<a class="headerlink" href="#create-aws-lambda" title="Link to this heading">¶</a></h3>
-<p>Ensure the AWS account number (<code class="docutils literal notranslate"><span class="pre">111122223333</span></code>) is correctly replaced with yours:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>aws<span class="w"> </span>lambda<span class="w"> </span>create-function<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--function-name<span class="w"> </span>aws-lambda-burr<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--package-type<span class="w"> </span>Image<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--code<span class="w"> </span><span class="nv">ImageUri</span><span class="o">=</span><span class="m">111122223333</span>.dkr.ecr.us-east-1.amazonaws.com/aws-lambda-burr:latest<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--role<span class="w"> </span>arn:aws:iam::111122223333:role/lambda-ex
-</pre></div>
-</div>
-</section>
-<section id="test-aws-lambda">
-<h3>6. Test AWS Lambda<a class="headerlink" href="#test-aws-lambda" title="Link to this heading">¶</a></h3>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>aws<span class="w"> </span>lambda<span class="w"> </span>invoke<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--function-name<span class="w"> </span>aws-lambda-burr<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--cli-binary-format<span class="w"> </span>raw-in-base64-out<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--payload<span class="w"> </span><span class="s1">&#39;{&quot;body&quot;: {&quot;number&quot;: 5}}&#39;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>response.json
-</pre></div>
-</div>
-</section>
-</section>
 </section>
 
         </article>
@@ -473,14 +401,14 @@ docker<span class="w"> </span>push<span class="w"> </span><span class="m">111122
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../web-server/">
+          <a class="prev-page" href="../infrastructure/">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Web service (FastAPI, Flask, Django, etc.)</div>
+                <div class="title">Provisioning Infrastructure/Deploying</div>
                 
               </div>
             </a>
@@ -502,42 +430,14 @@ docker<span class="w"> </span>push<span class="w"> </span><span class="m">111122
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">AWS Lambda</a><ul>
-<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
-<li><a class="reference internal" href="#step-by-step-guide">Step-by-Step Guide</a><ul>
-<li><a class="reference internal" href="#build-docker-image">1. Build Docker image:</a></li>
-<li><a class="reference internal" href="#create-aws-ecr-repository">2. Create AWS ECR repository:</a></li>
-<li><a class="reference internal" href="#deploy-the-image-to-aws-ecr">3. Deploy the Image to AWS ECR</a></li>
-<li><a class="reference internal" href="#create-a-simple-aws-lambda-role">4. Create a simple AWS Lambda role:</a></li>
-<li><a class="reference internal" href="#create-aws-lambda">5. Create AWS Lambda</a></li>
-<li><a class="reference internal" href="#test-aws-lambda">6. Test AWS Lambda</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>
   </div>
 </div><script src="../../../_static/documentation_options.js?v=187304be"></script>
-    <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/scripts/furo.js?v=5fa4622c"></script>
     </body>
