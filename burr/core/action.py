@@ -84,7 +84,7 @@ class Function(abc.ABC):
 
     @property
     def optional_and_required_inputs(self) -> tuple[set[str], set[str]]:
-        """Returns a tuple of two lists of strings -- the first list is the required keys, the second is the optional keys.
+        """Returns a tuple of two sets of strings -- the first set is the required keys, the second is the optional keys.
         This is internal and not meant to override.
 
         :return: Tuple of required keys and optional keys
