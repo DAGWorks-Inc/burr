@@ -29,6 +29,7 @@ class HaystackAction(Action):
         writes: Union[list[str], dict[str, str]],
         name: Optional[str] = None,
         bound_params: Optional[dict] = None,
+        do_warm_up: bool = True,
     ):
         """Create a Burr ``Action`` from a Haystack ``Component``.
 
@@ -39,8 +40,10 @@ class HaystackAction(Action):
         Use a mapping {state_field: socket} to rename Haystack output sockets (see example).
         :param name: Name of the action. Can be set later via ``.with_name()``
         or in ``ApplicationBuilder.with_actions()``.
-        :param bound_params: Parameters to bind to the `Component.run()` method.
-
+        :param bound_params: Parameters to bind to the ``Component.run()`` method.
+        :param is_warm: If True, try to call ``Component.warm_up()`` if it exists.
+        If False, we assume ``.warm_up()`` was called before creating the ``HaystackAction``.
+        Read more about ``.warm_up()`` in the Haystack documentation: https://docs.haystack.deepset.ai/reference/pipeline-api#pipelinewarm_up
 
         Pass the mapping ``{"foo": "state_field"}`` to read the value of ``state_field`` on the Burr state
         and pass it to ``Component.run()`` as ``foo``.
@@ -103,6 +106,10 @@ class HaystackAction(Action):
         self._component = component
         self._name = name
         self._bound_params = bound_params if bound_params is not None else {}
+        self._do_warm_up = do_warm_up
+
+        if self._do_warm_up is True:
+            self._try_warm_up()
 
         # NOTE input and output socket mappings are kept separately to avoid naming conflicts.
         if isinstance(reads, Mapping):
@@ -128,6 +135,10 @@ class HaystackAction(Action):
         self._validate_output_sockets()
 
         self._required_inputs, self._optional_inputs = self._get_required_and_optional_inputs()
+
+    def _try_warm_up(self) -> None:
+        if hasattr(self._component, "warm_up") is True:
+            self._component.warm_up()
 
     def _validate_input_sockets(self) -> None:
         """Check that input socket names passed by the user match the Component's input sockets"""
@@ -166,12 +177,12 @@ class HaystackAction(Action):
         """State fields where results of `Component.run()` are written."""
         return self._writes
 
-    def _get_required_and_optional_inputs(self) -> tuple[list[str], list[str]]:
+    def _get_required_and_optional_inputs(self) -> tuple[set[str], set[str]]:
         """Iterate over Haystack Component input sockets and inspect default values.
         If we expect the value to come from state or it's a bound parameter, skip this socket.
         Otherwise, if it has a default value, it's optional.
         """
-        required_inputs, optional_inputs = [], []
+        required_inputs, optional_inputs = set(), set()
         # NOTE those are internal attributes, but we expect them be stable.
         # reference: https://github.com/deepset-ai/haystack/blob/906177329bcc54f6946af361fcd3d0e334e6ce5f/haystack/core/component/component.py#L371
         for socket_name, input_socket in self._component.__haystack_input__._sockets_dict.items():
@@ -180,9 +191,9 @@ class HaystackAction(Action):
                 continue
 
             if input_socket.default_value == haystack_empty:
-                required_inputs.append(state_field_name)
+                required_inputs.add(state_field_name)
             else:
-                optional_inputs.append(state_field_name)
+                optional_inputs.add(state_field_name)
 
         return required_inputs, optional_inputs
 
@@ -191,10 +202,10 @@ class HaystackAction(Action):
         """Return a list of required inputs for ``Component.run()``
         This corresponds to the Component's required input socket names.
         """
-        return self._required_inputs
+        return list(self._required_inputs)
 
     @property
-    def optional_and_required_inputs(self) -> tuple[list[str], list[str]]:
+    def optional_and_required_inputs(self) -> tuple[set[str], set[str]]:
         """Return a tuple of required and optional inputs for ``Component.run()``
         This corresponds to the Component's required and optional input socket names.
         """
@@ -346,6 +357,7 @@ def haystack_pipeline_to_burr_graph(pipeline: Pipeline) -> Graph:
             socket_name: socket_mapping[socket_name]
             for socket_name in connected_inputs[component_name]
         }
+        # TODO special case: leaf nodes should write to state
         outputs_mapping = {
             socket_mapping[socket_name]: socket_name
             for socket_name in connected_outputs[component_name]

@@ -1,9 +1,12 @@
+import pytest
 from haystack import Pipeline, component
-from haystack.components.embedders import SentenceTransformersTextEmbedder
+from haystack.components.embedders import OpenAITextEmbedder
 from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
 from haystack.document_stores.in_memory import InMemoryDocumentStore
+from haystack.utils.auth import Secret
 
 from burr.core import State, action
+from burr.core.application import ApplicationBuilder
 from burr.core.graph import GraphBuilder
 from burr.integrations.haystack import HaystackAction, haystack_pipeline_to_burr_graph
 
@@ -22,6 +25,27 @@ class MockComponent:
         }
 
 
+@component
+class MockComponentWithWarmup:
+    def __init__(self, required_init: str, optional_init: str = "default"):
+        self.required_init = required_init
+        self.optional_init = optional_init
+        self.is_warm = False
+
+    def warm_up(self):
+        self.is_warm = True
+
+    @component.output_types(output_1=str, output_2=str)
+    def run(self, required_input: str, optional_input: str = "default") -> dict:
+        if self.is_warm is False:
+            raise RuntimeError("You must call ``warm_up()`` before running.")
+
+        return {
+            "output_1": required_input,
+            "output_2": optional_input,
+        }
+
+
 @action(reads=["query_embedding"], writes=["documents"])
 def retrieve_documents(state: State) -> State:
     query_embedding = state["query_embedding"]
@@ -31,14 +55,6 @@ def retrieve_documents(state: State) -> State:
 
     results = retriever.run(query_embedding=query_embedding)
     return state.update(documents=results["documents"])
-
-
-haystack_retrieve_documents = HaystackAction(
-    component=InMemoryEmbeddingRetriever(InMemoryDocumentStore()),
-    name="retrieve_documents",
-    reads=["query_embedding"],
-    writes=["documents"],
-)
 
 
 def test_input_socket_mapping():
@@ -207,10 +223,38 @@ def test_update_with_writes_sequence():
     assert new_state["output_1"] == 1
 
 
+def test_component_is_warmed_up():
+    state = State(initial_values={})
+    haction = HaystackAction(
+        component=MockComponentWithWarmup(required_init="init"),
+        name="mock",
+        reads=[],
+        writes=[],
+        do_warm_up=True,
+    )
+    results = haction.run(state=state, required_input="as_input")
+    assert results == {"output_1": "as_input", "output_2": "default"}
+
+
+def test_component_is_not_warmed_up():
+    state = State(initial_values={})
+    haction = HaystackAction(
+        component=MockComponentWithWarmup(required_init="init"),
+        name="mock",
+        reads=[],
+        writes=[],
+        do_warm_up=False,
+    )
+    with pytest.raises(RuntimeError):
+        haction.run(state=state, required_input="as_input")
+
+
 def test_pipeline_converter():
     # create haystack Pipeline
     retriever = InMemoryEmbeddingRetriever(InMemoryDocumentStore())
-    text_embedder = SentenceTransformersTextEmbedder(model="sentence-transformers/all-MiniLM-L6-v2")
+    text_embedder = OpenAITextEmbedder(
+        model="text-embedding-3-small", api_key=Secret.from_token("mock-key")
+    )
 
     basic_rag_pipeline = Pipeline()
     basic_rag_pipeline.add_component("text_embedder", text_embedder)
@@ -251,3 +295,63 @@ def test_pipeline_converter():
             burr_t.from_.name == haystack_t.from_.name and burr_t.to.name == haystack_t.to.name
             for haystack_t in haystack_graph.transitions
         )
+
+
+def test_run_application():
+    app = (
+        ApplicationBuilder()
+        .with_actions(
+            HaystackAction(
+                component=MockComponent(required_init="init"),
+                name="mock",
+                reads=[],
+                writes=["output_1"],
+            )
+        )
+        .with_transitions()
+        .with_entrypoint("mock")
+        .build()
+    )
+
+    _, _, state = app.run(halt_after=["mock"], inputs={"required_input": "runtime"})
+    assert state["output_1"] == "runtime"
+
+
+def test_run_application_is_warm_up():
+    app = (
+        ApplicationBuilder()
+        .with_actions(
+            HaystackAction(
+                component=MockComponentWithWarmup(required_init="init"),
+                name="mock",
+                reads=[],
+                writes=["output_1"],
+            )
+        )
+        .with_transitions()
+        .with_entrypoint("mock")
+        .build()
+    )
+
+    _, _, state = app.run(halt_after=["mock"], inputs={"required_input": "runtime"})
+    assert state["output_1"] == "runtime"
+
+
+def test_run_application_is_not_warmed_up():
+    app = (
+        ApplicationBuilder()
+        .with_actions(
+            HaystackAction(
+                component=MockComponentWithWarmup(required_init="init"),
+                name="mock",
+                reads=[],
+                writes=["output_1"],
+                do_warm_up=False,
+            )
+        )
+        .with_transitions()
+        .with_entrypoint("mock")
+        .build()
+    )
+    with pytest.raises(RuntimeError):
+        app.run(halt_after=["mock"], inputs={"required_input": "runtime"})
