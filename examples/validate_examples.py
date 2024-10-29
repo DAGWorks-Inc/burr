@@ -24,6 +24,7 @@ FILTERLIST = [
     "integrations",
     "templates",
     "deployment",
+    "talks",
 ]
 
 
