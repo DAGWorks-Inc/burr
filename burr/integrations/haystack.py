@@ -41,7 +41,7 @@ class HaystackAction(Action):
         :param name: Name of the action. Can be set later via ``.with_name()``
         or in ``ApplicationBuilder.with_actions()``.
         :param bound_params: Parameters to bind to the ``Component.run()`` method.
-        :param is_warm: If True, try to call ``Component.warm_up()`` if it exists.
+        :param do_warm_up: If True, try to call ``Component.warm_up()`` if it exists.
         If False, we assume ``.warm_up()`` was called before creating the ``HaystackAction``.
         Read more about ``.warm_up()`` in the Haystack documentation: https://docs.haystack.deepset.ai/reference/pipeline-api#pipelinewarm_up
 
@@ -357,7 +357,6 @@ def haystack_pipeline_to_burr_graph(pipeline: Pipeline) -> Graph:
             socket_name: socket_mapping[socket_name]
             for socket_name in connected_inputs[component_name]
         }
-        # TODO special case: leaf nodes should write to state
         outputs_mapping = {
             socket_mapping[socket_name]: socket_name
             for socket_name in connected_outputs[component_name]
