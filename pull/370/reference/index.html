@@ -289,6 +289,7 @@
 <li class="toctree-l2"><a class="reference internal" href="tracking/">Tracking</a></li>
 <li class="toctree-l2"><a class="reference internal" href="visibility/">Tracing Inside Actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="lifecycle/">Lifecycle API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parallelism/">Parallelism</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing/">Typing</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="integrations/">Integrations</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of Integrations</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="integrations/hamilton/">Hamilton</a></li>
@@ -297,6 +298,7 @@
 <li class="toctree-l3"><a class="reference internal" href="integrations/traceloop/">Traceloop</a></li>
 <li class="toctree-l3"><a class="reference internal" href="integrations/langchain/">Langchain</a></li>
 <li class="toctree-l3"><a class="reference internal" href="integrations/pydantic/">Pydantic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="integrations/haystack/">Haystack</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="telemetry/">Usage analytics + data privacy</a></li>
@@ -450,6 +452,16 @@ need functionality that is not publicly exposed, please open an issue and we can
 <li class="toctree-l2"><a class="reference internal" href="lifecycle/#burr.lifecycle.default.SlowDownHook"><code class="docutils literal notranslate"><span class="pre">SlowDownHook</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="parallelism/">Parallelism</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parallelism/#burr.core.parallelism.RunnableGraph"><code class="docutils literal notranslate"><span class="pre">RunnableGraph</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="parallelism/#burr.core.parallelism.SubGraphTask"><code class="docutils literal notranslate"><span class="pre">SubGraphTask</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="parallelism/#burr.core.parallelism.TaskBasedParallelAction"><code class="docutils literal notranslate"><span class="pre">TaskBasedParallelAction</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="parallelism/#burr.core.parallelism.MapActionsAndStates"><code class="docutils literal notranslate"><span class="pre">MapActionsAndStates</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="parallelism/#burr.core.parallelism.MapActions"><code class="docutils literal notranslate"><span class="pre">MapActions</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="parallelism/#burr.core.parallelism.MapStates"><code class="docutils literal notranslate"><span class="pre">MapStates</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="parallelism/#burr.core.parallelism.map_reduce_action"><code class="docutils literal notranslate"><span class="pre">parallelism.map_reduce_action()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="typing/">Typing</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="typing/#burr.core.typing.TypingSystem"><code class="docutils literal notranslate"><span class="pre">TypingSystem</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing/#burr.integrations.pydantic.PydanticTypingSystem"><code class="docutils literal notranslate"><span class="pre">PydanticTypingSystem</span></code></a></li>
@@ -462,6 +474,7 @@ need functionality that is not publicly exposed, please open an issue and we can
 <li class="toctree-l2"><a class="reference internal" href="integrations/traceloop/">Traceloop</a></li>
 <li class="toctree-l2"><a class="reference internal" href="integrations/langchain/">Langchain</a></li>
 <li class="toctree-l2"><a class="reference internal" href="integrations/pydantic/">Pydantic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrations/haystack/">Haystack</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="telemetry/">Usage analytics + data privacy</a></li>

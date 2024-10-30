@@ -289,6 +289,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../tracking/">Tracking</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../visibility/">Tracing Inside Actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../lifecycle/">Lifecycle API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../parallelism/">Parallelism</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../typing/">Typing</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../integrations/">Integrations</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of Integrations</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../integrations/hamilton/">Hamilton</a></li>
@@ -297,6 +298,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../integrations/traceloop/">Traceloop</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../integrations/langchain/">Langchain</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../integrations/pydantic/">Pydantic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/haystack/">Haystack</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../telemetry/">Usage analytics + data privacy</a></li>
@@ -543,6 +545,28 @@ solely for resetting/starting at a specified position.</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="burr.core.application.ApplicationBuilder.with_parallel_executor">
+<span class="sig-name descname"><span class="pre">with_parallel_executor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">executor_factory:</span> <span class="pre">~burr.core.application.&lt;lambda&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.application.ApplicationBuilder.with_parallel_executor" title="Link to this definition">¶</a></dt>
+<dd><p>Assigns a default executor to be used for recursive/parallel sub-actions. This effectively allows
+for executing multiple Burr apps in parallel. See <a class="reference external" href="https://burr.dagworks.io/pull/concepts/parallelism/">https://burr.dagworks.io/pull/concepts/parallelism/</a>
+for more details.</p>
+<p>This will default to a simple threadpool executor, meaning that you will be bound by the number of threads
+your computer can handle. If you want to use a more advanced executor, you can pass it in here – any subclass
+of concurrent.futures.Executor will work.</p>
+<p>If you specify executors for specific tasks, this will default to that.</p>
+<p>Note that, if you are using asyncio, you cannot specify an executor. It will default to using
+asyncio.gather with asyncio’s event loop.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>executor</strong></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="burr.core.application.ApplicationBuilder.with_spawning_parent">
 <span class="sig-name descname"><span class="pre">with_spawning_parent</span></span><span class="sig-paren">(</span>
 
@@ -731,6 +755,7 @@ Note that one transition can be terminal – the system doesn’t have</p>
 <dd><em class="sig-param"><span class="n"><span class="pre">fork_parent_pointer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">burr_types.ParentPointer</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">spawning_parent_pointer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">burr_types.ParentPointer</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">tracker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'TrackingClient'</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">parallel_executor_factory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Executor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#burr.core.application.Application" title="Link to this definition">¶</a></dt>
@@ -750,6 +775,7 @@ Note that one transition can be terminal – the system doesn’t have</p>
 <dd><em class="sig-param"><span class="n"><span class="pre">fork_parent_pointer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">burr_types.ParentPointer</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">spawning_parent_pointer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">burr_types.ParentPointer</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">tracker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'TrackingClient'</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">parallel_executor_factory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Executor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#burr.core.application.Application.__init__" title="Link to this definition">¶</a></dt>
@@ -1378,6 +1404,7 @@ for graphviz, instead pass <cite>format</cite> in <cite>engine_kwargs</cite> (e.
 <dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">tracker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="s"><span class="pre">'TrackingClient'</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">parallel_executor_factory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Executor</span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#burr.core.application.ApplicationContext" title="Link to this definition">¶</a></dt>
@@ -1616,6 +1643,7 @@ for graphviz, instead pass <cite>format</cite> in <cite>engine_kwargs</cite> (e.
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_graph"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_graph()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_hooks"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_hooks()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_identifiers"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_identifiers()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_parallel_executor"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_parallel_executor()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_spawning_parent"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_spawning_parent()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_state"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_state()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_state_persister"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_state_persister()</span></code></a></li>

@@ -287,6 +287,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../reference/tracking/">Tracking</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../reference/visibility/">Tracing Inside Actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../reference/lifecycle/">Lifecycle API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../reference/parallelism/">Parallelism</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../reference/typing/">Typing</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../reference/integrations/">Integrations</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of Integrations</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l3"><a class="reference internal" href="../reference/integrations/hamilton/">Hamilton</a></li>
@@ -295,6 +296,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../reference/integrations/traceloop/">Traceloop</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../reference/integrations/langchain/">Langchain</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../reference/integrations/pydantic/">Pydantic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../reference/integrations/haystack/">Haystack</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../reference/telemetry/">Usage analytics + data privacy</a></li>
@@ -421,6 +423,16 @@
 </li>
         <li><a href="../reference/actions/#burr.core.action.action">action (class in burr.core.action)</a>
 </li>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.MapStates.action">action() (burr.core.parallelism.MapStates method)</a>
+</li>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.MapActions.actions">actions() (burr.core.parallelism.MapActions method)</a>
+
+        <ul>
+          <li><a href="../reference/parallelism/#burr.core.parallelism.MapActionsAndStates.actions">(burr.core.parallelism.MapActionsAndStates method)</a>
+</li>
+          <li><a href="../reference/parallelism/#burr.core.parallelism.MapStates.actions">(burr.core.parallelism.MapStates method)</a>
+</li>
+        </ul></li>
         <li><a href="../reference/visibility/#burr.visibility.tracing.ActionSpan">ActionSpan (class in burr.visibility.tracing)</a>
 </li>
         <li><a href="../reference/visibility/#burr.visibility.tracing.ActionSpanTracer">ActionSpanTracer (class in burr.visibility.tracing)</a>
@@ -429,12 +441,12 @@
 </li>
         <li><a href="../reference/tracking/#burr.tracking.LocalTrackingClient.app_log_exists">app_log_exists() (burr.tracking.LocalTrackingClient class method)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/state/#burr.core.state.State.append">append() (burr.core.state.State method)</a>
 </li>
         <li><a href="../reference/integrations/hamilton/#burr.integrations.hamilton.append_state">append_state() (in module burr.integrations.hamilton)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/application/#burr.core.application.Application">Application (class in burr.core.application)</a>
 </li>
         <li><a href="../reference/application/#burr.core.application.ApplicationBuilder">ApplicationBuilder (class in burr.core.application)</a>
@@ -536,11 +548,13 @@
           <li><a href="../reference/typing/#burr.integrations.pydantic.PydanticTypingSystem.construct_state">(burr.integrations.pydantic.PydanticTypingSystem method)</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/application/#burr.core.application.Application.context">context (burr.core.application.Application property)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/tracking/#burr.tracking.LocalTrackingClient.copy">copy() (burr.tracking.LocalTrackingClient method)</a>
+</li>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.RunnableGraph.create">create() (burr.core.parallelism.RunnableGraph static method)</a>
 </li>
         <li><a href="../reference/visibility/#burr.visibility.tracing.ActionSpan.create_initial">create_initial() (burr.visibility.tracing.ActionSpan class method)</a>
 </li>
@@ -684,10 +698,10 @@
         </ul></li>
         <li><a href="../reference/application/#burr.core.application.ApplicationBuilder.initialize_from">initialize_from() (burr.core.application.ApplicationBuilder method)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/actions/#burr.core.action.Input">Input (class in burr.core.action)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/actions/#burr.core.action.Action.input_schema">input_schema() (burr.core.action.Action method)</a>
 </li>
         <li><a href="../reference/actions/#burr.core.action.Action.inputs">inputs (burr.core.action.Action property)</a>
@@ -697,11 +711,15 @@
 </li>
           <li><a href="../reference/actions/#burr.core.action.Input.inputs">(burr.core.action.Input property)</a>
 </li>
+          <li><a href="../reference/parallelism/#burr.core.parallelism.TaskBasedParallelAction.inputs">(burr.core.parallelism.TaskBasedParallelAction property)</a>
+</li>
         </ul></li>
         <li><a href="../reference/actions/#burr.core.action.Action.is_async">is_async() (burr.core.action.Action method)</a>
 
         <ul>
           <li><a href="../reference/actions/#burr.core.action.Function.is_async">(burr.core.action.Function method)</a>
+</li>
+          <li><a href="../reference/parallelism/#burr.core.parallelism.TaskBasedParallelAction.is_async">(burr.core.parallelism.TaskBasedParallelAction method)</a>
 </li>
         </ul></li>
         <li><a href="../reference/application/#burr.core.application.Application.iterate">iterate() (burr.core.application.Application method)</a>
@@ -766,6 +784,14 @@
   <h2>M</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.map_reduce_action">map_reduce_action() (burr.core.parallelism method)</a>
+</li>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.MapActions">MapActions (class in burr.core.parallelism)</a>
+</li>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.MapActionsAndStates">MapActionsAndStates (class in burr.core.parallelism)</a>
+</li>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.MapStates">MapStates (class in burr.core.parallelism)</a>
+</li>
         <li><a href="../reference/state/#burr.core.state.State.merge">merge() (burr.core.state.State method)</a>
 </li>
         <li>
@@ -916,17 +942,29 @@
 </li>
           <li><a href="../reference/actions/#burr.core.action.Result.reads">(burr.core.action.Result property)</a>
 </li>
+          <li><a href="../reference/parallelism/#burr.core.parallelism.TaskBasedParallelAction.reads">(burr.core.parallelism.TaskBasedParallelAction property)</a>
+</li>
         </ul></li>
         <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.RedisPersister">RedisPersister (class in burr.integrations.persisters.b_redis)</a>
 </li>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.MapActions.reduce">reduce() (burr.core.parallelism.MapActions method)</a>
+
+        <ul>
+          <li><a href="../reference/parallelism/#burr.core.parallelism.MapActionsAndStates.reduce">(burr.core.parallelism.MapActionsAndStates method)</a>
+</li>
+          <li><a href="../reference/parallelism/#burr.core.parallelism.MapStates.reduce">(burr.core.parallelism.MapStates method)</a>
+</li>
+          <li><a href="../reference/parallelism/#burr.core.parallelism.TaskBasedParallelAction.reduce">(burr.core.parallelism.TaskBasedParallelAction method)</a>
+</li>
+        </ul></li>
         <li><a href="../reference/actions/#burr.core.action.Reducer">Reducer (class in burr.core.action)</a>
 </li>
         <li><a href="../reference/state/#burr.core.state.register_field_serde">register_field_serde() (in module burr.core.state)</a>
 </li>
-        <li><a href="../reference/serde/#burr.integrations.serde.pickle.register_type_to_pickle">register_type_to_pickle() (in module burr.integrations.serde.pickle)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../reference/serde/#burr.integrations.serde.pickle.register_type_to_pickle">register_type_to_pickle() (in module burr.integrations.serde.pickle)</a>
+</li>
         <li><a href="../reference/application/#burr.core.application.Application.reset_to_entrypoint">reset_to_entrypoint() (burr.core.application.Application method)</a>
 </li>
         <li><a href="../reference/actions/#burr.core.action.Result">Result (class in burr.core.action)</a>
@@ -946,7 +984,13 @@
 </li>
           <li><a href="../reference/application/#burr.core.application.Application.run">(burr.core.application.Application method)</a>
 </li>
+          <li><a href="../reference/parallelism/#burr.core.parallelism.SubGraphTask.run">(burr.core.parallelism.SubGraphTask method)</a>
+</li>
         </ul></li>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.TaskBasedParallelAction.run_and_update">run_and_update() (burr.core.parallelism.TaskBasedParallelAction method)</a>
+</li>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.RunnableGraph">RunnableGraph (class in burr.core.parallelism)</a>
+</li>
     </ul></td>
   </tr></table>
 </section>
@@ -993,11 +1037,13 @@
 </li>
         <li><a href="../reference/persister/#burr.core.persistence.SQLLitePersister">SQLLitePersister (class in burr.core.persistence)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/application/#burr.core.application.Application.state">state (burr.core.application.Application property)</a>
 </li>
         <li><a href="../reference/state/#burr.core.state.State">State (class in burr.core.state)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.MapActions.state">state() (burr.core.parallelism.MapActions method)</a>
 </li>
         <li><a href="../reference/typing/#burr.core.typing.TypingSystem.state_post_action_run_type">state_post_action_run_type() (burr.core.typing.TypingSystem method)</a>
 
@@ -1019,6 +1065,14 @@
         </ul></li>
         <li><a href="../reference/lifecycle/#burr.lifecycle.default.StateAndResultsFullLogger">StateAndResultsFullLogger (class in burr.lifecycle.default)</a>
 </li>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.MapActions.states">states() (burr.core.parallelism.MapActions method)</a>
+
+        <ul>
+          <li><a href="../reference/parallelism/#burr.core.parallelism.MapActionsAndStates.states">(burr.core.parallelism.MapActionsAndStates method)</a>
+</li>
+          <li><a href="../reference/parallelism/#burr.core.parallelism.MapStates.states">(burr.core.parallelism.MapStates method)</a>
+</li>
+        </ul></li>
         <li><a href="../reference/application/#burr.core.application.Application.step">step() (burr.core.application.Application method)</a>
 </li>
         <li><a href="../reference/application/#burr.core.application.Application.stream_result">stream_result() (burr.core.application.Application method)</a>
@@ -1033,6 +1087,8 @@
 </li>
         <li><a href="../reference/serde/#burr.core.serde.StringDispatch">StringDispatch (class in burr.core.serde)</a>
 </li>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.SubGraphTask">SubGraphTask (class in burr.core.parallelism)</a>
+</li>
         <li><a href="../reference/state/#burr.core.state.State.subset">subset() (burr.core.state.State method)</a>
 </li>
     </ul></td>
@@ -1043,10 +1099,18 @@
   <h2>T</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="../reference/visibility/#burr.visibility.tracing.trace">trace (class in burr.visibility.tracing)</a>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.TaskBasedParallelAction">TaskBasedParallelAction (class in burr.core.parallelism)</a>
 </li>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.MapActionsAndStates.tasks">tasks() (burr.core.parallelism.MapActionsAndStates method)</a>
+
+        <ul>
+          <li><a href="../reference/parallelism/#burr.core.parallelism.TaskBasedParallelAction.tasks">(burr.core.parallelism.TaskBasedParallelAction method)</a>
+</li>
+        </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../reference/visibility/#burr.visibility.tracing.trace">trace (class in burr.visibility.tracing)</a>
+</li>
         <li><a href="../reference/visibility/#burr.visibility.tracing.TracerFactory">TracerFactory (class in burr.visibility.tracing)</a>
 </li>
         <li><a href="../reference/typing/#burr.core.typing.TypingSystem">TypingSystem (class in burr.core.typing)</a>
@@ -1123,6 +1187,8 @@
 </li>
         <li><a href="../reference/actions/#burr.core.action.Action.with_name">with_name() (burr.core.action.Action method)</a>
 </li>
+        <li><a href="../reference/application/#burr.core.application.ApplicationBuilder.with_parallel_executor">with_parallel_executor() (burr.core.application.ApplicationBuilder method)</a>
+</li>
         <li><a href="../reference/application/#burr.core.application.ApplicationBuilder.with_spawning_parent">with_spawning_parent() (burr.core.application.ApplicationBuilder method)</a>
 </li>
     </ul></td>
@@ -1151,6 +1217,8 @@
           <li><a href="../reference/actions/#burr.core.action.Reducer.writes">(burr.core.action.Reducer property)</a>
 </li>
           <li><a href="../reference/actions/#burr.core.action.Result.writes">(burr.core.action.Result property)</a>
+</li>
+          <li><a href="../reference/parallelism/#burr.core.parallelism.TaskBasedParallelAction.writes">(burr.core.parallelism.TaskBasedParallelAction property)</a>
 </li>
         </ul></li>
     </ul></td>
