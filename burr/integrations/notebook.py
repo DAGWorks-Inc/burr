@@ -28,6 +28,7 @@ def identify_notebook_environment(ipython: InteractiveShellApp) -> NotebookEnvir
     except ModuleNotFoundError:
         pass
 
+    # TODO add Databricks implementation
     try:
         import dbruntime  # noqa: F401
 
@@ -35,6 +36,7 @@ def identify_notebook_environment(ipython: InteractiveShellApp) -> NotebookEnvir
     except ModuleNotFoundError:
         pass
 
+    # TODO add Kaggle implementation
     try:
         import kaggle  # noqa: F401
 
@@ -43,7 +45,7 @@ def identify_notebook_environment(ipython: InteractiveShellApp) -> NotebookEnvir
         pass
 
     raise RuntimeError(
-        f"Unknown notebook environment. Supported environments: {list(NotebookEnvironment)}"
+        f"Unknown notebook environment. Known environments: {list(NotebookEnvironment)}"
     )
 
 
@@ -72,6 +74,10 @@ def launch_ui_colab():
 
 
 def launch_ui_jupyter():
+    """Launch the Burr UI in a subprocess.
+
+    Using a subprocess ensures that the Burr server logs aren't displayed in Colab cell outputs
+    """
     HOST = "127.0.0.1"
     PORT = 7241
     process = subprocess.Popen(
@@ -111,13 +117,7 @@ class NotebookMagics(Magics):
 
     @line_magic
     def burr_ui(self, line):
-        """Opens a Google Colab port and launches the Burr UI in a subprocess.
-
-        Using a subprocess ensures that the Burr server logs aren't displayed in
-        Colab cell outputs.
-
-        NOTE. This will not work in a Jupyter notebook
-        """
+        """Launch the Burr UI from a notebook cell"""
         if self.process is not None:
             print(f"Burr UI already running at {self.url}")
             return
