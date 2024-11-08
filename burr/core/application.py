@@ -2248,6 +2248,10 @@ class ApplicationBuilder(Generic[StateType]):
         """
         if on_every != "step":
             raise ValueError(f"on_every {on_every} not supported")
+        if hasattr(persister, 'initialize') and not persister.is_initialized():
+            raise RuntimeError(
+            "Uninitialized persister. Make sure to call .initialize() before passing it to the ApplicationBuilder."
+            )
         if not isinstance(persister, persistence.BaseStateSaver):
             self.lifecycle_adapters.append(persister)
         else:

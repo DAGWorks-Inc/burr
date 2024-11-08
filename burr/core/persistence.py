@@ -164,6 +164,7 @@ class SQLLitePersister(BaseStatePersister):
             db_path, **connect_kwargs if connect_kwargs is not None else {}
         )
         self.serde_kwargs = serde_kwargs or {}
+        self._initialized = False
 
     def create_table_if_not_exists(self, table_name: str):
         """Helper function to create the table where things are stored if it doesn't exist."""
@@ -192,6 +193,11 @@ class SQLLitePersister(BaseStatePersister):
         """Creates the table if it doesn't exist"""
         # Usage
         self.create_table_if_not_exists(self.table_name)
+        self._initialized = True
+
+    def is_initialized(self) -> bool:
+        """Check if the persister is initialized."""
+        return self._initialized
 
     def list_app_ids(self, partition_key: Optional[str], **kwargs) -> list[str]:
         partition_key = (
