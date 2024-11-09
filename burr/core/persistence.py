@@ -88,7 +88,11 @@ class BaseStatePersister(BaseStateLoader, BaseStateSaver, metaclass=ABCMeta):
     Extend this class if you want an easy way to implement custom state storage.
     """
 
-    pass
+    def is_initialized(self) -> bool:
+        """Check if the persister has been initialized. Default behavior is False.
+        Persisters that require initialization can override this method.
+        """
+        return False
 
 
 class PersisterHook(PostRunStepHook):
