@@ -447,18 +447,15 @@ run it with the following command:</p>
 </pre></div>
 </div>
 <p>This will start a server on port 7241, and open up a browser window with the UI for you to explore.</p>
-<section id="using-burr-in-google-collab">
-<h3>Using Burr in Google Collab<a class="headerlink" href="#using-burr-in-google-collab" title="Link to this heading">¶</a></h3>
-<p>If you run Burr in Google Collab, you can use the following code to expose the Burr UI to your browser:</p>
+<section id="launch-burr-ui-from-a-notebook">
+<h3>Launch Burr UI from a notebook<a class="headerlink" href="#launch-burr-ui-from-a-notebook" title="Link to this heading">¶</a></h3>
+<p>You can launch the Burr UI from a notebook or Google Colab using the <code class="docutils literal notranslate"><span class="pre">%burr_ui</span></code> “IPython magic”.
+This will print the URL to access the Burr UI web app.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># in one cell - expose the port:</span>
-<span class="kn">from</span> <span class="nn">google.colab</span> <span class="kn">import</span> <span class="n">output</span>
-<span class="n">output</span><span class="o">.</span><span class="n">serve_kernel_port_as_window</span><span class="p">(</span><span class="mi">7241</span><span class="p">)</span>
-</pre></div>
-</div>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># in another cell - start burr: (! denotes a command line call)</span>
-!burr<span class="w"> </span><span class="p">&amp;</span>
-<span class="c1"># now click the localhost:7241 from the prior cell.</span>
-<span class="c1"># It should open up a new tab with the burr UI!</span>
+<span class="o">%</span><span class="n">load_ext</span> <span class="n">burr</span><span class="o">.</span><span class="n">integrations</span><span class="o">.</span><span class="n">notebook</span>
+<span class="o">%</span><span class="n">burr_ui</span>
+
+<span class="s2">&quot;Burr UI: http://127.0.0.1:7241&quot;</span>
 </pre></div>
 </div>
 </section>
@@ -526,7 +523,7 @@ run it with the following command:</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#tracking-server">Tracking Server</a><ul>
-<li><a class="reference internal" href="#using-burr-in-google-collab">Using Burr in Google Collab</a></li>
+<li><a class="reference internal" href="#launch-burr-ui-from-a-notebook">Launch Burr UI from a notebook</a></li>
 </ul>
 </li>
 </ul>
