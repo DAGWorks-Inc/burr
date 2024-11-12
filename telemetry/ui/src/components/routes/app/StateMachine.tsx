@@ -5,11 +5,11 @@ import { ActionView } from './ActionView';
 import { GraphView } from './GraphView';
 import { InsightsView } from './InsightsView';
 import { ReproduceView } from './ReproduceView';
-import { useParams } from 'react-router-dom';
 import { useContext } from 'react';
-import { AppContext } from './AppView';
+import { AppContext, SequenceLocation } from './AppView';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { AnnotationsView } from './AnnotationsView';
+import { useLocationParams } from '../../../utils';
 
 const NoStepSelected = () => {
   return (
@@ -24,7 +24,7 @@ export const AppStateView = (props: {
   stateMachine: ApplicationModel;
   highlightedActions: Step[] | undefined;
   hoverAction: Step | undefined;
-  currentSequenceID: number | undefined;
+  currentActionLocation: SequenceLocation | undefined;
   displayGraphAsTab: boolean;
   setMinimized: (minimized: boolean) => void;
   isMinimized: boolean;
@@ -34,17 +34,22 @@ export const AppStateView = (props: {
   allowAnnotations?: boolean;
 }) => {
   const { tab, setTab } = useContext(AppContext);
+  const { projectId, appId, partitionKey } = useLocationParams();
   const currentStep = props.steps.find(
-    (step) => step.step_start_log.sequence_id === props.currentSequenceID
+    (step) =>
+      // We don't get the global App ID -- we assume the steps are from the right one
+      step.step_start_log.sequence_id === props.currentActionLocation?.sequenceId
   );
-  const priorStep = props.steps.find(
-    (step) => step.step_start_log.sequence_id === (props.currentSequenceID || 0) - 1
-  );
+  const priorStep =
+    currentStep &&
+    props.steps.find(
+      (step) =>
+        step.step_start_log.sequence_id === (props.currentActionLocation?.sequenceId || 0) - 1
+    );
 
   const actionModel = props.stateMachine.actions.find(
     (action) => action.name === currentStep?.step_start_log.action
   );
-  const { projectId, appId, partitionKey } = useParams();
   const tabs = [
     { id: 'data', displayName: 'Data' },
     { id: 'code', displayName: 'Code' },
@@ -86,7 +91,13 @@ export const AppStateView = (props: {
             hoverAction={props.hoverAction}
           />
         )}
-        {tab === 'insights' && <InsightsView steps={props.steps} />}
+        {tab === 'insights' && (
+          <InsightsView
+            steps={props.steps}
+            appId={appId as string}
+            partitionKey={partitionKey as string}
+          />
+        )}
         {tab === 'reproduce' &&
           (currentStep ? (
             <ReproduceView

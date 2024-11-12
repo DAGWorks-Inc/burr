@@ -15,7 +15,7 @@ import CreatableSelect from 'react-select/creatable';
 import { FaClipboardList, FaExternalLinkAlt, FaThumbsDown, FaThumbsUp } from 'react-icons/fa';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../common/table';
 import { Chip } from '../../common/chip';
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery } from 'react-query';
 import { Loading } from '../../common/loading';
 import {
@@ -28,6 +28,7 @@ import {
 import { classNames } from '../../../utils/tailwind';
 import { DateTimeDisplay } from '../../common/dates';
 import { Drawer } from '../../common/drawer';
+import { useLocationParams } from '../../../utils';
 
 export const InlineAppView = (props: {
   projectId: string;
@@ -47,7 +48,11 @@ export const InlineAppView = (props: {
         allowAnnotations={false}
         restrictTabs={['data', 'code', 'reproduce', 'insights', 'graph']}
         disableNavigateSteps={false}
-        forceCurrentActionIndex={props.sequenceID}
+        forceCurrentActionIndex={{
+          sequenceId: props.sequenceID,
+          appId: props.appId,
+          partitionKey: props.partitionKey
+        }}
         partitionKey={props.partitionKey}
         forceFullScreen={true}
       />
@@ -95,7 +100,6 @@ export const AnnotationsView = (props: {
     setCurrentEditingAnnotationContext,
     setCurrentHoverIndex,
     setCurrentSelectedIndex,
-    currentSelectedIndex,
     createAnnotation,
     updateAnnotation,
     refreshAnnotationData
@@ -170,14 +174,24 @@ export const AnnotationsView = (props: {
         annotations={props.allAnnotations}
         onClick={(annotation) => {
           // TODO -- ensure that the indices are aligned/set correctly
-          setCurrentSelectedIndex(annotation.step_sequence_id);
+          setCurrentSelectedIndex({
+            sequenceId: annotation.step_sequence_id,
+            appId: props.appId,
+            partitionKey: props.partitionKey
+          });
         }}
         onHover={(annotation) => {
-          setCurrentHoverIndex(annotation.step_sequence_id);
+          setCurrentHoverIndex({
+            sequenceId: annotation.step_sequence_id,
+            appId: props.appId,
+            partitionKey: props.partitionKey
+          });
         }}
         displayProjectLevelAnnotationsLink={true} // we want to link back to the project level view
         projectId={props.projectId}
-        highlightedSequence={currentSelectedIndex}
+        highlightedSequence={
+          currentEditingAnnotationContext ? currentEditingAnnotationContext.sequenceId : undefined
+        }
       />
     </div>
   );
@@ -717,6 +731,8 @@ export const AnnotationsTable = (props: {
                   {props.allowInlineEdit && (
                     <TableCell className="align-top">
                       <AnnotateButton
+                        appID={annotation.app_id}
+                        partitionKey={annotation.partition_key}
                         sequenceID={annotation.step_sequence_id}
                         spanID={annotation.span_id || undefined}
                         existingAnnotation={annotation}
@@ -964,12 +980,16 @@ const ObservationForm = (props: {
 type AnnnotationDataPointerWithValue = AnnotationDataPointer & { value: string };
 
 export const AnnotateButton = (props: {
+  appID: string;
+  partitionKey: string | null;
   sequenceID: number;
   spanID?: string;
   attribute?: string; // TODO -- consider whether we want to remove, we generally annotate at the step level
   // But we might want to prepopulate the attribute if we are annotating a specific attribute (in the observations field)
   existingAnnotation: AnnotationOut | undefined;
   setCurrentEditingAnnotationContext: (context: {
+    appId: string;
+    partitionKey: string | null;
     sequenceId: number;
     attributeName: string | undefined;
     spanId: string | null;
@@ -983,6 +1003,8 @@ export const AnnotateButton = (props: {
       className="hover:scale-125 h-4 w-4"
       onClick={(e) => {
         props.setCurrentEditingAnnotationContext({
+          appId: props.appID,
+          partitionKey: props.partitionKey,
           sequenceId: props.sequenceID,
           attributeName: props.attribute,
           spanId: props.spanID || null,
@@ -1187,7 +1209,7 @@ const AnnotationEditCreateForm = (props: {
  * @returns
  */
 export const AnnotationsViewContainer = () => {
-  const { projectId } = useParams();
+  const { projectId } = useLocationParams();
   const { data: backendSpec } = useQuery(['backendSpec'], () =>
     DefaultService.getAppSpecApiV0MetadataAppSpecGet().then((response) => {
       return response;

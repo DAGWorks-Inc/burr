@@ -335,6 +335,8 @@ const InsightSubTable = (props: {
   insight: Insight;
   allSpans: Span[];
   allSteps: Step[];
+  appID: string;
+  partitionKey: string | null;
 }) => {
   const individualValues = props.insight.captureIndividualValues?.(props.attributes);
   const [isExpanded, setIsExpanded] = React.useState(false);
@@ -394,13 +396,29 @@ const InsightSubTable = (props: {
                 key={attribute.key + i}
                 className={` ${isCurrentSelected ? 'bg-gray-200' : isHovered ? 'bg-gray-50' : 'hover:bg-gray-50'} cursor-pointer`}
                 onMouseEnter={() => {
-                  setCurrentHoverIndex(span?.begin_entry.action_sequence_id);
+                  setCurrentHoverIndex(
+                    span
+                      ? {
+                          sequenceId: span.begin_entry.action_sequence_id,
+                          appId: props.appID,
+                          partitionKey: props.partitionKey
+                        }
+                      : undefined
+                  );
                 }}
                 onMouseLeave={() => {
                   setCurrentHoverIndex(undefined);
                 }}
                 onClick={() => {
-                  setCurrentSelectedIndex(span?.begin_entry.action_sequence_id);
+                  setCurrentSelectedIndex(
+                    span
+                      ? {
+                          sequenceId: span.begin_entry.action_sequence_id,
+                          appId: props.appID,
+                          partitionKey: props.partitionKey
+                        }
+                      : undefined
+                  );
                 }}
               >
                 <TableCell></TableCell>
@@ -429,7 +447,11 @@ const InsightSubTable = (props: {
   );
 };
 
-export const InsightsView = (props: { steps: Step[] }) => {
+export const InsightsView = (props: {
+  steps: Step[];
+  appId: string;
+  partitionKey: string | null;
+}) => {
   const allAttributes: AttributeModel[] = props.steps.flatMap((step) => step.attributes);
 
   const allSpans = props.steps.flatMap((step) => step.spans);
@@ -456,6 +478,8 @@ export const InsightsView = (props: { steps: Step[] }) => {
                   insight={insight}
                   allSpans={allSpans}
                   allSteps={props.steps}
+                  appID={props.appId}
+                  partitionKey={props.partitionKey}
                 />
               );
             }

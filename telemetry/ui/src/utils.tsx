@@ -1,3 +1,4 @@
+import { useParams } from 'react-router-dom';
 import { AttributeModel, Step } from './api';
 
 export type Status = 'success' | 'failure' | 'running';
@@ -17,4 +18,13 @@ export const getActionStatus = (action: Step) => {
 
 export const getUniqueAttributeID = (attribute: AttributeModel) => {
   return `${attribute.action_sequence_id}-${attribute.span_id}`;
+};
+
+export const useLocationParams = () => {
+  const { projectId, appId, partitionKey } = useParams();
+  return {
+    projectId: projectId as string,
+    appId: appId as string,
+    partitionKey: (partitionKey as string) === 'null' ? null : (partitionKey as string)
+  };
 };
