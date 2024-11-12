@@ -205,7 +205,8 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
   }, new Map<string, ApplicationSummary[]>());
 
   // Display the parents no matter what
-  const rootAppsToDisplay = appsToDisplay.filter((app) => app.spawning_parent_pointer === null);
+  // const rootAppsToDisplay = appsToDisplay.filter((app) => app.spawning_parent_pointer === null);
+  const rootAppsToDisplay = appsToDisplay;
   const anyHavePartitionKey = rootAppsToDisplay.some(
     (app) => !isNullPartitionKey(app.partition_key)
   );
@@ -261,7 +262,7 @@ export const AppListTable = (props: { apps: ApplicationSummary[]; projectId: str
           </TableRow>
         </TableHead>
         <TableBody>
-          {rootAppsToDisplay.map((app) => {
+          {appsToDisplay.map((app) => {
             return (
               <AppSubList
                 key={app.app_id}

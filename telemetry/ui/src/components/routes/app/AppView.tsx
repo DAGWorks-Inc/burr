@@ -1,37 +1,22 @@
-import { Navigate, useParams } from 'react-router';
+import { Navigate } from 'react-router';
 import {
   AnnotationCreate,
   AnnotationOut,
   AnnotationUpdate,
   AttributeModel,
-  DefaultService,
-  Step
+  DefaultService
 } from '../../../api';
 import { useMutation, useQuery } from 'react-query';
 import { Loading } from '../../common/loading';
-import { StepList } from './StepList';
+import { ApplicationTable } from './StepList';
 import { TwoColumnLayout, TwoRowLayout } from '../../common/layout';
 import { AppStateView } from './StateMachine';
 import { createContext, useEffect, useState } from 'react';
-import { Status } from '../../../utils';
+import { Status, useLocationParams } from '../../../utils';
 import { GraphView } from './GraphView';
 import { useSearchParams } from 'react-router-dom';
 
-/**
- * Gives a list of prior actions. Note they're currently sorted in order from
- * most recent to least recent. We should probably switch that.
- */
-const getPriorActions = (currentActionIndex: number, steps: Step[], numPrevious: number) => {
-  return steps
-    .filter(
-      (step) =>
-        step.step_start_log.sequence_id < currentActionIndex &&
-        step.step_start_log.sequence_id > currentActionIndex - numPrevious
-    )
-    .slice(0, numPrevious);
-};
-
-const REFRESH_INTERVAL = 500;
+export const REFRESH_INTERVAL = 500;
 
 export const backgroundColorsForStatus = (status: Status) => {
   const colorsByStatus = {
@@ -90,8 +75,13 @@ export const backgroundColorsForIndex = (index: number, status: Status) => {
 // Default number of previous actions to show
 const NUM_PREVIOUS_ACTIONS = 0;
 
-export type AnnotationEditingContext = {
+export type SequenceLocation = {
+  appId: string;
+  partitionKey: string | null;
   sequenceId: number;
+};
+
+export type AnnotationEditingContext = SequenceLocation & {
   spanId: string | null;
   attributeName?: string;
   existingAnnotation: AnnotationOut | undefined;
@@ -104,10 +94,10 @@ export type HighlightState = {
   setAttributesHighlighted: (attributes: AttributeModel[]) => void;
   setTab: (tab: string) => void;
   tab: string;
-  setCurrentSelectedIndex: (index: number | undefined) => void;
-  currentSelectedIndex?: number;
-  setCurrentHoverIndex: (index: number | undefined) => void;
-  currentHoverIndex?: number;
+  setCurrentSelectedIndex: (index: SequenceLocation | undefined) => void;
+  currentSelectedIndex?: SequenceLocation;
+  setCurrentHoverIndex: (index: SequenceLocation | undefined) => void;
+  currentHoverIndex?: SequenceLocation;
   currentEditingAnnotationContext?: AnnotationEditingContext;
   setCurrentEditingAnnotationContext: (
     annotationContext: AnnotationEditingContext | undefined
@@ -163,41 +153,58 @@ export const AppView = (props: {
   allowAnnotations: boolean;
   restrictTabs?: string[];
   disableNavigateSteps?: boolean;
-  forceCurrentActionIndex?: number;
+  forceCurrentActionIndex?: SequenceLocation;
   forceFullScreen?: boolean;
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [topToBottomChronological, setTopToBottomChronological] = useState(true);
   const [inspectViewOpen, setInspectViewOpen] = useState(false);
-  const currentActionIndex = searchParams.get('sequence_id')
-    ? parseInt(searchParams.get('sequence_id')!)
-    : undefined;
-  const _setCurrentActionIndex = (index: number | undefined) => {
+
+  const currentSequenceLocation = (
+    searchParams.get('sequence_location')
+      ? JSON.parse(searchParams.get('sequence_location')!)
+      : undefined
+  ) as SequenceLocation | undefined;
+
+  // we want to use the current App ID passed in
+  const appID = props.appId;
+  // But if we want to focus on sub-applications we need to load those steps as well
+  // These will get passed to the data views
+  const currentFocusAppID =
+    currentSequenceLocation?.appId !== undefined ? currentSequenceLocation?.appId : appID;
+  // Ditto with partition key
+  const partitionKey = props.partitionKey;
+  const currentFocusPartitionKey =
+    currentSequenceLocation?.partitionKey !== undefined
+      ? currentSequenceLocation?.partitionKey
+      : props.partitionKey;
+  const _setCurrentSequenceLocation = (location: SequenceLocation | undefined) => {
     const newSearchParams = new URLSearchParams(searchParams); // Clone the searchParams
-    if (index !== undefined) {
-      newSearchParams.set('sequence_id', index.toString());
+    if (location !== undefined) {
+      newSearchParams.set('sequence_location', JSON.stringify(location));
     } else {
-      newSearchParams.delete('sequence_id');
+      newSearchParams.delete('sequence_location');
     }
     setSearchParams(newSearchParams); // Update the searchParams with the new object
   };
+
   if (
     props.forceCurrentActionIndex !== undefined &&
-    currentActionIndex !== props.forceCurrentActionIndex
+    JSON.stringify(currentSequenceLocation) !== JSON.stringify(props.forceCurrentActionIndex)
   ) {
-    _setCurrentActionIndex(props.forceCurrentActionIndex);
+    _setCurrentSequenceLocation(props.forceCurrentActionIndex);
   }
 
-  const setCurrentActionIndex = (index: number | undefined) => {
+  const setCurrentSequenceLocation = (location: SequenceLocation | undefined) => {
     if (!props.disableNavigateSteps) {
-      _setCurrentActionIndex(index);
+      _setCurrentSequenceLocation(location);
     }
   };
-  const { projectId, appId, partitionKey } = props;
+  const { projectId } = props;
   // const [currentActionIndex, setCurrentActionIndex] = useState<number | undefined>(undefined);
-  const [hoverSequenceID, setHoverSequenceID] = useState<number | undefined>(undefined);
+  const [hoverIndex, setHoverIndex] = useState<SequenceLocation | undefined>(undefined);
   const [autoRefresh, setAutoRefresh] = useState(props.defaultAutoRefresh || false);
-  const shouldQuery = projectId !== undefined && appId !== undefined;
+  const shouldQuery = projectId !== undefined && appID !== undefined;
   const [minimizedTable, setMinimizedTable] = useState(false);
   const [highlightedAttributes, setHighlightedAttributes] = useState<AttributeModel[]>([]);
   const fullScreen =
@@ -230,11 +237,11 @@ export const AppView = (props: {
     })
   );
   const { data, error } = useQuery(
-    ['steps', appId],
+    ['steps', appID, partitionKey],
     () =>
       DefaultService.getApplicationLogsApiV0ProjectIdAppIdPartitionKeyAppsGet(
         projectId as string,
-        appId as string,
+        appID as string,
         props.partitionKey !== null ? props.partitionKey : '__none__'
       ),
     {
@@ -242,15 +249,51 @@ export const AppView = (props: {
       enabled: shouldQuery
     }
   );
+
+  const { data: currentFocusStepsData } = useQuery(
+    ['steps', currentFocusAppID, currentFocusPartitionKey],
+    () =>
+      DefaultService.getApplicationLogsApiV0ProjectIdAppIdPartitionKeyAppsGet(
+        projectId as string,
+        currentFocusAppID as string,
+        currentFocusPartitionKey !== null ? currentFocusPartitionKey : '__none__'
+      ),
+    {
+      refetchInterval: autoRefresh ? REFRESH_INTERVAL : false,
+      enabled: currentFocusAppID !== appID && currentFocusAppID !== undefined
+    }
+  );
   // TODO -- use a skiptoken to bypass annotation loading if we don't need them
   const { data: annotationsData, refetch: refetchAnnotationsData } = useQuery(
-    ['annotations', appId],
+    ['annotations', appID, partitionKey],
     () =>
       DefaultService.getAnnotationsApiV0ProjectIdAnnotationsGet(
         projectId as string,
-        appId as string,
+        appID as string,
         partitionKey !== null ? partitionKey : '__none__'
-      )
+      ),
+    {
+      refetchInterval: autoRefresh ? REFRESH_INTERVAL : false,
+      enabled: shouldQuery && props.allowAnnotations && backendSpec?.supports_annotations
+    }
+  );
+
+  const { data: currentFocusAnnotationsData } = useQuery(
+    ['annotations', currentFocusAppID, currentFocusPartitionKey],
+    () =>
+      DefaultService.getAnnotationsApiV0ProjectIdAnnotationsGet(
+        projectId as string,
+        currentFocusAppID as string,
+        currentFocusPartitionKey !== null ? partitionKey : '__none__'
+      ),
+    {
+      enabled:
+        shouldQuery &&
+        props.allowAnnotations &&
+        backendSpec?.supports_annotations &&
+        currentFocusAppID !== appID &&
+        currentFocusAppID !== undefined
+    }
   );
 
   const createAnnotationMutation = useMutation(
@@ -263,7 +306,7 @@ export const AppView = (props: {
     }) =>
       DefaultService.createAnnotationApiV0ProjectIdAppIdPartitionKeySequenceIdAnnotationsPost(
         projectId,
-        appId,
+        appID,
         data.partitionKey !== null ? data.partitionKey : '__none__',
         data.sequenceID,
         data.annotationData
@@ -286,20 +329,39 @@ export const AppView = (props: {
     const handleKeyDown = (event: KeyboardEvent) => {
       switch (event.key) {
         case topToBottomChronological ? 'ArrowUp' : 'ArrowDown':
-          if (currentActionIndex === undefined || currentActionIndex <= minSequenceID) {
-            setCurrentActionIndex(minSequenceID);
+          if (
+            currentSequenceLocation === undefined ||
+            currentSequenceLocation.sequenceId <= minSequenceID
+          ) {
+            setCurrentSequenceLocation({
+              appId: appID,
+              partitionKey: partitionKey,
+              sequenceId: minSequenceID
+            });
           } else {
-            setCurrentActionIndex(currentActionIndex - 1);
+            setCurrentSequenceLocation({
+              ...currentSequenceLocation,
+              sequenceId: currentSequenceLocation.sequenceId - 1
+            });
+            // semtCurrentActionIndex(currentActionIndex - 1);
           }
           break;
         case topToBottomChronological ? 'ArrowDown' : 'ArrowUp':
           // case 'ArrowUp':
-          if (currentActionIndex === undefined) {
-            setCurrentActionIndex(maxSequenceID);
-          } else if (currentActionIndex >= maxSequenceID) {
-            setCurrentActionIndex(currentActionIndex);
+          if (currentSequenceLocation === undefined) {
+            setCurrentSequenceLocation({
+              appId: appID,
+              partitionKey: partitionKey,
+              sequenceId: maxSequenceID
+            });
+          } else if (currentSequenceLocation.sequenceId >= maxSequenceID) {
+            // setCurrentActionIndex(currentActionIndex);
           } else {
-            setCurrentActionIndex(currentActionIndex + 1);
+            setCurrentSequenceLocation({
+              ...currentSequenceLocation,
+              sequenceId: currentSequenceLocation.sequenceId + 1
+            });
+            // setCurrentActionIndex(currentActionIndex + 1);
           }
           break;
         default:
@@ -312,13 +374,17 @@ export const AppView = (props: {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [data?.steps, currentActionIndex, setCurrentActionIndex]);
+  }, [data?.steps, currentSequenceLocation, setCurrentSequenceLocation]);
   useEffect(() => {
     if (autoRefresh) {
       const maxSequenceID = Math.max(
         ...(data?.steps.map((step) => step.step_start_log.sequence_id) || [])
       );
-      setCurrentActionIndex(maxSequenceID);
+      setCurrentSequenceLocation({
+        appId: appID,
+        partitionKey: partitionKey,
+        sequenceId: maxSequenceID
+      });
     }
   }, [data, autoRefresh]);
   if (!shouldQuery) {
@@ -329,11 +395,11 @@ export const AppView = (props: {
   if (data === undefined || backendSpec === undefined || annotationsData === undefined)
     return <Loading />;
   const displayAnnotations = props.allowAnnotations && backendSpec.supports_annotations;
-
-  const previousActions =
-    currentActionIndex !== undefined
-      ? getPriorActions(currentActionIndex, data.steps, NUM_PREVIOUS_ACTIONS)
-      : currentActionIndex;
+  // TODO -- re-enable this if I want...
+  // const previousActions =
+  //   currentActionIndex !== undefined
+  //     ? getPriorActions(currentActionIndex, data.steps, NUM_PREVIOUS_ACTIONS)
+  //     : currentActionIndex;
   const stepsCopied = [...data.steps];
   const stepsSorted = stepsCopied.sort((a, b) => {
     // Parse dates to get time in milliseconds
@@ -359,10 +425,18 @@ export const AppView = (props: {
   });
   const Layout = props.orientation === 'stacked_horizontal' ? TwoColumnLayout : TwoRowLayout;
   const currentStep = stepsSorted.find(
-    (step) => step.step_start_log.sequence_id === currentActionIndex
+    (step) =>
+      step.step_start_log.sequence_id === currentSequenceLocation?.sequenceId &&
+      appID === currentSequenceLocation?.appId &&
+      partitionKey === currentSequenceLocation?.partitionKey
   );
-  const hoverAction = hoverSequenceID
-    ? stepsSorted.find((step) => step.step_start_log.sequence_id === hoverSequenceID)
+  const hoverAction = hoverIndex
+    ? stepsSorted.find(
+        (step) =>
+          step.step_start_log.sequence_id === hoverIndex.sequenceId &&
+          appID === hoverIndex.appId &&
+          partitionKey === hoverIndex.partitionKey
+      )
     : undefined;
 
   return (
@@ -372,13 +446,13 @@ export const AppView = (props: {
         setAttributesHighlighted: setHighlightedAttributes,
         setTab: setCurrentTab,
         tab: currentTab,
-        setCurrentSelectedIndex: (n) => {
-          setCurrentActionIndex(n);
-          setInspectViewOpen(n !== undefined);
+        setCurrentSelectedIndex: (loc) => {
+          setCurrentSequenceLocation(loc);
+          setInspectViewOpen(loc !== undefined);
         },
-        currentSelectedIndex: currentActionIndex,
-        setCurrentHoverIndex: setHoverSequenceID,
-        currentHoverIndex: hoverSequenceID,
+        currentSelectedIndex: currentSequenceLocation,
+        setCurrentHoverIndex: setHoverIndex,
+        currentHoverIndex: hoverIndex,
         currentEditingAnnotationContext: currentEditingAnnotationContext,
         setCurrentEditingAnnotationContext: setCurrentEditingAnnotationContext,
         // TODO -- handle span ID
@@ -418,8 +492,10 @@ export const AppView = (props: {
             <div
               className={`w-full ${fullScreen ? 'h-full' : props.orientation === 'stacked_vertical' ? 'h-full' : 'h-1/2'}`}
             >
-              <StepList
+              <ApplicationTable
                 steps={stepsSorted}
+                appID={appID}
+                partitionKey={partitionKey}
                 numPriorIndices={NUM_PREVIOUS_ACTIONS}
                 autoRefresh={autoRefresh}
                 setAutoRefresh={setAutoRefresh}
@@ -445,7 +521,8 @@ export const AppView = (props: {
                 <GraphView
                   stateMachine={data.application}
                   currentAction={currentStep}
-                  highlightedActions={previousActions}
+                  // highlightedActions={previousActions}
+                  highlightedActions={[]}
                   hoverAction={hoverAction}
                 />
               </div>
@@ -454,16 +531,19 @@ export const AppView = (props: {
         }
         secondItem={
           <AppStateView
-            steps={stepsSorted}
-            stateMachine={data.application}
-            highlightedActions={previousActions}
+            steps={currentFocusStepsData?.steps || stepsSorted}
+            stateMachine={currentFocusStepsData?.application || data.application}
+            // stateMachine={data.application}
+            // highlightedActions={previousActions}
+            highlightedActions={[]}
             hoverAction={hoverAction}
-            currentSequenceID={currentActionIndex}
+            currentActionLocation={currentSequenceLocation}
             displayGraphAsTab={displayGraphAsTabs} // in this case we want the graph as a tab
             setMinimized={(min: boolean) => setInspectViewOpen(!min)}
             isMinimized={!inspectViewOpen}
             allowMinimized={inspectViewOpen && fullScreen}
-            annotations={annotationsData}
+            // TODO -- render better if this is undefined -- this is an odd way to fall back
+            annotations={currentFocusAnnotationsData || annotationsData}
             restrictTabs={props.restrictTabs}
             allowAnnotations={displayAnnotations}
           />
@@ -475,15 +555,12 @@ export const AppView = (props: {
 };
 
 export const AppViewContainer = () => {
-  const { projectId, appId, partitionKey } = useParams();
-  if (projectId === undefined || appId === undefined) {
-    return <div>Invalid URL</div>;
-  }
+  const { projectId, appId, partitionKey } = useLocationParams();
   return (
     <AppView
       projectId={projectId}
       appId={appId}
-      partitionKey={partitionKey === 'null' ? null : partitionKey || null}
+      partitionKey={partitionKey}
       orientation={'stacked_horizontal'}
       enableFullScreenStepView={true}
       enableMinimizedStepView={true}

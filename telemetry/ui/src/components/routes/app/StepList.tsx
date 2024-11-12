@@ -2,6 +2,7 @@ import {
   AnnotationOut,
   AttributeModel,
   ChildApplicationModel,
+  DefaultService,
   EndStreamModel,
   FirstItemStreamModel,
   InitializeStreamModel,
@@ -11,7 +12,13 @@ import {
 } from '../../../api';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../common/table';
 import { DateTimeDisplay, DurationDisplay } from '../../common/dates';
-import { AppContext, backgroundColorsForIndex, backgroundColorsForStatus } from './AppView';
+import {
+  AppContext,
+  backgroundColorsForIndex,
+  backgroundColorsForStatus,
+  REFRESH_INTERVAL,
+  SequenceLocation
+} from './AppView';
 import { Status, getActionStatus } from '../../../utils';
 import { Chip } from '../../common/chip';
 import { useContext, useEffect, useRef, useState } from 'react';
@@ -44,6 +51,7 @@ import { RxActivityLog } from 'react-icons/rx';
 import { RenderedField } from './DataView';
 import { FaPencilAlt } from 'react-icons/fa';
 import { AnnotateButton } from './AnnotationsView';
+import { useQuery } from 'react-query';
 
 const StatusChip = (props: { status: Status }) => {
   return (
@@ -82,6 +90,19 @@ const AutoRefreshSwitch = (props: {
     />
   );
 };
+
+const RecursionDepthPadding = (props: { depth: number; children: React.ReactNode }) => {
+  return (
+    <div className="flex flex-row items-center h-full">
+      {new Array(props.depth).fill(0).map((i) => (
+        <div className="w-5 h-5 flex-row flex justify-start items-center" key={i}>
+          <div className="h-8 translate-x-1 w-0.5 bg-gray-200 opacity-75"> </div>
+        </div>
+      ))}
+      {props.children}
+    </div>
+  );
+};
 /**
  * Quick component to make the table row common between
  * the action and span rows
@@ -93,35 +114,50 @@ const CommonTableRow = (props: {
   sequenceID: number;
   isHovered: boolean;
   shouldBeHighlighted: boolean;
-  currentSelectedIndex: number | undefined;
+  currentSelectedIndex: SequenceLocation | undefined;
   step: Step;
-  setCurrentHoverIndex: (index?: number) => void;
-  setCurrentSelectedIndex: (index?: number) => void;
+  setCurrentHoverIndex: (index?: SequenceLocation) => void;
+  setCurrentSelectedIndex: (index?: SequenceLocation) => void;
+  appID: string;
+  partitionKey: string | null;
 }) => {
   return (
     <TableRow
       key={props.sequenceID}
-      className={`h-full ${props.isHovered ? 'opacity-80' : ''} cursor-pointer
+      className={`h-full ${props.isHovered ? 'opacity-80' : ''} cursor-pointer 
             ${
               props.shouldBeHighlighted && props.currentSelectedIndex !== undefined
                 ? backgroundColorsForIndex(
-                    props.currentSelectedIndex - props.sequenceID,
+                    props.currentSelectedIndex.sequenceId - props.sequenceID,
                     getActionStatus(props.step)
                   )
                 : ''
             }`}
       onMouseEnter={() => {
-        props.setCurrentHoverIndex(props.sequenceID);
+        props.setCurrentHoverIndex({
+          sequenceId: props.sequenceID,
+          appId: props.appID,
+          partitionKey: props.partitionKey
+        });
       }}
       onMouseLeave={() => {
         props.setCurrentHoverIndex(undefined);
       }}
-      onClick={() => {
-        if (props.currentSelectedIndex === props.sequenceID) {
+      onClick={(e) => {
+        if (
+          props.currentSelectedIndex?.sequenceId === props.sequenceID &&
+          props.currentSelectedIndex?.appId === props.appID &&
+          props.currentSelectedIndex?.partitionKey === props.partitionKey
+        ) {
           props.setCurrentSelectedIndex(undefined);
         } else {
-          props.setCurrentSelectedIndex(props.sequenceID);
+          props.setCurrentSelectedIndex({
+            sequenceId: props.sequenceID,
+            appId: props.appID,
+            partitionKey: props.partitionKey
+          });
         }
+        e.stopPropagation();
       }}
     >
       {props.children}
@@ -150,6 +186,9 @@ const ActionTableRow = (props: {
   streamingEvents: Array<InitializeStreamModel | FirstItemStreamModel | EndStreamModel>;
   displayAnnotations: boolean;
   existingAnnotation: AnnotationOut | undefined;
+  appID: string;
+  partitionKey: string | null;
+  depth: number;
 }) => {
   const sequenceID = props.step.step_start_log.sequence_id;
   const {
@@ -161,13 +200,22 @@ const ActionTableRow = (props: {
     setCurrentSelectedIndex
   } = useContext(AppContext);
 
-  const isHovered = currentHoverIndex === sequenceID;
+  const isHovered =
+    currentHoverIndex?.sequenceId === sequenceID &&
+    currentHoverIndex?.appId === props.appID &&
+    currentHoverIndex?.partitionKey === props.partitionKey;
   // const spanCount = props.step.spans.length;
   const childCount = props.links.length;
   const shouldBeHighlighted =
     currentSelectedIndex !== undefined &&
-    sequenceID <= currentSelectedIndex &&
-    sequenceID >= currentSelectedIndex - props.numPriorIndices;
+    currentSelectedIndex.appId === props.appID &&
+    currentSelectedIndex.partitionKey === props.partitionKey &&
+    sequenceID <= currentSelectedIndex.sequenceId &&
+    sequenceID >= currentSelectedIndex.sequenceId - props.numPriorIndices;
+  // const shouldBeHighlighted =
+  //   currentSelectedIndex !== undefined &&
+  //   sequenceID <= currentSelectedIndex &&
+  //   sequenceID >= currentSelectedIndex - props.numPriorIndices;
   // const TraceExpandIcon = props.isTracesExpanded ? MinusIcon : PlusIcon;
   const LinkExpandIcon = props.isLinksExpanded ? MinusIcon : PlusIcon;
   const attributes = props.step.attributes || [];
@@ -185,8 +233,16 @@ const ActionTableRow = (props: {
       step={props.step}
       setCurrentHoverIndex={setCurrentHoverIndex}
       setCurrentSelectedIndex={setCurrentSelectedIndex}
+      appID={props.appID}
+      partitionKey={props.partitionKey}
     >
-      <TableCell className="text-gray-500 w-12 max-w-12 min-w-12">{sequenceID}</TableCell>
+      <TableCell className="text-gray-500 w-12 max-w-12 min-w-12">
+        <div className="flex flex-row items-center">
+          <RecursionDepthPadding depth={props.depth}>
+            <span>{sequenceID}</span>{' '}
+          </RecursionDepthPadding>
+        </div>
+      </TableCell>
       <TableCell>
         <div className="flex flex-row gap-1 items-center">
           <div className={`${props.allowExpand ? '' : 'invisible'}`}>
@@ -236,7 +292,7 @@ const ActionTableRow = (props: {
               startTime={new Date(props.step.step_start_log.start_time)}
               bgColor={backgroundColorsForStatus(getActionStatus(props.step))}
               isHighlighted={shouldBeHighlighted}
-              isEvent={false}
+              kind="span"
               globalEllapsedTimeMillis={props.step.latestGlobalEllapsedTime}
             />
           </TableCell>
@@ -263,9 +319,11 @@ const ActionTableRow = (props: {
               <StatusChip status={getActionStatus(props.step)} />
             </div>
           </TableCell>
-          {props.displayAnnotations && (
-            <TableCell className="w-10">
+          <TableCell className="w-10">
+            {props.displayAnnotations ? (
               <AnnotateButton
+                appID={props.appID}
+                partitionKey={props.partitionKey}
                 sequenceID={sequenceID}
                 existingAnnotation={props.existingAnnotation}
                 setCurrentEditingAnnotationContext={(context) => {
@@ -273,15 +331,118 @@ const ActionTableRow = (props: {
                   setTab('annotations');
                 }}
               />
-            </TableCell>
-          )}
+            ) : (
+              <></>
+            )}
+          </TableCell>
         </>
       )}
     </CommonTableRow>
   );
 };
+/**
+ * Loads the data for the StepList + anything else
+ * @param props
+ * @returns
+ */
+const SelfLoadingSubApplicationContainer = (props: {
+  appID: string;
+  partitionKey: string | null;
+  projectID: string;
+  minimized: boolean;
+  projectId: string;
+  topToBottomChronological: boolean;
+  displayAnnotations: boolean;
+  // traceExpandedActions: number[];
+  displaySpansCol: boolean;
+  displayLinksCol: boolean;
+  earliestTimeSeen: Date;
+  latestTimeSeen: Date;
+  // links: ChildApplicationModel[];
+  autoRefresh: boolean;
+  depth: number;
+}) => {
+  const { data } = useQuery(
+    ['steps', props.projectID, props.appID, props.partitionKey],
+    () =>
+      DefaultService.getApplicationLogsApiV0ProjectIdAppIdPartitionKeyAppsGet(
+        props.projectId as string,
+        props.appID as string,
+        props.partitionKey !== null ? props.partitionKey : '__none__'
+      ),
+    {
+      // TODO -- decide how we want to auto-refresh with lots of nested stuff?
+      // Really, we'll want a bulk API but this is OK for now...
+      refetchInterval: props.autoRefresh ? REFRESH_INTERVAL : false,
+      enabled: true
+    }
+  );
+  // TODO -- use a skiptoken to bypass annotation loading if we don't need them
+  const { data: annotationsData } = useQuery(
+    ['annotations', props.projectID, props.appID, props.partitionKey],
+    () =>
+      DefaultService.getAnnotationsApiV0ProjectIdAnnotationsGet(
+        props.projectId as string,
+        props.appID as string,
+        props.partitionKey !== null ? props.partitionKey : '__none__'
+      )
+  );
+  const [traceExpandedActions, setTraceExpandedActions] = useState<number[]>([]);
+  const [linksExpandedActions, setLinksExpandedActions] = useState<number[]>([]);
+
+  const toggleTraceExpandedActions = (index: number) => {
+    if (traceExpandedActions.includes(index)) {
+      setTraceExpandedActions(traceExpandedActions.filter((i) => i !== index));
+    } else {
+      setTraceExpandedActions([...traceExpandedActions, index]);
+    }
+  };
+  const isLinksExpanded = (index: number) => {
+    return linksExpandedActions.includes(index);
+  };
+  const toggleLinksExpanded = (index: number) => {
+    if (isLinksExpanded(index)) {
+      setLinksExpandedActions(linksExpandedActions.filter((i) => i !== index));
+    } else {
+      setLinksExpandedActions([...linksExpandedActions, index]);
+    }
+  };
+
+  if (data === undefined || annotationsData === undefined) {
+    return <></>;
+  }
+  const steps = data.steps;
+  const stepsWithEllapsedTime = collapseTimestampsToEllapsedTime(steps);
+  const annotations = annotationsData;
+  return (
+    <StepList
+      appID={props.appID}
+      partitionKey={props.partitionKey}
+      stepsWithEllapsedTime={stepsWithEllapsedTime}
+      annotations={annotations}
+      numPriorIndices={0}
+      minimized={props.minimized}
+      projectId={props.projectId}
+      topToBottomChronological={props.topToBottomChronological}
+      displayAnnotations={false} // TODO -- get annotations to work propertly for sub-applications
+      traceExpandedActions={traceExpandedActions}
+      setTraceExpandedActions={setTraceExpandedActions}
+      linksExpandedActions={linksExpandedActions}
+      links={data.children}
+      toggleTraceExpandedActions={toggleTraceExpandedActions}
+      toggleLinksExpanded={toggleLinksExpanded}
+      displaySpansCol={props.displaySpansCol}
+      displayLinksCol={props.displayLinksCol}
+      earliestTimeSeen={props.earliestTimeSeen}
+      latestTimeSeen={props.latestTimeSeen}
+      depth={props.depth + 1}
+    />
+  );
+};
 
 const LinkSubTable = (props: {
+  appID: string;
+  partitionKey: string | null;
   step: StepWithEllapsedTime;
   numPriorIndices: number;
   minimized: boolean;
@@ -289,64 +450,133 @@ const LinkSubTable = (props: {
   projectId: string;
   displaySpansCol: boolean;
   displayLinksCol: boolean;
+  // TODO -- consider pushing down into this component, we probably don't need it in the container
+  expandedSubApplicationIDs: string[];
+  setExpandedSubApplicationIDs: (appIDs: string[]) => void;
+  topToBottomChronological: boolean;
+  earliestTimeSeen: Date;
+  latestTimeSeen: Date;
+  depth: number;
 }) => {
   const { currentHoverIndex, setCurrentHoverIndex, currentSelectedIndex, setCurrentSelectedIndex } =
     useContext(AppContext);
   const sequenceID = props.step.step_start_log.sequence_id;
-  const isHovered = currentHoverIndex === sequenceID;
+  const isHovered =
+    currentHoverIndex?.appId === props.appID &&
+    currentHoverIndex?.partitionKey === props.partitionKey &&
+    currentHoverIndex?.sequenceId === sequenceID;
   const shouldBeHighlighted =
     currentSelectedIndex !== undefined &&
-    sequenceID <= currentSelectedIndex &&
-    sequenceID >= currentSelectedIndex - props.numPriorIndices;
+    currentSelectedIndex.appId === props.appID &&
+    currentSelectedIndex.partitionKey === props.partitionKey &&
+    sequenceID <= currentSelectedIndex.sequenceId &&
+    sequenceID >= currentSelectedIndex.sequenceId - props.numPriorIndices;
   const normalText = shouldBeHighlighted ? 'text-gray-100' : 'text-gray-600';
   const iconColor = shouldBeHighlighted ? 'text-gray-100' : 'text-gray-400';
   const navigate = useNavigate();
   return (
     <>
       {props.links.map((subApp) => {
+        const subApplicationIsExpanded = props.expandedSubApplicationIDs.includes(
+          subApp.child.app_id
+        );
+        const toggleExpanded = (appID: string) => {
+          if (props.expandedSubApplicationIDs.includes(appID)) {
+            props.setExpandedSubApplicationIDs(
+              props.expandedSubApplicationIDs.filter((id) => id !== appID)
+            );
+          } else {
+            props.setExpandedSubApplicationIDs([...props.expandedSubApplicationIDs, appID]);
+          }
+        };
         const childType = subApp.event_type;
         const Icon = childType === 'fork' ? TbGrillFork : TiFlowChildren;
         return (
-          <CommonTableRow
-            key={`${subApp.child.app_id}-link-table-row`}
-            sequenceID={sequenceID}
-            isHovered={isHovered}
-            shouldBeHighlighted={shouldBeHighlighted}
-            currentSelectedIndex={currentSelectedIndex}
-            step={props.step}
-            setCurrentHoverIndex={setCurrentHoverIndex}
-            setCurrentSelectedIndex={setCurrentSelectedIndex}
-          >
-            <TableCell colSpan={1}>
-              <Icon className={`h-5 w-5 ${iconColor} -ml-1 `} />
-            </TableCell>
-            <TableCell
-              colSpan={3}
-              className={` ${normalText} w-48 min-w-48 max-w-48 truncate pl-9`}
+          <>
+            <CommonTableRow
+              appID={props.appID}
+              partitionKey={props.partitionKey}
+              key={`${subApp.child.app_id}-link-table-row`}
+              sequenceID={sequenceID}
+              isHovered={isHovered}
+              shouldBeHighlighted={shouldBeHighlighted}
+              currentSelectedIndex={currentSelectedIndex}
+              step={props.step}
+              setCurrentHoverIndex={setCurrentHoverIndex}
+              setCurrentSelectedIndex={setCurrentSelectedIndex}
             >
-              <div
-                className="z-50"
-                onClick={(e) => {
-                  navigate(
-                    `/project/${props.projectId}/${subApp.child.partition_key || 'null'}/${subApp.child.app_id}`
-                  );
-                  e.stopPropagation();
-                }}
+              <TableCell colSpan={1} className="">
+                <RecursionDepthPadding depth={props.depth}>
+                  <Icon className={`h-5 w-5 ${iconColor} -ml-1`} />
+                </RecursionDepthPadding>
+              </TableCell>
+              <TableCell
+                colSpan={1}
+                className={`${normalText} w-48 min-w-48 max-w-48 truncate pl-9`}
               >
-                <span className="hover:underline">{subApp.child.app_id}</span>
-              </div>
-            </TableCell>
-            {!props.minimized && (
-              <TableCell colSpan={1} className="text-gray-500">
-                <Chip
-                  label={subApp.event_type === 'fork' ? 'forked' : 'spawned'}
-                  chipType={subApp.event_type === 'fork' ? 'fork' : 'spawn'}
-                  className="w-16 flex flex-row justify-center"
+                <div
+                  className="z-50"
+                  onClick={(e) => {
+                    navigate(
+                      `/project/${props.projectId}/${subApp.child.partition_key || 'null'}/${subApp.child.app_id}`
+                    );
+                    e.stopPropagation();
+                  }}
+                >
+                  <span className="hover:underline">{subApp.child.app_id}</span>
+                </div>
+              </TableCell>
+              <TableCell colSpan={1} className={`relative`} id="placeholder1">
+                <WaterfallPiece
+                  step={props.step}
+                  startTime={new Date(props.step.step_start_log.start_time)}
+                  endTime={new Date(props.step.step_end_log?.end_time || new Date())}
+                  earliestStartTime={props.earliestTimeSeen}
+                  latestEndTime={props.latestTimeSeen}
+                  globalEllapsedTimeMillis={0}
+                  bgColor={props.step.step_end_log?.exception ? 'bg-dwred' : 'bg-green-500'}
+                  isHighlighted={false}
+                  kind="subaction"
+                  setSubActionExpanded={() => {
+                    toggleExpanded(subApp.child.app_id);
+                  }}
+                  isSubActionExpanded={subApplicationIsExpanded}
                 />
               </TableCell>
+              <TableCell colSpan={1} />
+              {!props.minimized && (
+                <TableCell colSpan={1} className="text-gray-500">
+                  <Chip
+                    label={subApp.event_type === 'fork' ? 'forked' : 'spawned'}
+                    chipType={subApp.event_type === 'fork' ? 'fork' : 'spawn'}
+                    className="w-16 flex flex-row justify-center"
+                  />
+                </TableCell>
+              )}
+              <TableCell colSpan={1} />
+            </CommonTableRow>
+            {subApplicationIsExpanded ? (
+              <SelfLoadingSubApplicationContainer
+                minimized={props.minimized}
+                projectId={props.projectId}
+                topToBottomChronological={props.topToBottomChronological}
+                displayAnnotations={false}
+                // traceExpandedActions={[]}
+                // links={[]}
+                displaySpansCol={props.displaySpansCol}
+                displayLinksCol={props.displayLinksCol}
+                earliestTimeSeen={props.earliestTimeSeen}
+                latestTimeSeen={props.latestTimeSeen}
+                appID={subApp.child.app_id}
+                partitionKey={subApp.child.partition_key}
+                projectID={props.projectId}
+                autoRefresh={false} // TODO -- make this configurable/cascade down from the container
+                depth={props.depth}
+              />
+            ) : (
+              <></>
             )}
-            <TableCell colSpan={1} />
-          </CommonTableRow>
+          </>
         );
       })}
     </>
@@ -354,6 +584,8 @@ const LinkSubTable = (props: {
 };
 
 const StepSubTableRow = (props: {
+  appID: string;
+  partitionKey: string | null;
   spanID: string | null; // undefined if it is not associated with a span, E.G a free-standing attribute
   name: string;
   minimized: boolean;
@@ -372,6 +604,7 @@ const StepSubTableRow = (props: {
   setDisplayAttributes?: (b: boolean) => void;
   displayAttributes?: boolean;
   displayAnnotations: boolean;
+  depth: number; // app-depth with recursion
 }) => {
   const {
     setCurrentHoverIndex,
@@ -398,8 +631,6 @@ const StepSubTableRow = (props: {
   if (props.modelType === 'first_item_stream' || props.modelType === 'end_stream') {
     depth += 1;
   }
-  const isEvent = props.modelType !== 'span';
-  // const idToDisplay = props.displaySpanID ? spanIDUniqueToAction : '';
   const onClick = () => {
     if (props.modelType !== 'attribute') {
       return;
@@ -410,6 +641,8 @@ const StepSubTableRow = (props: {
   };
   return (
     <CommonTableRow
+      appID={props.appID}
+      partitionKey={props.partitionKey}
       sequenceID={props.sequenceID}
       isHovered={props.isHovered}
       shouldBeHighlighted={props.shouldBeHighlighted}
@@ -419,9 +652,11 @@ const StepSubTableRow = (props: {
       setCurrentSelectedIndex={setCurrentSelectedIndex}
     >
       <TableCell
-        className={` ${lightText} w-10 min-w-10 ${props.displaySpanID ? '' : 'text-opacity-0'}`}
+        className={` ${lightText} w-10 min-w-10 ${props.displaySpanID ? '' : 'text-opacity-0'} flex flex-row`}
       >
-        {spanIDUniqueToAction}
+        <RecursionDepthPadding depth={props.depth}>
+          <span>{spanIDUniqueToAction}</span>
+        </RecursionDepthPadding>
       </TableCell>
       {!props.minimized ? (
         <>
@@ -482,7 +717,7 @@ const StepSubTableRow = (props: {
                 startTime={props.startTime}
                 bgColor={backgroundColorsForStatus(getActionStatus(props.step))}
                 isHighlighted={props.shouldBeHighlighted}
-                isEvent={isEvent}
+                kind={'span'}
                 globalEllapsedTimeMillis={props.step.latestGlobalEllapsedTime}
               />
             ) : (
@@ -510,6 +745,8 @@ const StepSubTableRow = (props: {
 };
 
 const StepSubTable = (props: {
+  appID: string;
+  partitionKey: string | null;
   spans: Span[];
   attributes: AttributeModel[];
   streamingEvents: Array<InitializeStreamModel | FirstItemStreamModel | EndStreamModel>;
@@ -523,6 +760,7 @@ const StepSubTable = (props: {
   expandNonSpanAttributes: boolean;
   topToBottomChronological: boolean;
   displayAnnotations: boolean;
+  depth: number;
 }) => {
   const { currentHoverIndex, currentSelectedIndex } = useContext(AppContext);
   const attributesBySpanID = props.attributes.reduce((acc, attr) => {
@@ -539,11 +777,17 @@ const StepSubTable = (props: {
   //   return acc;
   // }, new Map<string | null, Array<InitializeStreamModel | FirstItemStreamModel | EndStreamModel>>());
   const sequenceID = props.step.step_start_log.sequence_id;
-  const isHovered = currentHoverIndex === sequenceID;
+  const isHovered =
+    currentHoverIndex?.sequenceId === sequenceID &&
+    currentHoverIndex?.appId === props.appID &&
+    currentHoverIndex?.partitionKey === props.partitionKey;
+  // const spanCount = props.step.spans.length;
   const shouldBeHighlighted =
     currentSelectedIndex !== undefined &&
-    sequenceID <= currentSelectedIndex &&
-    sequenceID >= currentSelectedIndex - props.numPriorIndices;
+    currentSelectedIndex.appId === props.appID &&
+    currentSelectedIndex.partitionKey === props.partitionKey &&
+    sequenceID <= currentSelectedIndex.sequenceId &&
+    sequenceID >= currentSelectedIndex.sequenceId - props.numPriorIndices;
   const displayFullAppWaterfall = true; // TODO -- configure if we zoom on a step
   const allSpanIds = props.spans.map((span) => span.begin_entry.span_id);
   const [spanIdsWithAttributesDisplayed, setSpanIdsWithAttributesDisplayed] = useState<string[]>(
@@ -601,6 +845,8 @@ const StepSubTable = (props: {
           return (
             <StepSubTableRow
               key={`streaming-${i}`}
+              appID={props.appID}
+              partitionKey={props.partitionKey}
               spanID={null}
               name={`delay: ${ttfs}ms`}
               minimized={props.minimized}
@@ -617,6 +863,7 @@ const StepSubTable = (props: {
               displayFullAppWaterfall={displayFullAppWaterfall}
               displaySpanID={true}
               displayAnnotations={props.displayAnnotations}
+              depth={props.depth}
             />
           );
         } else {
@@ -632,6 +879,8 @@ const StepSubTable = (props: {
           return (
             <StepSubTableRow
               key={`streaming-${i}`}
+              appID={props.appID}
+              partitionKey={props.partitionKey}
               spanID={null}
               name={name}
               minimized={props.minimized}
@@ -648,6 +897,7 @@ const StepSubTable = (props: {
               displayFullAppWaterfall={displayFullAppWaterfall}
               displaySpanID={true}
               displayAnnotations={props.displayAnnotations}
+              depth={props.depth}
             />
           );
         }
@@ -659,6 +909,8 @@ const StepSubTable = (props: {
           return (
             <StepSubTableRow
               key={`${attr.key}-${i}`}
+              appID={props.appID}
+              partitionKey={props.partitionKey}
               spanID={attr.span_id}
               name={attr.key}
               minimized={props.minimized}
@@ -675,6 +927,7 @@ const StepSubTable = (props: {
               displayFullAppWaterfall={displayFullAppWaterfall}
               displaySpanID={displaySpanID}
               displayAnnotations={props.displayAnnotations}
+              depth={props.depth}
             />
           );
         })
@@ -697,6 +950,8 @@ const StepSubTable = (props: {
           <StepSubTableRow
             key={i}
             spanID={spanID}
+            appID={props.appID}
+            partitionKey={props.partitionKey}
             name={span.begin_entry.span_name}
             minimized={props.minimized}
             sequenceID={sequenceID}
@@ -722,11 +977,14 @@ const StepSubTable = (props: {
             }}
             displayAttributes={spanIdsWithAttributesDisplayed.includes(spanID)}
             displayAnnotations={props.displayAnnotations}
+            depth={props.depth}
           />,
           ...attributesToDisplay.map((attr, i) => {
             return (
               <StepSubTableRow
                 key={`${attr.key}-${i}`}
+                appID={props.appID}
+                partitionKey={props.partitionKey}
                 spanID={attr.span_id}
                 name={attr.key}
                 minimized={props.minimized}
@@ -743,6 +1001,7 @@ const StepSubTable = (props: {
                 displayFullAppWaterfall={displayFullAppWaterfall}
                 displaySpanID={false}
                 displayAnnotations={props.displayAnnotations}
+                depth={props.depth}
               />
             );
           })
@@ -761,11 +1020,14 @@ const WaterfallPiece: React.FC<{
   globalEllapsedTimeMillis: number; // Total time of active trace
   bgColor: string;
   isHighlighted: boolean;
-  isEvent: boolean;
+  kind?: 'span' | 'event' | 'subaction';
   // Whether to display just ellapsed (clock) time
   displayAbsoluteOrEllapsedTime?: 'absolute' | 'ellapsed';
+  // In the case that we have the subaction type -- otherwise these will be undefined
+  setSubActionExpanded?: (b: boolean) => void;
+  isSubActionExpanded?: boolean;
 }> = (props) => {
-  const useAbsoluteTime = (props.displayAbsoluteOrEllapsedTime || 'ellapsed') === 'absolute';
+  const useAbsoluteTime = (props.displayAbsoluteOrEllapsedTime || 'absolute') === 'absolute';
   const containerRef = useRef<HTMLDivElement>(null);
 
   const stepStartTimeAbsolute = new Date(props.step.step_start_log.start_time).getTime();
@@ -806,25 +1068,27 @@ const WaterfallPiece: React.FC<{
         const isCloseToEnd = leftPositionPercentage + widthPercentage > 80; // Threshold for "close to the end"
         // TODO -- unhack these, we're converting back and forth cause we already have interfaces for strings and
         // don't want to change
-        const hoverItem = props.isEvent ? (
-          <></>
-        ) : (
-          <div className="flex flex-row gap-1 items-center">
-            <DurationDisplay
-              startDate={new Date(startTimeMilliseconds).toISOString()}
-              endDate={new Date(endTimeMilliseconds).toISOString()}
-            />
-            <DateTimeDisplay
-              date={props.startTime.toISOString()}
-              mode={'short'}
-              displayMillis={true}
-            />
-          </div>
-        );
+        const SubActionIcon = props.isSubActionExpanded ? MinusIcon : PlusIcon;
+        const hoverItem =
+          props.kind === 'event' || props.kind === 'subaction' ? (
+            <></>
+          ) : (
+            <div className="flex flex-row gap-1 items-center">
+              <DurationDisplay
+                startDate={new Date(startTimeMilliseconds).toISOString()}
+                endDate={new Date(endTimeMilliseconds).toISOString()}
+              />
+              <DateTimeDisplay
+                date={props.startTime.toISOString()}
+                mode={'short'}
+                displayMillis={true}
+              />
+            </div>
+          );
 
         return (
           <>
-            {!props.isEvent ? (
+            {props.kind === 'span' ? (
               <div
                 className={`${bgColor} opacity-50 h-12 px-0 rounded-sm`}
                 onMouseEnter={() => setIsHovered(true)}
@@ -836,8 +1100,8 @@ const WaterfallPiece: React.FC<{
                   height: '90%',
                   left: `${leftPositionPercentage}%`
                 }}
-              ></div>
-            ) : (
+              />
+            ) : props.kind === 'event' ? (
               <div
                 className={`h-5 w-5 ${bgColor} opacity-50 absolute`}
                 style={{
@@ -846,6 +1110,32 @@ const WaterfallPiece: React.FC<{
                   transform: 'translate(-50%, -50%) rotate(45deg)'
                 }}
               />
+            ) : (
+              // Sub-action
+              <div className="h-full flex flex-col justify-center">
+                <div
+                  className="w-full h-full flex-col flex justify-center z-50 hover:scale-y-150"
+                  style={{
+                    width: `${widthPercentage}%`,
+                    position: 'absolute',
+                    left: `${leftPositionPercentage}%`
+                  }}
+                  onClick={(e) => {
+                    props.setSubActionExpanded?.(!props.isSubActionExpanded);
+                    e.stopPropagation();
+                  }}
+                >
+                  <div
+                    className={`${props.isHighlighted ? 'bg-transparent' : props.bgColor} opacity-50 h-1 px-0 rounded-sm flex flex-row justify-center items-center`}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                  >
+                    <SubActionIcon
+                      className={`hover:scale-125 transform-none cursor-pointer h-4 w-4 rounded-full text-gray-700 ${props.isHighlighted ? props.bgColor : 'bg-white'}`}
+                    />
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Hoverable zone with buffer to avoid flicker */}
@@ -921,38 +1211,54 @@ type StepWithEllapsedTime = Step & {
  * Note this may break if steps are not in a perfectly linear order.
  * This is not the case now, but as we add parallelism it very well may be.
  * @param steps
+ * @param globalStartTimeMillis -- optional, if not provided we assume the first step is the start
+ * @param globalEndTimeMillis - optional, if not provided we assume the last step is the end
  * @returns
  */
-const collapseTimestampsToEllapsedTime = (steps: Step[]): StepWithEllapsedTime[] => {
+const collapseTimestampsToEllapsedTime = (
+  steps: Step[],
+  globalStartTimeMillis?: number,
+  globalEndTimeMillis?: number
+): StepWithEllapsedTime[] => {
+  if (steps.length === 0) {
+    return [];
+  }
+
   const sortedSteps = steps.sort((a, b) => {
     return new Date(a.step_start_log.start_time) > new Date(b.step_start_log.start_time) ? 1 : -1;
   });
-  if (sortedSteps.length === 0) {
-    return [];
-  }
-  let lastTime = new Date(sortedSteps[0].step_start_log.start_time);
+
+  // If global start time is provided, calculate the offset to shift all times
+  const firstStepStartTime = new Date(sortedSteps[0].step_start_log.start_time).getTime();
+  const timeOffset = globalStartTimeMillis ? globalStartTimeMillis - firstStepStartTime : 0;
+
+  let lastTime = globalStartTimeMillis || firstStepStartTime;
   let cumulativeTimeMillis = 0;
+
   return sortedSteps
     .map((step) => {
-      const stepStartTime = new Date(step.step_start_log.start_time);
-      const stepEndTime = new Date(step.step_end_log?.end_time || new Date());
-      const pauseAfterLastStepMillis = stepStartTime.getTime() - lastTime.getTime();
-      cumulativeTimeMillis += stepEndTime.getTime() - stepStartTime.getTime();
+      const stepStartTime = new Date(step.step_start_log.start_time).getTime() + timeOffset;
+      const stepEndTime =
+        new Date(step.step_end_log?.end_time || new Date()).getTime() + timeOffset;
+
+      const pauseAfterLastStepMillis = stepStartTime - lastTime;
+      const stepDurationMillis = stepEndTime - stepStartTime;
+
+      cumulativeTimeMillis += stepDurationMillis;
       lastTime = stepEndTime;
+
       return {
         ...step,
         cumulativeTimeMillis,
-        pauseAfterLastStepMillis: pauseAfterLastStepMillis,
-        stepDurationMillis: stepEndTime.getTime() - stepStartTime.getTime(),
+        pauseAfterLastStepMillis,
+        stepDurationMillis,
         latestGlobalEllapsedTime: 0
       };
     })
-    .map((step) => {
-      return {
-        ...step,
-        latestGlobalEllapsedTime: cumulativeTimeMillis
-      };
-    });
+    .map((step) => ({
+      ...step,
+      latestGlobalEllapsedTime: globalEndTimeMillis ? globalEndTimeMillis : cumulativeTimeMillis
+    }));
 };
 
 const PauseRow = (props: { pauseMillis: number }) => {
@@ -972,6 +1278,8 @@ const PauseRow = (props: { pauseMillis: number }) => {
 
 const ActionSubTable = (props: {
   step: StepWithEllapsedTime;
+  appID: string;
+  partitionKey: string | null;
   numPriorIndices: number;
   isTraceExpanded: boolean;
   toggleTraceExpandedActions: (index: number) => void;
@@ -990,6 +1298,7 @@ const ActionSubTable = (props: {
   topToBottomChronological: boolean;
   displayAnnotations: boolean;
   annotationsForStep: AnnotationOut[];
+  depth: number;
 }) => {
   const {
     step,
@@ -1004,9 +1313,11 @@ const ActionSubTable = (props: {
     earliestTimeSeen,
     setTraceExpanded,
     pauseTime,
-    topToBottomChronological
+    topToBottomChronological,
+    depth
   } = props;
   const [expandNonSpanAttributes, setExpandNonSpanAttributes] = useState<boolean>(false); // attributes that are associated with the action, not the span...
+  const [highlightedSubApplicationIDs, setHighlightedSubApplicationIDs] = useState<string[]>([]);
   // TODO -- lower a lot of this state into this component
   // This was pulled out quickly and we need to put anyting that's not read above into this
   return (
@@ -1016,6 +1327,8 @@ const ActionSubTable = (props: {
       )}
       <ActionTableRow
         key={`${step.step_start_log.sequence_id}-action-table-row`}
+        appID={props.appID}
+        partitionKey={props.partitionKey}
         step={step}
         numPriorIndices={props.numPriorIndices}
         isTracesExpanded={isTraceExpanded}
@@ -1042,10 +1355,13 @@ const ActionSubTable = (props: {
             annotation.step_sequence_id === step.step_start_log.sequence_id &&
             annotation.span_id === null
         )}
+        depth={depth}
       />
       {isTraceExpanded && (
         <StepSubTable
           spans={step.spans}
+          appID={props.appID}
+          partitionKey={props.partitionKey}
           attributes={step.attributes}
           step={step}
           numPriorIndices={props.numPriorIndices}
@@ -1058,23 +1374,119 @@ const ActionSubTable = (props: {
           streamingEvents={step.streaming_events}
           topToBottomChronological={topToBottomChronological}
           displayAnnotations={props.displayAnnotations}
+          depth={depth}
           // forceCollapsed={!intentionExpandAll}
         />
       )}
       {isLinksExpanded && (
         <LinkSubTable
           step={step}
+          appID={props.appID}
+          partitionKey={props.partitionKey}
           links={links}
           numPriorIndices={props.numPriorIndices}
           minimized={props.minimized}
           projectId={props.projectId}
           displaySpansCol={displaySpansCol}
           displayLinksCol={displayLinksCol}
+          setExpandedSubApplicationIDs={setHighlightedSubApplicationIDs}
+          expandedSubApplicationIDs={highlightedSubApplicationIDs}
+          earliestTimeSeen={earliestTimeSeen}
+          latestTimeSeen={latestTimeSeen}
+          topToBottomChronological={topToBottomChronological}
+          depth={depth}
         />
       )}
       {props.pauseLocation === 'bottom' && pauseTime !== undefined && (
         <PauseRow pauseMillis={pauseTime} />
       )}
+    </>
+  );
+};
+
+export const StepList = (props: {
+  stepsWithEllapsedTime: StepWithEllapsedTime[];
+  annotations: AnnotationOut[];
+  numPriorIndices: number;
+  minimized: boolean;
+  projectId: string;
+  topToBottomChronological: boolean;
+  displayAnnotations: boolean;
+  traceExpandedActions: number[];
+  setTraceExpandedActions: (indices: number[]) => void;
+  linksExpandedActions: number[];
+  toggleTraceExpandedActions: (index: number) => void;
+  toggleLinksExpanded: (index: number) => void;
+  displaySpansCol: boolean;
+  displayLinksCol: boolean;
+  earliestTimeSeen: Date;
+  latestTimeSeen: Date;
+  links: ChildApplicationModel[];
+  appID: string;
+  partitionKey: string | null;
+  depth: number;
+}) => {
+  const linksBySequenceID = props.links.reduce((acc, child) => {
+    const existing = acc.get(child.sequence_id || -1) || [];
+    existing.push(child);
+    acc.set(child.sequence_id || -1, existing);
+    return acc;
+  }, new Map<number, ChildApplicationModel[]>());
+  return (
+    <>
+      {props.stepsWithEllapsedTime.map((step) => {
+        // TODO -- make more efficient with a map
+        const annotationsForStep = props.annotations.filter(
+          (annotation) => annotation.step_sequence_id === step.step_start_log.sequence_id
+        );
+        const isTraceExpanded = props.traceExpandedActions.includes(
+          step.step_start_log.sequence_id
+        );
+        const setTraceExpanded = (b: boolean) => {
+          if (b) {
+            props.setTraceExpandedActions([
+              ...props.traceExpandedActions,
+              step.step_start_log.sequence_id
+            ]);
+          } else {
+            props.setTraceExpandedActions(
+              props.traceExpandedActions.filter((i) => i !== step.step_start_log.sequence_id)
+            );
+          }
+        };
+        const isLinksExpanded = props.linksExpandedActions.includes(
+          step.step_start_log.sequence_id
+        );
+        const links = linksBySequenceID.get(step.step_start_log.sequence_id) || [];
+        const beforePause = step.pauseAfterLastStepMillis > PAUSE_TIME_THRESHOLD_MILLIS;
+        return (
+          <ActionSubTable
+            key={step.step_start_log.sequence_id}
+            step={step}
+            appID={props.appID}
+            partitionKey={props.partitionKey}
+            numPriorIndices={props.numPriorIndices}
+            isTraceExpanded={isTraceExpanded}
+            toggleTraceExpandedActions={props.toggleTraceExpandedActions}
+            isLinksExpanded={isLinksExpanded}
+            toggleLinksExpanded={props.toggleLinksExpanded}
+            minimized={props.minimized}
+            links={links}
+            displaySpansCol={props.displaySpansCol}
+            displayLinksCol={props.displayLinksCol}
+            earliestTimeSeen={props.earliestTimeSeen}
+            latestTimeSeen={props.latestTimeSeen}
+            setTraceExpanded={setTraceExpanded}
+            projectId={props.projectId}
+            pauseLocation={beforePause ? 'bottom' : undefined}
+            pauseTime={step.pauseAfterLastStepMillis}
+            topToBottomChronological={props.topToBottomChronological}
+            displayAnnotations={props.displayAnnotations}
+            annotationsForStep={annotationsForStep}
+            depth={props.depth}
+          />
+        );
+      })}
     </>
   );
 };
@@ -1095,8 +1507,10 @@ const ActionSubTable = (props: {
  * TODO -- add pagination.
  * TODO -- fix up indexing
  */
-export const StepList = (props: {
+export const ApplicationTable = (props: {
   steps: Step[];
+  appID: string;
+  partitionKey: string | null;
   annotations: AnnotationOut[];
   numPriorIndices: number;
   autoRefresh: boolean;
@@ -1201,12 +1615,6 @@ export const StepList = (props: {
     (step) => step.spans.length > 0 || step.streaming_events.length > 0
   );
   const displayLinksCol = props.links.length > 0;
-  const linksBySequenceID = props.links.reduce((acc, child) => {
-    const existing = acc.get(child.sequence_id || -1) || [];
-    existing.push(child);
-    acc.set(child.sequence_id || -1, existing);
-    return acc;
-  }, new Map<number, ChildApplicationModel[]>());
 
   const [tableHeight, setTableHeight] = useState('auto');
 
@@ -1361,51 +1769,31 @@ export const StepList = (props: {
         </TableHead>
         {props.topToBottomChronological ? parentRows : <></>}
         <TableBody className="pt-10">
-          {stepsWithEllapsedTime.map((step) => {
-            // TODO -- make more efficient with a map
-            const annotationsForStep = props.annotations.filter(
-              (annotation) => annotation.step_sequence_id === step.step_start_log.sequence_id
-            );
-            const isTraceExpanded = traceExpandedActions.includes(step.step_start_log.sequence_id);
-            const setTraceExpanded = (b: boolean) => {
-              if (b) {
-                setTraceExpandedActions([...traceExpandedActions, step.step_start_log.sequence_id]);
-              } else {
-                setTraceExpandedActions(
-                  traceExpandedActions.filter((i) => i !== step.step_start_log.sequence_id)
-                );
-              }
-            };
-            const isLinksExpanded = linksExpandedActions.includes(step.step_start_log.sequence_id);
-            const links = linksBySequenceID.get(step.step_start_log.sequence_id) || [];
-            const beforePause = step.pauseAfterLastStepMillis > PAUSE_TIME_THRESHOLD_MILLIS;
-            return (
-              <ActionSubTable
-                key={step.step_start_log.sequence_id}
-                step={step}
-                numPriorIndices={props.numPriorIndices}
-                isTraceExpanded={isTraceExpanded}
-                toggleTraceExpandedActions={toggleTraceExpandedActions}
-                isLinksExpanded={isLinksExpanded}
-                toggleLinksExpanded={toggleLinksExpanded}
-                minimized={props.minimized}
-                links={links}
-                displaySpansCol={displaySpansCol}
-                displayLinksCol={displayLinksCol}
-                earliestTimeSeen={earliestTimeSeen}
-                latestTimeSeen={latestTimeSeen}
-                setTraceExpanded={setTraceExpanded}
-                projectId={props.projectId}
-                pauseLocation={beforePause ? 'bottom' : undefined}
-                pauseTime={step.pauseAfterLastStepMillis}
-                topToBottomChronological={props.topToBottomChronological}
-                displayAnnotations={props.displayAnnotations}
-                annotationsForStep={annotationsForStep}
-              />
-            );
-          })}
-          {!props.topToBottomChronological ? parentRows : <></>}
+          <StepList
+            appID={props.appID}
+            partitionKey={props.partitionKey}
+            stepsWithEllapsedTime={stepsWithEllapsedTime}
+            annotations={props.annotations}
+            numPriorIndices={props.numPriorIndices}
+            minimized={props.minimized}
+            projectId={props.projectId}
+            topToBottomChronological={props.topToBottomChronological}
+            displayAnnotations={props.displayAnnotations}
+            traceExpandedActions={traceExpandedActions}
+            setTraceExpandedActions={setTraceExpandedActions}
+            linksExpandedActions={linksExpandedActions}
+            toggleTraceExpandedActions={toggleTraceExpandedActions}
+            toggleLinksExpanded={toggleLinksExpanded}
+            displaySpansCol={displaySpansCol}
+            displayLinksCol={displayLinksCol}
+            earliestTimeSeen={earliestTimeSeen}
+            latestTimeSeen={latestTimeSeen}
+            links={props.links}
+            depth={0}
+          />
         </TableBody>
+
+        {!props.topToBottomChronological ? parentRows : <></>}
         <div ref={tableScrollRef}></div>
       </Table>
     </div>
@@ -1439,6 +1827,7 @@ const ParentLink = (props: {
       </TableCell>
       {!props.minimized && (
         <>
+          <TableCell></TableCell>
           <TableCell colSpan={1} className="text-gray-500">
             <Chip
               label={'parent'}
