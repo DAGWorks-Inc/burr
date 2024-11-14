@@ -786,7 +786,7 @@ instance, although we will likely be adding a new interface.</p>
 <p>Specifying it as part of the application – will get routed as the default to all parallel actions:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">ApplicationBuilder</span><span class="p">()</span>
-    <span class="o">.</span><span class="n">with_executor</span><span class="p">(</span><span class="n">MultiThreadedExecutor</span><span class="p">(</span><span class="n">max_concurrency</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span>
+    <span class="o">.</span><span class="n">with_parallel_executor</span><span class="p">(</span><span class="n">MultiThreadedExecutor</span><span class="p">(</span><span class="n">max_concurrency</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span>
     <span class="o">.</span><span class="n">build</span><span class="p">()</span>
 <span class="p">)</span>
 </pre></div>

@@ -460,7 +460,7 @@ Specifying it as part of the application -- will get routed as the default to al
 
     app = (
         ApplicationBuilder()
-        .with_executor(MultiThreadedExecutor(max_concurrency=10))
+        .with_parallel_executor(MultiThreadedExecutor(max_concurrency=10))
         .build()
     )
 
