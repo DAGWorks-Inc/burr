@@ -108,6 +108,7 @@ tracking-server = [
   "requests",
   "jinja2",
   "openai", # temporary for the demo, we will likely remove
+  "typing-inspect",
 ]
 
 pydantic = [
