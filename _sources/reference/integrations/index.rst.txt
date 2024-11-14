@@ -13,3 +13,4 @@ Integrations -- we will be adding more
    traceloop
    langchain
    pydantic
+   haystack

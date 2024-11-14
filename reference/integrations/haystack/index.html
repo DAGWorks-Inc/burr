@@ -12,7 +12,7 @@
         gtag('js', new Date());
         gtag('config', 'G-20Z3J1CR22');
     </script>
-    <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" />
+    <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="Usage analytics + data privacy" href="../../telemetry/" /><link rel="prev" title="Pydantic" href="../pydantic/" />
         <link rel="canonical" href="https://burr.dagworks.io/reference/integrations/haystack/" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
@@ -21,6 +21,7 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=739e8c58" />
     
     
 
@@ -216,7 +217,7 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Burr</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../getting_started/">Get started</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Get started</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../getting_started/why-burr/">Why Burr?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../getting_started/install/">Installation</a></li>
@@ -272,11 +273,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../concepts/state-typing/">Typing State</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../concepts/hooks/">Hooks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../concepts/additional-visibility/">Additional Visibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/parallelism/">Parallelism</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../concepts/recursion/">Recursive Applications</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../concepts/planned-capabilities/">Planned Capabilities</a></li>
 </ul>
 </li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../../">API reference</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of API reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../../">API reference</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of API reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="../../application/">Applications</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../application/#graph-apis">Graph APIs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../actions/">Actions</a></li>
@@ -287,14 +289,16 @@
 <li class="toctree-l2"><a class="reference internal" href="../../tracking/">Tracking</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../visibility/">Tracing Inside Actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../lifecycle/">Lifecycle API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../parallelism/">Parallelism</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../typing/">Typing</a></li>
-<li class="toctree-l2 has-children"><a class="reference internal" href="../">Integrations</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of Integrations</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="../">Integrations</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of Integrations</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="../hamilton/">Hamilton</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../streamlit/">Streamlit</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../opentelemetry/">OpenTelemetry</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../traceloop/">Traceloop</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../langchain/">Langchain</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../pydantic/">Pydantic</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Haystack</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../telemetry/">Usage analytics + data privacy</a></li>
@@ -413,8 +417,26 @@ you encounter any issues.</p>
       <footer>
         
         <div class="related-pages">
-          
-          
+          <a class="next-page" href="../../telemetry/">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Usage analytics + data privacy</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../pydantic/">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Pydantic</div>
+                
+              </div>
+            </a>
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
