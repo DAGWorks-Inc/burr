@@ -779,16 +779,10 @@ which can be actions or subgraphs. These tasks are then executed by the <code cl
 <p>We anticipate the above should cover most of what you want to do, but we have a host of advanced tuning capabilities.</p>
 <section id="execution">
 <h3>Execution<a class="headerlink" href="#execution" title="Link to this heading">¶</a></h3>
-<p>To enable execution, you need to pass a <code class="docutils literal notranslate"><span class="pre">burr.Executor</span></code> to the application, or to the actions themselves. We have a few available executors:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">burr.parallelism.MultiThreadedExecutor</span></code> – runs the tasks in parallel using threads (default)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">burr.parallelism.MultiProcessExecutor</span></code> – runs the tasks in parallel using processes</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">burr.parallelism.RayExecutor</span></code> – runs the tasks in parallel using <a class="reference external" href="https://docs.ray.io/en/latest/index.html">Ray</a></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">burr.parallelism.Dask</span></code> – runs the tasks in parallel using <a class="reference external" href="https://dask.org/">Dask</a></p></li>
-</ul>
-<p>Or, you can implement your own by subclassing the <code class="docutils literal notranslate"><span class="pre">burr.Executor</span></code> class and passing to your favorite execution tool.</p>
-<p>For async, we only allow the <code class="docutils literal notranslate"><span class="pre">burr.parallelism.AsyncExecutor</span></code> (default), which uses <code class="docutils literal notranslate"><span class="pre">asyncio.gather</span></code> to run the tasks in parallel.</p>
-<p>You can pass this either as a global executor for the application, or specify it as part of your class:</p>
+<p>To enable execution, you need to pass a <code class="docutils literal notranslate"><span class="pre">burr.Executor</span></code> to the application, or to the actions themselves. This is just a python executor
+instance, although we will likely be adding a new interface.</p>
+<p>You can implement your own by subclassing the <code class="docutils literal notranslate"><span class="pre">concurrent.futures.Executor</span></code> class and passing to your favorite execution tool.</p>
+<p>This only makes sense for synchronous execution – for async, it will use asyncio.gather. You can pass this either as a global executor for the application, or specify it as part of your class:</p>
 <p>Specifying it as part of the application – will get routed as the default to all parallel actions:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">app</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">ApplicationBuilder</span><span class="p">()</span>
@@ -797,7 +791,7 @@ which can be actions or subgraphs. These tasks are then executed by the <code cl
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>Specifying it as part of the action – will override the global executor:</p>
+<p>Specifying it as part of the action – will override the global executor (note this is not supported yet…).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">TestMultiplePrompts</span><span class="p">(</span><span class="n">MapStates</span><span class="p">):</span>
 
     <span class="k">def</span> <span class="nf">action</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">:</span>
@@ -896,6 +890,17 @@ LLM might come up with a solution.</p>
 </ol>
 </section>
 </section>
+<section id="notes">
+<h2>Notes<a class="headerlink" href="#notes" title="Link to this heading">¶</a></h2>
+<p>This is in an experimental release phase. While we anticipate the API to be stable, we reserve the right to make slight changes (and will obviously add new features).</p>
+<p>Things that may change:</p>
+<ol class="arabic simple">
+<li><p>We will likely alter the executor API to be more flexible, although we will probably allow for use of the current executor API</p></li>
+<li><p>We will be adding guard-rails for generator-types (sync versus async)</p></li>
+<li><p>The UI is a WIP – we have more sophisticated capabilities but are still polishing them</p></li>
+<li><p>Support for action-level executors</p></li>
+</ol>
+</section>
 </section>
 
         </article>
@@ -977,6 +982,7 @@ LLM might come up with a solution.</p>
 <li><a class="reference internal" href="#inter-action-communication">Inter-action communication</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#notes">Notes</a></li>
 </ul>
 </li>
 </ul>

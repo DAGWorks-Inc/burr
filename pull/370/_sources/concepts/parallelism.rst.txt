@@ -16,6 +16,7 @@ And more! Just like Burr in general, these concepts are generic and can be appli
 This section shows how to enable parallelism and presents use cases.
 
 
+
 TL;DR
 =====
 Burr provides a high-level and a low-level API for parallelism. The high-level API supports many different patterns and should be sufficient for most use cases.
@@ -446,18 +447,12 @@ We anticipate the above should cover most of what you want to do, but we have a 
 Execution
 ---------
 
-To enable execution, you need to pass a ``burr.Executor`` to the application, or to the actions themselves. We have a few available executors:
+To enable execution, you need to pass a ``burr.Executor`` to the application, or to the actions themselves. This is just a python executor
+instance, although we will likely be adding a new interface.
 
-- ``burr.parallelism.MultiThreadedExecutor`` -- runs the tasks in parallel using threads (default)
-- ``burr.parallelism.MultiProcessExecutor`` -- runs the tasks in parallel using processes
-- ``burr.parallelism.RayExecutor`` -- runs the tasks in parallel using `Ray <https://docs.ray.io/en/latest/index.html>`_
-- ``burr.parallelism.Dask`` -- runs the tasks in parallel using `Dask <https://dask.org/>`_
+You can implement your own by subclassing the ``concurrent.futures.Executor`` class and passing to your favorite execution tool.
 
-Or, you can implement your own by subclassing the ``burr.Executor`` class and passing to your favorite execution tool.
-
-For async, we only allow the ``burr.parallelism.AsyncExecutor`` (default), which uses ``asyncio.gather`` to run the tasks in parallel.
-
-You can pass this either as a global executor for the application, or specify it as part of your class:
+This only makes sense for synchronous execution -- for async, it will use asyncio.gather. You can pass this either as a global executor for the application, or specify it as part of your class:
 
 Specifying it as part of the application -- will get routed as the default to all parallel actions:
 
@@ -469,7 +464,7 @@ Specifying it as part of the application -- will get routed as the default to al
         .build()
     )
 
-Specifying it as part of the action -- will override the global executor:
+Specifying it as part of the action -- will override the global executor (note this is not supported yet...).
 
 .. code-block:: python
 
@@ -585,3 +580,15 @@ To do this, you would:
 2. Simultaneously run the second LLM using :py:meth:`iterate <burr.core.application.Application.iterate>` as well
 3. Join them in parallel, waiting for any user-input if provided
 4. Decide after every step of the first graph whether you want to cancel the second graph or not -- E.G. is the user satisfied.
+
+Notes
+=====
+
+This is in an experimental release phase. While we anticipate the API to be stable, we reserve the right to make slight changes (and will obviously add new features).
+
+Things that may change:
+
+1. We will likely alter the executor API to be more flexible, although we will probably allow for use of the current executor API
+2. We will be adding guard-rails for generator-types (sync versus async)
+3. The UI is a WIP -- we have more sophisticated capabilities but are still polishing them
+4. Support for action-level executors
