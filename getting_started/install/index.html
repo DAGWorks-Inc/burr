@@ -195,7 +195,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -356,7 +356,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -378,6 +378,95 @@ Instead, please install manually using the following command:</p>
 </pre></div>
 </div>
 <p>This is just the kitchen sink for getting started – remember, burr is dependency-free/pure python!</p>
+<section id="description-of-different-targets">
+<h2>Description of different targets<a class="headerlink" href="#description-of-different-targets" title="Link to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>burr
+</pre></div>
+</div>
+<p>This only installs the framework. Zero other dependencies. All other installs below all install the
+framework + some other dependencies. Note you can combine installing multiple optional dependencies with commas, e.g.
+<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">&quot;burr[cli,tracking]&quot;</span></code> installs both the CLI and tracking + UI dependencies.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[cli]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the dependencies to run the burr CLI, i.e. <cite>burr –help</cite>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[developer]&quot;</span>
+</pre></div>
+</div>
+<p>This installs all the dependencies for developing locally.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[documentation]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the dependencies to build the documentation.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[examples]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the dependencies for the examples.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[graphviz]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the dependencies to visualize the graph.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[hamilton]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the dependencies for Hamilton.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[haystack]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the dependencies for Haystack.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[learn]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the dependencies for the UI, CLI, and running demos. It is equivalent to <cite>start</cite> below.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[opentelemetry]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the dependencies for using OpenTelemetry with Burr.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[postgresql]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the dependencies for PostgreSQL.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[pydantic]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the dependencies for Pydantic.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[redis]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the dependencies for Redis.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[start]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the dependencies for the UI, CLI, and running demos. It is equivalent to <cite>learn</cite> above.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[streamlit]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the dependencies for Streamlit.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[tests]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the dependencies for running unit tests.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[tracking]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the client and server dependencies for tracking and running the UI from tracking that is on a filesystem.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[tracking-client]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the client dependencies for tracking to a filesystem.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[tracking-client-s3]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the client dependencies for tracking to S3.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[tracking-server-s3]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the server dependencies to run the UI and load tracking that was sent to S3.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;burr[tracking-server]&quot;</span>
+</pre></div>
+</div>
+<p>This installs the server dependencies for running the UI off a filesystem.</p>
+</section>
 </section>
 
         </article>
@@ -423,8 +512,27 @@ Instead, please install manually using the following command:</p>
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Installation</a><ul>
+<li><a class="reference internal" href="#description-of-different-targets">Description of different targets</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
