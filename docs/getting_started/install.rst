@@ -32,7 +32,8 @@ Description of different targets
     pip install burr
 
 This only installs the framework. Zero other dependencies. All other installs below all install the
-framework + some other dependencies.
+framework + some other dependencies. Note you can combine installing multiple optional dependencies with commas, e.g.
+``pip install "burr[cli,tracking]"`` installs both the CLI and tracking + UI dependencies.
 
 .. code-block:: bash
 
