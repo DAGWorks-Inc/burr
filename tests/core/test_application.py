@@ -3230,3 +3230,15 @@ def test_builder_captures_typing_system():
     _, _, state = app.run(halt_after=["result"])
     assert isinstance(state.data, CounterState)
     assert state.data["count"] == 10
+
+# Define a mock persister that does not implement is_initialized
+class PersisterWithoutIsInitialized:
+    def initialize(self):
+        pass
+
+def test_with_state_persister_no_is_initialized_method():
+    builder = ApplicationBuilder()
+    persister = PersisterWithoutIsInitialized()
+
+    # Add the persister to the builder, expecting no exceptions
+    builder.with_state_persister(persister)
