@@ -2249,13 +2249,14 @@ class ApplicationBuilder(Generic[StateType]):
         if on_every != "step":
             raise ValueError(f"on_every {on_every} not supported")
         
-        # Check if 'is_initialized' exists and whether it returns False, indicating the persister is uninitialized
-        if hasattr(persister, 'is_initialized'):
+        # Check if 'is_initialized' exists and is False; raise RuntimeError, else continue if not implemented
+        try:
             if not persister.is_initialized():
                 raise RuntimeError(
                     "RuntimeError: Uninitialized persister. Make sure to call .initialize() before passing it to the ApplicationBuilder"
                 )
-        # If the persister is valid and initialized, add it to lifecycle adapters
+        except NotImplementedError:
+             pass
         if not isinstance(persister, persistence.BaseStateSaver):
             self.lifecycle_adapters.append(persister)
         else:
