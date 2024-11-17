@@ -55,3 +55,15 @@ def test_is_initialized(postgresql_persister):
         table_name="testtable",
     )
     assert persister2.is_initialized()
+
+
+def test_is_initialized_false():
+    persister = PostgreSQLPersister.from_values(
+        db_name="postgres",
+        user="postgres",
+        password="postgres",
+        host="localhost",
+        port=5432,
+        table_name="testtable2",
+    )
+    assert not persister.is_initialized()
