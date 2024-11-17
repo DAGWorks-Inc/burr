@@ -41,3 +41,17 @@ def test_list_app_ids(postgresql_persister):
 def test_load_nonexistent_key(postgresql_persister):
     state_data = postgresql_persister.load("pk", "nonexistent_key")
     assert state_data is None
+
+
+def test_is_initialized(postgresql_persister):
+    """Tests that a new connection also returns True for is_initialized."""
+    assert postgresql_persister.is_initialized()
+    persister2 = PostgreSQLPersister.from_values(
+        db_name="postgres",
+        user="postgres",
+        password="postgres",
+        host="localhost",
+        port=5432,
+        table_name="testtable",
+    )
+    assert persister2.is_initialized()

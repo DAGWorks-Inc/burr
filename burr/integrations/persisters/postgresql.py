@@ -84,6 +84,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         self.table_name = table_name
         self.connection = connection
         self.serde_kwargs = serde_kwargs or {}
+        self._initialized = False
 
     def set_serde_kwargs(self, serde_kwargs: dict):
         """Sets the serde_kwargs for the persister."""
@@ -115,14 +116,26 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
     def initialize(self):
         """Creates the table"""
         self.create_table(self.table_name)
+        self._initialized = True
+
+    def is_initialized(self) -> bool:
+        """Returns .initialized() has been called"""
+        if self._initialized:
+            return True
+        cursor = self.connection.cursor()
+        cursor.execute(
+            "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = %s)",
+            (self.table_name,),
+        )
+        return cursor.fetchone()[0]
 
     def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
         """Lists the app_ids for a given partition_key."""
         cursor = self.connection.cursor()
         cursor.execute(
             f"SELECT DISTINCT app_id, created_at FROM {self.table_name} "
-            f"WHERE partition_key = %s "
-            f"ORDER BY created_at DESC",
+            "WHERE partition_key = %s "
+            "ORDER BY created_at DESC",
             (partition_key,),
         )
         app_ids = [row[0] for row in cursor.fetchall()]

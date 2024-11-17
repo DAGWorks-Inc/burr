@@ -35,6 +35,24 @@ def test_persistence_lists_app_ids(persistence):
     assert set(app_ids) == set(["app_id1", "app_id2"])
 
 
+def test_persistence_is_initialized_false(persistence):
+    assert not persistence.is_initialized()
+
+
+def test_persistence_is_initialized_true(persistence):
+    persistence.initialize()
+    assert persistence.is_initialized()
+
+
+def test_persistence_is_initialized_true_new_connection(tmp_path):
+    db_path = tmp_path / "test.db"
+    p = SQLLitePersister(db_path=db_path, table_name="test_table")
+    p.initialize()
+    assert p.is_initialized()
+    p2 = SQLLitePersister(db_path=db_path, table_name="test_table")
+    assert p2.is_initialized()
+
+
 @pytest.mark.parametrize(
     "method_name,kwargs",
     [

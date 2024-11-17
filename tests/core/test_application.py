@@ -41,7 +41,12 @@ from burr.core.application import (
     _validate_start,
 )
 from burr.core.graph import Graph, GraphBuilder, Transition
-from burr.core.persistence import BaseStatePersister, DevNullPersister, PersistedStateData
+from burr.core.persistence import (
+    BaseStatePersister,
+    DevNullPersister,
+    PersistedStateData,
+    SQLLitePersister,
+)
 from burr.core.typing import TypingSystem
 from burr.lifecycle import (
     PostRunStepHook,
@@ -3231,14 +3236,45 @@ def test_builder_captures_typing_system():
     assert isinstance(state.data, CounterState)
     assert state.data["count"] == 10
 
-# Define a mock persister that does not implement is_initialized
-class PersisterWithoutIsInitialized:
-    def initialize(self):
-        pass
 
-def test_with_state_persister_no_is_initialized_method():
+def test_with_state_persister_is_not_initialized_error(tmp_path):
     builder = ApplicationBuilder()
-    persister = PersisterWithoutIsInitialized()
+    persister = SQLLitePersister(db_path=":memory:", table_name="test_table")
 
+    with pytest.raises(RuntimeError):
+        # we have not initialized
+        builder.with_state_persister(persister)
+
+
+def test_with_state_persister_is_initialized_not_implemented():
+    builder = ApplicationBuilder()
+
+    class FakePersister(BaseStatePersister):
+        # does not implement is_initialized
+        def list_app_ids(self):
+            return []
+
+        def save(
+            self,
+            partition_key: Optional[str],
+            app_id: str,
+            sequence_id: int,
+            position: str,
+            state: State,
+            status: Literal["completed", "failed"],
+            **kwargs,
+        ):
+            pass
+
+        def load(
+            self,
+            partition_key: str,
+            app_id: Optional[str],
+            sequence_id: Optional[int] = None,
+            **kwargs,
+        ):
+            return None
+
+    persister = FakePersister()
     # Add the persister to the builder, expecting no exceptions
     builder.with_state_persister(persister)

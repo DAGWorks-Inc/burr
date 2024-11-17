@@ -2207,18 +2207,19 @@ class ApplicationBuilder(Generic[StateType]):
         """
         if on_every != "step":
             raise ValueError(f"on_every {on_every} not supported")
-        
-        # Check if 'is_initialized' exists and is False; raise RuntimeError, else continue if not implemented
-        try:
-            if not persister.is_initialized():
-                raise RuntimeError(
-                    "RuntimeError: Uninitialized persister. Make sure to call .initialize() before passing it to the ApplicationBuilder"
-                )
-        except NotImplementedError:
-             pass
+
         if not isinstance(persister, persistence.BaseStateSaver):
             self.lifecycle_adapters.append(persister)
         else:
+            # Check if 'is_initialized' exists and is False; raise RuntimeError, else continue if not implemented
+            try:
+                if not persister.is_initialized():
+                    raise RuntimeError(
+                        "RuntimeError: Uninitialized persister. Make sure to call .initialize() before passing it to "
+                        "the ApplicationBuilder."
+                    )
+            except NotImplementedError:
+                pass
             self.lifecycle_adapters.append(persistence.PersisterHook(persister))
         return self
 

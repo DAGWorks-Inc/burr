@@ -54,6 +54,10 @@ class BaseStateSaver(abc.ABC):
         """Initializes the app for saving, set up any databases, etc.. you want to here."""
         pass
 
+    def is_initialized(self) -> bool:
+        """Check if the persister has been initialized appropriately."""
+        raise NotImplementedError("Implement this method in your subclass if you need to.")
+
     @abc.abstractmethod
     def save(
         self,
@@ -87,12 +91,6 @@ class BaseStatePersister(BaseStateLoader, BaseStateSaver, metaclass=ABCMeta):
     """Utility interface for a state reader/writer. This both persists and initializes state.
     Extend this class if you want an easy way to implement custom state storage.
     """
-
-    def is_initialized(self) -> bool:
-        """Check if the persister has been initialized. Default behavior is False.
-        Persisters that require initialization can override this method.
-        """
-        return False
 
 
 class PersisterHook(PostRunStepHook):
@@ -200,8 +198,14 @@ class SQLLitePersister(BaseStatePersister):
         self._initialized = True
 
     def is_initialized(self) -> bool:
-        """Check if the persister is initialized."""
-        return self._initialized
+        """Check if persister is properly initialized."""
+        if self._initialized:
+            return True
+        cursor = self.connection.cursor()
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (self.table_name,)
+        )
+        return cursor.fetchone() is not None
 
     def list_app_ids(self, partition_key: Optional[str], **kwargs) -> list[str]:
         partition_key = (
