@@ -178,7 +178,8 @@ include = ["burr", "burr.*"]
 [tool.setuptools.package-data]
 burr = [
   "burr/tracking/server/build/**/*",
-  "burr/tracking/server/demo_data/**/*"
+  "burr/tracking/server/demo_data/**/*",
+  "py.typed",
 ]
 
 
