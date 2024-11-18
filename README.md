@@ -144,7 +144,7 @@ but realized that it has a wide array of applications and decided to release it 
 
 While Burr is stable and well-tested, we have quite a few tools/features on our roadmap!
 
-1. Parallelism -- support for recursive "sub-agents" through an ergonomic API (not: this is already feasible, see [recursive applications](http://localhost:8000/concepts/recursion/)).
+1. Parallelism -- support for recursive "sub-agents" through an ergonomic API (not: this is already feasible, see [recursive applications](https://burr.dagworks.io/recursion/)).
 2. Testing & eval curation. Curating data with annotations and being able to export these annotations to create unit & integration tests.
 3. Various efficiency/usability improvements for the core library (see [planned capabilities](https://burr.dagworks.io/concepts/planned-capabilities/) for more details). This includes:
    1. First-class support for retries + exception management

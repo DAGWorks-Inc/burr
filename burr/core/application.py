@@ -7,6 +7,7 @@ import inspect
 import logging
 import pprint
 import uuid
+from concurrent.futures import Executor, ThreadPoolExecutor
 from contextlib import AbstractContextManager
 from typing import (
     TYPE_CHECKING,
@@ -497,6 +498,7 @@ class ApplicationContext(AbstractContextManager):
     partition_key: Optional[str]
     sequence_id: Optional[int]
     tracker: Optional["TrackingClient"]
+    parallel_executor_factory: Callable[[], Executor]
 
     @staticmethod
     def get() -> Optional["ApplicationContext"]:
@@ -683,6 +685,10 @@ ApplicationStateType = TypeVar("ApplicationStateType")
 StreamResultType = TypeVar("StreamResultType", bound=Union[dict, Any])
 
 
+def _create_default_executor() -> Executor:
+    return ThreadPoolExecutor()
+
+
 class Application(Generic[ApplicationStateType]):
     def __init__(
         self,
@@ -697,6 +703,7 @@ class Application(Generic[ApplicationStateType]):
         fork_parent_pointer: Optional[burr_types.ParentPointer] = None,
         spawning_parent_pointer: Optional[burr_types.ParentPointer] = None,
         tracker: Optional["TrackingClient"] = None,
+        parallel_executor_factory: Optional[Executor] = None,
     ):
         """Instantiates an Application. This is an internal API -- use the builder!
 
@@ -731,6 +738,11 @@ class Application(Generic[ApplicationStateType]):
             self._set_sequence_id(sequence_id)
         self._builder = builder
         self._parent_pointer = fork_parent_pointer
+        self._parallel_executor_factory = (
+            parallel_executor_factory
+            if parallel_executor_factory is not None
+            else _create_default_executor
+        )
         self._dependency_factory = {
             "__tracer": functools.partial(
                 visibility.tracing.TracerFactory,
@@ -780,6 +792,7 @@ class Application(Generic[ApplicationStateType]):
             tracker=self._tracker,
             partition_key=self._partition_key,
             sequence_id=sequence_id,
+            parallel_executor_factory=self._parallel_executor_factory,
         )
 
     def _step(
@@ -862,7 +875,7 @@ class Application(Generic[ApplicationStateType]):
                 BASE_ERROR_MESSAGE
                 + f"Inputs starting with a double underscore ({starting_with_double_underscore}) "
                 f"are reserved for internal use/injected inputs."
-                "Please do not use keys"
+                "Please do not directly pass keys starting with a double underscore."
             )
         inputs = inputs.copy()
         processed_inputs = {}
@@ -1922,6 +1935,7 @@ class ApplicationBuilder(Generic[StateType]):
         self.graph_builder = None
         self.prebuilt_graph = None
         self.typing_system = None
+        self._parallel_executor_factory = None
 
     def with_identifiers(
         self, app_id: str = None, partition_key: str = None, sequence_id: int = None
@@ -2013,6 +2027,33 @@ class ApplicationBuilder(Generic[StateType]):
                 "cannot use the with_graph method along with that. Use `with_graph` or the other methods, not both"
             )
         self.prebuilt_graph = graph
+        return self
+
+    def with_parallel_executor(self, executor_factory: lambda: Executor):
+        """Assigns a default executor to be used for recursive/parallel sub-actions. This effectively allows
+        for executing multiple Burr apps in parallel. See https://burr.dagworks.io/pull/concepts/parallelism/
+        for more details.
+
+        This will default to a simple threadpool executor, meaning that you will be bound by the number of threads
+        your computer can handle. If you want to use a more advanced executor, you can pass it in here -- any subclass
+        of concurrent.futures.Executor will work.
+
+        If you specify executors for specific tasks, this will default to that.
+
+        Note that, if you are using asyncio, you cannot specify an executor. It will default to using
+        asyncio.gather with asyncio's event loop.
+
+        :param executor:
+        :return:
+        """
+        if self._parallel_executor_factory is not None:
+            raise ValueError(
+                BASE_ERROR_MESSAGE
+                + "You have already set an executor. You cannot set multiple executors. Current executor is:"
+                f"{self._parallel_executor_factory}"
+            )
+
+        self._parallel_executor_factory = executor_factory
         return self
 
     def _ensure_no_prebuilt_graph(self):
@@ -2375,4 +2416,5 @@ class ApplicationBuilder(Generic[StateType]):
                 if self.spawn_from_app_id is not None
                 else None
             ),
+            parallel_executor_factory=self._parallel_executor_factory,
         )

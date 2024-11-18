@@ -345,6 +345,7 @@ const LinkSubTable = (props: {
                 />
               </TableCell>
             )}
+            <TableCell colSpan={1} />
           </CommonTableRow>
         );
       })}
@@ -1437,13 +1438,16 @@ const ParentLink = (props: {
         </div>
       </TableCell>
       {!props.minimized && (
-        <TableCell colSpan={1} className="text-gray-500">
-          <Chip
-            label={'parent'}
-            chipType={props.type}
-            className="w-16 flex flex-row justify-center"
-          />
-        </TableCell>
+        <>
+          <TableCell colSpan={1} className="text-gray-500">
+            <Chip
+              label={'parent'}
+              chipType={props.type}
+              className="w-16 flex flex-row justify-center"
+            />
+          </TableCell>
+          <TableCell colSpan={1} />
+        </>
       )}
     </TableRow>
   );

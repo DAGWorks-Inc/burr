@@ -325,7 +325,7 @@ const ObservationsView = (props: { observations: AnnotationObservation[] }) => {
             className={`flex flex-col gap-1 ${i === observationsToShow.length - 1 ? '' : 'border-b-2'}  border-gray-100`}
           >
             <div className={`flex flex-row gap-2 max-w-full items-baseline `}>
-              {observation.thumbs_up_thumbs_down !== undefined && (
+              {observation.thumbs_up_thumbs_down !== null && (
                 <div className="translate-y-1">
                   <Icon className={iconColor} size={16} />
                 </div>

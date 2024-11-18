@@ -31,7 +31,6 @@ def _validate_actions(actions: Optional[List[Action]]):
 def _validate_transitions(
     transitions: Optional[List[Tuple[str, str, Condition]]], actions: Set[str]
 ):
-    assert_set(transitions, "_transitions", "with_transitions")
     exhausted = {}  # items for which we have seen a default transition
     for from_, to, condition in transitions:
         if from_ not in actions:
@@ -235,7 +234,7 @@ class GraphBuilder:
 
     def __init__(self):
         """Initializes the graph builder."""
-        self.transitions: Optional[List[Tuple[str, str, Condition]]] = None
+        self.transitions: Optional[List[Tuple[str, str, Condition]]] = []
         self.actions: Optional[List[Action]] = None
 
     def with_actions(
@@ -283,8 +282,6 @@ class GraphBuilder:
         :param transitions: Transitions to add
         :return: The application builder for future chaining.
         """
-        if self.transitions is None:
-            self.transitions = []
         for transition in transitions:
             from_, to_, *conditions = transition
             if len(conditions) > 0:
