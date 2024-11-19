@@ -211,7 +211,10 @@ class Action(Function, Reducer, abc.ABC):
         the source code of the class in which the action is implemented,
         but can be overwritten." Override if you want debugging/tracking
         to display a different source"""
-        return inspect.getsource(self.__class__)
+        try:
+            return inspect.getsource(self.__class__)
+        except Exception:
+            return "No source available"
 
     def input_schema(self) -> Any:
         """Returns the input schema for the action.
