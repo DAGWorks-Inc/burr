@@ -119,7 +119,10 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         self._initialized = True
 
     def is_initialized(self) -> bool:
-        """Returns .initialized() has been called"""
+        """This checks to see if the table has been created in the database or not.
+        It defaults to using the initialized field, else queries the database to see if the table exists.
+        It then sets the initialized field to True if the table exists.
+        """
         if self._initialized:
             return True
         cursor = self.connection.cursor()
@@ -127,7 +130,8 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
             "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = %s)",
             (self.table_name,),
         )
-        return cursor.fetchone()[0]
+        self._initialized = cursor.fetchone()[0]
+        return self._initialized
 
     def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
         """Lists the app_ids for a given partition_key."""
