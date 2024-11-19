@@ -25,6 +25,7 @@ FILTERLIST = [
     "templates",
     "deployment",
     "talks",
+    "parallelism",  # TODO - remove this shortly
 ]
 
 
