@@ -198,14 +198,18 @@ class SQLLitePersister(BaseStatePersister):
         self._initialized = True
 
     def is_initialized(self) -> bool:
-        """Check if persister is properly initialized."""
+        """This checks to see if the table has been created in the database or not.
+        It defaults to using the initialized field, else queries the database to see if the table exists.
+        It then sets the initialized field to True if the table exists.
+        """
         if self._initialized:
             return True
         cursor = self.connection.cursor()
         cursor.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (self.table_name,)
         )
-        return cursor.fetchone() is not None
+        self._initialized = cursor.fetchone() is not None
+        return self._initialized
 
     def list_app_ids(self, partition_key: Optional[str], **kwargs) -> list[str]:
         partition_key = (
