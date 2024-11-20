@@ -3,7 +3,9 @@ import os
 import subprocess
 
 from IPython.core.magic import Magics, line_magic, magics_class
+from IPython.core.magic_arguments import argument, magic_arguments, parse_argstring
 from IPython.core.shellapp import InteractiveShellApp
+from IPython.display import IFrame, display
 
 
 class NotebookEnvironment(enum.Enum):
@@ -115,15 +117,35 @@ class NotebookMagics(Magics):
         self.process = None
         self.url = None
 
+    @magic_arguments()
+    @argument(
+        "--height", "-h",
+        default=400,
+        type=int,
+        help="Height of the Burr UI iframe specified as a number of pixels",
+    )
+    @argument(
+        "--no-iframe",
+        action="store_true",
+        help="Passing this flag prints the URL of the launched Burr UI instead of displaying an iframe."
+    )
     @line_magic
     def burr_ui(self, line):
         """Launch the Burr UI from a notebook cell"""
-        if self.process is not None:
-            print(f"Burr UI already running at {self.url}")
-            return
+        args = parse_argstring(self.burr_ui, line)
 
-        self.process, self.url = launch_ui(self.notebook_env)
-        print(f"Burr UI: {self.url}")
+        if self.process is None:
+            self.process, self.url = launch_ui(self.notebook_env)
+        else:
+            # if .poll() is not None, then subprocess exited. Try launching the server again
+            # TODO investigate `.returncode` for better failure/retry handling
+            if self.process.poll() is not None:
+                self.process, self.url = launch_ui(self.notebook_env)
+
+        if args.no_iframe is True:
+            print(f"Burr UI: {self.url}")
+        else:
+            display(IFrame(self.url, width="100%", height=args.height))
 
 
 def load_ipython_extension(ipython: InteractiveShellApp):
