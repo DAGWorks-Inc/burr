@@ -23,7 +23,7 @@ def html_content(blog_post_url: str) -> str:
 
 
 def parsed_text(html_content: str) -> str:
-    soup = BeautifulSoup(html_content)
+    soup = BeautifulSoup(html_content, "html.parser")
     return soup.get_text(separator=" ", strip=True)
 
 
