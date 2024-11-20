@@ -17,9 +17,6 @@ class NotebookEnvironment(enum.Enum):
 
 
 def identify_notebook_environment(ipython: InteractiveShellApp) -> NotebookEnvironment:
-    if "IPKernelApp" in ipython.config:
-        return NotebookEnvironment.JUPYTER
-
     if os.environ.get("VSCODE_PID"):
         return NotebookEnvironment.VSCODE
 
@@ -45,6 +42,10 @@ def identify_notebook_environment(ipython: InteractiveShellApp) -> NotebookEnvir
         return NotebookEnvironment.KAGGLE
     except ModuleNotFoundError:
         pass
+
+    # this is the base case. IPKernelApp should always be available
+    if "IPKernelApp" in ipython.config:
+        return NotebookEnvironment.JUPYTER
 
     raise RuntimeError(
         f"Unknown notebook environment. Known environments: {list(NotebookEnvironment)}"
