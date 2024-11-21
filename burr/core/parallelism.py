@@ -312,7 +312,7 @@ class MapActionsAndStates(TaskBasedParallelAction):
                     query_llm.bind(model="gpt-4").with_name("gpt_4_answer"),
                     query_llm.bind(model="o1").with_name("o1_answer"),
                     query_llm.bind(model="claude").with_name("claude_answer"),
-                ]
+                ]:
                     yield action
 
             def states(self, state: State) -> Generator[State, None, None]:
@@ -335,10 +335,12 @@ class MapActionsAndStates(TaskBasedParallelAction):
                     )
                 return state.update(all_llm_outputs=all_llm_outputs)
 
-            def reads() -> List[str]:
+            @property
+            def reads(self) -> list[str]:
                 return ["prompts"]
 
-            def writes() -> List[str]:
+            @property
+            def writes(self) -> list[str]:
                 return ["all_llm_outputs"]
 
     """
@@ -433,7 +435,7 @@ class MapActions(MapActionsAndStates, abc.ABC):
                     query_llm.bind(model="gpt-4").with_name("gpt_4_answer"),
                     query_llm.bind(model="o1").with_name("o1_answer"),
                     query_llm.bind(model="claude").with_name("claude_answer"),
-                ]
+                ]:
                     yield action
 
             def state(self, state: State) -> State:
@@ -445,10 +447,12 @@ class MapActions(MapActionsAndStates, abc.ABC):
                     all_llm_outputs.append(state["llm_output"])
                 return state.update(all_llm_outputs=all_llm_outputs)
 
-            def reads() -> List[str]:
+            @property
+            def reads(self) -> List[str]:
                 return ["prompt"] # we're just running this on a single prompt, for multiple actions
 
-            def writes() -> List[str]:
+            @property
+            def writes(self) -> List[str]:
                 return ["all_llm_outputs"]
 
     """
@@ -542,10 +546,12 @@ class MapStates(MapActionsAndStates, abc.ABC):
                     all_llm_outputs.append(state["llm_output"])
                 return state.update(all_llm_outputs=all_llm_outputs)
 
-            def reads() -> List[str]:
+            @property
+            def reads(self) -> List[str]:
                 return ["prompts"]
 
-            def writes() -> List[str]:
+            @property
+            def writes(self) -> List[str]:
                 return ["all_llm_outputs"]
     """
 
