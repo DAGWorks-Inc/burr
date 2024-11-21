@@ -105,3 +105,10 @@ This will print the URL to access the Burr UI web app.
     %burr_ui
 
     "Burr UI: http://127.0.0.1:7241"
+
+.. code-block:: python
+
+    # But you need to expose the port to the browser:
+    from google.colab import output
+    output.serve_kernel_port_as_window(7241) # this will open a new window
+    output.serve_kernel_port_as_iframe(7241) # this will inline in an iframe
