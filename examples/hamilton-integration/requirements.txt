@@ -1,0 +1,9 @@
+burr[start,opentelemetry]
+lancedb
+openai
+opentelemetry-instrumentation-lancedb
+opentelemetry-instrumentation-openai
+pyarrow
+pydantic
+requests
+sf-hamilton[visualization]
