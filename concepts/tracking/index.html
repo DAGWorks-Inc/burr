@@ -458,6 +458,12 @@ This will print the URL to access the Burr UI web app.</p>
 <span class="s2">&quot;Burr UI: http://127.0.0.1:7241&quot;</span>
 </pre></div>
 </div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># But you need to expose the port to the browser:</span>
+<span class="kn">from</span> <span class="nn">google.colab</span> <span class="kn">import</span> <span class="n">output</span>
+<span class="n">output</span><span class="o">.</span><span class="n">serve_kernel_port_as_window</span><span class="p">(</span><span class="mi">7241</span><span class="p">)</span> <span class="c1"># this will open a new window</span>
+<span class="n">output</span><span class="o">.</span><span class="n">serve_kernel_port_as_iframe</span><span class="p">(</span><span class="mi">7241</span><span class="p">)</span> <span class="c1"># this will inline in an iframe</span>
+</pre></div>
+</div>
 </section>
 </section>
 </section>
