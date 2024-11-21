@@ -120,7 +120,8 @@ class NotebookMagics(Magics):
 
     @magic_arguments()
     @argument(
-        "--height", "-h",
+        "--height",
+        "-h",
         default=400,
         type=int,
         help="Height of the Burr UI iframe specified as a number of pixels",
@@ -128,7 +129,7 @@ class NotebookMagics(Magics):
     @argument(
         "--no-iframe",
         action="store_true",
-        help="Passing this flag prints the URL of the launched Burr UI instead of displaying an iframe."
+        help="Passing this flag prints the URL of the launched Burr UI instead of displaying an iframe.",
     )
     @line_magic
     def burr_ui(self, line):
