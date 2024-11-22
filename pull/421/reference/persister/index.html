@@ -390,6 +390,12 @@ Extend this class if you want an easy way to implement custom state storage.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStatePersister.is_initialized">
+<span class="sig-name descname"><span class="pre">is_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#burr.core.persistence.BaseStatePersister.is_initialized" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the persister has been initialized appropriately.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="burr.core.persistence.BaseStatePersister.list_app_ids">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.persistence.BaseStatePersister.list_app_ids" title="Link to this definition">¶</a></dt>
 <dd><p>Returns list of app IDs for a given primary key</p>
@@ -529,6 +535,12 @@ database for your application.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStateSaver.is_initialized">
+<span class="sig-name descname"><span class="pre">is_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#burr.core.persistence.BaseStateSaver.is_initialized" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the persister has been initialized appropriately.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="burr.core.persistence.BaseStateSaver.save">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
 
@@ -617,6 +629,14 @@ Use check_same_thread=False to enable use ina  multithreaded context</p></li>
 <dt class="sig sig-object py" id="burr.core.persistence.SQLLitePersister.initialize">
 <span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.SQLLitePersister.initialize" title="Link to this definition">¶</a></dt>
 <dd><p>Creates the table if it doesn’t exist</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.SQLLitePersister.is_initialized">
+<span class="sig-name descname"><span class="pre">is_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#burr.core.persistence.SQLLitePersister.is_initialized" title="Link to this definition">¶</a></dt>
+<dd><p>This checks to see if the table has been created in the database or not.
+It defaults to using the initialized field, else queries the database to see if the table exists.
+It then sets the initialized field to True if the table exists.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -776,6 +796,14 @@ before the action was applied.</p></li>
 <dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.initialize">
 <span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.initialize" title="Link to this definition">¶</a></dt>
 <dd><p>Creates the table</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.is_initialized">
+<span class="sig-name descname"><span class="pre">is_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.is_initialized" title="Link to this definition">¶</a></dt>
+<dd><p>This checks to see if the table has been created in the database or not.
+It defaults to using the initialized field, else queries the database to see if the table exists.
+It then sets the initialized field to True if the table exists.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1134,6 +1162,7 @@ although it uses different mechanisms to save state (as it tracks more than just
 <li><a class="reference internal" href="#burr.core.persistence.BaseStatePersister"><code class="docutils literal notranslate"><span class="pre">BaseStatePersister</span></code></a><ul>
 <li><a class="reference internal" href="#burr.core.persistence.BaseStatePersister.__init__"><code class="docutils literal notranslate"><span class="pre">BaseStatePersister.__init__()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.BaseStatePersister.initialize"><code class="docutils literal notranslate"><span class="pre">BaseStatePersister.initialize()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStatePersister.is_initialized"><code class="docutils literal notranslate"><span class="pre">BaseStatePersister.is_initialized()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.BaseStatePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">BaseStatePersister.list_app_ids()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.BaseStatePersister.load"><code class="docutils literal notranslate"><span class="pre">BaseStatePersister.load()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.BaseStatePersister.save"><code class="docutils literal notranslate"><span class="pre">BaseStatePersister.save()</span></code></a></li>
@@ -1148,6 +1177,7 @@ although it uses different mechanisms to save state (as it tracks more than just
 <li><a class="reference internal" href="#burr.core.persistence.BaseStateSaver"><code class="docutils literal notranslate"><span class="pre">BaseStateSaver</span></code></a><ul>
 <li><a class="reference internal" href="#burr.core.persistence.BaseStateSaver.__init__"><code class="docutils literal notranslate"><span class="pre">BaseStateSaver.__init__()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.BaseStateSaver.initialize"><code class="docutils literal notranslate"><span class="pre">BaseStateSaver.initialize()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStateSaver.is_initialized"><code class="docutils literal notranslate"><span class="pre">BaseStateSaver.is_initialized()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.BaseStateSaver.save"><code class="docutils literal notranslate"><span class="pre">BaseStateSaver.save()</span></code></a></li>
 </ul>
 </li>
@@ -1156,6 +1186,7 @@ although it uses different mechanisms to save state (as it tracks more than just
 <li><a class="reference internal" href="#burr.core.persistence.SQLLitePersister.__init__"><code class="docutils literal notranslate"><span class="pre">SQLLitePersister.__init__()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.SQLLitePersister.create_table_if_not_exists"><code class="docutils literal notranslate"><span class="pre">SQLLitePersister.create_table_if_not_exists()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.SQLLitePersister.initialize"><code class="docutils literal notranslate"><span class="pre">SQLLitePersister.initialize()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.SQLLitePersister.is_initialized"><code class="docutils literal notranslate"><span class="pre">SQLLitePersister.is_initialized()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.SQLLitePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">SQLLitePersister.list_app_ids()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.SQLLitePersister.load"><code class="docutils literal notranslate"><span class="pre">SQLLitePersister.load()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.SQLLitePersister.save"><code class="docutils literal notranslate"><span class="pre">SQLLitePersister.save()</span></code></a></li>
@@ -1167,6 +1198,7 @@ although it uses different mechanisms to save state (as it tracks more than just
 <li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.from_config"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.from_config()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.from_values"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.from_values()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.initialize"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.initialize()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.is_initialized"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.is_initialized()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.list_app_ids()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.load"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.load()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.save"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.save()</span></code></a></li>
