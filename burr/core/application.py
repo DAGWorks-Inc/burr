@@ -487,18 +487,24 @@ class ApplicationGraph(Graph):
 
 
 @dataclasses.dataclass
-class ApplicationContext(AbstractContextManager):
+class ApplicationIdentifiers:
+    app_id: str
+    partition_key: Optional[str]
+    sequence_id: Optional[int]
+
+
+@dataclasses.dataclass
+class ApplicationContext(AbstractContextManager, ApplicationIdentifiers):
     """Application context. This is anything your node might need to know about the application.
     Often used for recursive tracking.
 
     Note this is also a context manager (allowing you to pass context to sub-applications).
     """
 
-    app_id: str
-    partition_key: Optional[str]
-    sequence_id: Optional[int]
     tracker: Optional["TrackingClient"]
     parallel_executor_factory: Callable[[], Executor]
+    state_initializer: Optional[BaseStateLoader]
+    state_persister: Optional[BaseStateSaver]
 
     @staticmethod
     def get() -> Optional["ApplicationContext"]:
@@ -704,6 +710,8 @@ class Application(Generic[ApplicationStateType]):
         spawning_parent_pointer: Optional[burr_types.ParentPointer] = None,
         tracker: Optional["TrackingClient"] = None,
         parallel_executor_factory: Optional[Executor] = None,
+        state_persister: Union[BaseStateSaver, LifecycleAdapter, None] = None,
+        state_initializer: Union[BaseStateLoader, LifecycleAdapter, None] = None,
     ):
         """Instantiates an Application. This is an internal API -- use the builder!
 
@@ -753,6 +761,8 @@ class Application(Generic[ApplicationStateType]):
             "__context": self._context_factory,
         }
         self._spawning_parent_pointer = spawning_parent_pointer
+        self._state_initializer = state_initializer
+        self._state_persister = state_persister
         self._adapter_set.call_all_lifecycle_hooks_sync(
             "post_application_create",
             state=self._state,
@@ -793,6 +803,8 @@ class Application(Generic[ApplicationStateType]):
             partition_key=self._partition_key,
             sequence_id=sequence_id,
             parallel_executor_factory=self._parallel_executor_factory,
+            state_initializer=self._state_initializer,
+            state_persister=self._state_persister,
         )
 
     def _step(
@@ -1923,7 +1935,7 @@ class ApplicationBuilder(Generic[StateType]):
         self.app_id: str = str(uuid.uuid4())
         self.partition_key: Optional[str] = None
         self.sequence_id: Optional[int] = None
-        self.initializer = None
+        self.state_initializer = None
         self.use_entrypoint_from_save_state: Optional[bool] = None
         self.default_state: Optional[dict] = None
         self.fork_from_app_id: Optional[str] = None
@@ -1937,7 +1949,8 @@ class ApplicationBuilder(Generic[StateType]):
         self.graph_builder = None
         self.prebuilt_graph = None
         self.typing_system = None
-        self._parallel_executor_factory = None
+        self.parallel_executor_factory = None
+        self.state_persister = None
 
     def with_identifiers(
         self, app_id: str = None, partition_key: str = None, sequence_id: int = None
@@ -1982,7 +1995,7 @@ class ApplicationBuilder(Generic[StateType]):
         :param kwargs: Key-value pairs to set in the state
         :return: The application builder for future chaining.
         """
-        if self.initializer is not None:
+        if self.state_initializer is not None:
             raise ValueError(
                 BASE_ERROR_MESSAGE + "You cannot set state if you are loading state"
                 "the .initialize_from() API. Either allow the persister to set the "
@@ -2048,14 +2061,14 @@ class ApplicationBuilder(Generic[StateType]):
         :param executor:
         :return:
         """
-        if self._parallel_executor_factory is not None:
+        if self.parallel_executor_factory is not None:
             raise ValueError(
                 BASE_ERROR_MESSAGE
                 + "You have already set an executor. You cannot set multiple executors. Current executor is:"
-                f"{self._parallel_executor_factory}"
+                f"{self.parallel_executor_factory}"
             )
 
-        self._parallel_executor_factory = executor_factory
+        self.parallel_executor_factory = executor_factory
         return self
 
     def _ensure_no_prebuilt_graph(self):
@@ -2224,7 +2237,7 @@ class ApplicationBuilder(Generic[StateType]):
                 + "If you set fork_from_partition_key or fork_from_sequence_id, you must also set fork_from_app_id. "
                 "See .initialize_from() documentation."
             )
-        self.initializer = initializer
+        self.state_initializer = initializer
         self.resume_at_next_action = resume_at_next_action
         self.default_state = default_state
         self.start = default_entrypoint
@@ -2264,6 +2277,7 @@ class ApplicationBuilder(Generic[StateType]):
             except NotImplementedError:
                 pass
             self.lifecycle_adapters.append(persistence.PersisterHook(persister))
+        self.state_persister = persister  # track for later
         return self
 
     def with_spawning_parent(
@@ -2312,11 +2326,11 @@ class ApplicationBuilder(Generic[StateType]):
             _app_id = self.app_id
             _sequence_id = self.sequence_id
         # load state from persister
-        load_result = self.initializer.load(_partition_key, _app_id, _sequence_id)
+        load_result = self.state_initializer.load(_partition_key, _app_id, _sequence_id)
         if load_result is None:
             if self.fork_from_app_id is not None:
                 logger.warning(
-                    f"{self.initializer.__class__.__name__} returned None while trying to fork from: "
+                    f"{self.state_initializer.__class__.__name__} returned None while trying to fork from: "
                     f"partition_key:{_partition_key}, app_id:{_app_id}, "
                     f"sequence_id:{_sequence_id}. "
                     "You explicitly requested to fork from a prior application run, but it does not exist. "
@@ -2330,7 +2344,7 @@ class ApplicationBuilder(Generic[StateType]):
             if load_result["state"] is None:
                 raise ValueError(
                     BASE_ERROR_MESSAGE
-                    + f"Error: {self.initializer.__class__.__name__} returned {load_result} for "
+                    + f"Error: {self.state_initializer.__class__.__name__} returned {load_result} for "
                     f"partition_key:{_partition_key}, app_id:{_app_id}, "
                     f"sequence_id:{_sequence_id}, "
                     "but value for state was None! This is not allowed. Please return just None in this case, "
@@ -2381,7 +2395,7 @@ class ApplicationBuilder(Generic[StateType]):
         _validate_app_id(self.app_id)
         if self.state is None:
             self.state = State()
-        if self.initializer:
+        if self.state_initializer:
             # sets state, sequence_id, and maybe start
             self._load_from_persister()
         graph = self._get_built_graph()
@@ -2418,5 +2432,7 @@ class ApplicationBuilder(Generic[StateType]):
                 if self.spawn_from_app_id is not None
                 else None
             ),
-            parallel_executor_factory=self._parallel_executor_factory,
+            parallel_executor_factory=self.parallel_executor_factory,
+            state_persister=self.state_persister,
+            state_initializer=self.state_initializer,
         )

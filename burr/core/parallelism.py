@@ -1,12 +1,31 @@
 import abc
 import asyncio
 import dataclasses
+import hashlib
 import inspect
-from typing import Any, AsyncGenerator, Callable, Dict, Generator, List, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    AsyncGenerator,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
+from burr.common import async_utils
+from burr.common.async_utils import SyncOrAsyncGenerator, SyncOrAsyncGeneratorOrItemOrList
 from burr.core import Action, Application, ApplicationBuilder, ApplicationContext, Graph, State
 from burr.core.action import SingleStepAction
+from burr.core.application import ApplicationIdentifiers
 from burr.core.graph import GraphBuilder
+from burr.core.persistence import BaseStateLoader, BaseStateSaver
+from burr.lifecycle import LifecycleAdapter
+from burr.tracking.base import TrackingClient
 
 SubgraphType = Union[Action, Callable, "RunnableGraph"]
 
@@ -42,6 +61,13 @@ class RunnableGraph:
         return RunnableGraph(graph=graph, entrypoint=action.name, halt_after=[action.name])
 
 
+TrackerBehavior = Union[Literal["cascade"], None, TrackingClient]
+StatePersisterBehavior = Union[Literal["cascade"], BaseStateSaver, LifecycleAdapter, None]
+StateInitializerBehavior = Union[Literal["cascade"], BaseStateLoader, LifecycleAdapter, None]
+
+AdapterType = TypeVar("AdapterType", bound=Union[BaseStateSaver, BaseStateLoader, LifecycleAdapter])
+
+
 @dataclasses.dataclass
 class SubGraphTask:
     """Task to run a subgraph. Has runtime-spefici information, like inputs, state, and
@@ -53,26 +79,47 @@ class SubGraphTask:
     inputs: Dict[str, Any]
     state: State
     application_id: str
+    # The following require you to specify a tracking client, base state saver, etc...
+    tracker: Optional[TrackingClient] = None
+    state_persister: Optional[BaseStateSaver] = None
+    state_initializer: Optional[BaseStateLoader] = None
 
-    def _create_app(self, parent_context: ApplicationContext) -> Application:
-        return (
+    def _create_app(self, parent_context: ApplicationIdentifiers) -> Application:
+        builder = (
             ApplicationBuilder()
             .with_graph(self.graph.graph)
-            .with_entrypoint(self.graph.entrypoint)
-            .with_state(self.state)
             .with_spawning_parent(
                 app_id=parent_context.app_id,
                 sequence_id=parent_context.sequence_id,
                 partition_key=parent_context.partition_key,
             )
-            .with_tracker(parent_context.tracker.copy())  # We have to copy
             # TODO -- handle persistence...
             .with_identifiers(
                 app_id=self.application_id,
                 partition_key=parent_context.partition_key,  # cascade the partition key
             )
-            .build()
         )
+        if self.tracker is not None:
+            builder = builder.with_tracker(self.tracker)  # TODO -- move this into the adapter
+        # In this case we want to persist the state for the app
+        if self.state_persister is not None:
+            builder = builder.with_state_persister(self.state_persister)
+        # In this case we want to initialize from it
+        # We're going to use default settings (initialize from the latest
+        # TODO -- consider if there's a case in which we want to initialize
+        # in a custom manner
+        # if state_initializer is not None and self.cascade_state_initializer:
+        if self.state_initializer is not None:
+            builder = builder.initialize_from(
+                self.state_initializer,
+                default_state=self.state.get_all(),  # TODO _- ensure that any hidden variables aren't used...
+                default_entrypoint=self.graph.entrypoint,
+                resume_at_next_action=True,
+            )
+        else:
+            builder = builder.with_entrypoint(self.graph.entrypoint).with_state(self.state)
+
+        return builder.build()
 
     def run(
         self,
@@ -99,11 +146,11 @@ def _stable_app_id_hash(app_id: str, child_key: str) -> str:
     """Gives a stable hash for an application. Given the parent app_id and a child key,
     this will give a hash that will be stable across runs.
 
-    :param app_id:
-    :param additional_key:
-    :return:
+    :param app_id: Parent application ID
+    :param child_key: Child key to hash
+    :return: Stable hash of the parent app_id and child key
     """
-    ...
+    return hashlib.sha256(f"{app_id}:{child_key}".encode()).hexdigest()
 
 
 class TaskBasedParallelAction(SingleStepAction):
@@ -163,6 +210,12 @@ class TaskBasedParallelAction(SingleStepAction):
                         }
                     )
                 return state.update(all_llm_outputs=all_llm_outputs)
+
+    Note that it can be synchronous *or* asynchronous. Synchronous implementations will use the standard/
+    supplied executor. Asynchronous implementations will use asyncio.gather. Note that, while asynchronous
+    implementations may implement the tasks as either synchronous or asynchronous generators, synchronous implementations
+    can only use synchronous generators. Furthermore, with asynchronous implementations, the generator for reduce
+    will be asynchronous as well (regardless of whether your task functions are asynchronous).
     """
 
     def __init__(self):
@@ -208,15 +261,12 @@ class TaskBasedParallelAction(SingleStepAction):
             )
             task_generator = self.tasks(state_without_internals, context, run_kwargs)
 
-            # TODO -- run in parallel
             async def state_generator():
                 """This makes it easier on the user -- if they don't have an async generator we can still exhause it
                 This way we run through all of the task generators. These correspond to the task generation capabilities above (the map*/task generation stuff)
                 """
-                if inspect.isasyncgen(task_generator):
-                    coroutines = [task.arun(context) async for task in task_generator]
-                else:
-                    coroutines = [task.arun(context) for task in task_generator]
+                all_tasks = await async_utils.arealize(task_generator)
+                coroutines = [item.arun(context) for item in all_tasks]
                 results = await asyncio.gather(*coroutines)
                 # TODO -- yield in order...
                 for result in results:
@@ -248,7 +298,7 @@ class TaskBasedParallelAction(SingleStepAction):
     @abc.abstractmethod
     def tasks(
         self, state: State, context: ApplicationContext, inputs: Dict[str, Any]
-    ) -> Generator[SubGraphTask, None, None]:
+    ) -> SyncOrAsyncGenerator[SubGraphTask]:
         """Creates all tasks that this action will run, given the state/inputs.
         This produces a generator of SubGraphTasks that will be run in parallel.
 
@@ -259,7 +309,7 @@ class TaskBasedParallelAction(SingleStepAction):
         pass
 
     @abc.abstractmethod
-    def reduce(self, state: State, states: Generator[State, None, None]) -> State:
+    def reduce(self, state: State, states: SyncOrAsyncGenerator[State]) -> State:
         """Reduces the states from the tasks into a single state.
 
         :param states: State outputs from the subtasks
@@ -276,6 +326,31 @@ class TaskBasedParallelAction(SingleStepAction):
     @abc.abstractmethod
     def reads(self) -> list[str]:
         pass
+
+
+def _cascade_adapter(
+    behavior: Union[Literal["cascade"], AdapterType, None],
+    adapter: Union[AdapterType, None],
+) -> Union[AdapterType, None]:
+    """Cascades the desired adapter given the specified behavior (cascade, None, or an adapter).
+    If shared_instance is specified (non-null) as well as `cascade`, then the shared instance will be used,
+    *if* it is the same instance as the specified adapter.
+
+    This allows us to ensure that sharing, say, persisters will result in the same
+
+    :param behavior:
+    :param adapter:
+    :param copy_from:
+    :return:
+    """
+    if behavior is None:
+        return None
+    # TODO -- consider checking this in a cleaner way
+    elif behavior == "cascade":
+        if hasattr(adapter, "copy"):
+            adapter = adapter.copy()
+        return adapter
+    return behavior
 
 
 class MapActionsAndStates(TaskBasedParallelAction):
@@ -348,7 +423,7 @@ class MapActionsAndStates(TaskBasedParallelAction):
     @abc.abstractmethod
     def actions(
         self, state: State, context: ApplicationContext, inputs: Dict[str, Any]
-    ) -> Generator[SubgraphType, None, None]:
+    ) -> SyncOrAsyncGenerator[SubgraphType]:
         """Yields actions to run in parallel. These will be merged with the states as a cartesian product.
 
         :param state: Input state at the time of running the "parent" action.
@@ -360,7 +435,7 @@ class MapActionsAndStates(TaskBasedParallelAction):
     @abc.abstractmethod
     def states(
         self, state: State, context: ApplicationContext, inputs: Dict[str, Any]
-    ) -> Generator[State, None, None]:
+    ) -> SyncOrAsyncGenerator[State]:
         """Yields states to run in parallel. These will be merged with the actions as a cartesian product.
 
         :param state: Input state at the time of running the "parent" action.
@@ -372,7 +447,7 @@ class MapActionsAndStates(TaskBasedParallelAction):
 
     def tasks(
         self, state: State, context: ApplicationContext, inputs: Dict[str, Any]
-    ) -> Generator[SubGraphTask, None, None]:
+    ) -> SyncOrAsyncGenerator[SubGraphTask]:
         """Takes the cartesian product of actions and states, creating tasks for each.
 
         :param state: Input state at the time of running the "parent" action.
@@ -380,16 +455,53 @@ class MapActionsAndStates(TaskBasedParallelAction):
         :param inputs: Runtime Inputs to the action
         :return: Generator of tasks to run
         """
-        for i, action in enumerate(self.actions(state, context, inputs)):
-            for j, state in enumerate(self.states(state, context, inputs)):
-                key = f"{i}-{j}"  # this is a stable hash for now but will not handle caching
-                # TODO -- allow for custom hashes that will indicate stability (user is responsible)
-                yield SubGraphTask(
-                    graph=RunnableGraph.create(action),
-                    inputs=inputs,
-                    state=state,
-                    application_id=_stable_app_id_hash(context.app_id, key),
-                )
+
+        def _create_task(key: str, action: Action, substate: State) -> SubGraphTask:
+            tracker = _cascade_adapter(self.tracker(), context.tracker)
+            state_initializer_behavior = self.state_initializer()
+            state_initializer = _cascade_adapter(
+                self.state_initializer(), context.state_initializer
+            )
+            state_persister_behavior = self.state_persister()
+            # In this case we want to ensure they share the same instance as they do in the parent
+            # This enables us to mirror expected behavior, and is the standard case
+            # Specifically, that the persister is the same as the initializer
+            if (
+                state_initializer_behavior == "cascade"
+                and state_persister_behavior == "cascade"
+                and context.state_persister is context.state_initializer
+            ):
+                state_persister = state_initializer
+            # In the case that they are not the same, we want to cascade the persister separately
+            else:
+                state_persister = _cascade_adapter(self.state_persister(), context.state_persister)
+            return SubGraphTask(
+                graph=RunnableGraph.create(action),
+                inputs=inputs,
+                state=substate,
+                application_id=_stable_app_id_hash(context.app_id, key),
+                tracker=tracker,
+                state_persister=state_persister,
+                state_initializer=state_initializer,
+            )
+
+        def _tasks() -> Generator[SubGraphTask, None, None]:
+            for i, action in enumerate(self.actions(state, context, inputs)):
+                for j, substate in enumerate(self.states(state, context, inputs)):
+                    key = f"{i}-{j}"  # this is a stable hash for now but will not handle caching
+                    yield _create_task(key, action, substate)
+
+        async def _atasks() -> AsyncGenerator[SubGraphTask, None]:
+            action_generator = async_utils.asyncify_generator(self.actions(state, context, inputs))
+            state_generator = async_utils.asyncify_generator(self.states(state, context, inputs))
+            actions = await async_utils.arealize(action_generator)
+            states = await async_utils.arealize(state_generator)
+            for i, action in enumerate(actions):
+                for j, substate in enumerate(states):
+                    key = f"{i}-{j}"
+                    yield _create_task(key, action, substate)
+
+        return _atasks() if self.is_async() else _tasks()
 
     @abc.abstractmethod
     def reduce(self, state: State, states: Generator[State, None, None]) -> State:
@@ -399,6 +511,53 @@ class MapActionsAndStates(TaskBasedParallelAction):
         :return: Reduced state
         """
         pass
+
+    def state_persister(self, **kwargs) -> StatePersisterBehavior:
+        """Persister for the action -- what persister does the sub-application use?
+
+        This can either be:
+        - "cascade": inherit from parent
+        - None: don't use a persister
+        - Object: use the specified persister
+
+        Note this is global -- if you want to override it on a per-subgraph basis, you'll need to use the task-level API.
+
+        :param kwargs: Additional arguments, reserverd for later
+        :return: The specified behavior.
+        """
+        return "cascade"
+
+    def state_initializer(self, **kwargs) -> StateInitializerBehavior:
+        """State initializer for the action -- what initializer does the sub-application use?
+
+        This can either be:
+        - "cascade": inherit from parent
+        - None: don't use an initializer
+        - Object: use the specified initializer
+
+        Note this is global -- if you want to override it on a per-subgraph basis, you'll need to use the task-level API.
+
+        :param kwargs: Additional arguments, reserverd for later
+
+        :return: the specified behavior
+        """
+        return "cascade"
+
+    def tracker(self, **kwargs) -> TrackerBehavior:
+        """Tracker for the action -- what tracker does the sub-application use?
+
+        This can either be:
+        - "cascade": inherit from parent
+        - None: don't use a tracker
+        - Object: use the specified tracker
+
+        Note this is global -- if you want to override it on a per-subgraph basis, you'll need to use the task-level API.
+
+
+        :param kwargs: Additional arguments, reserverd for later
+        :return: the specified behavior
+        """
+        return "cascade"
 
 
 class MapActions(MapActionsAndStates, abc.ABC):
@@ -460,7 +619,7 @@ class MapActions(MapActionsAndStates, abc.ABC):
     @abc.abstractmethod
     def actions(
         self, state: State, inputs: Dict[str, Any], context: ApplicationContext
-    ) -> Generator[SubgraphType, None, None]:
+    ) -> SyncOrAsyncGenerator[SubgraphType]:
         """Gives all actions to map over, given the state/inputs.
 
         :param state: State at the time of running the action
@@ -486,7 +645,7 @@ class MapActions(MapActionsAndStates, abc.ABC):
         yield self.state(state, inputs)
 
     @abc.abstractmethod
-    def reduce(self, state: State, states: Generator[State, None, None]) -> State:
+    def reduce(self, state: State, states: SyncOrAsyncGenerator[State]) -> State:
         """Reduces the task's results into a single state. Runs through all outputs
         and combines them together, to form the final state for the action.
 
@@ -558,7 +717,7 @@ class MapStates(MapActionsAndStates, abc.ABC):
     @abc.abstractmethod
     def states(
         self, state: State, context: ApplicationContext, inputs: Dict[str, Any]
-    ) -> Generator[State, None, None]:
+    ) -> SyncOrAsyncGenerator[State]:
         """Generates all states to map over, given the state and inputs.
         Each state will be an update to the input state.
 
@@ -593,26 +752,19 @@ class MapStates(MapActionsAndStates, abc.ABC):
 
     def actions(
         self, state: State, context: ApplicationContext, inputs: Dict[str, Any]
-    ) -> Generator[SubgraphType, None, None]:
+    ) -> SyncOrAsyncGenerator[SubgraphType]:
         """Maps the action over each state generated by the `states` method.
         Internally used, do not implement."""
         yield self.action(state, inputs)
 
     @abc.abstractmethod
-    def reduce(self, state: State, results: Generator[State, None, None]) -> State:
+    def reduce(self, state: State, results: SyncOrAsyncGenerator[State]) -> State:
         """Reduces the task's results
 
         :param results:
         :return:
         """
         pass
-
-
-GenType = TypeVar("GenType")
-ReturnType = TypeVar("ReturnType")
-
-SyncOrAsyncGenerator = Union[Generator[GenType, None, None], AsyncGenerator[GenType, None]]
-SyncOrAsyncGeneratorOrItemOrList = Union[SyncOrAsyncGenerator[GenType], List[GenType], GenType]
 
 
 class PassThroughMapActionsAndStates(MapActionsAndStates):
@@ -641,7 +793,7 @@ class PassThroughMapActionsAndStates(MapActionsAndStates):
 
     def actions(
         self, state: State, context: ApplicationContext, inputs: Dict[str, Any]
-    ) -> Generator[SubgraphType, None, None]:
+    ) -> SyncOrAsyncGenerator[SubgraphType]:
         if isinstance(self._action_or_generator, list):
             for action in self._action_or_generator:
                 yield action

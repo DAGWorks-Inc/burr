@@ -6,9 +6,15 @@ from abc import ABCMeta
 from collections import defaultdict
 from typing import Any, Dict, Literal, Optional, TypedDict
 
+from burr.common.types import BaseCopyable
 from burr.core import Action
 from burr.core.state import State, logger
 from burr.lifecycle import PostRunStepHook
+
+try:
+    from typing import Self
+except ImportError:
+    Self = None
 
 
 class PersistedStateData(TypedDict):
@@ -142,8 +148,16 @@ class DevNullPersister(BaseStatePersister):
         return
 
 
-class SQLLitePersister(BaseStatePersister):
-    """Class for SQLLite persistence of state. This is a simple implementation."""
+class SQLitePersister(BaseStatePersister, BaseCopyable):
+    """Class for SQLite persistence of state. This is a simple implementation."""
+
+    def copy(self) -> "Self":
+        return SQLitePersister(
+            db_path=self.db_path,
+            table_name=self.table_name,
+            serde_kwargs=self.serde_kwargs,
+            connect_kwargs=self._connect_kwargs,
+        )
 
     PARTITION_KEY_DEFAULT = ""
 
@@ -169,6 +183,7 @@ class SQLLitePersister(BaseStatePersister):
         )
         self.serde_kwargs = serde_kwargs or {}
         self._initialized = False
+        self._connect_kwargs = connect_kwargs
 
     def create_table_if_not_exists(self, table_name: str):
         """Helper function to create the table where things are stored if it doesn't exist."""
@@ -176,7 +191,7 @@ class SQLLitePersister(BaseStatePersister):
         cursor.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {table_name} (
-                partition_key TEXT DEFAULT '{SQLLitePersister.PARTITION_KEY_DEFAULT}',
+                partition_key TEXT DEFAULT '{SQLitePersister.PARTITION_KEY_DEFAULT}',
                 app_id TEXT NOT NULL,
                 sequence_id INTEGER NOT NULL,
                 position TEXT NOT NULL,
@@ -215,7 +230,7 @@ class SQLLitePersister(BaseStatePersister):
 
     def list_app_ids(self, partition_key: Optional[str], **kwargs) -> list[str]:
         partition_key = (
-            partition_key if partition_key is not None else SQLLitePersister.PARTITION_KEY_DEFAULT
+            partition_key if partition_key is not None else SQLitePersister.PARTITION_KEY_DEFAULT
         )
 
         cursor = self.connection.cursor()
@@ -246,7 +261,7 @@ class SQLLitePersister(BaseStatePersister):
         :return:
         """
         partition_key = (
-            partition_key if partition_key is not None else SQLLitePersister.PARTITION_KEY_DEFAULT
+            partition_key if partition_key is not None else SQLitePersister.PARTITION_KEY_DEFAULT
         )
         logger.debug("Loading %s, %s, %s", partition_key, app_id, sequence_id)
         cursor = self.connection.cursor()
@@ -322,7 +337,7 @@ class SQLLitePersister(BaseStatePersister):
             status,
         )
         partition_key = (
-            partition_key if partition_key is not None else SQLLitePersister.PARTITION_KEY_DEFAULT
+            partition_key if partition_key is not None else SQLitePersister.PARTITION_KEY_DEFAULT
         )
         cursor = self.connection.cursor()
         json_state = json.dumps(state.serialize(**self.serde_kwargs))
@@ -391,8 +406,10 @@ class InMemoryPersister(BaseStatePersister):
         self._storage[partition_key][app_id].append(persisted_state)
 
 
+SQLLitePersister = SQLitePersister
+
 if __name__ == "__main__":
-    s = SQLLitePersister(db_path=".sqllite.db", table_name="test1")
+    s = SQLitePersister(db_path=".SQLite.db", table_name="test1")
     s.initialize()
     s.save("pk", "app_id", 1, "pos", State({"a": 1, "b": 2}), "completed")
     print(s.list_app_ids("pk"))

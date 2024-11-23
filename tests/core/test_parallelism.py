@@ -1,8 +1,9 @@
 import asyncio
+import concurrent.futures
 import dataclasses
 import datetime
 from random import random
-from typing import Any, AsyncGenerator, Callable, Dict, Generator, List, Optional, Union
+from typing import Any, AsyncGenerator, Callable, Dict, Generator, List, Literal, Optional, Union
 
 import pytest
 
@@ -24,8 +25,10 @@ from burr.core.parallelism import (
     RunnableGraph,
     SubGraphTask,
     TaskBasedParallelAction,
+    _cascade_adapter,
     map_reduce_action,
 )
+from burr.core.persistence import BaseStateLoader, BaseStateSaver, PersistedStateData
 from burr.tracking.base import SyncTrackingClient
 from burr.visibility import ActionSpan
 
@@ -33,7 +36,7 @@ old_action = action
 
 
 async def sleep_random():
-    await asyncio.sleep(random())
+    await asyncio.sleep(random() / 1000)
 
 
 # Single action/callable subgraph
@@ -212,8 +215,13 @@ class RecursiveActionTracked:
 class RecursiveActionTracker(SyncTrackingClient):
     """Simple test tracking client for a recursive action"""
 
-    def __init__(self, events: List[RecursiveActionTracked]):
+    def __init__(
+        self,
+        events: List[RecursiveActionTracked],
+        parent: Optional["RecursiveActionTracker"] = None,
+    ):
         self.events = events
+        self.parent = parent
 
     def copy(self):
         """Quick way to copy from the current state. This assumes linearity (which is true in this case, as parallelism is delegated)"""
@@ -221,7 +229,7 @@ class RecursiveActionTracker(SyncTrackingClient):
             current_event = self.events[-1]
             if current_event.state_after is not None:
                 raise ValueError("Don't copy if you're not in the middle of an event")
-            return RecursiveActionTracker(current_event.children)
+            return RecursiveActionTracker(current_event.children, parent=self)
         raise ValueError("Don't copy if you're not in the middle of an event")
 
     def post_application_create(
@@ -609,7 +617,7 @@ def test_e2e_map_actions_and_states_sync():
     """Tests the map states action with a subgraph that is run in parallel.
     Collatz conjecture over different starting points"""
 
-    class MapStatesAsync(MapActionsAndStates):
+    class MapStatesSync(MapActionsAndStates):
         def actions(
             self, state: State, context: ApplicationContext, inputs: Dict[str, Any]
         ) -> Generator[Union[Action, Callable, RunnableGraph], None, None]:
@@ -649,7 +657,7 @@ def test_e2e_map_actions_and_states_sync():
         ApplicationBuilder()
         .with_actions(
             initial_action=Input("input_numbers_in_state"),
-            map_action=MapStatesAsync(),
+            map_action=MapStatesSync(),
             final_action=Result("output_numbers_in_state"),
         )
         .with_transitions(("initial_action", "map_action"), ("map_action", "final_action"))
@@ -770,6 +778,7 @@ def test_task_level_API_e2e_sync():
                         inputs={},
                         state=state.update(input_number=input_number, number_to_add=10),
                         application_id=f"{i}_{j}",
+                        tracker=context.tracker.copy(),
                     )
 
         def reduce(self, state: State, states: Generator[State, None, None]) -> State:
@@ -841,6 +850,7 @@ async def test_task_level_API_e2e_async():
                         inputs={},
                         state=state.update(input_number=input_number, number_to_add=10),
                         application_id=f"{i}_{j}",
+                        tracker=context.tracker.copy(),
                     )
 
         async def reduce(self, state: State, states: AsyncGenerator[State, None]) -> State:
@@ -943,3 +953,237 @@ def test_map_reduce_function_e2e():
     _, map_event, __ = events
     grouped_events = _group_events_by_app_id(map_event.children)
     assert len(grouped_events) == 9  # cartesian product of 3 actions and 3 states
+
+
+class DummyTracker(SyncTrackingClient):
+    def __init__(self, parent: Optional["DummyTracker"] = None):
+        self.parent = parent
+
+    def copy(self):
+        return DummyTracker(parent=self)
+
+    def post_application_create(
+        self,
+        *,
+        app_id: str,
+        partition_key: Optional[str],
+        state: "State",
+        application_graph: "ApplicationGraph",
+        parent_pointer: Optional[burr_types.ParentPointer],
+        spawning_parent_pointer: Optional[burr_types.ParentPointer],
+        **future_kwargs: Any,
+    ):
+        pass
+
+    def pre_run_step(
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        sequence_id: int,
+        state: "State",
+        action: "Action",
+        inputs: Dict[str, Any],
+        **future_kwargs: Any,
+    ):
+        pass
+
+    def post_run_step(
+        self,
+        *,
+        app_id: str,
+        partition_key: str,
+        sequence_id: int,
+        state: "State",
+        action: "Action",
+        result: Optional[Dict[str, Any]],
+        exception: Exception,
+        **future_kwargs: Any,
+    ):
+        pass
+
+    def pre_start_span(
+        self,
+        *,
+        action: str,
+        action_sequence_id: int,
+        span: "ActionSpan",
+        span_dependencies: list[str],
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+    def post_end_span(
+        self,
+        *,
+        action: str,
+        action_sequence_id: int,
+        span: "ActionSpan",
+        span_dependencies: list[str],
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+    def do_log_attributes(
+        self,
+        *,
+        attributes: Dict[str, Any],
+        action: str,
+        action_sequence_id: int,
+        span: Optional["ActionSpan"],
+        tags: dict,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+    def pre_start_stream(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+    def post_stream_item(
+        self,
+        *,
+        item: Any,
+        item_index: int,
+        stream_initialize_time: datetime.datetime,
+        first_stream_item_start_time: datetime.datetime,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+    def post_end_stream(
+        self,
+        *,
+        action: str,
+        sequence_id: int,
+        app_id: str,
+        partition_key: Optional[str],
+        **future_kwargs: Any,
+    ):
+        pass
+
+
+class DummyPersister(BaseStateSaver, BaseStateLoader):
+    def __init__(self, parent: Optional["DummyPersister"] = None):
+        self.parent = parent
+
+    def copy(self) -> "DummyPersister":
+        return DummyPersister(parent=self)
+
+    def save(
+        self,
+        partition_key: Optional[str],
+        app_id: str,
+        sequence_id: int,
+        position: str,
+        state: State,
+        status: Literal["completed", "failed"],
+        **kwargs,
+    ):
+        pass
+
+    def load(
+        self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None, **kwargs
+    ) -> Optional[PersistedStateData]:
+        pass
+
+    def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
+        pass
+
+
+def test_cascade_adapter_cascade():
+    # Tests that cascading the adapter results in a cloned adapter with `copy()` called
+    adapter = DummyTracker()
+    cascaded = _cascade_adapter("cascade", adapter)
+    assert cascaded.parent is adapter
+
+
+def test_cascade_adapter_none():
+    # Tests that setting the adapter behavior to None results in no adapter
+    adapter = DummyTracker()
+    cascaded = _cascade_adapter(None, adapter)
+    assert cascaded is None
+
+
+def test_cascade_adapter_fixed():
+    # Tests that setting the adapter behavior to a fixed value results in that value
+    current_adapter = DummyTracker()
+    next_adapter = DummyTracker()
+    cascaded = _cascade_adapter(next_adapter, current_adapter)
+    assert cascaded is next_adapter
+
+
+def test_map_actions_and_states_uses_same_persister_as_loader():
+    """This tests the MapActionsAndStates functionality of using the correct persister. Specifically
+    we want it to use the same instance for the saver as it does the loader, as that is
+    what the parent app does."""
+
+    class SimpleMapStates(MapActionsAndStates):
+        def actions(
+            self, state: State, context: ApplicationContext, inputs: Dict[str, Any]
+        ) -> Generator[Union[Action, Callable, RunnableGraph], None, None]:
+            for graph_ in [
+                simple_single_fn_subgraph.bind(identifying_number=1000),
+            ]:
+                yield graph_
+
+        def states(
+            self, state: State, context: ApplicationContext, inputs: Dict[str, Any]
+        ) -> Generator[State, None, None]:
+            yield state.update(input_number=0, number_to_add=0)
+
+        def reduce(self, state: State, states: Generator[State, None, None]) -> State:
+            # TODO -- ensure that states is in the correct order...
+            # Or decide to key it?
+            new_state = state
+            for output_state in states:
+                new_state = new_state.append(output_numbers_in_state=output_state["output_number"])
+            return new_state
+
+        @property
+        def writes(self) -> list[str]:
+            return ["output_numbers_in_state"]
+
+        @property
+        def reads(self) -> list[str]:
+            return ["input_numbers_in_state"]
+
+    action = SimpleMapStates()
+    persister = DummyPersister()
+    tracker = DummyTracker()
+
+    task_generator = action.tasks(
+        state=State(),
+        context=ApplicationContext(
+            app_id="app_id",
+            partition_key="partition_key",
+            sequence_id=0,
+            tracker=tracker,
+            state_persister=persister,
+            state_initializer=persister,
+            parallel_executor_factory=lambda: concurrent.futures.ThreadPoolExecutor(),
+        ),
+        inputs={},
+    )
+    (task,) = task_generator  # one task
+    assert task.state_persister is not None
+    assert task.state_initializer is not None
+    assert task.tracker is not None
+    assert task.state_persister is task.state_initializer  # This ensures they're the same
