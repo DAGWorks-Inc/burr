@@ -4,7 +4,6 @@ from typing import AsyncGenerator, AsyncIterable, Generator, List, TypeVar, Unio
 T = TypeVar("T")
 
 GenType = TypeVar("GenType")
-ReturnType = TypeVar("ReturnType")
 
 SyncOrAsyncIterable = Union[AsyncIterable[T], List[T]]
 SyncOrAsyncGenerator = Union[Generator[GenType, None, None], AsyncGenerator[GenType, None]]
@@ -31,7 +30,7 @@ async def arealize(maybe_async_generator: SyncOrAsyncGenerator[GenType]) -> List
     """Realize an async generator or async iterable to a list.
 
     :param maybe_async_generator: async generator or async iterable
-    :return: list
+    :return: list of items -- fully realized
     """
     if inspect.isasyncgen(maybe_async_generator):
         out = [item async for item in maybe_async_generator]

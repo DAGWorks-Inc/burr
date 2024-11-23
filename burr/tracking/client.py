@@ -2,6 +2,7 @@ import abc
 import dataclasses
 import datetime
 
+from burr.common.types import BaseCopyable
 from burr.lifecycle.base import (
     DoLogAttributeHook,
     PostEndStreamHook,
@@ -119,6 +120,7 @@ class SyncTrackingClient(
     PreStartStreamHook,
     PostStreamItemHook,
     PostEndStreamHook,
+    BaseCopyable,
     ABC,
 ):
     @abc.abstractmethod
