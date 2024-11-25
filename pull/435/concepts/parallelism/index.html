@@ -823,6 +823,8 @@ will be created as a a stable hash of the parent ID + the index of the child ID,
 </ol>
 <p>These will then be passed ot the corresponding sub-application tasks. If any of these objects implement a <cite>.copy()</cite> method, that will be called. Otherwise the same instance will be created. Not the tracker/persister/loader must be serializable
 to work in non-multithreaded executors, and thread-safe to work in multithreaded instances.</p>
+<p>In mst cases, (2) and (3) above will be the same, however there all valid use-cases where you might want to use different persisters/loaders for the sub-application.
+Thus, the default will be to pass the same instance for (2) and (3), <em>if</em> they both exist and are specified.</p>
 <p>You can disable either tracking or persistence at the sub-application level by overriding one of the three methods (corresponding to the three adapter-types above),
 on any of the <code class="xref py py-class docutils literal notranslate"><span class="pre">burr.core.parallelism.MapStatesAndActions</span></code>, <a class="reference internal" href="../../reference/parallelism/#burr.core.parallelism.MapStates" title="burr.core.parallelism.MapStates"><code class="xref py py-class docutils literal notranslate"><span class="pre">burr.core.parallelism.MapStates</span></code></a>, or <a class="reference internal" href="../../reference/parallelism/#burr.core.parallelism.MapActions" title="burr.core.parallelism.MapActions"><code class="xref py py-class docutils literal notranslate"><span class="pre">burr.core.parallelism.MapActions</span></code></a> classes.</p>
 <p>If you return <cite>None</cite>, then no tracker/persister will be used. If you return an object (E.G. a tracker or a persister), that will be used instead.

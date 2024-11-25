@@ -503,6 +503,9 @@ The default behavior is to cascade all the following constructs through to the p
 These will then be passed ot the corresponding sub-application tasks. If any of these objects implement a `.copy()` method, that will be called. Otherwise the same instance will be created. Not the tracker/persister/loader must be serializable
 to work in non-multithreaded executors, and thread-safe to work in multithreaded instances.
 
+In mst cases, (2) and (3) above will be the same, however there all valid use-cases where you might want to use different persisters/loaders for the sub-application.
+Thus, the default will be to pass the same instance for (2) and (3), *if* they both exist and are specified.
+
 You can disable either tracking or persistence at the sub-application level by overriding one of the three methods (corresponding to the three adapter-types above),
 on any of the :py:class:`burr.core.parallelism.MapStatesAndActions`, :py:class:`burr.core.parallelism.MapStates`, or :py:class:`burr.core.parallelism.MapActions` classes.
 
