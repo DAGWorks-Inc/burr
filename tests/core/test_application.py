@@ -3,6 +3,7 @@ import collections
 import datetime
 import logging
 import typing
+import uuid
 from typing import Any, Awaitable, Callable, Dict, Generator, Literal, Optional, Tuple
 
 import pytest
@@ -1339,6 +1340,57 @@ async def test_app_astep():
     assert action.name == "counter_async"
     assert result == {"count": 1}
     assert state[PRIOR_STEP] == "counter_async"  # internal contract, not part of the public API
+
+
+def test_app_step_context():
+    APP_ID = str(uuid.uuid4())
+    PARTITION_KEY = str(uuid.uuid4())
+
+    @action(reads=[], writes=[])
+    def test_action(state: State, __context: ApplicationContext) -> State:
+        assert __context.sequence_id == 0
+        assert __context.partition_key == PARTITION_KEY
+        assert __context.app_id == APP_ID
+        return state
+
+    app = (
+        ApplicationBuilder()
+        .with_actions(test_action)
+        .with_entrypoint("test_action")
+        .with_transitions()
+        .with_identifiers(
+            app_id=APP_ID,
+            partition_key=PARTITION_KEY,
+        )
+        .build()
+    )
+    app.step()
+
+
+async def test_app_astep_context():
+    """Tests that app.astep correctly passes context."""
+    APP_ID = str(uuid.uuid4())
+    PARTITION_KEY = str(uuid.uuid4())
+
+    @action(reads=[], writes=[])
+    def test_action(state: State, __context: ApplicationContext) -> State:
+        assert __context.sequence_id == 0
+        assert __context.partition_key == PARTITION_KEY
+        assert __context.app_id == APP_ID
+        return state
+
+    app = (
+        ApplicationBuilder()
+        .with_actions(test_action)
+        .with_entrypoint("test_action")
+        .with_transitions()
+        .with_identifiers(
+            app_id=APP_ID,
+            partition_key=PARTITION_KEY,
+        )
+        .build()
+    )
+    await app.astep()
 
 
 async def test_app_astep_with_inputs():
