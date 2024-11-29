@@ -826,7 +826,7 @@ to work in non-multithreaded executors, and thread-safe to work in multithreaded
 <p>In mst cases, (2) and (3) above will be the same, however there all valid use-cases where you might want to use different persisters/loaders for the sub-application.
 Thus, the default will be to pass the same instance for (2) and (3), <em>if</em> they both exist and are specified.</p>
 <p>You can disable either tracking or persistence at the sub-application level by overriding one of the three methods (corresponding to the three adapter-types above),
-on any of the <code class="xref py py-class docutils literal notranslate"><span class="pre">burr.core.parallelism.MapStatesAndActions</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">burr.core.parallelism.MapStates</span></code>, or <code class="xref py py-class docutils literal notranslate"><span class="pre">burr.core.parallelism.MapActions</span></code> classes.</p>
+on any of the <code class="xref py py-class docutils literal notranslate"><span class="pre">burr.core.parallelism.MapStatesAndActions</span></code>, <a class="reference internal" href="../../reference/parallelism/#burr.core.parallelism.MapStates" title="burr.core.parallelism.MapStates"><code class="xref py py-class docutils literal notranslate"><span class="pre">burr.core.parallelism.MapStates</span></code></a>, or <a class="reference internal" href="../../reference/parallelism/#burr.core.parallelism.MapActions" title="burr.core.parallelism.MapActions"><code class="xref py py-class docutils literal notranslate"><span class="pre">burr.core.parallelism.MapActions</span></code></a> classes.</p>
 <p>If you return <cite>None</cite>, then no tracker/persister will be used. If you return an object (E.G. a tracker or a persister), that will be used instead.
 The function will be called for every instance of the sub-application.</p>
 <ol class="arabic simple">
@@ -834,7 +834,7 @@ The function will be called for every instance of the sub-application.</p>
 <li><p>Overriding the persister <code class="xref py py-meth docutils literal notranslate"><span class="pre">burr.core.parallelism.MapStatesAndAction.state_persister()</span></code></p></li>
 <li><p>Overriding the loader <code class="xref py py-meth docutils literal notranslate"><span class="pre">burr.core.parallelism.MapStatesAndAction.state_initializer()</span></code></p></li>
 </ol>
-<p>You can also set the corresponding fields in the <code class="xref py py-class docutils literal notranslate"><span class="pre">burr.core.parallelism.SubGraphTask</span></code> object on a per-task basis,
+<p>You can also set the corresponding fields in the <a class="reference internal" href="../../reference/parallelism/#burr.core.parallelism.SubGraphTask" title="burr.core.parallelism.SubGraphTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">burr.core.parallelism.SubGraphTask</span></code></a> object on a per-task basis,
 if you are using the lower-level API.</p>
 <p>You can also disable it globally using the application builder:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">TestMultiplePrompts</span><span class="p">(</span><span class="n">MapStates</span><span class="p">):</span>
