@@ -1,7 +1,9 @@
 import abc
+import datetime
 import json
 import sqlite3
 from abc import ABCMeta
+from collections import defaultdict
 from typing import Any, Dict, Literal, Optional, TypedDict
 
 from burr.core import Action
@@ -334,6 +336,59 @@ class SQLLitePersister(BaseStatePersister):
     def __del__(self):
         # closes connection at end when things are being shutdown.
         self.connection.close()
+
+
+class InMemoryPersister(BaseStatePersister):
+    """In-memory persister for testing purposes. This is not recommended for production use."""
+
+    def __init__(self):
+        self._storage = defaultdict(lambda: defaultdict(list))
+
+    def load(
+        self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None, **kwargs
+    ) -> Optional[PersistedStateData]:
+        # If no app_id provided, return None
+        if app_id is None:
+            return None
+
+        if not (states := self._storage[partition_key][app_id]):
+            return None
+
+        if sequence_id is None:
+            return states[-1]
+
+        # Find states matching the specific sequence_id
+        matching_states = [state for state in states if state["sequence_id"] == sequence_id]
+
+        # Return the latest state for this sequence_id, if exists
+        return matching_states[-1] if matching_states else None
+
+    def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
+        return list(self._storage[partition_key].keys())
+
+    def save(
+        self,
+        partition_key: Optional[str],
+        app_id: str,
+        sequence_id: int,
+        position: str,
+        state: State,
+        status: Literal["completed", "failed"],
+        **kwargs,
+    ):
+        # Create a PersistedStateData entry
+        persisted_state: PersistedStateData = {
+            "partition_key": partition_key or "",
+            "app_id": app_id,
+            "sequence_id": sequence_id,
+            "position": position,
+            "state": state,
+            "created_at": datetime.datetime.now().isoformat(),
+            "status": status,
+        }
+
+        # Store the state
+        self._storage[partition_key][app_id].append(persisted_state)
 
 
 if __name__ == "__main__":

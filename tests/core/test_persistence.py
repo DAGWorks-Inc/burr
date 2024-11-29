@@ -1,50 +1,68 @@
 import pytest
 
 from burr.core import State
-from burr.core.persistence import SQLLitePersister
+from burr.core.persistence import InMemoryPersister, SQLLitePersister
 
 
-@pytest.fixture
-def persistence():
+@pytest.fixture(
+    params=[
+        {"which": "sqlite"},
+        {"which": "memory"},
+    ]
+)
+def persistence(request):
+    which = request.param["which"]
+    if which == "sqlite":
+        return SQLLitePersister(db_path=":memory:", table_name="test_table")
+    elif which == "memory":
+        return InMemoryPersister()
+    # return SQLLitePersister(db_path=":memory:", table_name="test_table")
+
+
+@pytest.fixture()
+def initializing_persistence():
     return SQLLitePersister(db_path=":memory:", table_name="test_table")
 
 
-def test_persistence_initialization_creates_table(persistence):
-    persistence.initialize()
-    assert persistence.list_app_ids("partition_key") == []
+def test_persistence_initialization_creates_table(initializing_persistence):
+    initializing_persistence.initialize()
+    assert initializing_persistence.list_app_ids("partition_key") == []
 
 
 def test_persistence_saves_and_loads_state(persistence):
-    persistence.initialize()
+    if hasattr(persistence, "initialize"):
+        persistence.initialize()
     persistence.save("partition_key", "app_id", 1, "position", State({"key": "value"}), "status")
     loaded_state = persistence.load("partition_key", "app_id")
     assert loaded_state["state"] == State({"key": "value"})
 
 
 def test_persistence_returns_none_when_no_state(persistence):
-    persistence.initialize()
+    if hasattr(persistence, "initialize"):
+        persistence.initialize()
     loaded_state = persistence.load("partition_key", "app_id")
     assert loaded_state is None
 
 
 def test_persistence_lists_app_ids(persistence):
-    persistence.initialize()
+    if hasattr(persistence, "initialize"):
+        persistence.initialize()
     persistence.save("partition_key", "app_id1", 1, "position", State({"key": "value"}), "status")
     persistence.save("partition_key", "app_id2", 1, "position", State({"key": "value"}), "status")
     app_ids = persistence.list_app_ids("partition_key")
     assert set(app_ids) == set(["app_id1", "app_id2"])
 
 
-def test_persistence_is_initialized_false(persistence):
-    assert not persistence.is_initialized()
+def test_persistence_is_initialized_false(initializing_persistence):
+    assert not initializing_persistence.is_initialized()
 
 
-def test_persistence_is_initialized_true(persistence):
-    persistence.initialize()
-    assert persistence.is_initialized()
+def test_persistence_is_initialized_true(initializing_persistence):
+    initializing_persistence.initialize()
+    assert initializing_persistence.is_initialized()
 
 
-def test_persistence_is_initialized_true_new_connection(tmp_path):
+def test_sqlite_persistence_is_initialized_true_new_connection(tmp_path):
     db_path = tmp_path / "test.db"
     p = SQLLitePersister(db_path=db_path, table_name="test_table")
     p.initialize()
@@ -72,7 +90,8 @@ def test_persistence_is_initialized_true_new_connection(tmp_path):
     ],
 )
 def test_persister_methods_none_partition_key(persistence, method_name: str, kwargs: dict):
-    persistence.initialize()
+    if hasattr(persistence, "initialize"):
+        persistence.initialize()
     method = getattr(persistence, method_name)
     # method can be executed with `partition_key=None`
     method(**kwargs)
