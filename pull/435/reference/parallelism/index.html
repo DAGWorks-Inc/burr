@@ -488,6 +488,11 @@ your parallel action utilizes, then this is for you. If not, you’ll want to se
         <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">all_llm_outputs</span><span class="o">=</span><span class="n">all_llm_outputs</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>Note that it can be synchronous <em>or</em> asynchronous. Synchronous implementations will use the standard/
+supplied executor. Asynchronous implementations will use asyncio.gather. Note that, while asynchronous
+implementations may implement the tasks as either synchronous or asynchronous generators, synchronous implementations
+can only use synchronous generators. Furthermore, with asynchronous implementations, the generator for reduce
+will be asynchronous as well (regardless of whether your task functions are asynchronous).</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="burr.core.parallelism.TaskBasedParallelAction.inputs">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inputs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#burr.core.parallelism.TaskBasedParallelAction.inputs" title="Link to this definition">¶</a></dt>
