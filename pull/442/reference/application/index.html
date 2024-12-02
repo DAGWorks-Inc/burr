@@ -1411,6 +1411,17 @@ for graphviz, instead pass <cite>format</cite> in <cite>engine_kwargs</cite> (e.
 <dd><p>Application context. This is anything your node might need to know about the application.
 Often used for recursive tracking.</p>
 <p>Note this is also a context manager (allowing you to pass context to sub-applications).</p>
+<p>To access this object in a running application, you can use the <cite>__context</cite> variable in the
+action signature:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">State</span><span class="p">,</span> <span class="n">ApplicationContext</span>
+
+<span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+    <span class="n">app_id</span> <span class="o">=</span> <span class="n">__context</span><span class="o">.</span><span class="n">app_id</span>
+    <span class="n">partition_key</span> <span class="o">=</span> <span class="n">__context</span><span class="o">.</span><span class="n">partition_key</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="burr.core.application.ApplicationContext.get">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.core.application.ApplicationContext" title="burr.core.application.ApplicationContext"><span class="pre">ApplicationContext</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.core.application.ApplicationContext.get" title="Link to this definition">¶</a></dt>
