@@ -35,13 +35,27 @@ State Keys
 ----------
 Burr `applications` are, by default, keyed on two entities:
 
-1. ``app_uid`` - A unique identifier for the application. This is used to identify the application in the persistence layer.
+1. ``app_id`` - A unique identifier for the application. This is used to identify the application in the persistence layer.
 2. ``partition_key`` - An identifier for grouping (partitioning) applications
 
-In the case of a chatbot, the ``app_uid`` could be a uuid, and the ``partition_key`` could be the user's name.
-Note that ``partition_key`` can be `None` if this is not relevant. A UUID is always generated for the ``app_uid`` if not provided.
+In the case of a chatbot, the ``app_id`` could be a uuid, and the ``partition_key`` could be the user's ID or email, etc.
+Note that ``partition_key`` can be `None` if this is not relevant. A UUID is always generated for the ``app_id`` if not provided.
 
 You set these values using the :py:meth:`with_identifiers() <burr.core.application.ApplicationBuilder.with_identifiers>` method.
+
+Note: to access ``app_id`` and ``partition_key`` in your running application, you can have the :py:class:`ApplicationContext <burr.core.application.ApplicationContext>`
+injected into your Burr Actions. This is done by adding ``__context`` to the action signature:
+
+.. code-block:: python
+
+    from burr.core import action, State, ApplicationContext
+
+    @action(reads=[...], writes=[...])
+    def my_action(state: State, __context: ApplicationContext) -> State:
+        app_id = __context.app_id
+        partition_key = __context.partition_key
+        ...
+
 
 Initializing state
 ------------------
