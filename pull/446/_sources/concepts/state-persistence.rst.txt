@@ -50,7 +50,7 @@ injected into your Burr Actions. This is done by adding ``__context`` to the act
 
     from burr.core import action, State, ApplicationContext
 
-    @action
+    @action(reads=[...], writes=[...])
     def my_action(state: State, __context: ApplicationContext) -> State:
         app_id = __context.app_id
         partition_key = __context.partition_key
