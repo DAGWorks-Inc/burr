@@ -471,6 +471,29 @@ The result is just a key/value dictionary.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="burr.core.action.Action.update">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></span><a class="headerlink" href="#burr.core.action.Action.update" title="Link to this definition">¶</a></dt>
+<dd><p>Performs a state update given a result and the current state.
+Returns a new, modified <a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a>
+(recall state is immutable – simply changing the state in place will not work).</p>
+<p>In the context of Burr, this is only applied in the two-step actions, where
+the <a class="reference internal" href="#burr.core.action.Function.run" title="burr.core.action.Function.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run</span></code></a> and update() functions are separate. The
+function-based APIs for Burr use the SingleStepAction class, which performs them both at once.
+This is not (yet) exposed as an interface for users to extend.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>result</strong> – Result of a function executing on the state</p></li>
+<li><p><strong>state</strong> – State to update</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new, modified state.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="burr.core.action.Action.validate_inputs">
 <span class="sig-name descname"><span class="pre">validate_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#burr.core.action.Action.validate_inputs" title="Link to this definition">¶</a></dt>
 <dd><p>Validates the inputs to the function. This is a convenience method
@@ -562,6 +585,29 @@ The result is just a key/value dictionary.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.action.Result.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></span><a class="headerlink" href="#burr.core.action.Result.update" title="Link to this definition">¶</a></dt>
+<dd><p>Performs a state update given a result and the current state.
+Returns a new, modified <a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a>
+(recall state is immutable – simply changing the state in place will not work).</p>
+<p>In the context of Burr, this is only applied in the two-step actions, where
+the <a class="reference internal" href="#burr.core.action.Function.run" title="burr.core.action.Function.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run</span></code></a> and update() functions are separate. The
+function-based APIs for Burr use the SingleStepAction class, which performs them both at once.
+This is not (yet) exposed as an interface for users to extend.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>result</strong> – Result of a function executing on the state</p></li>
+<li><p><strong>state</strong> – State to update</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new, modified state.</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="burr.core.action.Result.writes">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">writes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#burr.core.action.Result.writes" title="Link to this definition">¶</a></dt>
@@ -631,6 +677,29 @@ The result is just a key/value dictionary.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Result of the function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.action.Input.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></span><a class="headerlink" href="#burr.core.action.Input.update" title="Link to this definition">¶</a></dt>
+<dd><p>Performs a state update given a result and the current state.
+Returns a new, modified <a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a>
+(recall state is immutable – simply changing the state in place will not work).</p>
+<p>In the context of Burr, this is only applied in the two-step actions, where
+the <a class="reference internal" href="#burr.core.action.Function.run" title="burr.core.action.Function.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run</span></code></a> and update() functions are separate. The
+function-based APIs for Burr use the SingleStepAction class, which performs them both at once.
+This is not (yet) exposed as an interface for users to extend.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>result</strong> – Result of a function executing on the state</p></li>
+<li><p><strong>state</strong> – State to update</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new, modified state.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -834,6 +903,29 @@ to allow for validation of inputs before running the function.</p>
 <dt class="sig sig-object py" id="burr.core.action.Reducer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.action.</span></span><span class="sig-name descname"><span class="pre">Reducer</span></span><a class="headerlink" href="#burr.core.action.Reducer" title="Link to this definition">¶</a></dt>
 <dd><p>Interface to represent the ‘updating’ part of an action</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.action.Reducer.update">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></span><a class="headerlink" href="#burr.core.action.Reducer.update" title="Link to this definition">¶</a></dt>
+<dd><p>Performs a state update given a result and the current state.
+Returns a new, modified <a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a>
+(recall state is immutable – simply changing the state in place will not work).</p>
+<p>In the context of Burr, this is only applied in the two-step actions, where
+the <a class="reference internal" href="#burr.core.action.Function.run" title="burr.core.action.Function.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run</span></code></a> and update() functions are separate. The
+function-based APIs for Burr use the SingleStepAction class, which performs them both at once.
+This is not (yet) exposed as an interface for users to extend.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>result</strong> – Result of a function executing on the state</p></li>
+<li><p><strong>state</strong> – State to update</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new, modified state.</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="burr.core.action.Reducer.writes">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">writes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#burr.core.action.Reducer.writes" title="Link to this definition">¶</a></dt>
@@ -1104,6 +1196,7 @@ and then join them at the end. We return the final result.</p>
 <li><a class="reference internal" href="#burr.core.action.Action.optional_and_required_inputs"><code class="docutils literal notranslate"><span class="pre">Action.optional_and_required_inputs</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.action.Action.reads"><code class="docutils literal notranslate"><span class="pre">Action.reads</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.action.Action.run"><code class="docutils literal notranslate"><span class="pre">Action.run()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.action.Action.update"><code class="docutils literal notranslate"><span class="pre">Action.update()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.action.Action.validate_inputs"><code class="docutils literal notranslate"><span class="pre">Action.validate_inputs()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.action.Action.with_name"><code class="docutils literal notranslate"><span class="pre">Action.with_name()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.action.Action.writes"><code class="docutils literal notranslate"><span class="pre">Action.writes</span></code></a></li>
@@ -1113,6 +1206,7 @@ and then join them at the end. We return the final result.</p>
 <li><a class="reference internal" href="#burr.core.action.Result.__init__"><code class="docutils literal notranslate"><span class="pre">Result.__init__()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.action.Result.reads"><code class="docutils literal notranslate"><span class="pre">Result.reads</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.action.Result.run"><code class="docutils literal notranslate"><span class="pre">Result.run()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.action.Result.update"><code class="docutils literal notranslate"><span class="pre">Result.update()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.action.Result.writes"><code class="docutils literal notranslate"><span class="pre">Result.writes</span></code></a></li>
 </ul>
 </li>
@@ -1121,6 +1215,7 @@ and then join them at the end. We return the final result.</p>
 <li><a class="reference internal" href="#burr.core.action.Input.inputs"><code class="docutils literal notranslate"><span class="pre">Input.inputs</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.action.Input.reads"><code class="docutils literal notranslate"><span class="pre">Input.reads</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.action.Input.run"><code class="docutils literal notranslate"><span class="pre">Input.run()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.action.Input.update"><code class="docutils literal notranslate"><span class="pre">Input.update()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.action.Input.writes"><code class="docutils literal notranslate"><span class="pre">Input.writes</span></code></a></li>
 </ul>
 </li>
@@ -1140,6 +1235,7 @@ and then join them at the end. We return the final result.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#burr.core.action.Reducer"><code class="docutils literal notranslate"><span class="pre">Reducer</span></code></a><ul>
+<li><a class="reference internal" href="#burr.core.action.Reducer.update"><code class="docutils literal notranslate"><span class="pre">Reducer.update()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.action.Reducer.writes"><code class="docutils literal notranslate"><span class="pre">Reducer.writes</span></code></a></li>
 </ul>
 </li>
