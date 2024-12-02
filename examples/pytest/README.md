@@ -1,19 +1,76 @@
-# Using Pytest to evaluate your agent / application
+# Using pytest to evaluate your agent / application
 
 An agent is a combination of LLM calls and logic. But how do we know if it's working? Well we can test & evaluate it.
 
 From a high level we want to test & evaluate the "micro" i.e. the LLM calls & individual bits of logic,
 through to the "macro" i.e. the agent as a whole.
 
-We can do this with Pytest.
+But, the challenge with LLM calls is that you might want to "assert" on various aspects of the
+output without, and not want it to fail on the first assertion failure which is standard test framework behavior. So what are you to do?
 
-## Pytest Constructs
+Well we can use some `pytest` constructs to help us with this.
 
-We use the `pytest-harvest` plugin to log what our tests are doing. This allows us to capture the results of our tests in a structured way.
-This means we can then use the structure output to then evaluate our code / application / agent.
+## pytest Constructs
+To start let's recap pytest quickly, then move on to how we can evaluate multiple aspects without failing on the first assertion failure.
 
-### Logging Test Results
-`results_bag` is a fixture that we can log values to from our tests. This is then captured by the `pytest-harvest` plugin.
+### pytest basics
+We like pytest because we think it's simpler than the unittest module python comes with. To use it you need to install it first:
+
+```bash
+pip install pytest
+```
+
+Then to define a test it's just a function that starts with `test_`:
+
+```python
+# test_my_agent.py
+
+def test_my_agent():
+    assert my_agent("input1") == "output1"
+    assert my_agent("input2") == "output2"
+    # can have multiple asserts here - it'll fail on the first one and not run the rest
+```
+Yep - no classes to deal with. Just a function that starts with `test_`. Then to run it:
+
+```bash
+pytest test_my_agent.py
+```
+Boom, you're testing!
+
+### Parameterizing Tests
+We can also parameterize tests to run the same test with different inputs. This comes in handy as we build up
+data points to evaluate our agent or parts of our agent. Each input is then an individual test that can error. Here's an example:
+
+```python
+import pytest
+
+@pytest.mark.parametrize(
+    "input, expected_output",
+    [
+        ("input1", "output1"),
+        ("input2", "output2"),
+    ],
+    ids=["test1", "test2"] # these are the test names for the above inputs
+)
+def test_my_agent(input, expected_output):
+    actual_output = my_agent(input) # your code to call your agent or part of it here
+    # can include static measures / evaluations here
+    assert actual_output == expected_output
+    # assert some other property of the output...
+```
+What we've shown above will fail on the
+
+### Not failing on first assert failure / logging test results
+
+Here we use the `pytest-harvest` plugin to log what our tests are doing. This allows us to capture the results of our tests in a structured way without
+breaking at the first asserting failure. This means we can mix and match where appropriate hard "assertions" - i.e. definitely fail, with
+softer ones where we want to evaluate all aspects before making an overall pass / fail decision. We walkthrough how to do this below using a few
+pytest constructs.
+
+`results_bag` is a fixture that we can log values to from our tests. This is useful if we don't want to fail on the first assert statement,
+and instead capture a lot more. This is not native to pytest, and is why we use the `pytest-harvest` plugin to acheive this.
+
+To use it, you just need to install `pytest-harvest` and then you can use the `results_bag` fixture in your tests:
 
 ```python
 def test_my_agent(results_bag):
@@ -22,17 +79,22 @@ def test_my_agent(results_bag):
     results_bag.expected_output = "my_expected_output"
 ```
 
-We can then access the results in the `results_bag` from the `pytest-harvest` plugin via the `module_results_df` fixture.
+We can then access the results in the `results_bag` from the `pytest-harvest` plugin via the `module_results_df` fixture that
+provides a pandas dataframe of the results:
 
 ```python
 def test_print_results(module_results_df):
+    # place this function at the end of the module so that way it's run last.
     print(module_results_df.columns) # this will include "input", "output", "expected_output"
     print(module_results_df.head()) # this will show the first few rows of the results
     # TODO: Add more evaluation logic here or log the results to a file, etc.
+    # assert some threshold of success, etc.
 ```
+This enables us to get a dataframe of all the results from our tests, and then we can evaluate them as we see fit for our use case.
+E.g. we only pass tests if all the outputs are as expected, or we pass if 80% of the outputs are as expected, etc. You could
+also log this to a file, or a database, etc. for further inspection and record keeping.
 
-### Parameterizing Tests
-We can also parameterize tests to run the same test with different inputs.
+Note: wou can also combine `results_bag` with ``pytest.mark.parametrize`` to run the same test with different inputs and expected outputs:
 
 ```python
 import pytest
@@ -48,13 +110,14 @@ import pytest
 def test_my_agent(input, expected_output, results_bag):
     results_bag.input = input
     results_bag.expected_output = expected_output
-    results_bag.output = my_agent(input) # your code here
+    results_bag.output = my_agent(input) # your code to call the agent here
     # can include static measures / evaluations here
     results_bag.success = results_bag.output == results_bag.expected_output
 ```
 
-### Using Burr's Pytest Hook
-With Burr you can curate test cases from real application runs. You can then use these test cases in your Pytest suite.
+
+### Using Burr's pytest Hook
+With Burr you can curate test cases from real application runs. You can then use these test cases in your pytest suite.
 Burr has a hook that enables you to curate a file with the input state and expected output state for an entire run,
 or a single action.  See the [Burr test case creation documentation](https://burr.dagworks.io/examples/guardrails/creating_tests/) for more
 details on how. Here we show you how you can combine this with getting results:
