@@ -124,6 +124,19 @@ class Reducer(abc.ABC):
 
     @abc.abstractmethod
     def update(self, result: dict, state: State) -> State:
+        """Performs a state update given a result and the current state.
+        Returns a new, modified :py:class:`State <burr.core.state.State>`
+        (recall state is immutable -- simply changing the state in place will not work).
+
+        In the context of Burr, this is only applied in the two-step actions, where
+        the :py:meth:`run <burr.core.action.Function.run>` and update() functions are separate. The
+        function-based APIs for Burr use the SingleStepAction class, which performs them both at once.
+        This is not (yet) exposed as an interface for users to extend.
+
+        :param result: Result of a function executing on the state
+        :param state: State to update
+        :return: A new, modified state.
+        """
         pass
 
 
