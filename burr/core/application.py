@@ -492,6 +492,20 @@ class ApplicationContext(AbstractContextManager):
     Often used for recursive tracking.
 
     Note this is also a context manager (allowing you to pass context to sub-applications).
+
+    To access this object in a running application, you can use the `__context` variable in the
+    action signature:
+
+    .. code-block:: python
+
+        from burr.core import action, State, ApplicationContext
+
+        @action(reads=[...], writes=[...])
+        def my_action(state: State, __context: ApplicationContext) -> State:
+            app_id = __context.app_id
+            partition_key = __context.partition_key
+            ...
+
     """
 
     app_id: str
