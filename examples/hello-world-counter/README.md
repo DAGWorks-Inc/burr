@@ -26,3 +26,6 @@ streamlit run streamlit_app.py
 This will open a chrome window and print out the URL. The state machine this encapsulates takes the following form:
 
 ![State Machine](statemachine.png)
+
+Note: if you are looking for an example of the class based action API, then
+take a look at `application_classbased.py`.

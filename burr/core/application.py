@@ -103,6 +103,31 @@ def _adjust_single_step_output(
     _raise_fn_return_validation_error(output, action_name)
 
 
+def _remap_context_variable(run_method: Callable, inputs: Dict[str, Any]) -> dict:
+    """This is a utility function to remap the __context variable to the mangled variable in the function signature.
+
+    Python mangles the variable name in the function signature, so we need to remap it to the correct variable name.
+
+    :param run_method: the run method to inspect.
+    :param inputs: the inputs to inspect
+    :return: potentially new dict with the remapped variable, else the original dict.
+    """
+    # Get the signature of the method being run. This should be Function.run() or similar.
+    signature = inspect.signature(run_method)
+    # Find the name-mangled __context variable
+    mangled_context_name = None
+    for param in signature.parameters.values():
+        if param.name.endswith("__context"):
+            mangled_context_name = param.name
+            break
+
+    # If a mangled __context variable is found, remap the value in inputs
+    if mangled_context_name and "__context" in inputs:
+        inputs = inputs.copy()
+        inputs[mangled_context_name] = inputs.pop("__context")
+    return inputs
+
+
 def _run_function(function: Function, state: State, inputs: Dict[str, Any], name: str) -> dict:
     """Runs a function, returning the result of running the function.
     Note this restricts the keys in the state to only those that the
@@ -121,6 +146,9 @@ def _run_function(function: Function, state: State, inputs: Dict[str, Any], name
         )
     state_to_use = state.subset(*function.reads)
     function.validate_inputs(inputs)
+    if "__context" in inputs:
+        # potentially need to remap the __context variable
+        inputs = _remap_context_variable(function.run, inputs)
     result = function.run(state_to_use, **inputs)
     _validate_result(result, name)
     return result

@@ -4,7 +4,7 @@ import datetime
 import logging
 import typing
 import uuid
-from typing import Any, Awaitable, Callable, Dict, Generator, Literal, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, Generator, Literal, Optional, Tuple, Union
 
 import pytest
 
@@ -34,6 +34,7 @@ from burr.core.application import (
     _arun_multi_step_streaming_action,
     _arun_single_step_action,
     _arun_single_step_streaming_action,
+    _remap_context_variable,
     _run_function,
     _run_multi_step_streaming_action,
     _run_reducer,
@@ -3330,3 +3331,65 @@ def test_with_state_persister_is_initialized_not_implemented():
     persister = FakePersister()
     # Add the persister to the builder, expecting no exceptions
     builder.with_state_persister(persister)
+
+
+class TestActionWithoutContext(Action):
+    def run(self, other_param, foo):
+        pass
+
+    @property
+    def reads(self) -> list[str]:
+        pass
+
+    @property
+    def writes(self) -> list[str]:
+        pass
+
+    def update(self, result: dict, state: State) -> State:
+        pass
+
+    def inputs(self) -> Union[list[str], tuple[list[str], list[str]]]:
+        return ["other_param", "foo"]
+
+
+class TestActionWithContext(TestActionWithoutContext):
+    def run(self, __context, other_param, foo):
+        pass
+
+    def inputs(self) -> Union[list[str], tuple[list[str], list[str]]]:
+        return ["other_param", "foo", "__context"]
+
+
+class TestActionWithKwargs(TestActionWithoutContext):
+    def run(self, other_param, foo, **kwargs):
+        pass
+
+    def inputs(self) -> Union[list[str], tuple[list[str], list[str]]]:
+        return ["other_param", "foo", "__context"]
+
+
+def test_remap_context_variable_with_mangled_context_kwargs():
+    _action = TestActionWithKwargs()
+
+    inputs = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
+    expected = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
+    assert _remap_context_variable(_action.run, inputs) == expected
+
+
+def test_remap_context_variable_with_mangled_context():
+    _action = TestActionWithContext()
+
+    inputs = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
+    expected = {
+        f"_{TestActionWithContext.__name__}__context": "context_value",
+        "other_key": "other_value",
+        "foo": "foo_value",
+    }
+    assert _remap_context_variable(_action.run, inputs) == expected
+
+
+def test_remap_context_variable_without_mangled_context():
+    _action = TestActionWithoutContext()
+    inputs = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
+    expected = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
+    assert _remap_context_variable(_action.run, inputs) == expected

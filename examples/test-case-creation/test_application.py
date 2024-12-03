@@ -51,7 +51,7 @@ def test_prompt_for_more():
 
 
 @pytest.mark.file_name("prompt_for_more.json")
-def test_prompt_for_more_from_file(input_state, expected_state):
+def test_prompt_for_more_from_file(input_state, expected_state, results_bag):
     """Function for testing the action"""
     input_state = state.State.deserialize(input_state)
     expected_state = state.State.deserialize(expected_state)
@@ -65,3 +65,15 @@ def test_prompt_for_more_from_file(input_state, expected_state):
     # or, have an LLM Grade things -- you need to create the llm_evaluator function:
     # assert llm_evaluator("are these two equivalent responses. Respond with Y for yes, N for no",
     # output_state["response"]["content"], expected_state["response"]["content"]) == "Y"
+    results_bag.input_state = input_state
+    results_bag.expected_state = expected_state
+    results_bag.output_state = output_state
+    results_bag.foo = "bar"
+
+
+def test_print_results(module_results_df):
+    print(module_results_df.columns)
+    print(module_results_df.head())
+    # save to CSV
+    # upload to google sheets
+    # compute statistics
