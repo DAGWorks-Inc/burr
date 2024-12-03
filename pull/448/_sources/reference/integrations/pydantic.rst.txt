@@ -1,0 +1,8 @@
+========
+Pydantic
+========
+
+`Pydantic <https://www.pydantic.io>`_ integrations come in two forms:
+
+- Serialization/deserialization of state (see :ref:`serderef` for more information)
+- Type checking of state (see :ref:`statetypingref` for more information)
