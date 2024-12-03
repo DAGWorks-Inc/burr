@@ -4,7 +4,7 @@ import datetime
 import logging
 import typing
 import uuid
-from typing import Any, Awaitable, Callable, Dict, Generator, Literal, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, Generator, List, Literal, Optional, Tuple
 
 import pytest
 
@@ -3060,6 +3060,47 @@ async def test_application_exposes_app_context_through_context_manager_async():
         .build()
     )
     await app.arun(halt_after=["result"])
+
+
+def test_application_exposes_app_context_through_context_manager_sync_class_based():
+    """Tests that we can get the context from the application correctly"""
+
+    class CounterActionContext(Action):
+        @property
+        def reads(self) -> list[str]:
+            return ["count"]
+
+        def run(self, state: State, **run_kwargs) -> dict:
+            app_context = run_kwargs["__context"]
+            assert app_context is not None
+            assert app_context.tracker is not None  # NoOpTracker is used
+            assert isinstance(app_context.sequence_id, int)
+            assert app_context.app_id == "test123"
+            return {"count": state["count"] + 1}
+
+        @property
+        def writes(self) -> list[str]:
+            return ["count"]
+
+        def update(self, result: dict, state: State) -> State:
+            return state.update(**result)
+
+        @property
+        def inputs(self) -> List[str]:
+            return ["__context"]
+
+    result_action = Result("count").with_name("result")
+    app = (
+        ApplicationBuilder()
+        .with_actions(result_action, counter=CounterActionContext())
+        .with_transitions(("counter", "result", default))
+        .with_tracker(NoOpTracker("unique_tracker_name"))
+        .with_identifiers(app_id="test123", partition_key="user123", sequence_id=5)
+        .with_entrypoint("counter")
+        .with_state(count=0)
+        .build()
+    )
+    app.run(halt_after=["result"])
 
 
 def test_application_passes_context_when_declared():
