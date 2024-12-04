@@ -26,6 +26,7 @@ FILTERLIST = [
     "deployment",
     "talks",
     "parallelism",  # TODO - remove this shortly
+    "pytest",
 ]
 
 
