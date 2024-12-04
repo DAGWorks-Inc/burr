@@ -98,16 +98,18 @@ This looks as follows -- in this case we're running the same LLM over different 
                 yield state.update(prompt=prompt)
 
 
-        def reduce(self, states: Generator[State, None, None]) -> State:
+        def reduce(self, state: State, states: Generator[State, None, None]) -> State:
             all_llm_outputs = []
-            for state in states:
-                all_llm_outputs.append(state["llm_output"])
+            for sub_state in states:
+                all_llm_outputs.append(sub_state["llm_output"])
             return state.update(all_llm_outputs=all_llm_outputs)
 
-        def reads() -> List[str]:
+        @property
+        def reads(self) -> List[str]:
             return ["prompts"]
 
-        def writes() -> List[str]:
+        @property
+        def writes(self) -> List[str]:
             return ["all_llm_outputs"]
 
 Then, to run the application:
@@ -168,16 +170,18 @@ For case (2) (mapping actions over the same state) you implement the ``MapAction
         def state(self, state: State) -> State:
             return state.update(prompt="What is the meaning of life?")
 
-        def reduce(self, states: Generator[State, None, None]) -> State:
+        def reduce(self, state: State, states: Generator[State, None, None]) -> State:
             all_llm_outputs = []
-            for state in states:
-                all_llm_outputs.append(state["llm_output"])
+            for sub_state in states:
+                all_llm_outputs.append(sub_state["llm_output"])
             return state.update(all_llm_outputs=all_llm_outputs)
 
-        def reads() -> List[str]:
+        @property
+        def reads(self) -> List[str]:
             return ["prompt"] # we're just running this on a single prompt, for multiple actions
 
-        def writes() -> List[str]:
+        @property
+        def writes(self) -> List[str]:
             return ["all_llm_outputs"]
 
 
@@ -219,7 +223,7 @@ For tracking which states/actions belong to which actions, we recommend you use 
 
     class TestModelsOverPrompts(MapActionsAndStates):
 
-        def actions(self, state: State) -> Generator[Action | Callable | RunnableGraph, None, None]:
+        def actions(self, state: State, context: ApplicationContext, inputs: Dict[str, Any]) -> Generator[Action | Callable | RunnableGraph, None, None]:
             # make sure to add a name to the action
             # This is not necessary for subgraphs, as actions will already have names
             for action in [
@@ -229,7 +233,7 @@ For tracking which states/actions belong to which actions, we recommend you use 
             ]
                 yield action
 
-        def states(self, state: State) -> Generator[State, None, None]:
+        def states(self, state: State, context: ApplicationContext, inputs: Dict[str, Any]) -> Generator[State, None, None]:
             for prompt in [
                 "What is the meaning of life?",
                 "What is the airspeed velocity of an unladen swallow?",
@@ -237,22 +241,24 @@ For tracking which states/actions belong to which actions, we recommend you use 
             ]:
                 yield state.update(prompt=prompt)
 
-        def reduce(self, states: Generator[State, None, None]) -> State:
+        def reduce(self, state: State, states: Generator[State, None, None]) -> State:
             all_llm_outputs = []
-            for state in states:
+            for sub_state in states:
                 all_llm_outputs.append(
                     {
-                        "output" : state["llm_output"],
-                        "model" : state["model"],
-                        "prompt" : state["prompt"],
+                        "output" : sub_state["llm_output"],
+                        "model" : sub_state["model"],
+                        "prompt" : sub_state["prompt"],
                     }
                 )
             return state.update(all_llm_outputs=all_llm_outputs)
 
-        def reads() -> List[str]:
+        @property
+        def reads(self) -> List[str]:
             return ["prompts"]
 
-        def writes() -> List[str]:
+        @property
+        def writes(self) -> List[str]:
             return ["all_llm_outputs"]
 
 
@@ -272,6 +278,7 @@ This might look as follows -- say we have a simple subflow that takes in a raw p
 
 .. code-block:: python
 
+    from typing import Dict, Any
     from burr.core import action, state
     from burr.core.graph import Graph
 
@@ -304,7 +311,7 @@ This might look as follows -- say we have a simple subflow that takes in a raw p
 
     class TestMultiplePromptsWithSubgraph(MapStates):
 
-        def action(self) -> Action | Callable | RunnableGraph:
+        def action(self, state: State, inputs: Dict[str, Any]) -> Action | Callable | RunnableGraph:
             return runnable_graph
 
         def states(self, state: State) -> Generator[State, None, None]:
@@ -425,14 +432,14 @@ This looks as follows:
                         # a few other parameters we might add -- see advanced usage -- failure conditions, etc...
                     )
 
-        def reduce(self, states: Generator[State, None, None]) -> State:
+        def reduce(self, state: State, states: Generator[State, None, None]) -> State:
             all_llm_outputs = []
-            for state in states:
+            for sub_state in states:
                 all_llm_outputs.append(
                     {
-                        "output" : state["llm_output"],
-                        "model" : state["model"],
-                        "prompt" : state["prompt"],
+                        "output" : sub_state["llm_output"],
+                        "model" : sub_state["model"],
+                        "prompt" : sub_state["prompt"],
                     }
                 )
             return state.update(all_llm_outputs=all_llm_outputs)
