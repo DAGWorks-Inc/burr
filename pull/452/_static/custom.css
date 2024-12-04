@@ -1,0 +1,5 @@
+/* Enable line wrapping for code blocks */
+.highlight pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
