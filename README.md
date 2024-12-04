@@ -4,6 +4,7 @@
 
 [![Discord](https://img.shields.io/badge/Join-Burr_Discord-7289DA?logo=discord)](https://discord.gg/6Zy2DwP4f3)
 [![Downloads](https://static.pepy.tech/badge/burr/month)](https://pepy.tech/project/burr)
+![PyPI Downloads](https://static.pepy.tech/badge/burr)
 [![GitHub Last Commit](https://img.shields.io/github/last-commit/dagworks-inc/burr)](https://github.com/dagworks-inc/burr/pulse)
 [![X](https://img.shields.io/badge/follow-%40burr_framework-1DA1F2?logo=x&style=social)](https://twitter.com/burr_framework)
 <a href="https://app.commanddash.io/agent/github_DAGWorks-Inc_burr"><img src="https://img.shields.io/badge/AI-Code%20Agent-EB9FDA"></a>
