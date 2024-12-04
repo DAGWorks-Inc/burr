@@ -199,14 +199,14 @@ class TaskBasedParallelAction(SingleStepAction):
                             # a few other parameters we might add -- see advanced usage -- failure conditions, etc...
                         )
 
-            def reduce(self, states: Generator[State, None, None]) -> State:
+            def reduce(self, state: State, states: Generator[State, None, None]) -> State:
                 all_llm_outputs = []
-                for state in states:
+                for sub_state in states:
                     all_llm_outputs.append(
                         {
-                            "output" : state["llm_output"],
-                            "model" : state["model"],
-                            "prompt" : state["prompt"],
+                            "output" : sub_state["llm_output"],
+                            "model" : sub_state["model"],
+                            "prompt" : sub_state["prompt"],
                         }
                     )
                 return state.update(all_llm_outputs=all_llm_outputs)
@@ -380,7 +380,7 @@ class MapActionsAndStates(TaskBasedParallelAction):
 
         class TestModelsOverPrompts(MapActionsAndStates):
 
-            def actions(self, state: State) -> Generator[Action | Callable | RunnableGraph, None, None]:
+            def actions(self, state: State, context: ApplicationContext, inputs: Dict[str, Any]) -> Generator[Action | Callable | RunnableGraph, None, None]:
                 # make sure to add a name to the action
                 # This is not necessary for subgraphs, as actions will already have names
                 for action in [
@@ -390,7 +390,7 @@ class MapActionsAndStates(TaskBasedParallelAction):
                 ]:
                     yield action
 
-            def states(self, state: State) -> Generator[State, None, None]:
+            def states(self, state: State, context: ApplicationContext, inputs: Dict[str, Any]) -> Generator[State, None, None]:
                 for prompt in [
                     "What is the meaning of life?",
                     "What is the airspeed velocity of an unladen swallow?",
@@ -398,14 +398,14 @@ class MapActionsAndStates(TaskBasedParallelAction):
                 ]:
                     yield state.update(prompt=prompt)
 
-            def reduce(self, states: Generator[State, None, None]) -> State:
+            def reduce(self, state: State, states: Generator[State, None, None]) -> State:
                 all_llm_outputs = []
-                for state in states:
+                for sub_state in states:
                     all_llm_outputs.append(
                         {
-                            "output" : state["llm_output"],
-                            "model" : state["model"],
-                            "prompt" : state["prompt"],
+                            "output" : sub_state["llm_output"],
+                            "model" : sub_state["model"],
+                            "prompt" : sub_state["prompt"],
                         }
                     )
                 return state.update(all_llm_outputs=all_llm_outputs)
@@ -585,7 +585,7 @@ class MapActions(MapActionsAndStates, abc.ABC):
 
         class TestMultipleModels(MapActions):
 
-            def actions(self, state: State) -> Generator[Action | Callable | RunnableGraph, None, None]:
+            def actions(self, state: State, inputs: Dict[str, Any], context: ApplicationContext) -> Generator[Action | Callable | RunnableGraph, None, None]:
                 # Make sure to add a name to the action if you use bind() with a function,
                 # note that these can be different actions, functions, etc...
                 # in this case we're using `.bind()` to create multiple actions, but we can use some mix of
@@ -597,7 +597,7 @@ class MapActions(MapActionsAndStates, abc.ABC):
                 ]:
                     yield action
 
-            def state(self, state: State) -> State:
+            def state(self, state: State, inputs: Dict[str, Any]) -> State:
                 return state.update(prompt="What is the meaning of life?")
 
             def reduce(self, states: Generator[State, None, None]) -> State:
@@ -682,12 +682,12 @@ class MapStates(MapActionsAndStates, abc.ABC):
 
         class TestMultiplePrompts(MapStates):
 
-            def action(self) -> Action | Callable | RunnableGraph:
+            def action(self, state: State, inputs: Dict[str, Any]) -> Action | Callable | RunnableGraph:
                 # make sure to add a name to the action
                 # This is not necessary for subgraphs, as actions will already have names
                 return query_llm.with_name("query_llm")
 
-            def states(self, state: State) -> Generator[State, None, None]:
+            def states(self, state: State, inputs: Dict[str, Any], context: ApplicationContext) -> Generator[State, None, None]:
                 # You could easily have a list_prompts upstream action that writes to "prompts" in state
                 # And loop through those
                 # This hardcodes for simplicity
@@ -698,11 +698,10 @@ class MapStates(MapActionsAndStates, abc.ABC):
                 ]:
                     yield state.update(prompt=prompt)
 
-
-            def reduce(self, states: Generator[State, None, None]) -> State:
+            def reduce(self, state: State, states: Generator[State, None, None]) -> State:
                 all_llm_outputs = []
-                for state in states:
-                    all_llm_outputs.append(state["llm_output"])
+                for sub_state in states:
+                    all_llm_outputs.append(sub_state["llm_output"])
                 return state.update(all_llm_outputs=all_llm_outputs)
 
             @property
