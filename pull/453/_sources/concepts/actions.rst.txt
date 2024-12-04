@@ -30,6 +30,8 @@ There are two APIs for defining actions: class-based and function-based. They ar
 - use the function-based API when you want to write something quick and terse that reads from a fixed set of state variables
 - use the class-based API when you want to leverage inheritance or parameterize the action in more powerful ways
 
+.. _functionbasedactions:
+
 ----------------------
 Function-based actions
 ----------------------
@@ -127,7 +129,7 @@ injected into your Burr Actions. This is done by adding ``__context`` to the act
 Class-Based Actions
 -------------------
 
-.. _class-based-actions:
+.. _classbasedactions:
 
 
 You can define an action by implementing the :py:class:`Action <burr.core.action.Action>` class:
