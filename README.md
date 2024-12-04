@@ -8,6 +8,15 @@
 [![GitHub Last Commit](https://img.shields.io/github/last-commit/dagworks-inc/burr)](https://github.com/dagworks-inc/burr/pulse)
 [![X](https://img.shields.io/badge/follow-%40burr_framework-1DA1F2?logo=x&style=social)](https://twitter.com/burr_framework)
 <a href="https://app.commanddash.io/agent/github_DAGWorks-Inc_burr"><img src="https://img.shields.io/badge/AI-Code%20Agent-EB9FDA"></a>
+<a target="_blank" href="https://linkedin.com/showcase/dagster" style="background:none">
+  <img src="https://img.shields.io/badge/DAGWorks-Follow-purple.svg?logo=linkedin" />
+</a>
+<a href="https://twitter.com/burr_framework" target="_blank">
+  <img src="https://img.shields.io/badge/burr_framework-Follow-purple.svg?logo=X"/>
+</a>
+<a href="https://twitter.com/dagworks" target="_blank">
+  <img src="https://img.shields.io/badge/DAGWorks-Follow-purple.svg?logo=X"/>
+</a>
 
 </div>
 
