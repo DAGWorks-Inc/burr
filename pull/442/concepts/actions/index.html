@@ -453,6 +453,17 @@ bound, they will be referred to as inputs. For example:</p>
 </pre></div>
 </div>
 <p>This means that the application does not <em>need</em> the inputs to be set.</p>
+<p>Note: to access <code class="docutils literal notranslate"><span class="pre">app_id</span></code> and <code class="docutils literal notranslate"><span class="pre">partition_key</span></code> in your running application, you can have the <a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationContext" title="burr.core.application.ApplicationContext"><code class="xref py py-class docutils literal notranslate"><span class="pre">ApplicationContext</span></code></a>
+injected into your Burr Actions. This is done by adding <code class="docutils literal notranslate"><span class="pre">__context</span></code> to the action signature:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">State</span><span class="p">,</span> <span class="n">ApplicationContext</span>
+
+<span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+    <span class="n">app_id</span> <span class="o">=</span> <span class="n">__context</span><span class="o">.</span><span class="n">app_id</span>
+    <span class="n">partition_key</span> <span class="o">=</span> <span class="n">__context</span><span class="o">.</span><span class="n">partition_key</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
 </section>
 <section id="class-based-actions">
 <h2>Class-Based Actions<a class="headerlink" href="#class-based-actions" title="Link to this heading">¶</a></h2>
@@ -517,7 +528,38 @@ of (required, optional) inputs. For example:</p>
 </pre></div>
 </div>
 <p>Note your code will have to handle the case where <code class="docutils literal notranslate"><span class="pre">optional_input</span></code> is not passed in (e.g. by setting the appropriate kwargs to the <cite>run(…)</cite> method.</p>
-<p>Refer to <a class="reference internal" href="#id1"><span class="std std-ref">actions</span></a> for more documentation.</p>
+<p>If your action needs to know the current <cite>partition_key</cite>, <cite>app_id</cite>, or <cite>sequence_id</cite>, you can request the <cite>__context</cite> variable
+be injected into the action. This is done by adding <cite>__context</cite> to the <cite>inputs</cite> property as well as the run method:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">Action</span><span class="p">,</span> <span class="n">State</span><span class="p">,</span> <span class="n">ApplicationContext</span>
+
+<span class="k">class</span> <span class="nc">Counter</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">reads</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;counter&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span>
+            <span class="n">increment_by</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="c1"># add __context here</span>
+            <span class="n">__context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="c1"># can access the app_id from the __context</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">__context</span><span class="o">.</span><span class="n">app_id</span><span class="p">,</span> <span class="n">__context</span><span class="o">.</span><span class="n">partition_key</span><span class="p">,</span> <span class="n">__context</span><span class="o">.</span><span class="n">sequence_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;counter&quot;</span><span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;counter&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">increment_by</span><span class="p">}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">writes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;counter&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="c1"># add __context here</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;increment_by&quot;</span><span class="p">,</span> <span class="s2">&quot;__context&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Refer to <a class="reference internal" href="../../reference/actions/#burr.core.action.Action" title="burr.core.action.Action"><code class="xref py py-class docutils literal notranslate"><span class="pre">Action</span></code></a> for more documentation.</p>
 </section>
 <section id="runtime-inputs">
 <span id="inputref"></span><h2>Runtime Inputs<a class="headerlink" href="#runtime-inputs" title="Link to this heading">¶</a></h2>

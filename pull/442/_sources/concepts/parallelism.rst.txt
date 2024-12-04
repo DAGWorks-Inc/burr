@@ -98,16 +98,18 @@ This looks as follows -- in this case we're running the same LLM over different 
                 yield state.update(prompt=prompt)
 
 
-        def reduce(self, states: Generator[State, None, None]) -> State:
+        def reduce(self, state: State, states: Generator[State, None, None]) -> State:
             all_llm_outputs = []
-            for state in states:
-                all_llm_outputs.append(state["llm_output"])
+            for sub_state in states:
+                all_llm_outputs.append(sub_state["llm_output"])
             return state.update(all_llm_outputs=all_llm_outputs)
 
-        def reads() -> List[str]:
+        @property
+        def reads(self) -> List[str]:
             return ["prompts"]
 
-        def writes() -> List[str]:
+        @property
+        def writes(self) -> List[str]:
             return ["all_llm_outputs"]
 
 Then, to run the application:
@@ -168,16 +170,18 @@ For case (2) (mapping actions over the same state) you implement the ``MapAction
         def state(self, state: State) -> State:
             return state.update(prompt="What is the meaning of life?")
 
-        def reduce(self, states: Generator[State, None, None]) -> State:
+        def reduce(self, state: State, states: Generator[State, None, None]) -> State:
             all_llm_outputs = []
-            for state in states:
-                all_llm_outputs.append(state["llm_output"])
+            for sub_state in states:
+                all_llm_outputs.append(sub_state["llm_output"])
             return state.update(all_llm_outputs=all_llm_outputs)
 
-        def reads() -> List[str]:
+        @property
+        def reads(self) -> List[str]:
             return ["prompt"] # we're just running this on a single prompt, for multiple actions
 
-        def writes() -> List[str]:
+        @property
+        def writes(self) -> List[str]:
             return ["all_llm_outputs"]
 
 
@@ -219,7 +223,7 @@ For tracking which states/actions belong to which actions, we recommend you use 
 
     class TestModelsOverPrompts(MapActionsAndStates):
 
-        def actions(self, state: State) -> Generator[Action | Callable | RunnableGraph, None, None]:
+        def actions(self, state: State, context: ApplicationContext, inputs: Dict[str, Any]) -> Generator[Action | Callable | RunnableGraph, None, None]:
             # make sure to add a name to the action
             # This is not necessary for subgraphs, as actions will already have names
             for action in [
@@ -229,7 +233,7 @@ For tracking which states/actions belong to which actions, we recommend you use 
             ]
                 yield action
 
-        def states(self, state: State) -> Generator[State, None, None]:
+        def states(self, state: State, context: ApplicationContext, inputs: Dict[str, Any]) -> Generator[State, None, None]:
             for prompt in [
                 "What is the meaning of life?",
                 "What is the airspeed velocity of an unladen swallow?",
@@ -237,22 +241,24 @@ For tracking which states/actions belong to which actions, we recommend you use 
             ]:
                 yield state.update(prompt=prompt)
 
-        def reduce(self, states: Generator[State, None, None]) -> State:
+        def reduce(self, state: State, states: Generator[State, None, None]) -> State:
             all_llm_outputs = []
-            for state in states:
+            for sub_state in states:
                 all_llm_outputs.append(
                     {
-                        "output" : state["llm_output"],
-                        "model" : state["model"],
-                        "prompt" : state["prompt"],
+                        "output" : sub_state["llm_output"],
+                        "model" : sub_state["model"],
+                        "prompt" : sub_state["prompt"],
                     }
                 )
             return state.update(all_llm_outputs=all_llm_outputs)
 
-        def reads() -> List[str]:
+        @property
+        def reads(self) -> List[str]:
             return ["prompts"]
 
-        def writes() -> List[str]:
+        @property
+        def writes(self) -> List[str]:
             return ["all_llm_outputs"]
 
 
@@ -272,6 +278,7 @@ This might look as follows -- say we have a simple subflow that takes in a raw p
 
 .. code-block:: python
 
+    from typing import Dict, Any
     from burr.core import action, state
     from burr.core.graph import Graph
 
@@ -304,7 +311,7 @@ This might look as follows -- say we have a simple subflow that takes in a raw p
 
     class TestMultiplePromptsWithSubgraph(MapStates):
 
-        def action(self) -> Action | Callable | RunnableGraph:
+        def action(self, state: State, inputs: Dict[str, Any]) -> Action | Callable | RunnableGraph:
             return runnable_graph
 
         def states(self, state: State) -> Generator[State, None, None]:
@@ -425,14 +432,14 @@ This looks as follows:
                         # a few other parameters we might add -- see advanced usage -- failure conditions, etc...
                     )
 
-        def reduce(self, states: Generator[State, None, None]) -> State:
+        def reduce(self, state: State, states: Generator[State, None, None]) -> State:
             all_llm_outputs = []
-            for state in states:
+            for sub_state in states:
                 all_llm_outputs.append(
                     {
-                        "output" : state["llm_output"],
-                        "model" : state["model"],
-                        "prompt" : state["prompt"],
+                        "output" : sub_state["llm_output"],
+                        "model" : sub_state["model"],
+                        "prompt" : sub_state["prompt"],
                     }
                 )
             return state.update(all_llm_outputs=all_llm_outputs)
@@ -485,14 +492,39 @@ Persistence/Tracking
 By default, the trackers/persisters will be passed from the parent application to the child application. The application IDs
 will be created as a a stable hash of the parent ID + the index of the child ID, requiring the order to be constant to ensure that the same application ID is used for the same task every time.
 
-It will also utilize the same persister to load from the prior state, if that is used on the application level (see the state-persistence section).
+Note that we will be adding hte ability to create a unique key, per application, but that is not implemented yet.
+
+It will also utilize the same persister to load from the prior state, if that is used on the application level (see :ref:`state persistence <state-persistence>`).
 
 This enables the following:
 
 1. Tracking will automatically be associated with the same application (and sub-application) when reloaded
-2. If the concurrent application quits halfway through, bthe application will be able to pick up where it left off, as will all sub-applications
+2. If the concurrent application quits halfway through, the application will be able to pick up where it left off, as will all sub-applications
 
-You can disable either tracking or persistence at the sub-application level by passing ``track=False`` or ``persist=False`` to the constructor of the parallel action superclass.
+The default behavior is to cascade all the following constructs through to the parallel child applications:
+
+1. Tracking (given by the :py:meth:`burr.core.application.ApplicationBuilder.with_tracker` function in :py:class:`ApplicationBuilder <burr.core.application.ApplicationBuilder>`)
+2. State saving/persistence (given by the :py:meth:`burr.core.application.ApplicationBuilder.with_state_persister` function in :py:class:`burr.core.application.ApplicationBuilder`)
+3. State loading (given by the :py:meth:`burr.core.application.ApplicationBuilder.initialize_from` function in :py:class:`burr.core.application.ApplicationBuilder`)
+
+These will then be passed ot the corresponding sub-application tasks. If any of these objects implement a `.copy()` method, that will be called. Otherwise the same instance will be created. Not the tracker/persister/loader must be serializable
+to work in non-multithreaded executors, and thread-safe to work in multithreaded instances.
+
+In mst cases, (2) and (3) above will be the same, however there all valid use-cases where you might want to use different persisters/loaders for the sub-application.
+Thus, the default will be to pass the same instance for (2) and (3), *if* they both exist and are specified.
+
+You can disable either tracking or persistence at the sub-application level by overriding one of the three methods (corresponding to the three adapter-types above),
+on any of the :py:class:`burr.core.parallelism.MapStatesAndActions`, :py:class:`burr.core.parallelism.MapStates`, or :py:class:`burr.core.parallelism.MapActions` classes.
+
+If you return `None`, then no tracker/persister will be used. If you return an object (E.G. a tracker or a persister), that will be used instead.
+The function will be called for every instance of the sub-application.
+
+1. Overriding the tracker :py:meth:`burr.core.parallelism.MapStatesAndAction.tracker`
+2. Overriding the persister :py:meth:`burr.core.parallelism.MapStatesAndAction.state_persister`
+3. Overriding the loader :py:meth:`burr.core.parallelism.MapStatesAndAction.state_initializer`
+
+You can also set the corresponding fields in the :py:class:`burr.core.parallelism.SubGraphTask` object on a per-task basis,
+if you are using the lower-level API.
 
 You can also disable it globally using the application builder:
 
@@ -503,18 +535,20 @@ You can also disable it globally using the application builder:
         def action(self) -> Action | Callable | RunnableGraph:
             return runnable_graph
 
-        def tracker(self, context: ApplicationContext) -> TrackingBehavior | None:
+        def tracker(self, context) -> TrackingBehavior | None:
             # return "cascade" # default
             # return None # no tracking
             return LocalTrackingClient(...) # custom tracker
 
-        def persister(self, context: ApplicationContext) -> Persister | None:
+        def state_persister(self) -> Persister | None:
             # return "cascade" # default
             # return None # no persistence
             return SQLLitePersister(...) # custom persister
 
-        ... # same as above
+        def state_initializer(self) -> StateInitializer | None:
+            return self.state_perssiter() # same as the persister
 
+        ... # same as above
 
 Other
 -----
