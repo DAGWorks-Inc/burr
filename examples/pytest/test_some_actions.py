@@ -1,36 +1,107 @@
+"""This module shows example tests for testing actions and agents."""
 import pytest
 
+from burr.core import state
 
-# examples/pytest/test_example.py
-def test_example(result_collector):
+from examples.pytest import some_actions
+
+
+def test_example1(result_collector):
+    """Example test that uses a custom fixture."""
     result_collector.append("Test result 1")
     result_collector.append("Test result 2")
     assert True
 
 
-@pytest.mark.parametrize("sample_idx", range(3))
-def test_1(sample_idx, results_bag):
-    results_bag.input = "..."
-    results_bag.actual = "foo bar"
-    results_bag.expected = "foo bar baz"
-    results_bag.cosine = 0.8
-    results_bag.jaccard = 0.6
-    results_bag.llm = sample_idx
-
-
-def test_2(results_bag):
+def test_example2(results_bag):
+    """Example that uses pytest-harvest results_bag fixture."""
+    # the following become columns in the final results
     results_bag.input = "..."
     results_bag.actual = "foo"
     results_bag.expected = "foo bar baz"
     results_bag.cosine = 0.3
     results_bag.jaccard = 0.2
-    print("hi")
-    assert False
+    assert True
+
+
+def test_example3(module_results_df):
+    """Example that shows how to access the module_results_df fixture."""
+    # note pytest runs these tests in order - so in practice this
+    # would be placed at the end of the test file
+    print(module_results_df.columns)
+
+
+def test_run_hypothesis(results_bag):
+    """Tests the run_hypothesis action for a single case"""
+    input = "Patient has a limp and is unable to flex right ankle. Ankle is swollen."
+    hypothesis = "Common cold"
+    expected = "no"
+    results_bag.input = input
+    results_bag.expected = expected
+    results_bag.test_function = "test_run_hypothesis"
+    input_state = state.State({"hypothesis": hypothesis, "transcription": input})
+    end_state = some_actions.run_hypothesis(input_state)
+    results_bag.actual = end_state["diagnosis"]
+    results_bag.exact_match = end_state["diagnosis"].lower() == expected
+    # results_bag.jaccard = ... # other measures here
+    # e.g. LLM as judge if applicable
+    # place asserts at end
+    assert end_state["diagnosis"] is not None
+    assert end_state["diagnosis"] != ""
+
+
+@pytest.mark.parametrize(
+    "input,hypothesis,expected",
+    [
+        ("Patient exhibits mucus dripping from nostrils and coughing.", "Common cold", "yes"),
+        (
+            "Patient has a limp and is unable to flex right ankle. Ankle is swollen.",
+            "Sprained ankle",
+            "yes",
+        ),
+        (
+            "Patient fell off and landed on their right arm. Their right wrist is swollen, "
+            "they can still move their fingers, and there is only minor pain or discomfort when the wrist is moved or "
+            "touched.",
+            "Broken arm",
+            "no",
+        ),
+    ],
+    ids=["common_cold", "sprained_ankle", "broken_arm"],
+)
+def test_run_hypothesis_parameterized(input, hypothesis, expected, results_bag):
+    """Example showing how to parameterize this."""
+    results_bag.input = input
+    results_bag.expected = expected
+    results_bag.test_function = "test_run_hypothesis_parameterized"
+    input_state = state.State({"hypothesis": hypothesis, "transcription": input})
+    end_state = some_actions.run_hypothesis(input_state)
+    results_bag.actual = end_state["diagnosis"]
+    results_bag.exact_match = end_state["diagnosis"].lower() == expected
+    # results_bag.jaccard = ... # other measures here
+    # e.g. LLM as judge if applicable
+    # place asserts at end
+    assert end_state["diagnosis"] is not None
+    assert end_state["diagnosis"] != ""
+
+
+def test_run_hypothesis_burr_fixture(input, hypothesis, expected, results_bag):
+    """This example shows how to scale parameterized with a file of inputs and expected outputs."""
 
 
 def test_print_results(module_results_df):
     print(module_results_df.columns)
     print(module_results_df.head())
-    # save to CSV
-    # upload to google sheets
     # compute statistics
+    # this is where you could use pandas to compute statistics like accuracy, etc.
+    tests_of_interest = module_results_df[
+        module_results_df["test_function"].fillna("").str.startswith("test_run_hypothesis")
+    ]
+    accuracy = sum(tests_of_interest["exact_match"]) / len(tests_of_interest)
+    # save to CSV
+    tests_of_interest[
+        ["test_function", "duration_ms", "status", "input", "expected", "actual", "exact_match"]
+    ].to_csv("results.csv", index=True, quoting=1)
+    # upload to google sheets or other storage, etc.
+
+    assert accuracy > 0.9  # and then assert on the computed statistics
