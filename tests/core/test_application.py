@@ -34,7 +34,7 @@ from burr.core.application import (
     _arun_multi_step_streaming_action,
     _arun_single_step_action,
     _arun_single_step_streaming_action,
-    _remap_context_variable,
+    _remap_dunder_parameters,
     _run_function,
     _run_multi_step_streaming_action,
     _run_reducer,
@@ -3368,12 +3368,20 @@ class TestActionWithKwargs(TestActionWithoutContext):
         return ["other_param", "foo", "__context"]
 
 
+class TestActionWithContextTracer(TestActionWithoutContext):
+    def run(self, __context, other_param, foo, __tracer):
+        pass
+
+    def inputs(self) -> Union[list[str], tuple[list[str], list[str]]]:
+        return ["other_param", "foo", "__context", "__tracer"]
+
+
 def test_remap_context_variable_with_mangled_context_kwargs():
     _action = TestActionWithKwargs()
 
     inputs = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
     expected = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
-    assert _remap_context_variable(_action.run, inputs) == expected
+    assert _remap_dunder_parameters(_action.run, inputs, ["__context", "__tracer"]) == expected
 
 
 def test_remap_context_variable_with_mangled_context():
@@ -3385,11 +3393,29 @@ def test_remap_context_variable_with_mangled_context():
         "other_key": "other_value",
         "foo": "foo_value",
     }
-    assert _remap_context_variable(_action.run, inputs) == expected
+    assert _remap_dunder_parameters(_action.run, inputs, ["__context", "__tracer"]) == expected
+
+
+def test_remap_context_variable_with_mangled_contexttracer():
+    _action = TestActionWithContextTracer()
+
+    inputs = {
+        "__context": "context_value",
+        "__tracer": "tracer_value",
+        "other_key": "other_value",
+        "foo": "foo_value",
+    }
+    expected = {
+        f"_{TestActionWithContextTracer.__name__}__context": "context_value",
+        "other_key": "other_value",
+        "foo": "foo_value",
+        f"_{TestActionWithContextTracer.__name__}__tracer": "tracer_value",
+    }
+    assert _remap_dunder_parameters(_action.run, inputs, ["__context", "__tracer"]) == expected
 
 
 def test_remap_context_variable_without_mangled_context():
     _action = TestActionWithoutContext()
     inputs = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
     expected = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
-    assert _remap_context_variable(_action.run, inputs) == expected
+    assert _remap_dunder_parameters(_action.run, inputs, ["__context", "__tracer"]) == expected

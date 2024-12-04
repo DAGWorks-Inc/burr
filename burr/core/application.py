@@ -103,28 +103,34 @@ def _adjust_single_step_output(
     _raise_fn_return_validation_error(output, action_name)
 
 
-def _remap_context_variable(run_method: Callable, inputs: Dict[str, Any]) -> dict:
-    """This is a utility function to remap the __context variable to the mangled variable in the function signature.
+def _remap_dunder_parameters(
+    run_method: Callable, inputs: Dict[str, Any], vars_to_remap: List[str]
+) -> dict:
+    """This is a utility function to remap the __dunder parameters to the mangled version in the function signature.
 
-    Python mangles the variable name in the function signature, so we need to remap it to the correct variable name.
+    Python mangles __parameter names in the function signature, so we need to remap it to the correct parameter name.
 
     :param run_method: the run method to inspect.
     :param inputs: the inputs to inspect
+    :param vars_to_remap: the variables to remap
     :return: potentially new dict with the remapped variable, else the original dict.
     """
     # Get the signature of the method being run. This should be Function.run() or similar.
     signature = inspect.signature(run_method)
+    mangled_params: Dict[str, Optional[str]] = {v: None for v in vars_to_remap}
     # Find the name-mangled __context variable
-    mangled_context_name = None
-    for param in signature.parameters.values():
-        if param.name.endswith("__context"):
-            mangled_context_name = param.name
-            break
+    for dunder_param in mangled_params.keys():
+        for param in signature.parameters.values():
+            if param.name.endswith(dunder_param):
+                mangled_params[dunder_param] = param.name
+                break
 
-    # If a mangled __context variable is found, remap the value in inputs
-    if mangled_context_name and "__context" in inputs:
+    # If any mangled __parameter is found, remap the value in inputs
+    if any(mangled_params.values()):
         inputs = inputs.copy()
-        inputs[mangled_context_name] = inputs.pop("__context")
+        for dunder_param, mangled_name in mangled_params.items():
+            if mangled_name and dunder_param in inputs:
+                inputs[mangled_name] = inputs.pop(dunder_param)
     return inputs
 
 
@@ -146,9 +152,9 @@ def _run_function(function: Function, state: State, inputs: Dict[str, Any], name
         )
     state_to_use = state.subset(*function.reads)
     function.validate_inputs(inputs)
-    if "__context" in inputs:
-        # potentially need to remap the __context variable
-        inputs = _remap_context_variable(function.run, inputs)
+    if "__context" in inputs or "__tracer" in inputs:
+        # potentially need to remap the __context & __tracer variables
+        inputs = _remap_dunder_parameters(function.run, inputs, ["__context", "__tracer"])
     result = function.run(state_to_use, **inputs)
     _validate_result(result, name)
     return result
