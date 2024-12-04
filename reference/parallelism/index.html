@@ -475,14 +475,14 @@ your parallel action utilizes, then this is for you. If not, you’ll want to se
                     <span class="c1"># a few other parameters we might add -- see advanced usage -- failure conditions, etc...</span>
                 <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">states</span><span class="p">:</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">states</span><span class="p">:</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
         <span class="n">all_llm_outputs</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">states</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">sub_state</span> <span class="ow">in</span> <span class="n">states</span><span class="p">:</span>
             <span class="n">all_llm_outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="p">{</span>
-                    <span class="s2">&quot;output&quot;</span> <span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;llm_output&quot;</span><span class="p">],</span>
-                    <span class="s2">&quot;model&quot;</span> <span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">],</span>
-                    <span class="s2">&quot;prompt&quot;</span> <span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;output&quot;</span> <span class="p">:</span> <span class="n">sub_state</span><span class="p">[</span><span class="s2">&quot;llm_output&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;model&quot;</span> <span class="p">:</span> <span class="n">sub_state</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;prompt&quot;</span> <span class="p">:</span> <span class="n">sub_state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">],</span>
                 <span class="p">}</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">all_llm_outputs</span><span class="o">=</span><span class="n">all_llm_outputs</span><span class="p">)</span>
@@ -638,7 +638,7 @@ which allows you to specify the tasks individually. If you just want to vary act
 
 <span class="k">class</span> <span class="nc">TestModelsOverPrompts</span><span class="p">(</span><span class="n">MapActionsAndStates</span><span class="p">):</span>
 
-    <span class="k">def</span> <span class="nf">actions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">actions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="c1"># make sure to add a name to the action</span>
         <span class="c1"># This is not necessary for subgraphs, as actions will already have names</span>
         <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="p">[</span>
@@ -648,7 +648,7 @@ which allows you to specify the tasks individually. If you just want to vary act
         <span class="p">]:</span>
             <span class="k">yield</span> <span class="n">action</span>
 
-    <span class="k">def</span> <span class="nf">states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="p">[</span>
             <span class="s2">&quot;What is the meaning of life?&quot;</span><span class="p">,</span>
             <span class="s2">&quot;What is the airspeed velocity of an unladen swallow?&quot;</span><span class="p">,</span>
@@ -656,14 +656,14 @@ which allows you to specify the tasks individually. If you just want to vary act
         <span class="p">]:</span>
             <span class="k">yield</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">states</span><span class="p">:</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">states</span><span class="p">:</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
         <span class="n">all_llm_outputs</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">states</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">sub_state</span> <span class="ow">in</span> <span class="n">states</span><span class="p">:</span>
             <span class="n">all_llm_outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="p">{</span>
-                    <span class="s2">&quot;output&quot;</span> <span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;llm_output&quot;</span><span class="p">],</span>
-                    <span class="s2">&quot;model&quot;</span> <span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">],</span>
-                    <span class="s2">&quot;prompt&quot;</span> <span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;output&quot;</span> <span class="p">:</span> <span class="n">sub_state</span><span class="p">[</span><span class="s2">&quot;llm_output&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;model&quot;</span> <span class="p">:</span> <span class="n">sub_state</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;prompt&quot;</span> <span class="p">:</span> <span class="n">sub_state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">],</span>
                 <span class="p">}</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">all_llm_outputs</span><span class="o">=</span><span class="n">all_llm_outputs</span><span class="p">)</span>
@@ -875,7 +875,7 @@ action objects, or subdags implemented as <a class="reference internal" href="#b
 
 <span class="k">class</span> <span class="nc">TestMultipleModels</span><span class="p">(</span><span class="n">MapActions</span><span class="p">):</span>
 
-    <span class="k">def</span> <span class="nf">actions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">actions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="c1"># Make sure to add a name to the action if you use bind() with a function,</span>
         <span class="c1"># note that these can be different actions, functions, etc...</span>
         <span class="c1"># in this case we&#39;re using `.bind()` to create multiple actions, but we can use some mix of</span>
@@ -887,7 +887,7 @@ action objects, or subdags implemented as <a class="reference internal" href="#b
         <span class="p">]:</span>
             <span class="k">yield</span> <span class="n">action</span>
 
-    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;What is the meaning of life?&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">states</span><span class="p">:</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
@@ -1010,12 +1010,12 @@ generator.</p>
 
 <span class="k">class</span> <span class="nc">TestMultiplePrompts</span><span class="p">(</span><span class="n">MapStates</span><span class="p">):</span>
 
-    <span class="k">def</span> <span class="nf">action</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">:</span>
         <span class="c1"># make sure to add a name to the action</span>
         <span class="c1"># This is not necessary for subgraphs, as actions will already have names</span>
         <span class="k">return</span> <span class="n">query_llm</span><span class="o">.</span><span class="n">with_name</span><span class="p">(</span><span class="s2">&quot;query_llm&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="c1"># You could easily have a list_prompts upstream action that writes to &quot;prompts&quot; in state</span>
         <span class="c1"># And loop through those</span>
         <span class="c1"># This hardcodes for simplicity</span>
@@ -1026,11 +1026,10 @@ generator.</p>
         <span class="p">]:</span>
             <span class="k">yield</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">)</span>
 
-
-    <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">states</span><span class="p">:</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">states</span><span class="p">:</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
         <span class="n">all_llm_outputs</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">state</span> <span class="ow">in</span> <span class="n">states</span><span class="p">:</span>
-            <span class="n">all_llm_outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;llm_output&quot;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">sub_state</span> <span class="ow">in</span> <span class="n">states</span><span class="p">:</span>
+            <span class="n">all_llm_outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sub_state</span><span class="p">[</span><span class="s2">&quot;llm_output&quot;</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">all_llm_outputs</span><span class="o">=</span><span class="n">all_llm_outputs</span><span class="p">)</span>
 
     <span class="nd">@property</span>
