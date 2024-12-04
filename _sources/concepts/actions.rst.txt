@@ -108,6 +108,21 @@ Will require the inputs to be passed in at runtime. See below for how to do that
 
 This means that the application does not *need* the inputs to be set.
 
+Note: to access ``app_id`` and ``partition_key`` in your running application, you can have the :py:class:`ApplicationContext <burr.core.application.ApplicationContext>`
+injected into your Burr Actions. This is done by adding ``__context`` to the action signature:
+
+.. code-block:: python
+
+    from burr.core import action, State, ApplicationContext
+
+    @action(reads=[...], writes=[...])
+    def my_action(state: State, __context: ApplicationContext) -> State:
+        app_id = __context.app_id
+        partition_key = __context.partition_key
+        ...
+
+
+
 -------------------
 Class-Based Actions
 -------------------
@@ -184,7 +199,40 @@ of (required, optional) inputs. For example:
 
 Note your code will have to handle the case where ``optional_input`` is not passed in (e.g. by setting the appropriate kwargs to the `run(...)` method.
 
-Refer to :ref:`actions <actions>` for more documentation.
+If your action needs to know the current `partition_key`, `app_id`, or `sequence_id`, you can request the `__context` variable
+be injected into the action. This is done by adding `__context` to the `inputs` property as well as the run method:
+
+.. code-block:: python
+
+    from burr.core import Action, State, ApplicationContext
+
+    class Counter(Action):
+        @property
+        def reads(self) -> list[str]:
+            return ["counter"]
+
+        def run(self,
+                state: State,
+                increment_by: int,
+                # add __context here
+                __context: ApplicationContext) -> dict:
+            # can access the app_id from the __context
+            print(__context.app_id, __context.partition_key, __context.sequence_id)
+            return {"counter": state["counter"] + increment_by}
+
+        @property
+        def writes(self) -> list[str]:
+            return ["counter"]
+
+        def update(self, result: dict, state: State) -> State:
+            return state.update(**result)
+
+        @property
+        def inputs(self) -> list[str]:
+            # add __context here
+            return ["increment_by", "__context"]
+
+Refer to :py:class:`Action <burr.core.action.Action>` for more documentation.
 
 
 .. _inputref:
