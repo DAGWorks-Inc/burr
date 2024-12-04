@@ -8,22 +8,6 @@ from burr import core
 from burr.core import Action, ApplicationContext, GraphBuilder, State, action
 from burr.core.parallelism import MapStates, RunnableGraph
 
-# @action(reads=["input"], writes=["response"])
-# def some_assistant_action(state: State, client: openai.Client) -> State:
-#     # get the input from the state
-#     input = state.get("input")
-#     # call the LLM
-#     response = client.chat.completions.create(
-#         messages=[
-#             {"role": "system", "content": "You are a helpful assistant."},
-#             {"role": "user", "content": input},
-#         ],
-#         model="gpt-4o-mini",
-#     )
-#     # update the state with the response
-#     return state.update(response=response.choices[0].message)
-#
-
 
 @action(reads=["audio"], writes=["transcription"])
 def transcribe_audio(state: State) -> State:
@@ -106,7 +90,9 @@ def determine_diagnosis(state: State) -> State:
         return state.update(final_diagnosis="Healthy individual")
 
 
-def run_my_agent(input_audio: str) -> Tuple[str, str]:
+def run_my_agent(
+    input_audio: str, partition_key: str = None, app_id: str = None, tracking_project: str = None
+) -> Tuple[str, str]:
     # we fake the input audio to be a string here rather than a waveform.
     graph = (
         GraphBuilder()
@@ -121,13 +107,17 @@ def run_my_agent(input_audio: str) -> Tuple[str, str]:
         )
         .build()
     )
-    app = (
+    app_builder = (
         core.ApplicationBuilder()
         .with_graph(graph)
         .with_state(**{"audio": input_audio})
         .with_entrypoint("transcribe_audio")
-        .build()
+        .with_identifiers(partition_key=partition_key, app_id=app_id)
     )
+    if tracking_project:
+        app_builder = app_builder.with_tracker(project=tracking_project)
+    app = app_builder.build()
+    # app.visualize("diagnosis.png", include_conditions=True, view=False, format="png")
     last_action, _, agent_state = app.run(
         halt_after=["determine_diagnosis"],
         inputs={"audio": input_audio},
