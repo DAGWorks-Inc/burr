@@ -380,7 +380,7 @@ This looks as follows:
             return ["prompts"] + super().inputs # make sure to include the superclass inputs
 
         def states(self, state: State, context: ApplicationContext, inputs: Dict[str, Any]) -> Generator[Tuple[State, dict], None, None]:
-            for prompt in inputs["prompts"]
+            for prompt in inputs["prompts"]:
                 yield state.update(prompt=prompt)
 
         ... # same as above
