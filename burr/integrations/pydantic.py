@@ -113,14 +113,13 @@ def _validate_and_extract_signature_types(
         )
     type_hints = typing.get_type_hints(fn)
 
-    if (state_model := type_hints["state"]) is inspect.Parameter.empty or not issubclass(
-        state_model, pydantic.BaseModel
-    ):
+    state_model = type_hints.get("state")
+    if state_model is None or state_model is inspect.Parameter.empty or not issubclass(state_model, pydantic.BaseModel):
         raise ValueError(
             f"Function fn: {fn.__qualname__} is not a valid pydantic action. "
-            "a type annotation of a type extending: pydantic.BaseModel. Got parameter "
-            "state: {state_model.__qualname__}."
+            "The 'state' parameter must be annotated with a type extending pydantic.BaseModel."
         )
+
     if (ret_hint := type_hints.get("return")) is None or not issubclass(
         ret_hint, pydantic.BaseModel
     ):
