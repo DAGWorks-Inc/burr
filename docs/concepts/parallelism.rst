@@ -372,7 +372,7 @@ This looks as follows:
 
     class TestMultiplePromptsWithSubgraph(MapStates):
 
-        def action(self) -> Action | Callable | RunnableGraph:
+        def action(self, state: State, inputs: Dict[str, Any]) -> Action | Callable | RunnableGraph:
             return runnable_graph
 
         @property
@@ -478,7 +478,7 @@ Specifying it as part of the action -- will override the global executor (note t
 
     class TestMultiplePrompts(MapStates):
 
-        def action(self) -> Action | Callable | RunnableGraph:
+        def action(self, state: State, inputs: Dict[str, Any]) -> Action | Callable | RunnableGraph:
             return runnable_graph
 
         def executor(self) -> Executor:
@@ -533,7 +533,7 @@ You can also disable it globally using the application builder:
 
     class TestMultiplePrompts(MapStates):
 
-        def action(self) -> Action | Callable | RunnableGraph:
+        def action(self, state: State, inputs: Dict[str, Any]) -> Action | Callable | RunnableGraph:
             return runnable_graph
 
         def tracker(self, context) -> TrackingBehavior | None:
