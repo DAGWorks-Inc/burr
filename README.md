@@ -153,16 +153,14 @@ but realized that it has a wide array of applications and decided to release it 
 ## 🛣 Roadmap
 
 While Burr is stable and well-tested, we have quite a few tools/features on our roadmap!
-
-1. Parallelism -- support for recursive "sub-agents" through an ergonomic API (not: this is already feasible, see [recursive applications](https://burr.dagworks.io/recursion/)).
-2. Testing & eval curation. Curating data with annotations and being able to export these annotations to create unit & integration tests.
-3. Various efficiency/usability improvements for the core library (see [planned capabilities](https://burr.dagworks.io/concepts/planned-capabilities/) for more details). This includes:
+1. FastAPI integration + hosted deployment -- make it really easy to get Burr in an app in production without thinking about REST APIs
+2. Various efficiency/usability improvements for the core library (see [planned capabilities](https://burr.dagworks.io/concepts/planned-capabilities/) for more details). This includes:
    1. First-class support for retries + exception management
    2. More integration with popular frameworks (LCEL, LLamaIndex, Hamilton, etc...)
    3. Capturing & surfacing extra metadata, e.g. annotations for particular point in time, that you can then pull out for fine-tuning, etc.
-4. Tooling for hosted execution of state machines, integrating with your infrastructure (Ray, modal, FastAPI + EC2, etc...)
-5. Storage integrations. More integrations with technologies like Redis, MongoDB, MySQL, etc. so you can run Burr on top of what you have available.
-6. More out of the box plugins for fine-grained tracing, e.g. decorators for your functions, LLM clients, etc.
+   4. Improvements to the pydantic-based typing system
+3. Tooling for hosted execution of state machines, integrating with your infrastructure (Ray, modal, FastAPI + EC2, etc...)
+4. Additional storage integrations. More integrations with technologies like MySQL, S3, etc. so you can run Burr on top of what you have available.
 
 If you want to avoid self-hosting the above solutions we're building Burr Cloud. To let us know you're interested
 sign up [here](https://forms.gle/w9u2QKcPrztApRedA) for the waitlist to get access.
