@@ -7,12 +7,14 @@ These are on the roadmap (and will be part of Burr in the imminent future), but 
 We build fast though, so let us know which ones you need and they'll be in there before you know it!
 
 
---------------------
-UI-based annotations
---------------------
+------------------------------------
+Evaluation & Annotation integrations
+------------------------------------
 
-We're adding the ability to annotate actions/states in the UI and download later for
-analysis, debugging, etc... Please reach out if this is something you'd like to test!
+You can already annotate with the Burr UI. We have plans to:
+
+1. plug in metrics and custom callbacks/LLM as judge capabilities to enable you to evaluate what captured and annotated.
+2. SDK functionality to allow programmatic annotation and evaluation, as well as export and search of annotations.
 
 -----------------------------
 State Management/Immutability
@@ -90,4 +92,5 @@ Will have to come up with ergonomic APIs -- the above are just some ideas.
 Integrations
 ------------
 
-Langchain is next up (using LCEL). Please request any other integrations you'd like to see.
+We already have support for Haystack, Hamilton, and LangChain.
+Please request any other integrations you'd like to see.
