@@ -160,6 +160,8 @@ but realized that it has a wide array of applications and decided to release it 
         <span>CTO, Peanut Robotics</span>
     </div>
 </div>
+<br/>
+---
 <div class="testimonial-card">
     <div class="testimonial-content">
         <p>"Of course, you can use it [LangChain], but whether it's really production-ready and improves the time from 'code-to-prod' [...], we've been doing LLM apps for two years, and the answer is no [...] All these 'all-in-one' libs suffer from this [...].  Honestly, take a look at Burr. Thank me later."</p>
@@ -167,6 +169,8 @@ but realized that it has a wide array of applications and decided to release it 
         <span>LocalLlama, Subreddit</span>
     </div>
 </div>
+<br/>
+---
 <div class="testimonial-card">
     <div class="testimonial-content">
         <p>"Using Burr is a no-brainer if you want to build a modular AI application. It is so easy to build with and I especially love their UI which makes debugging, a piece of cake. And the always ready to help team, is the cherry on top."</p>
@@ -174,6 +178,8 @@ but realized that it has a wide array of applications and decided to release it 
         <span>Founder, Watto.ai</span>
     </div>
 </div>
+<br/>
+---
 <div class="testimonial-card">
     <div class="testimonial-content">
         <p>"I just came across Burr and I'm like WOW, this seems like you guys predicted this exact need when building this. No weird esoteric concepts just because it's AI."</p>
@@ -181,6 +187,7 @@ but realized that it has a wide array of applications and decided to release it 
         <span>Staff Software Engineer, Paxton AI</span>
     </div>
 </div>
+<br/>
 <div class="testimonial-card">
     <div class="testimonial-content">
         <p>"Burr's state management part is really helpful for creating state snapshots and build debugging, replaying and even building evaluation cases around that"</p>
@@ -195,11 +202,13 @@ but realized that it has a wide array of applications and decided to release it 
         <span>Co-founder, CognitiveGraphs</span>
     </div>
 </div>
+<br/>
+---
 <div class="testimonial-card">
     <div class="testimonial-content">
         <p>"Moving from LangChain to Burr was a game-changer! <br/>Time-Saving: It took me just a few hours to get started with Burr, compared to the days and weeks I spent trying to navigate LangChain. <br/>Cleaner Implementation: With Burr, I could finally have a cleaner, more sophisticated, and stable implementation. No more wrestling with complex codebases. <br/>Team Adoption: I pitched Burr to my teammates, and we pivoted our entire codebase to it. It's been a smooth ride ever since."</p>
         <h4>Aditya K.</h4>
-        <span>Co-founder, TaskHuman</span>
+        <span>DS Architect, TaskHuman</span>
     </div>
 </div>
 </div>
