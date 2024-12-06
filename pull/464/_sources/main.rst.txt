@@ -86,7 +86,7 @@ Testimonials
             <div class="testimonial-content">
                 <p>"Moving from LangChain to Burr was a game-changer! <br/>Time-Saving: It took me just a few hours to get started with Burr, compared to the days and weeks I spent trying to navigate LangChain. <br/>Cleaner Implementation: With Burr, I could finally have a cleaner, more sophisticated, and stable implementation. No more wrestling with complex codebases. <br/>Team Adoption: I pitched Burr to my teammates, and we pivoted our entire codebase to it. It's been a smooth ride ever since."</p>
                 <h4>Aditya K.</h4>
-                <span>Co-founder, TaskHuman</span>
+                <span>DS Architect, TaskHuman</span>
             </div>
         </div>
     </div>
