@@ -61,7 +61,7 @@ testimonials = [
     },
     {
         "user_name": "Aditya K.",
-        "user_title": "Co-founder",
+        "user_title": "DS Architect",
         "user_company": "TaskHuman",
         "user_quote": "Moving from LangChain to Burr was a game-changer! "
         "<br/>Time-Saving: It took me just a few hours to get started with Burr, compared to the days and weeks I spent trying to navigate LangChain. "
