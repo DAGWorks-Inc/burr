@@ -3333,7 +3333,7 @@ def test_with_state_persister_is_initialized_not_implemented():
     builder.with_state_persister(persister)
 
 
-class TestActionWithoutContext(Action):
+class ActionWithoutContext(Action):
     def run(self, other_param, foo):
         pass
 
@@ -3352,7 +3352,7 @@ class TestActionWithoutContext(Action):
         return ["other_param", "foo"]
 
 
-class TestActionWithContext(TestActionWithoutContext):
+class ActionWithContext(ActionWithoutContext):
     def run(self, __context, other_param, foo):
         pass
 
@@ -3360,7 +3360,7 @@ class TestActionWithContext(TestActionWithoutContext):
         return ["other_param", "foo", "__context"]
 
 
-class TestActionWithKwargs(TestActionWithoutContext):
+class ActionWithKwargs(ActionWithoutContext):
     def run(self, other_param, foo, **kwargs):
         pass
 
@@ -3368,7 +3368,7 @@ class TestActionWithKwargs(TestActionWithoutContext):
         return ["other_param", "foo", "__context"]
 
 
-class TestActionWithContextTracer(TestActionWithoutContext):
+class ActionWithContextTracer(ActionWithoutContext):
     def run(self, __context, other_param, foo, __tracer):
         pass
 
@@ -3377,7 +3377,7 @@ class TestActionWithContextTracer(TestActionWithoutContext):
 
 
 def test_remap_context_variable_with_mangled_context_kwargs():
-    _action = TestActionWithKwargs()
+    _action = ActionWithKwargs()
 
     inputs = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
     expected = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
@@ -3385,11 +3385,11 @@ def test_remap_context_variable_with_mangled_context_kwargs():
 
 
 def test_remap_context_variable_with_mangled_context():
-    _action = TestActionWithContext()
+    _action = ActionWithContext()
 
     inputs = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
     expected = {
-        f"_{TestActionWithContext.__name__}__context": "context_value",
+        f"_{ActionWithContext.__name__}__context": "context_value",
         "other_key": "other_value",
         "foo": "foo_value",
     }
@@ -3397,7 +3397,7 @@ def test_remap_context_variable_with_mangled_context():
 
 
 def test_remap_context_variable_with_mangled_contexttracer():
-    _action = TestActionWithContextTracer()
+    _action = ActionWithContextTracer()
 
     inputs = {
         "__context": "context_value",
@@ -3406,16 +3406,16 @@ def test_remap_context_variable_with_mangled_contexttracer():
         "foo": "foo_value",
     }
     expected = {
-        f"_{TestActionWithContextTracer.__name__}__context": "context_value",
+        f"_{ActionWithContextTracer.__name__}__context": "context_value",
         "other_key": "other_value",
         "foo": "foo_value",
-        f"_{TestActionWithContextTracer.__name__}__tracer": "tracer_value",
+        f"_{ActionWithContextTracer.__name__}__tracer": "tracer_value",
     }
     assert _remap_dunder_parameters(_action.run, inputs, ["__context", "__tracer"]) == expected
 
 
 def test_remap_context_variable_without_mangled_context():
-    _action = TestActionWithoutContext()
+    _action = ActionWithoutContext()
     inputs = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
     expected = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
     assert _remap_dunder_parameters(_action.run, inputs, ["__context", "__tracer"]) == expected
