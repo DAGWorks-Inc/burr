@@ -628,15 +628,17 @@ class MapActions(MapActionsAndStates, abc.ABC):
         :return: Generator of actions to run
         """
 
-    @abc.abstractmethod
     def state(self, state: State, inputs: Dict[str, Any]):
-        """Gives the state for each of the actions
+        """Gives the state for each of the actions.
+        By default, this will give out the current state. That said,
+        you may want to adjust this -- E.G. to translate state into
+        a format the sub-actions would expect.
 
         :param state: State at the time of running the action
         :param inputs: Runtime inputs to the action
         :return: State for the action
         """
-        pass
+        return state
 
     def states(
         self, state: State, context: ApplicationContext, inputs: Dict[str, Any]
