@@ -79,7 +79,7 @@ documentation = [
 ]
 
 tracking-client = [
-  "pydantic"
+  "pydantic>1"
 ]
 
 tracking-client-s3 = [
