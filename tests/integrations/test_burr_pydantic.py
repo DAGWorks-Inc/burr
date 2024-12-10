@@ -3,7 +3,7 @@ from typing import AsyncGenerator, Generator, List, Optional, Tuple
 
 import pydantic
 import pytest
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from pydantic.fields import FieldInfo
 
 from burr.core import expr
@@ -110,8 +110,7 @@ def test_subset_model_copy_config():
         foo: int
         arbitrary: Arbitrary
 
-        class Config:
-            arbitrary_types_allowed = True
+        model_config = ConfigDict(arbitrary_types_allowed=True)
 
     SubsetModel = subset_model(MyModelWithConfig, ["foo", "bar"], [], "Subset")
     assert SubsetModel.__name__ == "MyModelWithConfigSubset"
