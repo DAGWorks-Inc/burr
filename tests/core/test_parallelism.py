@@ -370,6 +370,28 @@ def _group_events_by_app_id(
     return grouped_events
 
 
+def test_map_actions_default_state():
+    class MapActionsAllApproaches(MapActions):
+        def actions(
+            self, state: State, inputs: Dict[str, Any], context: ApplicationContext
+        ) -> Generator[Union[Action, Callable, RunnableGraph], None, None]:
+            ...
+
+        def reduce(self, state: State, states: Generator[State, None, None]) -> State:
+            ...
+
+        @property
+        def writes(self) -> list[str]:
+            return []
+
+        @property
+        def reads(self) -> list[str]:
+            return []
+
+    state_to_test = State({"foo": "bar", "baz": "qux"})
+    assert MapActionsAllApproaches().state(state_to_test, {}).get_all() == state_to_test.get_all()
+
+
 def test_e2e_map_actions_sync_subgraph():
     """Tests map actions over multiple action types (runnable graph, function, action class...)"""
 
