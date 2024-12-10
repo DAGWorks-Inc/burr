@@ -93,30 +93,30 @@ class Step(pydantic.BaseModel):
             json_line = safe_json_load(line)
             # TODO -- make these into constants
             if json_line["type"] == "begin_entry":
-                begin_step = BeginEntryModel.parse_obj(json_line)
+                begin_step = BeginEntryModel.model_validate(json_line)
                 steps_by_sequence_id[begin_step.sequence_id].step_start_log = begin_step
             elif json_line["type"] == "end_entry":
-                step_end_log = EndEntryModel.parse_obj(json_line)
+                step_end_log = EndEntryModel.model_validate(json_line)
                 steps_by_sequence_id[step_end_log.sequence_id].step_end_log = step_end_log
             elif json_line["type"] == "begin_span":
-                span = BeginSpanModel.parse_obj(json_line)
+                span = BeginSpanModel.model_validate(json_line)
                 spans_by_id[span.span_id] = PartialSpan(
                     begin_entry=span,
                     end_entry=None,
                 )
             elif json_line["type"] == "end_span":
-                end_span = EndSpanModel.parse_obj(json_line)
+                end_span = EndSpanModel.model_validate(json_line)
                 span = spans_by_id[end_span.span_id]
                 span.end_entry = end_span
             elif json_line["type"] == "attribute":
-                attribute = AttributeModel.parse_obj(json_line)
+                attribute = AttributeModel.model_validate(json_line)
                 attributes_by_step[attribute.action_sequence_id].append(attribute)
             elif json_line["type"] in ["begin_stream", "first_item_stream", "end_stream"]:
                 streaming_event = {
                     "begin_stream": InitializeStreamModel,
                     "first_item_stream": FirstItemStreamModel,
                     "end_stream": EndStreamModel,
-                }[json_line["type"]].parse_obj(json_line)
+                }[json_line["type"]].model_validate(json_line)
                 steps_by_sequence_id[streaming_event.sequence_id].streaming_events.append(
                     streaming_event
                 )
