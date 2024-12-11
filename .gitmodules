@@ -1,0 +1,3 @@
+[submodule "examples/deployment/bentoml/BentoBurr"]
+	path = examples/deployment/bentoml/BentoBurr
+	url = https://github.com/bentoml/BentoBurr
