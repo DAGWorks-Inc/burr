@@ -11,6 +11,6 @@ Burr is not opinionated about the method of deployment/cloud one uses. Any metho
 
 Using BentoML
 -------------
-[BentoML](https://github.com/bentoml/BentoML) is a specialized tool to package, deploy, and manage AI services.
+`BentoML <https://github.com/bentoml/BentoML>`_ is a specialized tool to package, deploy, and manage AI services.
 For example, it allows you to create a REST API for your Burr application with minimal effort.
 See the `Burr + BentoML example <https://github.com/DAGWorks-Inc/burr/tree/main/examples/deployment/aws/bentoml>`_ for more information.
