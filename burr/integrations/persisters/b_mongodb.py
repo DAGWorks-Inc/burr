@@ -10,14 +10,16 @@ from burr.core import persistence, state
 logger = logging.getLogger(__name__)
 
 
-class MongoDBPersister(persistence.BaseStatePersister):
+class MongoDBBasePersister(persistence.BaseStatePersister):
     """A class used to represent a MongoDB Persister.
 
     Example usage:
 
     .. code-block:: python
 
-       persister = MongoDBPersister(uri='mongodb://user:pass@localhost:27017', db_name='mydatabase', collection_name='mystates')
+       persister = MongoDBBasePersister.from_values(uri='mongodb://user:pass@localhost:27017',
+                                                    db_name='mydatabase',
+                                                    collection_name='mystates')
        persister.save(
            partition_key='example_partition',
            app_id='example_app',
@@ -28,20 +30,46 @@ class MongoDBPersister(persistence.BaseStatePersister):
        )
        loaded_state = persister.load(partition_key='example_partition', app_id='example_app', sequence_id=1)
        print(loaded_state)
+
+    Note: this is called MongoDBBasePersister because we had to change the constructor and wanted to make
+     this change backwards compatible.
     """
 
-    def __init__(
-        self,
+    @classmethod
+    def from_values(
+        cls,
         uri="mongodb://localhost:27017",
         db_name="mydatabase",
         collection_name="mystates",
         serde_kwargs: dict = None,
         mongo_client_kwargs: dict = None,
-    ):
-        """Initializes the MongoDBPersister class."""
+    ) -> "MongoDBBasePersister":
+        """Initializes the MongoDBBasePersister class."""
         if mongo_client_kwargs is None:
             mongo_client_kwargs = {}
-        self.client = MongoClient(uri, **mongo_client_kwargs)
+        client = MongoClient(uri, **mongo_client_kwargs)
+        return cls(
+            client=client,
+            db_name=db_name,
+            collection_name=collection_name,
+            serde_kwargs=serde_kwargs,
+        )
+
+    def __init__(
+        self,
+        client,
+        db_name="mydatabase",
+        collection_name="mystates",
+        serde_kwargs: dict = None,
+    ):
+        """Initializes the MongoDBBasePersister class.
+
+        :param client: the mongodb client to use
+        :param db_name: the name of the database to use
+        :param collection_name: the name of the collection to use
+        :param serde_kwargs: serializer/deserializer keyword arguments to pass to the state object
+        """
+        self.client = client
         self.db = self.client[db_name]
         self.collection = self.db[collection_name]
         self.serde_kwargs = serde_kwargs or {}
@@ -101,3 +129,29 @@ class MongoDBPersister(persistence.BaseStatePersister):
 
     def __del__(self):
         self.client.close()
+
+
+class MongoDBPersister(MongoDBBasePersister):
+    """A class used to represent a MongoDB Persister.
+
+    This class is deprecated. Please use MongoDBBasePersister instead.
+    """
+
+    def __init__(
+        self,
+        uri="mongodb://localhost:27017",
+        db_name="mydatabase",
+        collection_name="mystates",
+        serde_kwargs: dict = None,
+        mongo_client_kwargs: dict = None,
+    ):
+        """Initializes the MongoDBPersister class."""
+        if mongo_client_kwargs is None:
+            mongo_client_kwargs = {}
+        client = MongoClient(uri, **mongo_client_kwargs)
+        super(MongoDBPersister, self).__init__(
+            client=client,
+            db_name=db_name,
+            collection_name=collection_name,
+            serde_kwargs=serde_kwargs,
+        )

@@ -3,7 +3,7 @@ import os
 import pytest
 
 from burr.core import state
-from burr.integrations.persisters.b_mongodb import MongoDBPersister
+from burr.integrations.persisters.b_mongodb import MongoDBBasePersister, MongoDBPersister
 
 if not os.environ.get("BURR_CI_INTEGRATION_TESTS") == "true":
     pytest.skip("Skipping integration tests", allow_module_level=True)
@@ -11,7 +11,7 @@ if not os.environ.get("BURR_CI_INTEGRATION_TESTS") == "true":
 
 @pytest.fixture
 def mongodb_persister():
-    persister = MongoDBPersister(
+    persister = MongoDBBasePersister(
         uri="mongodb://localhost:27017", db_name="testdb", collection_name="testcollection"
     )
     yield persister
@@ -35,3 +35,14 @@ def test_list_app_ids(mongodb_persister):
 def test_load_nonexistent_key(mongodb_persister):
     state_data = mongodb_persister.load("pk", "nonexistent_key")
     assert state_data is None
+
+
+def test_backwards_compatible_persister():
+    persister = MongoDBPersister(
+        uri="mongodb://localhost:27017", db_name="testdb", collection_name="backwardscompatible"
+    )
+    persister.save("pk", "app_id", 5, "pos", state.State({"a": 5, "b": 5}), "completed")
+    data = persister.load("pk", "app_id", 5)
+    assert data["state"].get_all() == {"a": 5, "b": 5}
+
+    persister.collection.drop()
