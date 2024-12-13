@@ -69,3 +69,4 @@ def test_redis_persister_class_backwards_compatible():
     persister.save("pk", "app_id", 2, "pos", state.State({"a": 4, "b": 5}), "completed")
     data = persister.load("pk", "app_id", 2)
     assert data["state"].get_all() == {"a": 4, "b": 5}
+    persister.connection.close()
