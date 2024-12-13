@@ -549,7 +549,7 @@ solely for resetting/starting at a specified position.</p></li>
 <dt class="sig sig-object py" id="burr.core.application.ApplicationBuilder.with_parallel_executor">
 <span class="sig-name descname"><span class="pre">with_parallel_executor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">executor_factory:</span> <span class="pre">~burr.core.application.&lt;lambda&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.application.ApplicationBuilder.with_parallel_executor" title="Link to this definition">¶</a></dt>
 <dd><p>Assigns a default executor to be used for recursive/parallel sub-actions. This effectively allows
-for executing multiple Burr apps in parallel. See <a class="reference external" href="https://burr.dagworks.io/pull/concepts/parallelism/">https://burr.dagworks.io/pull/concepts/parallelism/</a>
+for executing multiple Burr apps in parallel. See <a class="reference external" href="https://burr.dagworks.io/concepts/parallelism/">https://burr.dagworks.io/concepts/parallelism/</a>
 for more details.</p>
 <p>This will default to a simple threadpool executor, meaning that you will be bound by the number of threads
 your computer can handle. If you want to use a more advanced executor, you can pass it in here – any subclass

@@ -410,7 +410,7 @@
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># instantiate actions</span>
 <span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;cow_said&quot;</span><span class="p">])</span>
 <span class="k">def</span> <span class="nf">cow_said</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">say_what</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">State</span><span class="p">]:</span>
-    <span class="n">said</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">say_what</span><span class="p">)</span>
+    <span class="n">said</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">say_what</span><span class="p">)</span> <span class="k">if</span> <span class="n">say_what</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
     <span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cow_said&quot;</span><span class="p">:</span> <span class="n">cowsay</span><span class="o">.</span><span class="n">get_output_string</span><span class="p">(</span><span class="s2">&quot;cow&quot;</span><span class="p">,</span> <span class="n">said</span><span class="p">)</span> <span class="k">if</span> <span class="n">say_what</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">result</span><span class="p">,</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">)</span>
 
@@ -461,7 +461,7 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../../../_images/f17450984ccbe16cae0ecf7a684439c275e0a7625f43ec3b6ea5f28bbdabb58a.svg" src="../../../_images/f17450984ccbe16cae0ecf7a684439c275e0a7625f43ec3b6ea5f28bbdabb58a.svg" />
+<img alt="../../../_images/381ba5fd7b53f739dbd688ee9bdd9b240d6bbac4293e45be4129081f762c2dc4.svg" src="../../../_images/381ba5fd7b53f739dbd688ee9bdd9b240d6bbac4293e45be4129081f762c2dc4.svg" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -470,50 +470,6 @@
 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
     <span class="c1"># step through 4 times</span>
     <span class="n">a_obj</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  ____________
-| Hello world! |
-  ============
-            \
-             \
-               ^__^
-               (oo)\_______
-               (__)\       )\/\
-                   ||----w |
-                   ||     ||
-  ____________
-| Hello world! |
-  ============
-            \
-             \
-               ^__^
-               (oo)\_______
-               (__)\       )\/\
-                   ||----w |
-                   ||     ||
-  ____________
-| Hello world! |
-  ============
-            \
-             \
-               ^__^
-               (oo)\_______
-               (__)\       )\/\
-                   ||----w |
-                   ||     ||
-  ____________
-| Hello world! |
-  ============
-            \
-             \
-               ^__^
-               (oo)\_______
-               (__)\       )\/\
-                   ||----w |
-                   ||     ||
 </pre></div>
 </div>
 </div>
@@ -528,46 +484,26 @@
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  ________________________
-| Are you Aaron Burr, sir? |
-  ========================
-                        \
-                         \
-                           ^__^
-                           (oo)\_______
-                           (__)\       )\/\
-                               ||----w |
-                               ||     ||
-  ________________________
-| Are you Aaron Burr, sir? |
-  ========================
-                        \
-                         \
-                           ^__^
-                           (oo)\_______
-                           (__)\       )\/\
-                               ||----w |
-                               ||     ||
-  ____________
-| Hello world! |
-  ============
-            \
-             \
-               ^__^
-               (oo)\_______
-               (__)\       )\/\
-                   ||----w |
-                   ||     ||
-  ____________
-| Hello world! |
-  ============
-            \
-             \
-               ^__^
-               (oo)\_______
-               (__)\       )\/\
-                   ||----w |
-                   ||     ||
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>  __________
+| What&#39;s up? |
+  ==========
+          \
+           \
+             ^__^
+             (oo)\_______
+             (__)\       )\/\
+                 ||----w |
+                 ||     ||
+  __________
+| What&#39;s up? |
+  ==========
+          \
+           \
+             ^__^
+             (oo)\_______
+             (__)\       )\/\
+                 ||----w |
+                 ||     ||
 </pre></div>
 </div>
 </div>
