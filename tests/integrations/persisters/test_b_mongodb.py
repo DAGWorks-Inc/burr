@@ -11,7 +11,7 @@ if not os.environ.get("BURR_CI_INTEGRATION_TESTS") == "true":
 
 @pytest.fixture
 def mongodb_persister():
-    persister = MongoDBBasePersister(
+    persister = MongoDBBasePersister.from_values(
         uri="mongodb://localhost:27017", db_name="testdb", collection_name="testcollection"
     )
     yield persister
