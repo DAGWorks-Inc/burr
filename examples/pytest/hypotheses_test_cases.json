@@ -1,0 +1,35 @@
+[
+  {
+    "action": "run_hypothesis",
+    "name": "run_hypothesis_0",
+    "input_state": {
+      "transcription": "Patient exhibits mucus dripping from nostrils and coughing.",
+      "hypothesis": "Common cold"
+    },
+    "expected_state": {
+      "diagnosis": "yes"
+    }
+  },
+  {
+    "action": "run_hypothesis",
+    "name": "run_hypothesis_1",
+    "input_state": {
+      "transcription": "Patient has a limp and is unable to flex right ankle. Ankle is swollen.",
+      "hypothesis": "Sprained ankle"
+    },
+    "expected_state": {
+      "diagnosis": "yes"
+    }
+  },
+  {
+    "action": "run_hypothesis",
+    "name": "run_hypothesis_2",
+    "input_state": {
+      "transcription": "Patient fell off and landed on their right arm. Their right wrist is swollen, they can still move their fingers, and there is only minor pain or discomfort when the wrist is moved or touched.",
+      "hypothesis": "Broken arm"
+    },
+    "expected_state": {
+      "diagnosis": "no"
+    }
+  }
+]

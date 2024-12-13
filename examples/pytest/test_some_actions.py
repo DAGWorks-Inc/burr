@@ -72,6 +72,7 @@ def test_run_hypothesis(results_bag):
 def test_run_hypothesis_parameterized(input, hypothesis, expected, results_bag):
     """Example showing how to parameterize this."""
     results_bag.input = input
+    results_bag.hypothesis = hypothesis
     results_bag.expected = expected
     results_bag.test_function = "test_run_hypothesis_parameterized"
     input_state = state.State({"hypothesis": hypothesis, "transcription": input})
@@ -85,8 +86,33 @@ def test_run_hypothesis_parameterized(input, hypothesis, expected, results_bag):
     assert end_state["diagnosis"] != ""
 
 
-def test_run_hypothesis_burr_fixture(input, hypothesis, expected, results_bag):
-    """This example shows how to scale parameterized with a file of inputs and expected outputs."""
+# the following is required to run file based parameterized tests
+from burr.testing import pytest_generate_tests  # noqa: F401
+
+
+@pytest.mark.file_name(
+    "hypotheses_test_cases.json"
+)  # our fixture file with the expected inputs and outputs
+def test_run_hypothesis_burr_fixture(input_state, expected_state, results_bag):
+    """This example shows how to scale parameterized with a file of inputs and expected outputs using Burr's."""
+    input_state = state.State.deserialize(input_state)
+    expected_state = state.State.deserialize(expected_state)
+    results_bag.input = input_state["transcription"]
+    results_bag.hypothesis = input_state["hypothesis"]
+    results_bag.expected = expected_state["diagnosis"]
+    results_bag.test_function = "test_run_hypothesis_parameterized"
+    input_state = state.State(
+        {"hypothesis": input_state["hypothesis"], "transcription": input_state["transcription"]}
+    )
+    end_state = some_actions.run_hypothesis(input_state)
+    results_bag.actual = end_state["diagnosis"]
+    results_bag.exact_match = end_state["diagnosis"].lower() == expected_state["diagnosis"]
+    print(results_bag)
+    # results_bag.jaccard = ... # other measures here
+    # e.g. LLM as judge if applicable
+    # place asserts at end
+    assert end_state["diagnosis"] is not None
+    assert end_state["diagnosis"] != ""
 
 
 def test_print_results(module_results_df):
@@ -100,7 +126,16 @@ def test_print_results(module_results_df):
     accuracy = sum(tests_of_interest["exact_match"]) / len(tests_of_interest)
     # save to CSV
     tests_of_interest[
-        ["test_function", "duration_ms", "status", "input", "expected", "actual", "exact_match"]
+        [
+            "test_function",
+            "duration_ms",
+            "status",
+            "input",
+            "hypothesis",
+            "expected",
+            "actual",
+            "exact_match",
+        ]
     ].to_csv("results.csv", index=True, quoting=1)
     # upload to google sheets or other storage, etc.
 
