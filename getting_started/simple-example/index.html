@@ -432,7 +432,7 @@ computes a result and modifies state. They declare what they read and write.</p>
 <ol class="arabic simple">
 <li><p>State is a dictionary – actions declare input fields (as strings) and write values to those fields</p></li>
 <li><p>Actions use a specific <em>immutable</em> state object and call operations on it (<code class="docutils literal notranslate"><span class="pre">.append(...)</span></code>, <code class="docutils literal notranslate"><span class="pre">.update(...)</span></code>)</p></li>
-<li><p>Functions can do whatever you want – they can use plain python, or delegate to <a class="reference external" href="langchain.io">langchain</a>, <a class="reference external" href="https://github.com/dagworks-inc/hamilton">hamilton</a>, etc… All they have to do is return the new state.</p></li>
+<li><p>Functions can do whatever you want – they can use plain python, or delegate to <a class="reference external" href="https://langchain.com">langchain</a>, <a class="reference external" href="https://github.com/dagworks-inc/hamilton">hamilton</a>, etc… All they have to do is return the new state.</p></li>
 <li><p>We declare the parameter <code class="docutils literal notranslate"><span class="pre">prompt</span></code>, meaning that we will expect the user to pass <code class="docutils literal notranslate"><span class="pre">prompt</span></code> every time they run the graph.</p></li>
 </ol>
 <div class="admonition note">
