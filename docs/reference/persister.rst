@@ -53,7 +53,7 @@ Currently we support the following, although we highly recommend you contribute 
 
    .. automethod:: __init__
 
-.. autoclass:: burr.integrations.persisters.b_mongodb.MongoDBPersister
+.. autoclass:: burr.integrations.persisters.b_mongodb.MongoDBBasePersister
    :members:
 
    .. automethod:: __init__
