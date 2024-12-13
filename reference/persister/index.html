@@ -880,21 +880,22 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBPersister">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.b_mongodb.</span></span><span class="sig-name descname"><span class="pre">MongoDBPersister</span></span><span class="sig-paren">(</span>
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.b_mongodb.</span></span><span class="sig-name descname"><span class="pre">MongoDBBasePersister</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">uri</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mongodb://localhost:27017'</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">client</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">db_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mydatabase'</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">collection_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mystates'</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">mongo_client_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBPersister" title="Link to this definition">¶</a></dt>
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister" title="Link to this definition">¶</a></dt>
 <dd><p>A class used to represent a MongoDB Persister.</p>
 <p>Example usage:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">persister</span> <span class="o">=</span> <span class="n">MongoDBPersister</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="s1">&#39;mongodb://user:pass@localhost:27017&#39;</span><span class="p">,</span> <span class="n">db_name</span><span class="o">=</span><span class="s1">&#39;mydatabase&#39;</span><span class="p">,</span> <span class="n">collection_name</span><span class="o">=</span><span class="s1">&#39;mystates&#39;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">persister</span> <span class="o">=</span> <span class="n">MongoDBBasePersister</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="s1">&#39;mongodb://user:pass@localhost:27017&#39;</span><span class="p">,</span>
+                                             <span class="n">db_name</span><span class="o">=</span><span class="s1">&#39;mydatabase&#39;</span><span class="p">,</span>
+                                             <span class="n">collection_name</span><span class="o">=</span><span class="s1">&#39;mystates&#39;</span><span class="p">)</span>
 <span class="n">persister</span><span class="o">.</span><span class="n">save</span><span class="p">(</span>
     <span class="n">partition_key</span><span class="o">=</span><span class="s1">&#39;example_partition&#39;</span><span class="p">,</span>
     <span class="n">app_id</span><span class="o">=</span><span class="s1">&#39;example_app&#39;</span><span class="p">,</span>
@@ -907,9 +908,38 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 <span class="nb">print</span><span class="p">(</span><span class="n">loaded_state</span><span class="p">)</span>
 </pre></div>
 </div>
+<dl class="simple">
+<dt>Note: this is called MongoDBBasePersister because we had to change the constructor and wanted to make</dt><dd><p>this change backwards compatible.</p>
+</dd>
+</dl>
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBPersister.__init__">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">client</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">db_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mydatabase'</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">collection_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mystates'</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Initializes the MongoDBBasePersister class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>client</strong> – the mongodb client to use</p></li>
+<li><p><strong>db_name</strong> – the name of the database to use</p></li>
+<li><p><strong>collection_name</strong> – the name of the collection to use</p></li>
+<li><p><strong>serde_kwargs</strong> – serializer/deserializer keyword arguments to pass to the state object</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.from_values">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_values</span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">uri</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mongodb://localhost:27017'</span></span></em>,</dd>
@@ -919,18 +949,18 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 <dd><em class="sig-param"><span class="n"><span class="pre">mongo_client_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBPersister.__init__" title="Link to this definition">¶</a></dt>
-<dd><p>Initializes the MongoDBPersister class.</p>
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister" title="burr.integrations.persisters.b_mongodb.MongoDBBasePersister"><span class="pre">MongoDBBasePersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.from_values" title="Link to this definition">¶</a></dt>
+<dd><p>Initializes the MongoDBBasePersister class.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBPersister.list_app_ids">
-<span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBPersister.list_app_ids" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.list_app_ids">
+<span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.list_app_ids" title="Link to this definition">¶</a></dt>
 <dd><p>List the app ids for a given partition key.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBPersister.load">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.load">
 <span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
 
 <dl>
@@ -940,12 +970,12 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 <dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBPersister.load" title="Link to this definition">¶</a></dt>
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.load" title="Link to this definition">¶</a></dt>
 <dd><p>Load the state data for a given partition key, app id, and sequence id.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBPersister.save">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.save">
 <span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
 
 <dl>
@@ -958,7 +988,7 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 <dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBPersister.save" title="Link to this definition">¶</a></dt>
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.save" title="Link to this definition">¶</a></dt>
 <dd><p>Save the state data to the MongoDB database.</p>
 </dd></dl>
 
@@ -1071,11 +1101,12 @@ although it uses different mechanisms to save state (as it tracks more than just
 <li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.save"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.save()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBPersister"><code class="docutils literal notranslate"><span class="pre">MongoDBPersister</span></code></a><ul>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBPersister.__init__"><code class="docutils literal notranslate"><span class="pre">MongoDBPersister.__init__()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBPersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">MongoDBPersister.list_app_ids()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBPersister.load"><code class="docutils literal notranslate"><span class="pre">MongoDBPersister.load()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBPersister.save"><code class="docutils literal notranslate"><span class="pre">MongoDBPersister.save()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister</span></code></a><ul>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.__init__"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.from_values"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.from_values()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.list_app_ids()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.load"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.load()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.save"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.save()</span></code></a></li>
 </ul>
 </li>
 </ul>
