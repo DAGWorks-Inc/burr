@@ -3,7 +3,7 @@ import os
 import pytest
 
 from burr.core import state
-from burr.integrations.persisters.b_redis import RedisPersister
+from burr.integrations.persisters.b_redis import RedisBasePersister, RedisPersister
 
 if not os.environ.get("BURR_CI_INTEGRATION_TESTS") == "true":
     pytest.skip("Skipping integration tests", allow_module_level=True)
@@ -11,14 +11,14 @@ if not os.environ.get("BURR_CI_INTEGRATION_TESTS") == "true":
 
 @pytest.fixture
 def redis_persister():
-    persister = RedisPersister(host="localhost", port=6379, db=0)
+    persister = RedisBasePersister.from_values(host="localhost", port=6379, db=0)
     yield persister
     persister.connection.close()
 
 
 @pytest.fixture
 def redis_persister_with_ns():
-    persister = RedisPersister(host="localhost", port=6379, db=0, namespace="test")
+    persister = RedisBasePersister.from_values(host="localhost", port=6379, db=0, namespace="test")
     yield persister
     persister.connection.close()
 
@@ -61,3 +61,12 @@ def test_list_app_ids_with_ns(redis_persister_with_ns):
 def test_load_nonexistent_key_with_ns(redis_persister_with_ns):
     state_data = redis_persister_with_ns.load("pk", "nonexistent_key")
     assert state_data is None
+
+
+def test_redis_persister_class_backwards_compatible():
+    """Tests that the RedisPersister class is still backwards compatible."""
+    persister = RedisPersister(host="localhost", port=6379, db=0, namespace="backwardscompatible")
+    persister.save("pk", "app_id", 2, "pos", state.State({"a": 4, "b": 5}), "completed")
+    data = persister.load("pk", "app_id", 2)
+    assert data["state"].get_all() == {"a": 4, "b": 5}
+    persister.connection.close()

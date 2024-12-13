@@ -16,15 +16,21 @@ from burr.core import persistence, state
 logger = logging.getLogger(__name__)
 
 
-class RedisPersister(persistence.BaseStatePersister):
-    """A class used to represent a Redis Persister.
+class RedisBasePersister(persistence.BaseStatePersister):
+    """Main class for Redis persister.
+
+    Use this class if you want to directly control injecting the Redis client.
 
     This class is responsible for persisting state data to a Redis database.
     It inherits from the BaseStatePersister class.
+
+    Note: We didn't create the right constructor for the initial implementation of the RedisPersister class,
+    so this is an attempt to fix that in a backwards compatible way.
     """
 
-    def __init__(
-        self,
+    @classmethod
+    def from_values(
+        cls,
         host: str,
         port: int,
         db: int,
@@ -32,22 +38,28 @@ class RedisPersister(persistence.BaseStatePersister):
         serde_kwargs: dict = None,
         redis_client_kwargs: dict = None,
         namespace: str = None,
+    ) -> "RedisBasePersister":
+        """Creates a new instance of the RedisBasePersister from passed in values."""
+        if redis_client_kwargs is None:
+            redis_client_kwargs = {}
+        connection = redis.Redis(
+            host=host, port=port, db=db, password=password, **redis_client_kwargs
+        )
+        return cls(connection, serde_kwargs, namespace)
+
+    def __init__(
+        self,
+        connection,
+        serde_kwargs: dict = None,
+        namespace: str = None,
     ):
         """Initializes the RedisPersister class.
 
-        :param host:
-        :param port:
-        :param db:
-        :param password:
-        :param serde_kwargs:
-        :param redis_client_kwargs: Additional keyword arguments to pass to the redis.Redis client.
+        :param connection: the redis connection object.
+        :param serde_kwargs: serialization and deserialization keyword arguments to pass to state SERDE.
         :param namespace: The name of the project to optionally use in the key prefix.
         """
-        if redis_client_kwargs is None:
-            redis_client_kwargs = {}
-        self.connection = redis.Redis(
-            host=host, port=port, db=db, password=password, **redis_client_kwargs
-        )
+        self.connection = connection
         self.serde_kwargs = serde_kwargs or {}
         self.namespace = namespace if namespace else ""
 
@@ -149,9 +161,45 @@ class RedisPersister(persistence.BaseStatePersister):
         self.connection.close()
 
 
+class RedisPersister(RedisBasePersister):
+    """A class used to represent a Redis Persister.
+
+    This class is deprecated. Use RedisBasePersister.from_values() instead.
+    """
+
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        db: int,
+        password: str = None,
+        serde_kwargs: dict = None,
+        redis_client_kwargs: dict = None,
+        namespace: str = None,
+    ):
+        """Initializes the RedisPersister class.
+
+        This is deprecated. Use RedisBasePersister.from_values() instead.
+
+        :param host:
+        :param port:
+        :param db:
+        :param password:
+        :param serde_kwargs:
+        :param redis_client_kwargs: Additional keyword arguments to pass to the redis.Redis client.
+        :param namespace: The name of the project to optionally use in the key prefix.
+        """
+        if redis_client_kwargs is None:
+            redis_client_kwargs = {}
+        connection = redis.Redis(
+            host=host, port=port, db=db, password=password, **redis_client_kwargs
+        )
+        super(RedisPersister, self).__init__(connection, serde_kwargs, namespace)
+
+
 if __name__ == "__main__":
-    # test the RedisPersister class
-    persister = RedisPersister("localhost", 6379, 0)
+    # test the RedisBasePersister class
+    persister = RedisBasePersister.from_values("localhost", 6379, 0)
 
     persister.initialize()
     persister.save("pk", "app_id", 2, "pos", state.State({"a": 1, "b": 2}), "completed")

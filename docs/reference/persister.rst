@@ -48,8 +48,7 @@ Currently we support the following, although we highly recommend you contribute 
 
    .. automethod:: __init__
 
-
-.. autoclass:: burr.integrations.persisters.b_redis.RedisPersister
+.. autoclass:: burr.integrations.persisters.b_redis.RedisBasePersister
    :members:
 
    .. automethod:: __init__
