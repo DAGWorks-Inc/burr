@@ -7,25 +7,25 @@ We have the following templates:
 
 ## Multimodal agent
 
-[Code template](https://github.com/DAGWorks-Inc/burr/tree/main/examples/templates/multi_modal_agent)
+[Code template](https://github.com/DAGWorks-Inc/burr/tree/main/examples/templates/multi_modal_agent.py)
 
 ![](./_agent_patterns/multi_modal_agent.png)
 
 ## Multi-agent collaboration
 
-[Code template](https://github.com/DAGWorks-Inc/burr/tree/main/examples/templates/multi_agent_collaboration)
+[Code template](https://github.com/DAGWorks-Inc/burr/tree/main/examples/templates/multi_agent_collaboration.py)
 
 ![](./_agent_patterns/multi_agent_collaboration.png)
 
 ## Supervisor agent
 
-[Code template](https://github.com/DAGWorks-Inc/burr/tree/main/examples/templates/agent_supervisor)
+[Code template](https://github.com/DAGWorks-Inc/burr/tree/main/examples/templates/agent_supervisor.py)
 
 ![](./_agent_patterns/agent_supervisor.png)
 
 
 ## Hierarchical teams
 
-[Code template](https://github.com/DAGWorks-Inc/burr/tree/main/examples/templates/hierarchical_agent_teams)
+[Code template](https://github.com/DAGWorks-Inc/burr/tree/main/examples/templates/hierarchical_agent_teams.py)
 
 ![](./_agent_patterns/hierarchical_agent_teams.png)

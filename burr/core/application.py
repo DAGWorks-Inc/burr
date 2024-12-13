@@ -2094,7 +2094,7 @@ class ApplicationBuilder(Generic[StateType]):
 
     def with_parallel_executor(self, executor_factory: lambda: Executor):
         """Assigns a default executor to be used for recursive/parallel sub-actions. This effectively allows
-        for executing multiple Burr apps in parallel. See https://burr.dagworks.io/pull/concepts/parallelism/
+        for executing multiple Burr apps in parallel. See https://burr.dagworks.io/concepts/parallelism/
         for more details.
 
         This will default to a simple threadpool executor, meaning that you will be bound by the number of threads
