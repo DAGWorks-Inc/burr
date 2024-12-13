@@ -761,48 +761,23 @@ before the action was applied.</p></li>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisPersister">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.b_redis.</span></span><span class="sig-name descname"><span class="pre">RedisPersister</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">redis_client_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisPersister" title="Link to this definition">¶</a></dt>
-<dd><p>A class used to represent a Redis Persister.</p>
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.b_redis.</span></span><span class="sig-name descname"><span class="pre">RedisBasePersister</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister" title="Link to this definition">¶</a></dt>
+<dd><p>Main class for Redis persister.</p>
+<p>Use this class if you want to directly control injecting the Redis client.</p>
 <p>This class is responsible for persisting state data to a Redis database.
 It inherits from the BaseStatePersister class.</p>
+<p>Note: We didn’t create the right constructor for the initial implementation of the RedisPersister class,
+so this is an attempt to fix that in a backwards compatible way.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisPersister.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">redis_client_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisPersister.__init__" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.__init__" title="Link to this definition">¶</a></dt>
 <dd><p>Initializes the RedisPersister class.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>host</strong></p></li>
-<li><p><strong>port</strong></p></li>
-<li><p><strong>db</strong></p></li>
-<li><p><strong>password</strong></p></li>
-<li><p><strong>serde_kwargs</strong></p></li>
-<li><p><strong>redis_client_kwargs</strong> – Additional keyword arguments to pass to the redis.Redis client.</p></li>
+<li><p><strong>connection</strong> – the redis connection object.</p></li>
+<li><p><strong>serde_kwargs</strong> – serialization and deserialization keyword arguments to pass to state SERDE.</p></li>
 <li><p><strong>namespace</strong> – The name of the project to optionally use in the key prefix.</p></li>
 </ul>
 </dd>
@@ -810,19 +785,37 @@ It inherits from the BaseStatePersister class.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisPersister.create_key">
-<span class="sig-name descname"><span class="pre">create_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">app_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partition_key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisPersister.create_key" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.create_key">
+<span class="sig-name descname"><span class="pre">create_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">app_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partition_key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.create_key" title="Link to this definition">¶</a></dt>
 <dd><p>Create a key for the Redis database.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisPersister.list_app_ids">
-<span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisPersister.list_app_ids" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.from_values">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_values</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">redis_client_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister" title="burr.integrations.persisters.b_redis.RedisBasePersister"><span class="pre">RedisBasePersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.from_values" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a new instance of the RedisBasePersister from passed in values.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.list_app_ids">
+<span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.list_app_ids" title="Link to this definition">¶</a></dt>
 <dd><p>List the app ids for a given partition key.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisPersister.load">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.load">
 <span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
 
 <dl>
@@ -832,7 +825,7 @@ It inherits from the BaseStatePersister class.</p>
 <dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisPersister.load" title="Link to this definition">¶</a></dt>
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.load" title="Link to this definition">¶</a></dt>
 <dd><p>Load the state data for a given partition key, app id, and sequence id.</p>
 <p>If the sequence id is not given, it will be looked up in the Redis database. If it is not found, None will be returned.</p>
 <dl class="field-list simple">
@@ -851,7 +844,7 @@ It inherits from the BaseStatePersister class.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisPersister.save">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.save">
 <span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
 
 <dl>
@@ -864,7 +857,7 @@ It inherits from the BaseStatePersister class.</p>
 <dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisPersister.save" title="Link to this definition">¶</a></dt>
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.save" title="Link to this definition">¶</a></dt>
 <dd><p>Save the state data to the Redis database.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1069,12 +1062,13 @@ although it uses different mechanisms to save state (as it tracks more than just
 <li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.set_serde_kwargs"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.set_serde_kwargs()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisPersister"><code class="docutils literal notranslate"><span class="pre">RedisPersister</span></code></a><ul>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisPersister.__init__"><code class="docutils literal notranslate"><span class="pre">RedisPersister.__init__()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisPersister.create_key"><code class="docutils literal notranslate"><span class="pre">RedisPersister.create_key()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisPersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">RedisPersister.list_app_ids()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisPersister.load"><code class="docutils literal notranslate"><span class="pre">RedisPersister.load()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisPersister.save"><code class="docutils literal notranslate"><span class="pre">RedisPersister.save()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister</span></code></a><ul>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.__init__"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.create_key"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.create_key()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.from_values"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.from_values()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.list_app_ids()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.load"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.load()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.save"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.save()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBPersister"><code class="docutils literal notranslate"><span class="pre">MongoDBPersister</span></code></a><ul>
