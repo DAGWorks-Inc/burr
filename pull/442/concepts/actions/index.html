@@ -22,6 +22,7 @@
     <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
     <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=739e8c58" />
+    <link rel="stylesheet" type="text/css" href="../../_static/testimonials.css?v=bd684830" />
     
     
 
@@ -392,7 +393,7 @@ framework to optimize the execution of the workflow. We call (1) a <code class="
 <li><p>use the class-based API when you want to leverage inheritance or parameterize the action in more powerful ways</p></li>
 </ul>
 <section id="function-based-actions">
-<h2>Function-based actions<a class="headerlink" href="#function-based-actions" title="Link to this heading">¶</a></h2>
+<span id="functionbasedactions"></span><h2>Function-based actions<a class="headerlink" href="#function-based-actions" title="Link to this heading">¶</a></h2>
 <p>You can define actions by decorating a function with the <a class="reference internal" href="../../reference/actions/#burr.core.action.action" title="burr.core.action.action"><code class="xref py py-func docutils literal notranslate"><span class="pre">&#64;action</span></code></a> decorator. These
 can return either just the updated state or a tuple of the result and the state. For example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">State</span>
@@ -467,7 +468,7 @@ injected into your Burr Actions. This is done by adding <code class="docutils li
 </section>
 <section id="class-based-actions">
 <h2>Class-Based Actions<a class="headerlink" href="#class-based-actions" title="Link to this heading">¶</a></h2>
-<p>You can define an action by implementing the <a class="reference internal" href="../../reference/actions/#burr.core.action.Action" title="burr.core.action.Action"><code class="xref py py-class docutils literal notranslate"><span class="pre">Action</span></code></a> class:</p>
+<p id="classbasedactions">You can define an action by implementing the <a class="reference internal" href="../../reference/actions/#burr.core.action.Action" title="burr.core.action.Action"><code class="xref py py-class docutils literal notranslate"><span class="pre">Action</span></code></a> class:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">Action</span><span class="p">,</span> <span class="n">State</span>
 
 <span class="k">class</span> <span class="nc">CustomAction</span><span class="p">(</span><span class="n">Action</span><span class="p">):</span>

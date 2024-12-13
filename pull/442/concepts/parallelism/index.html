@@ -22,6 +22,7 @@
     <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
     <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=739e8c58" />
+    <link rel="stylesheet" type="text/css" href="../../_static/testimonials.css?v=bd684830" />
     
     
 
@@ -434,12 +435,12 @@ Beyond that, Burr can support parallelism however you wish to run it – see the
 
 <span class="k">class</span> <span class="nc">TestMultiplePrompts</span><span class="p">(</span><span class="n">MapStates</span><span class="p">):</span>
 
-    <span class="k">def</span> <span class="nf">action</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">:</span>
         <span class="c1"># make sure to add a name to the action</span>
         <span class="c1"># This is not necessary for subgraphs, as actions will already have names</span>
         <span class="k">return</span> <span class="n">query_llm</span><span class="o">.</span><span class="n">with_name</span><span class="p">(</span><span class="s2">&quot;query_llm&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="c1"># You could easily have a list_prompts upstream action that writes to &quot;prompts&quot; in state</span>
         <span class="c1"># And loop through those</span>
         <span class="c1"># This hardcodes for simplicity</span>
@@ -499,7 +500,7 @@ Beyond that, Burr can support parallelism however you wish to run it – see the
 </ul>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">state</span>
 <span class="kn">from</span> <span class="nn">burr.core.parallelism</span> <span class="kn">import</span> <span class="n">MapActions</span><span class="p">,</span> <span class="n">RunnableGraph</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
 
 <span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">,</span> <span class="s2">&quot;model&quot;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;llm_output&quot;</span><span class="p">])</span>
 <span class="k">def</span> <span class="nf">query_llm</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
@@ -508,7 +509,7 @@ Beyond that, Burr can support parallelism however you wish to run it – see the
 
 <span class="k">class</span> <span class="nc">TestMultipleModels</span><span class="p">(</span><span class="n">MapActions</span><span class="p">):</span>
 
-    <span class="k">def</span> <span class="nf">actions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">actions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="c1"># Make sure to add a name to the action if you use bind() with a function,</span>
         <span class="c1"># note that these can be different actions, functions, etc...</span>
         <span class="c1"># in this case we&#39;re using `.bind()` to create multiple actions, but we can use some mix of</span>
@@ -520,7 +521,7 @@ Beyond that, Burr can support parallelism however you wish to run it – see the
         <span class="p">]</span>
             <span class="k">yield</span> <span class="n">action</span>
 
-    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;What is the meaning of life?&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">states</span><span class="p">:</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
@@ -661,7 +662,7 @@ combinations.</p>
     <span class="k">def</span> <span class="nf">action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">runnable_graph</span>
 
-    <span class="k">def</span> <span class="nf">states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="p">[</span>
             <span class="s2">&quot;What is the meaning of life?&quot;</span><span class="p">,</span>
             <span class="s2">&quot;What is the airspeed velocity of an unladen swallow?&quot;</span><span class="p">,</span>
@@ -677,13 +678,10 @@ it can run just as the single prompt we did above. Note this is also doable for 
 </section>
 <section id="passing-inputs">
 <h3>Passing inputs<a class="headerlink" href="#passing-inputs" title="Link to this heading">¶</a></h3>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Should <code class="docutils literal notranslate"><span class="pre">MapOverInputs</span></code> be its own class? Or should we have <code class="docutils literal notranslate"><span class="pre">bind_from_state(prompt=&quot;prompt_field_in_state&quot;)</span></code> that allows you to pass it in as
-state and just use the mapping capabilities?</p>
-</div>
-<p>Each of these can (optionally) produce <code class="docutils literal notranslate"><span class="pre">inputs</span></code> by yielding/returning a tuple from the <code class="docutils literal notranslate"><span class="pre">states</span></code>/<code class="docutils literal notranslate"><span class="pre">actions</span></code> function.</p>
-<p>This is useful if you want to vary the inputs. Note this is the same as passing <code class="docutils literal notranslate"><span class="pre">inputs=</span></code> to <code class="docutils literal notranslate"><span class="pre">app.run</span></code>.</p>
+<p>Parallel actions can accept inputs in the same way that class-based actions do. In order to accept inputs you have to declare them in the class. As we’re using the <a class="reference internal" href="../actions/#classbasedactions"><span class="std std-ref">class-based API</span></a>,
+this is done by declaring the <code class="docutils literal notranslate"><span class="pre">inputs</span></code> property – a list of strings that are used in inputs. Note you have to use the superclasses
+inputs as well to ensure it has everything it needs – we will likely be automating this.</p>
+<p>This looks as follows:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">state</span>
 <span class="kn">from</span> <span class="nn">burr.core.graph</span> <span class="kn">import</span> <span class="n">Graph</span>
 
@@ -716,19 +714,24 @@ state and just use the mapping capabilities?</p>
 
 <span class="k">class</span> <span class="nc">TestMultiplePromptsWithSubgraph</span><span class="p">(</span><span class="n">MapStates</span><span class="p">):</span>
 
-    <span class="k">def</span> <span class="nf">action</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">runnable_graph</span>
 
-    <span class="k">def</span> <span class="nf">states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="nb">dict</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
-        <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="p">[</span>
-            <span class="s2">&quot;What is the meaning of life?&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;What is the airspeed velocity of an unladen swallow?&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;What is the best way to cook a steak?&quot;</span><span class="p">,</span>
-        <span class="p">]:</span>
-            <span class="k">yield</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">),</span> <span class="p">{</span><span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="s2">&quot;gpt-4&quot;</span><span class="p">}</span> <span class="c1"># pass in the model as an input</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;prompts&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">inputs</span> <span class="c1"># make sure to include the superclass inputs</span>
+
+    <span class="k">def</span> <span class="nf">states</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">State</span><span class="p">,</span> <span class="nb">dict</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;prompts&quot;</span><span class="p">]:</span>
+            <span class="k">yield</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">)</span>
 
     <span class="o">...</span> <span class="c1"># same as above</span>
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Should <code class="docutils literal notranslate"><span class="pre">MapOverInputs</span></code> be its own class? Or should we have <code class="docutils literal notranslate"><span class="pre">bind_from_state(prompt=&quot;prompt_field_in_state&quot;)</span></code> that allows you to pass it in as
+state and just use the mapping capabilities? Or are we happy as it currently is because we can pass in inputs through <cite>MapStates</cite>/<cite>MapActions</cite> (as shown above).</p>
 </div>
 </section>
 </section>
@@ -801,7 +804,7 @@ instance, although we will likely be adding a new interface.</p>
 <p>Specifying it as part of the action – will override the global executor (note this is not supported yet…).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">TestMultiplePrompts</span><span class="p">(</span><span class="n">MapStates</span><span class="p">):</span>
 
-    <span class="k">def</span> <span class="nf">action</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">runnable_graph</span>
 
     <span class="k">def</span> <span class="nf">executor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Executor</span><span class="p">:</span>
@@ -846,7 +849,7 @@ if you are using the lower-level API.</p>
 <p>You can also disable it globally using the application builder:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">TestMultiplePrompts</span><span class="p">(</span><span class="n">MapStates</span><span class="p">):</span>
 
-    <span class="k">def</span> <span class="nf">action</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="n">RunnableGraph</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">runnable_graph</span>
 
     <span class="k">def</span> <span class="nf">tracker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TrackingBehavior</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
