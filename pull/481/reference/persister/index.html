@@ -1,0 +1,1130 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-20Z3J1CR22"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-20Z3J1CR22');
+    </script>
+    <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Conditions/Transitions" href="../conditions/" /><link rel="prev" title="Serialization &amp; Deserialization" href="../serde/" />
+        <link rel="canonical" href="https://burr.dagworks.io/reference/persister/" />
+
+    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+        <title>State Persistence - Burr</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=739e8c58" />
+    <link rel="stylesheet" type="text/css" href="../../_static/testimonials.css?v=bd684830" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  --color-announcement-background: #ffba00;
+  --color-announcement-text: #091E42;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-announcement-background: #ffba00;
+  --color-announcement-text: #091E42;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-announcement-background: #ffba00;
+  --color-announcement-text: #091E42;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../"><div class="brand">Burr</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../">
+  
+  
+  <span class="sidebar-brand-text">Burr</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../search/" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Burr</span></p>
+<ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../getting_started/">Get started</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Get started</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../getting_started/why-burr/">Why Burr?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting_started/install/">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting_started/simple-example/">Quickstart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting_started/up-next/">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../examples/">Cookbook</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Cookbook</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/simple/">🧸 Toy examples</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of 🧸 Toy examples</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/simple/counter/">Counter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/simple/cowsay/">Cowsay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/simple/choose-your-own-adventure/">Choose your own adventure</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/chatbots/">📞 Chatbots</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of 📞 Chatbots</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/chatbots/basic-chatbot/">Basic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/chatbots/gpt-like-chatbot/">GPT-like multimodal chatbot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/chatbots/rag-chatbot-hamilton/">Conversational RAG with Burr and Hamilton</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/agents/">🤖 Agents</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of 🤖 Agents</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/agents/divide-and-conquer/">Divide and Conquer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/agents/agent-patterns/">Agent patterns</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/deployment/">✈ Deployment</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of ✈ Deployment</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/deployment/web-server/">Burr in a web server</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/deployment/infrastructure/">Provisioning Infrastructure/Deploying</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/deployment/monitoring/">Monitoring in Production</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/guardrails/">🚧 Guardrails</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of 🚧 Guardrails</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/guardrails/creating_tests/">Creating Test Cases</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/data-science/">🧪 Data science</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of 🧪 Data science</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/data-science/ml_training/">Hyperparameter tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/data-science/simulation/">Simulations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../concepts/">Concepts</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Concepts</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/overview/">Cheat Sheet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/actions/">Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/state/">State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/state-machine/">Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/transitions/">Transitions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/tracking/">Tracking Burr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/state-persistence/">State Persistence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/serde/">Serialization / Deserialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/streaming-actions/">Streaming Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/state-typing/">Typing State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/hooks/">Hooks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/additional-visibility/">Additional Visibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/parallelism/">Parallelism</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/recursion/">Recursive Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/planned-capabilities/">Planned Capabilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../">API reference</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of API reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../application/">Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../application/#graph-apis">Graph APIs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../actions/">Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state/">State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../serde/">Serialization &amp; Deserialization</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">State Persistence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../conditions/">Conditions/Transitions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tracking/">Tracking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../visibility/">Tracing Inside Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../lifecycle/">Lifecycle API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../parallelism/">Parallelism</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../typing/">Typing</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../integrations/">Integrations</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of Integrations</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/hamilton/">Hamilton</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/streamlit/">Streamlit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/opentelemetry/">OpenTelemetry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/traceloop/">Traceloop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/langchain/">Langchain</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/pydantic/">Pydantic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../integrations/haystack/">Haystack</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../telemetry/">Usage analytics + data privacy</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../contributing/">Contributing</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle navigation of Contributing</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing/setup/">Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing/iterating/">Developing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing/architecture/">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing/contributing/">Contributing</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Burr Cloud</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://forms.gle/w9u2QKcPrztApRedA">Waitist</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">RESOURCES</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blog.dagworks.io/">Blog</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://discord.gg/6Zy2DwP4f3">Discord community server</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/dagworks-inc/burr">GitHub</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://twitter.com/dagworks">Twitter</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/dagworks-inc/burr/blob/main/docs/reference/persister.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/dagworks-inc/burr/edit/main/docs/reference/persister.rst" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="state-persistence">
+<h1>State Persistence<a class="headerlink" href="#state-persistence" title="Link to this heading">¶</a></h1>
+<p>Burr provides a set of tools to make loading and saving state easy. These are functions
+that will be used by lifecycle hooks to save and load state.</p>
+<p>If you want to implement your own state persister (to bridge it with a database), you should implement
+the <code class="docutils literal notranslate"><span class="pre">BaseStatePersister</span></code> interface.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStatePersister">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.persistence.</span></span><span class="sig-name descname"><span class="pre">BaseStatePersister</span></span><a class="headerlink" href="#burr.core.persistence.BaseStatePersister" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#burr.core.persistence.BaseStateLoader" title="burr.core.persistence.BaseStateLoader"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseStateLoader</span></code></a>, <a class="reference internal" href="#burr.core.persistence.BaseStateSaver" title="burr.core.persistence.BaseStateSaver"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseStateSaver</span></code></a></p>
+<p>Utility interface for a state reader/writer. This both persists and initializes state.
+Extend this class if you want an easy way to implement custom state storage.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStatePersister.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.BaseStatePersister.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStatePersister.initialize">
+<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.BaseStatePersister.initialize" title="Link to this definition">¶</a></dt>
+<dd><p>Initializes the app for saving, set up any databases, etc.. you want to here.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStatePersister.is_initialized">
+<span class="sig-name descname"><span class="pre">is_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#burr.core.persistence.BaseStatePersister.is_initialized" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the persister has been initialized appropriately.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStatePersister.list_app_ids">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.persistence.BaseStatePersister.list_app_ids" title="Link to this definition">¶</a></dt>
+<dd><p>Returns list of app IDs for a given primary key</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStatePersister.load">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.core.persistence.BaseStatePersister.load" title="Link to this definition">¶</a></dt>
+<dd><p>Loads the state for a given app_id</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong> – the partition key. Note this could be None, but it’s up to the persistor to whether
+that is a valid value it can handle.</p></li>
+<li><p><strong>app_id</strong> – the identifier for the app instance being recorded.</p></li>
+<li><p><strong>sequence_id</strong> – optional, the state corresponding to a specific point in time. Specifically state at the
+end of the action with this sequence_id. If sequence_id is not provided, persistor should return the state
+from the latest fully completed action.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>PersistedStateData or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStatePersister.save">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'completed'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'failed'</span></span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.BaseStatePersister.save" title="Link to this definition">¶</a></dt>
+<dd><p>Saves the state for a given app_id, sequence_id, position</p>
+<p>(PK, App_id, sequence_id, position) are a unique identifier for the state. Why not just
+(PK, App_id, sequence_id)? Because we’re over-engineering this here. We’re always going to have
+a position so might as well make it a quadruple.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong> – the partition key. Note this could be None, but it’s up to the persistor to whether
+that is a valid value it can handle.</p></li>
+<li><p><strong>app_id</strong> – Appliaction UID to write with</p></li>
+<li><p><strong>sequence_id</strong> – Sequence ID of the last executed step</p></li>
+<li><p><strong>position</strong> – The action name that was implemented</p></li>
+<li><p><strong>state</strong> – The current state of the application</p></li>
+<li><p><strong>status</strong> – The status of this state, either “completed” or “failed”. If “failed” the state is what it was
+before the action was applied.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>Internally, this interface combines the following two interfaces:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStateLoader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.persistence.</span></span><span class="sig-name descname"><span class="pre">BaseStateLoader</span></span><a class="headerlink" href="#burr.core.persistence.BaseStateLoader" title="Link to this definition">¶</a></dt>
+<dd><p>Base class for state initialization. This goes together with a BaseStateSaver to form the
+database for your application.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStateLoader.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.BaseStateLoader.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStateLoader.list_app_ids">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.persistence.BaseStateLoader.list_app_ids" title="Link to this definition">¶</a></dt>
+<dd><p>Returns list of app IDs for a given primary key</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStateLoader.load">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.core.persistence.BaseStateLoader.load" title="Link to this definition">¶</a></dt>
+<dd><p>Loads the state for a given app_id</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong> – the partition key. Note this could be None, but it’s up to the persistor to whether
+that is a valid value it can handle.</p></li>
+<li><p><strong>app_id</strong> – the identifier for the app instance being recorded.</p></li>
+<li><p><strong>sequence_id</strong> – optional, the state corresponding to a specific point in time. Specifically state at the
+end of the action with this sequence_id. If sequence_id is not provided, persistor should return the state
+from the latest fully completed action.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>PersistedStateData or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStateSaver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.persistence.</span></span><span class="sig-name descname"><span class="pre">BaseStateSaver</span></span><a class="headerlink" href="#burr.core.persistence.BaseStateSaver" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Basic Interface for state writing. This goes together with a BaseStateLoader to form the
+database for your application.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStateSaver.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.BaseStateSaver.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStateSaver.initialize">
+<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.BaseStateSaver.initialize" title="Link to this definition">¶</a></dt>
+<dd><p>Initializes the app for saving, set up any databases, etc.. you want to here.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStateSaver.is_initialized">
+<span class="sig-name descname"><span class="pre">is_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#burr.core.persistence.BaseStateSaver.is_initialized" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the persister has been initialized appropriately.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.BaseStateSaver.save">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'completed'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'failed'</span></span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.BaseStateSaver.save" title="Link to this definition">¶</a></dt>
+<dd><p>Saves the state for a given app_id, sequence_id, position</p>
+<p>(PK, App_id, sequence_id, position) are a unique identifier for the state. Why not just
+(PK, App_id, sequence_id)? Because we’re over-engineering this here. We’re always going to have
+a position so might as well make it a quadruple.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong> – the partition key. Note this could be None, but it’s up to the persistor to whether
+that is a valid value it can handle.</p></li>
+<li><p><strong>app_id</strong> – Appliaction UID to write with</p></li>
+<li><p><strong>sequence_id</strong> – Sequence ID of the last executed step</p></li>
+<li><p><strong>position</strong> – The action name that was implemented</p></li>
+<li><p><strong>state</strong> – The current state of the application</p></li>
+<li><p><strong>status</strong> – The status of this state, either “completed” or “failed”. If “failed” the state is what it was
+before the action was applied.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<section id="supported-implementations">
+<h2>Supported Implementations<a class="headerlink" href="#supported-implementations" title="Link to this heading">¶</a></h2>
+<p id="persistersref">Currently we support the following, although we highly recommend you contribute your own! We will be adding more shortly.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="burr.core.persistence.SQLLitePersister">
+<span class="sig-prename descclassname"><span class="pre">burr.core.persistence.</span></span><span class="sig-name descname"><span class="pre">SQLLitePersister</span></span><a class="headerlink" href="#burr.core.persistence.SQLLitePersister" title="Link to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">SQLitePersister</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.postgresql.</span></span><span class="sig-name descname"><span class="pre">PostgreSQLPersister</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister" title="Link to this definition">¶</a></dt>
+<dd><p>Class for PostgreSQL persistence of state. This is a simple implementation.</p>
+<p>To try it out locally with docker – here’s a command – change the values as appropriate.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>local-psql<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># container name</span>
+<span class="w">           </span>-v<span class="w"> </span>local_psql_data:/SOME/FILE_PATH/<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># mounting a volume for data persistence</span>
+<span class="w">           </span>-p<span class="w"> </span><span class="m">54320</span>:5432<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># port mapping</span>
+<span class="w">           </span>-e<span class="w"> </span><span class="nv">POSTGRES_PASSWORD</span><span class="o">=</span>my_password<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># superuser password</span>
+<span class="w">           </span>-d<span class="w"> </span>postgres<span class="w">  </span><span class="c1"># database name</span>
+</pre></div>
+</div>
+<p>Then you should be able to create the class like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">p</span> <span class="o">=</span> <span class="n">PostgreSQLPersister</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="s2">&quot;postgres&quot;</span><span class="p">,</span> <span class="s2">&quot;postgres&quot;</span><span class="p">,</span> <span class="s2">&quot;my_password&quot;</span><span class="p">,</span>
+                                   <span class="s2">&quot;localhost&quot;</span><span class="p">,</span> <span class="mi">54320</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;burr_state&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Constructor</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>connection</strong> – the connection to the PostgreSQL database.</p></li>
+<li><p><strong>table_name</strong> – the table name to store things under.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.create_table">
+<span class="sig-name descname"><span class="pre">create_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.create_table" title="Link to this definition">¶</a></dt>
+<dd><p>Helper function to create the table where things are stored.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.from_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister" title="burr.integrations.persisters.postgresql.PostgreSQLPersister"><span class="pre">PostgreSQLPersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.from_config" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a new instance of the PostgreSQLPersister from a configuration dictionary.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.from_values">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_values</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">db_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.from_values" title="Link to this definition">¶</a></dt>
+<dd><p>Builds a new instance of the PostgreSQLPersister from the provided values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>db_name</strong> – the name of the PostgreSQL database.</p></li>
+<li><p><strong>user</strong> – the username to connect to the PostgreSQL database.</p></li>
+<li><p><strong>password</strong> – the password to connect to the PostgreSQL database.</p></li>
+<li><p><strong>host</strong> – the host of the PostgreSQL database.</p></li>
+<li><p><strong>port</strong> – the port of the PostgreSQL database.</p></li>
+<li><p><strong>table_name</strong> – the table name to store things under.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.initialize">
+<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.initialize" title="Link to this definition">¶</a></dt>
+<dd><p>Creates the table</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.is_initialized">
+<span class="sig-name descname"><span class="pre">is_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.is_initialized" title="Link to this definition">¶</a></dt>
+<dd><p>This checks to see if the table has been created in the database or not.
+It defaults to using the initialized field, else queries the database to see if the table exists.
+It then sets the initialized field to True if the table exists.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.list_app_ids">
+<span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.list_app_ids" title="Link to this definition">¶</a></dt>
+<dd><p>Lists the app_ids for a given partition_key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.load" title="Link to this definition">¶</a></dt>
+<dd><p>Loads state for a given partition id.</p>
+<p>Depending on the parameters, this will return the last thing written, the last thing written for a given app_id,
+or a specific sequence_id for a given app_id.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong></p></li>
+<li><p><strong>app_id</strong></p></li>
+<li><p><strong>sequence_id</strong></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'completed'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'failed'</span></span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.save" title="Link to this definition">¶</a></dt>
+<dd><p>Saves the state for a given app_id, sequence_id, and position.</p>
+<p>This method connects to the SQLite database, converts the state to a JSON string, and inserts a new record
+into the table with the provided partition_key, app_id, sequence_id, position, and state. After the operation,
+it commits the changes and closes the connection to the database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong> – The partition key. This could be None, but it’s up to the persistor to whether
+that is a valid value it can handle.</p></li>
+<li><p><strong>app_id</strong> – The identifier for the app instance being recorded.</p></li>
+<li><p><strong>sequence_id</strong> – The state corresponding to a specific point in time.</p></li>
+<li><p><strong>position</strong> – The position in the sequence of states.</p></li>
+<li><p><strong>state</strong> – The state to be saved, an instance of the State class.</p></li>
+<li><p><strong>status</strong> – The status of this state, either “completed” or “failed”. If “failed” the state is what it was
+before the action was applied.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.set_serde_kwargs">
+<span class="sig-name descname"><span class="pre">set_serde_kwargs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.set_serde_kwargs" title="Link to this definition">¶</a></dt>
+<dd><p>Sets the serde_kwargs for the persister.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.b_redis.</span></span><span class="sig-name descname"><span class="pre">RedisBasePersister</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister" title="Link to this definition">¶</a></dt>
+<dd><p>Main class for Redis persister.</p>
+<p>Use this class if you want to directly control injecting the Redis client.</p>
+<p>This class is responsible for persisting state data to a Redis database.
+It inherits from the BaseStatePersister class.</p>
+<p>Note: We didn’t create the right constructor for the initial implementation of the RedisPersister class,
+so this is an attempt to fix that in a backwards compatible way.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Initializes the RedisPersister class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>connection</strong> – the redis connection object.</p></li>
+<li><p><strong>serde_kwargs</strong> – serialization and deserialization keyword arguments to pass to state SERDE.</p></li>
+<li><p><strong>namespace</strong> – The name of the project to optionally use in the key prefix.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.create_key">
+<span class="sig-name descname"><span class="pre">create_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">app_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partition_key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.create_key" title="Link to this definition">¶</a></dt>
+<dd><p>Create a key for the Redis database.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.from_values">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_values</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">redis_client_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister" title="burr.integrations.persisters.b_redis.RedisBasePersister"><span class="pre">RedisBasePersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.from_values" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a new instance of the RedisBasePersister from passed in values.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.list_app_ids">
+<span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.list_app_ids" title="Link to this definition">¶</a></dt>
+<dd><p>List the app ids for a given partition key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.load" title="Link to this definition">¶</a></dt>
+<dd><p>Load the state data for a given partition key, app id, and sequence id.</p>
+<p>If the sequence id is not given, it will be looked up in the Redis database. If it is not found, None will be returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong></p></li>
+<li><p><strong>app_id</strong></p></li>
+<li><p><strong>sequence_id</strong></p></li>
+<li><p><strong>kwargs</strong></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Value or None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'completed'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'failed'</span></span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.save" title="Link to this definition">¶</a></dt>
+<dd><p>Save the state data to the Redis database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong></p></li>
+<li><p><strong>app_id</strong></p></li>
+<li><p><strong>sequence_id</strong></p></li>
+<li><p><strong>position</strong></p></li>
+<li><p><strong>state</strong></p></li>
+<li><p><strong>status</strong></p></li>
+<li><p><strong>kwargs</strong></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.b_mongodb.</span></span><span class="sig-name descname"><span class="pre">MongoDBBasePersister</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">client</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">db_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mydatabase'</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">collection_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mystates'</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister" title="Link to this definition">¶</a></dt>
+<dd><p>A class used to represent a MongoDB Persister.</p>
+<p>Example usage:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">persister</span> <span class="o">=</span> <span class="n">MongoDBBasePersister</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="s1">&#39;mongodb://user:pass@localhost:27017&#39;</span><span class="p">,</span>
+                                             <span class="n">db_name</span><span class="o">=</span><span class="s1">&#39;mydatabase&#39;</span><span class="p">,</span>
+                                             <span class="n">collection_name</span><span class="o">=</span><span class="s1">&#39;mystates&#39;</span><span class="p">)</span>
+<span class="n">persister</span><span class="o">.</span><span class="n">save</span><span class="p">(</span>
+    <span class="n">partition_key</span><span class="o">=</span><span class="s1">&#39;example_partition&#39;</span><span class="p">,</span>
+    <span class="n">app_id</span><span class="o">=</span><span class="s1">&#39;example_app&#39;</span><span class="p">,</span>
+    <span class="n">sequence_id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">position</span><span class="o">=</span><span class="s1">&#39;example_position&#39;</span><span class="p">,</span>
+    <span class="n">state</span><span class="o">=</span><span class="n">state</span><span class="o">.</span><span class="n">State</span><span class="p">({</span><span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="s1">&#39;value&#39;</span><span class="p">}),</span>
+    <span class="n">status</span><span class="o">=</span><span class="s1">&#39;completed&#39;</span>
+<span class="p">)</span>
+<span class="n">loaded_state</span> <span class="o">=</span> <span class="n">persister</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">partition_key</span><span class="o">=</span><span class="s1">&#39;example_partition&#39;</span><span class="p">,</span> <span class="n">app_id</span><span class="o">=</span><span class="s1">&#39;example_app&#39;</span><span class="p">,</span> <span class="n">sequence_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">loaded_state</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>Note: this is called MongoDBBasePersister because we had to change the constructor and wanted to make</dt><dd><p>this change backwards compatible.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">client</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">db_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mydatabase'</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">collection_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mystates'</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Initializes the MongoDBBasePersister class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>client</strong> – the mongodb client to use</p></li>
+<li><p><strong>db_name</strong> – the name of the database to use</p></li>
+<li><p><strong>collection_name</strong> – the name of the collection to use</p></li>
+<li><p><strong>serde_kwargs</strong> – serializer/deserializer keyword arguments to pass to the state object</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.from_values">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_values</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">uri</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mongodb://localhost:27017'</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">db_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mydatabase'</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">collection_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mystates'</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">mongo_client_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister" title="burr.integrations.persisters.b_mongodb.MongoDBBasePersister"><span class="pre">MongoDBBasePersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.from_values" title="Link to this definition">¶</a></dt>
+<dd><p>Initializes the MongoDBBasePersister class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.list_app_ids">
+<span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.list_app_ids" title="Link to this definition">¶</a></dt>
+<dd><p>List the app ids for a given partition key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.load" title="Link to this definition">¶</a></dt>
+<dd><p>Load the state data for a given partition key, app id, and sequence id.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'completed'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'failed'</span></span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.save" title="Link to this definition">¶</a></dt>
+<dd><p>Save the state data to the MongoDB database.</p>
+</dd></dl>
+
+</dd></dl>
+
+<p>Note that the <a class="reference internal" href="../tracking/#burr.tracking.LocalTrackingClient" title="burr.tracking.client.LocalTrackingClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">LocalTrackingClient</span></code></a> leverages the <a class="reference internal" href="#burr.core.persistence.BaseStateLoader" title="burr.core.persistence.BaseStateLoader"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseStateLoader</span></code></a> to allow loading state,
+although it uses different mechanisms to save state (as it tracks more than just state).</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../conditions/">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Conditions/Transitions</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../serde/">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Serialization &amp; Deserialization</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Elijah ben Izzy, Stefan Krawczyk
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">State Persistence</a><ul>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStatePersister"><code class="docutils literal notranslate"><span class="pre">BaseStatePersister</span></code></a><ul>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStatePersister.__init__"><code class="docutils literal notranslate"><span class="pre">BaseStatePersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStatePersister.initialize"><code class="docutils literal notranslate"><span class="pre">BaseStatePersister.initialize()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStatePersister.is_initialized"><code class="docutils literal notranslate"><span class="pre">BaseStatePersister.is_initialized()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStatePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">BaseStatePersister.list_app_ids()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStatePersister.load"><code class="docutils literal notranslate"><span class="pre">BaseStatePersister.load()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStatePersister.save"><code class="docutils literal notranslate"><span class="pre">BaseStatePersister.save()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStateLoader"><code class="docutils literal notranslate"><span class="pre">BaseStateLoader</span></code></a><ul>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStateLoader.__init__"><code class="docutils literal notranslate"><span class="pre">BaseStateLoader.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStateLoader.list_app_ids"><code class="docutils literal notranslate"><span class="pre">BaseStateLoader.list_app_ids()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStateLoader.load"><code class="docutils literal notranslate"><span class="pre">BaseStateLoader.load()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStateSaver"><code class="docutils literal notranslate"><span class="pre">BaseStateSaver</span></code></a><ul>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStateSaver.__init__"><code class="docutils literal notranslate"><span class="pre">BaseStateSaver.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStateSaver.initialize"><code class="docutils literal notranslate"><span class="pre">BaseStateSaver.initialize()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStateSaver.is_initialized"><code class="docutils literal notranslate"><span class="pre">BaseStateSaver.is_initialized()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.BaseStateSaver.save"><code class="docutils literal notranslate"><span class="pre">BaseStateSaver.save()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#supported-implementations">Supported Implementations</a><ul>
+<li><a class="reference internal" href="#burr.core.persistence.SQLLitePersister"><code class="docutils literal notranslate"><span class="pre">SQLLitePersister</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister</span></code></a><ul>
+<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.__init__"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.create_table"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.create_table()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.from_config"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.from_config()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.from_values"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.from_values()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.initialize"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.initialize()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.is_initialized"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.is_initialized()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.list_app_ids()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.load"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.load()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.save"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.save()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.set_serde_kwargs"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.set_serde_kwargs()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister</span></code></a><ul>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.__init__"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.create_key"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.create_key()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.from_values"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.from_values()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.list_app_ids()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.load"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.load()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.save"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.save()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister</span></code></a><ul>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.__init__"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.from_values"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.from_values()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.list_app_ids()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.load"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.load()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.save"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.save()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=187304be"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=5fa4622c"></script>
+    </body>
+</html>
