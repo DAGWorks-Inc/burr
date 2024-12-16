@@ -652,7 +652,7 @@ const StepSubTableRow = (props: {
       setCurrentSelectedIndex={setCurrentSelectedIndex}
     >
       <TableCell
-        className={` ${lightText} w-10 min-w-10 ${props.displaySpanID ? '' : 'text-opacity-0'} flex flex-row`}
+        className={` ${lightText} w-10 min-w-10 ${props.displaySpanID ? '' : 'text-opacity-0'}`}
       >
         <RecursionDepthPadding depth={props.depth}>
           <span>{spanIDUniqueToAction}</span>
