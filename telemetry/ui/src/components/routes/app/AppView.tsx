@@ -392,8 +392,9 @@ export const AppView = (props: {
   }
 
   if (error) return <div>Error loading steps</div>;
-  if (data === undefined || backendSpec === undefined || annotationsData === undefined)
+  if (data === undefined || backendSpec === undefined) {
     return <Loading />;
+  }
   const displayAnnotations = props.allowAnnotations && backendSpec.supports_annotations;
   // TODO -- re-enable this if I want...
   // const previousActions =
@@ -513,7 +514,7 @@ export const AppView = (props: {
                 setTopToBottomChronological={setTopToBottomChronological}
                 toggleInspectViewOpen={() => setInspectViewOpen(!inspectViewOpen)}
                 displayAnnotations={displayAnnotations}
-                annotations={annotationsData}
+                annotations={annotationsData || []}
               />
             </div>
             {!fullScreen && props.orientation === 'stacked_horizontal' && (
