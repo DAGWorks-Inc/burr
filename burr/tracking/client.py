@@ -298,7 +298,7 @@ class LocalTrackingClient(
         sequence_id: int = -1,
         storage_dir: str = DEFAULT_STORAGE_DIR,
     ) -> tuple[dict, str]:
-        """THis is deprecated and will be removed when we migrate over demos. Do not use! Instead use
+        """This is deprecated and will be removed when we migrate over demos. Do not use! Instead use
         the persistence API :py:class:`initialize_from <burr.core.application.ApplicationBuilder.initialize_from>`
         to load state.
 
@@ -360,6 +360,18 @@ class LocalTrackingClient(
             logger.info(f"Creating application directory: {application_path}")
             os.makedirs(application_path)
 
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+    def __getstate__(self):
+        out = {
+            key: value for key, value in self.__dict__.items() if key != "f"
+        }  # the file we don't want to serialize
+        # Note that this will only work if we also call post_application_create
+        # For now that's OK as that's the only reason we'll add it -- if we want more distribution later we'll have to serialize the file
+        out["f"] = None
+        return out
+
     def post_application_create(
         self,
         *,
@@ -378,6 +390,7 @@ class LocalTrackingClient(
             encoding="utf-8",
             errors="replace",
         )
+
         graph_path = os.path.join(self.storage_dir, app_id, self.GRAPH_FILENAME)
         if os.path.exists(graph_path):
             logger.info(f"Graph already exists at {graph_path}. Not overwriting.")
