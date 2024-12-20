@@ -360,6 +360,31 @@ class LocalTrackingClient(
             logger.info(f"Creating application directory: {application_path}")
             os.makedirs(application_path)
 
+    def _get_partition_key_path_name(self, partition_key: str):
+        if partition_key is None:
+            return "__none__"
+        return partition_key
+
+    def _get_base_path(self, app_id: str, partition_key: Optional[str]) -> str:
+        old_version_base_path = os.path.join(self.storage_dir, app_id)
+        new_version_base_path = os.path.join(self.storage_dir, partition_key, app_id)
+        if not os.path.exists(old_version_base_path):
+            # In this case, we use the new version with the partition key
+            return new_version_base_path
+
+        # In this case, we can check to see if it matches (E.G. if the new application
+        # has the same partition key as the old application)
+        if os.path.exists(os.path.join(old_version_base_path, self.METADATA_FILENAME)):
+            metadata = ApplicationMetadataModel.load(
+                os.path.join(old_version_base_path, self.METADATA_FILENAME)
+            )
+            if metadata.partition_key == partition_key:
+                # In this case we use the old version of the name
+                return old_version_base_path
+            else:
+                return new_version_base_path
+        return old_version_base_path
+
     def post_application_create(
         self,
         *,
@@ -371,14 +396,15 @@ class LocalTrackingClient(
         spawning_parent_pointer: Optional[burr_types.ParentPointer],
         **future_kwargs: Any,
     ):
+        base_path = self._get_base_path(app_id, partition_key)
         self._ensure_dir_structure(app_id)
         self.f = open(
-            os.path.join(self.storage_dir, app_id, self.LOG_FILENAME),
+            os.path.join(base_path, self.LOG_FILENAME),
             "a",
             encoding="utf-8",
             errors="replace",
         )
-        graph_path = os.path.join(self.storage_dir, app_id, self.GRAPH_FILENAME)
+        graph_path = os.path.join(base_path, self.GRAPH_FILENAME)
         if os.path.exists(graph_path):
             logger.info(f"Graph already exists at {graph_path}. Not overwriting.")
             return
@@ -388,7 +414,7 @@ class LocalTrackingClient(
         with open(graph_path, "w", encoding="utf-8", errors="replace") as f:
             json.dump(graph, f)
 
-        metadata_path = os.path.join(self.storage_dir, app_id, self.METADATA_FILENAME)
+        metadata_path = os.path.join(base_path, self.METADATA_FILENAME)
         if os.path.exists(metadata_path):
             logger.info(f"Metadata already exists at {metadata_path}. Not overwriting.")
             return
@@ -584,7 +610,7 @@ class LocalTrackingClient(
         # TODO:
         if app_id is None:
             return  # no application ID
-        path = os.path.join(self.storage_dir, app_id, self.LOG_FILENAME)
+        path = self._get_base_path(app_id, partition_key)
         if not os.path.exists(path):
             return None
         with open(path, "r", errors="replace", encoding="utf-8") as f:
