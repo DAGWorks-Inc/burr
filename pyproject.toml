@@ -62,7 +62,8 @@ tests = [
   "pyarrow",
   "redis",
   "burr[opentelemetry]",
-  "burr[haystack]"
+  "burr[haystack]",
+  "burr[ray]"
 ]
 
 documentation = [
@@ -75,6 +76,7 @@ documentation = [
   "sphinx-toolbox",
   "psycopg2-binary",
   "redis",
+  "ray",
   "sphinxcontrib-googleanalytics"
 ]
 
@@ -167,6 +169,10 @@ developer = [
 opentelemetry = [
   "opentelemetry-api",
   "opentelemetry-sdk",
+]
+
+ray = [
+  "ray"
 ]
 [tool.setuptools]
 include-package-data = true
