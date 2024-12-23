@@ -158,8 +158,7 @@ const CommonTableRow = (props: {
           });
         }
         e.stopPropagation();
-      }}
-    >
+      }}>
       {props.children}
     </TableRow>
   );
@@ -234,8 +233,7 @@ const ActionTableRow = (props: {
       setCurrentHoverIndex={setCurrentHoverIndex}
       setCurrentSelectedIndex={setCurrentSelectedIndex}
       appID={props.appID}
-      partitionKey={props.partitionKey}
-    >
+      partitionKey={props.partitionKey}>
       <TableCell className="text-gray-500 w-12 max-w-12 min-w-12">
         <div className="flex flex-row items-center">
           <RecursionDepthPadding depth={props.depth}>
@@ -253,8 +251,7 @@ const ActionTableRow = (props: {
             />
           </div>
           <div
-            className={`${props.minimized ? 'w-32' : 'w-72 max-w-72'} flex flex-row justify-start gap-1 items-center`}
-          >
+            className={`${props.minimized ? 'w-32' : 'w-72 max-w-72'} flex flex-row justify-start gap-1 items-center`}>
             <Chip
               label={isStreaming ? 'stream' : 'action'}
               chipType={isStreaming ? 'stream' : 'action'}
@@ -281,7 +278,7 @@ const ActionTableRow = (props: {
       </TableCell>
       {!props.minimized && (
         <>
-          <TableCell className="h-[1px] px-0">
+          <TableCell className="h-[1px] px-0" colSpan={1}>
             <WaterfallPiece
               step={props.step}
               earliestStartTime={props.earliestTimeSeen}
@@ -297,7 +294,7 @@ const ActionTableRow = (props: {
             />
           </TableCell>
           {props.displayLinksCol && (
-            <TableCell>
+            <TableCell className="w-5">
               {childCount > 0 ? (
                 <div className="flex gap-1 items-center">
                   <LinkExpandIcon
@@ -503,8 +500,7 @@ const LinkSubTable = (props: {
               currentSelectedIndex={currentSelectedIndex}
               step={props.step}
               setCurrentHoverIndex={setCurrentHoverIndex}
-              setCurrentSelectedIndex={setCurrentSelectedIndex}
-            >
+              setCurrentSelectedIndex={setCurrentSelectedIndex}>
               <TableCell colSpan={1} className="">
                 <RecursionDepthPadding depth={props.depth}>
                   <Icon className={`h-5 w-5 ${iconColor} -ml-1`} />
@@ -512,21 +508,19 @@ const LinkSubTable = (props: {
               </TableCell>
               <TableCell
                 colSpan={1}
-                className={`${normalText} w-48 min-w-48 max-w-48 truncate pl-9`}
-              >
+                className={`${normalText} w-48 min-w-48 max-w-48 truncate pl-9`}>
                 <div
-                  className="z-50"
+                  className="z-50 truncate"
                   onClick={(e) => {
                     navigate(
                       `/project/${props.projectId}/${subApp.child.partition_key || 'null'}/${subApp.child.app_id}`
                     );
                     e.stopPropagation();
-                  }}
-                >
+                  }}>
                   <span className="hover:underline">{subApp.child.app_id}</span>
                 </div>
               </TableCell>
-              <TableCell colSpan={1} className={`relative`} id="placeholder1">
+              <TableCell colSpan={1} className="relative" id="placeholder1">
                 <WaterfallPiece
                   step={props.step}
                   startTime={new Date(props.step.step_start_log.start_time)}
@@ -543,7 +537,7 @@ const LinkSubTable = (props: {
                   isSubActionExpanded={subApplicationIsExpanded}
                 />
               </TableCell>
-              <TableCell colSpan={1} />
+              <TableCell colSpan={1} className="w-5" />
               {!props.minimized && (
                 <TableCell colSpan={1} className="text-gray-500">
                   <Chip
@@ -553,7 +547,7 @@ const LinkSubTable = (props: {
                   />
                 </TableCell>
               )}
-              <TableCell colSpan={1} />
+              {/* <TableCell colSpan={1} /> */}
             </CommonTableRow>
             {subApplicationIsExpanded ? (
               <SelfLoadingSubApplicationContainer
@@ -649,11 +643,9 @@ const StepSubTableRow = (props: {
       currentSelectedIndex={currentSelectedIndex}
       step={props.step}
       setCurrentHoverIndex={setCurrentHoverIndex}
-      setCurrentSelectedIndex={setCurrentSelectedIndex}
-    >
+      setCurrentSelectedIndex={setCurrentSelectedIndex}>
       <TableCell
-        className={` ${lightText} w-10 min-w-10 ${props.displaySpanID ? '' : 'text-opacity-0'}`}
-      >
+        className={` ${lightText} w-10 min-w-10 ${props.displaySpanID ? '' : 'text-opacity-0'}`}>
         <RecursionDepthPadding depth={props.depth}>
           <span>{spanIDUniqueToAction}</span>
         </RecursionDepthPadding>
@@ -662,14 +654,12 @@ const StepSubTableRow = (props: {
         <>
           <TableCell
             onClick={onClick}
-            className={`${normalText} ${props.minimized ? 'w-32 min-w-32' : 'w-72 max-w-72'} flex flex-col`}
-          >
+            className={`${normalText} ${props.minimized ? 'w-32 min-w-32' : 'w-72 max-w-72'} flex flex-col`}>
             <div className="flex flex-row gap-1 items-center">
               {[...Array(depth).keys()].map((i) => (
                 <Icon
                   key={i}
-                  className={`${i === depth - 1 ? 'opacity-0' : 'opacity-0'} text-lg text-gray-600 w-4 flex-shrink-0`}
-                ></Icon>
+                  className={`${i === depth - 1 ? 'opacity-0' : 'opacity-0'} text-lg text-gray-600 w-4 flex-shrink-0`}></Icon>
               ))}
               <Chip
                 label={
@@ -725,8 +715,7 @@ const StepSubTableRow = (props: {
                 className="flex justify-start overflow-hidden pl-20"
                 onClick={(e) => {
                   e.stopPropagation();
-                }}
-              >
+                }}>
                 <RenderedField
                   value={(props.model as AttributeModel).value}
                   defaultExpanded={true} // no real need for default expanded
@@ -734,8 +723,7 @@ const StepSubTableRow = (props: {
               </div>
             )}
           </TableCell>
-          <TableCell className="" />
-          <TableCell className="" />
+          {props.displayAnnotations && <TableCell className="" />}
         </>
       ) : (
         <TableCell colSpan={5}></TableCell>
@@ -1123,13 +1111,11 @@ const WaterfallPiece: React.FC<{
                   onClick={(e) => {
                     props.setSubActionExpanded?.(!props.isSubActionExpanded);
                     e.stopPropagation();
-                  }}
-                >
+                  }}>
                   <div
                     className={`${props.isHighlighted ? 'bg-transparent' : props.bgColor} opacity-50 h-1 px-0 rounded-sm flex flex-row justify-center items-center`}
                     onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}
-                  >
+                    onMouseLeave={() => setIsHovered(false)}>
                     <SubActionIcon
                       className={`hover:scale-125 transform-none cursor-pointer h-4 w-4 rounded-full text-gray-700 ${props.isHighlighted ? props.bgColor : 'bg-white'}`}
                     />
@@ -1146,8 +1132,7 @@ const WaterfallPiece: React.FC<{
               style={{
                 left: `calc(${leftPositionPercentage}% - 20px)`,
                 width: `calc(${widthPercentage}% + 40px)` // 20px buffer on each side
-              }}
-            ></div>
+              }}></div>
 
             {
               <div
@@ -1161,8 +1146,7 @@ const WaterfallPiece: React.FC<{
                   left: isCloseToEnd
                     ? `auto`
                     : `calc(${leftPositionPercentage}% + ${widthPercentage}%)`
-                }}
-              >
+                }}>
                 {hoverItem}
               </div>
             }
@@ -1478,7 +1462,9 @@ export const StepList = (props: {
             latestTimeSeen={props.latestTimeSeen}
             setTraceExpanded={setTraceExpanded}
             projectId={props.projectId}
-            pauseLocation={beforePause ? 'bottom' : undefined}
+            pauseLocation={
+              beforePause ? (props.topToBottomChronological ? 'top' : 'bottom') : undefined
+            }
             pauseTime={step.pauseAfterLastStepMillis}
             topToBottomChronological={props.topToBottomChronological}
             displayAnnotations={props.displayAnnotations}
@@ -1817,8 +1803,7 @@ const ParentLink = (props: {
       <TableCell colSpan={2} className="text-gray-500">
         <div className="flex flex-row gap-1 items-center pl-5">
           <Link
-            to={`/project/${props.projectId}/${props.parentPointer.partition_key}/${props.parentPointer.app_id}`}
-          >
+            to={`/project/${props.projectId}/${props.parentPointer.partition_key}/${props.parentPointer.app_id}`}>
             <span className="hover:underline">{props.parentPointer.app_id}</span>
           </Link>
           <span>@</span>
@@ -1827,7 +1812,7 @@ const ParentLink = (props: {
       </TableCell>
       {!props.minimized && (
         <>
-          <TableCell></TableCell>
+          {/* <TableCell></TableCell>› */}
           <TableCell colSpan={1} className="text-gray-500">
             <Chip
               label={'parent'}
