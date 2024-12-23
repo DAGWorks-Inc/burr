@@ -352,6 +352,16 @@ class SQLitePersister(BaseStatePersister, BaseCopyable):
         # closes connection at end when things are being shutdown.
         self.connection.close()
 
+    def __getstate__(self):
+        return {key: value for key, value in self.__dict__.items() if key != "connection"}
+
+    def __setstate__(self, state):
+        for key, value in state.items():
+            setattr(self, key, value)
+        self.connection = sqlite3.connect(
+            self.db_path, **self._connect_kwargs if self._connect_kwargs is not None else {}
+        )
+
 
 class InMemoryPersister(BaseStatePersister):
     """In-memory persister for testing purposes. This is not recommended for production use."""
