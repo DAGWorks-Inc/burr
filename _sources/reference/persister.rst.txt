@@ -37,7 +37,7 @@ Supported Implementations
 
 Currently we support the following, although we highly recommend you contribute your own! We will be adding more shortly.
 
-.. autoclass:: burr.core.persistence.SQLLitePersister
+.. autoclass:: burr.core.persistence.SQLitePersister
    :members:
 
    .. automethod:: __init__
