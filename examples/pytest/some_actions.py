@@ -7,6 +7,7 @@ import openai
 from burr import core
 from burr.core import Action, ApplicationContext, GraphBuilder, State, action
 from burr.core.parallelism import MapStates, RunnableGraph
+from burr.tracking import LocalTrackingClient
 
 
 @action(reads=["audio"], writes=["transcription"])
@@ -90,10 +91,7 @@ def determine_diagnosis(state: State) -> State:
         return state.update(final_diagnosis="Healthy individual")
 
 
-def run_my_agent(
-    input_audio: str, partition_key: str = None, app_id: str = None, tracking_project: str = None
-) -> Tuple[str, str]:
-    # we fake the input audio to be a string here rather than a waveform.
+def build_graph() -> core.Graph:
     graph = (
         GraphBuilder()
         .with_actions(
@@ -107,16 +105,43 @@ def run_my_agent(
         )
         .build()
     )
+    return graph
+
+
+def build_application(
+    app_id,
+    graph,
+    initial_state,
+    initial_entrypoint,
+    partition_key,
+    tracker,
+    use_otel_tracing: bool = False,
+) -> core.Application:
+    """Builds an application with the given parameters."""
     app_builder = (
         core.ApplicationBuilder()
         .with_graph(graph)
-        .with_state(**{"audio": input_audio})
-        .with_entrypoint("transcribe_audio")
+        .with_state(**initial_state)
+        .with_entrypoint(initial_entrypoint)
         .with_identifiers(partition_key=partition_key, app_id=app_id)
     )
-    if tracking_project:
-        app_builder = app_builder.with_tracker(project=tracking_project)
+    if tracker:
+        app_builder = app_builder.with_tracker(tracker, use_otel_tracing=use_otel_tracing)
     app = app_builder.build()
+    return app
+
+
+def run_my_agent(
+    input_audio: str, partition_key: str = None, app_id: str = None, tracking_project: str = None
+) -> Tuple[str, str]:
+    graph = build_graph()
+    tracker = None
+    if tracking_project:
+        tracker = LocalTrackingClient(project=tracking_project)
+    # we fake the input audio to be a string here rather than a waveform.
+    app = build_application(
+        app_id, graph, {"audio": input_audio}, "transcribe_audio", partition_key, tracker=tracker
+    )
     # app.visualize("diagnosis.png", include_conditions=True, view=False, format="png")
     last_action, _, agent_state = app.run(
         halt_after=["determine_diagnosis"],

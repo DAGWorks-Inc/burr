@@ -1,12 +1,12 @@
-# Using pytest to evaluate your agent / application
+# Using pytest to evaluate your agent  / augmented LLM / application
 
-An agent is a combination of LLM calls and logic. But how do we know if it's working? Well we can test & evaluate it.
+An agent / augmented LLM is a combination of LLM calls and logic. But how do we know if it's working? Well we can test & evaluate it.
 
 From a high level we want to test & evaluate the "micro" i.e. the LLM calls & individual bits of logic,
 through to the "macro" i.e. the agent as a whole.
 
 But, the challenge with LLM calls is that you might want to "assert" on various aspects of the
-output without, and not want it to fail on the first assertion failure which is standard test framework behavior. So what are you to do?
+output without failing on the first assertion failure, which is standard test framework behavior. So what are you to do?
 
 Well we can use some `pytest` constructs to help us with this.
 
@@ -58,7 +58,7 @@ def test_my_agent(input, expected_output):
     assert actual_output == expected_output
     # assert some other property of the output...
 ```
-What we've shown above will fail on the
+What we've shown above will fail on the first assertion failure. But what if we want to evaluate all the outputs before making a pass / fail decision?
 
 ### Not failing on first assert failure / logging test results
 
@@ -94,7 +94,7 @@ This enables us to get a dataframe of all the results from our tests, and then w
 E.g. we only pass tests if all the outputs are as expected, or we pass if 80% of the outputs are as expected, etc. You could
 also log this to a file, or a database, etc. for further inspection and record keeping.
 
-Note: wou can also combine `results_bag` with ``pytest.mark.parametrize`` to run the same test with different inputs and expected outputs:
+Note: we can also combine `results_bag` with ``pytest.mark.parametrize`` to run the same test with different inputs and expected outputs:
 
 ```python
 import pytest
@@ -175,7 +175,7 @@ def test_an_agent_e2e(input_state, expected_state, results_bag):
     input_state = state.State.deserialize(input_state)
     expected_state = state.State.deserialize(expected_state)
     # exercise the agent
-    agent = agent_builder(input_state)
+    agent = agent_builder(input_state) # e.g. something like some_actions._build_application(...)
     output_state = agent_runner(agent)
 
     results_bag.input_state = input_state
@@ -197,4 +197,83 @@ def test_an_agent_e2e(input_state, expected_state, results_bag):
     # place any asserts at the end of the test
     assert exact_match
 
+```
+#### Using the Burr UI to observe test runs
+You can also use the Burr UI to observe the test runs. This can be useful to see the results of the tests in a more visual way.
+To do this, you'd instantiate the Burr Tracker and then run the tests as normal. A notes on ergonomics:
+
+1. It's useful to use the test_name as the partition_key to easily find test runs in the Burr UI. You can also make the app_id match some test run ID, e.g. date-time, etc.
+2. You can turn on opentelemetry tracing to see the traces in the Burr UI as well.
+3. In general this means that you should have a parameterizeable application builder function that can take in a tracker and partition key.
+
+```python
+import pytest
+from our_agent_application import agent_builder, agent_runner # some functions that build and run our agent
+
+from burr.core import state
+
+# the following is required to run file based tests
+from burr.testing import pytest_generate_tests  # noqa: F401
+from burr.tracking import LocalTrackingClient
+
+@pytest.fixture
+def tracker():
+    """Fixture for creating a tracker to track runs to log to the Burr UI."""
+    tracker = LocalTrackingClient("pytest-runs")
+    # optionally turn on opentelemetry tracing
+    yield tracker
+
+
+@pytest.mark.file_name("e2e.json") # our fixture file with the expected inputs and outputs
+def test_an_agent_e2e_with_tracker(input_state, expected_state, results_bag, tracker, request):
+    """Function for testing an agent end-to-end using the tracker.
+
+    Fixtures used:
+     - results_bag: to log results -- comes from pytest-harvest
+     - tracker: to track runs -- comes from tracker() function above
+     - request: to get the test name -- comes from pytest
+    """
+    input_state = state.State.deserialize(input_state)
+    expected_state = state.State.deserialize(expected_state)
+
+    test_name = request.node.name
+    # exercise the agent
+    agent = agent_builder(input_state, partition_key=test_name, tracker=tracker) # e.g. something like some_actions._build_application(...)
+    output_state = agent_runner(agent)
+
+    results_bag.input_state = input_state
+    results_bag.expected_state = expected_state
+    results_bag.output_state = output_state
+    results_bag.foo = "bar"
+    # TODO: choose appropriate way to evaluate the output
+    # e.g. exact match, fuzzy match, LLM grade, etc.
+    # this is exact match here on all values in state
+    exact_match = output_state == expected_state
+    # for output that varies, you can do something like this
+    # assert 'some value' in output_state["response"]["content"]
+    # or, have an LLM Grade things -- you need to create the llm_evaluator function:
+    # assert llm_evaluator("are these two equivalent responses. Respond with Y for yes, N for no",
+    # output_state["response"]["content"], expected_state["response"]["content"]) == "Y"
+    # store it in the results bag
+    results_bag.correct = exact_match
+
+    # place any asserts at the end of the test
+    assert exact_match
+```
+
+# An example
+Here in this directory we have:
+
+ - `some_actions.py` - a file that defines an augmented LLM application (it's not a full agent) with some actions
+ - `test_some_actions.py` - a file that defines some tests for the actions in `some_actions.py`.
+
+You'll see that we use the `results_bag` fixture to log the results of our tests,and then we can access these results
+via the `module_results_df` fixture that provides a pandas dataframe of the results. This dataframe is then
+saved as a CSV for uploading to google sheets, etc. for further analysis. You will also see uses of `pytest.mark.parametrize`
+and Burr's pytest feature for parameterizing tests from a JSON file.
+
+To run the tests, you can run them with pytest:
+
+```bash
+pytest test_some_actions.py
 ```

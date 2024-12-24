@@ -2,6 +2,7 @@
 import pytest
 
 from burr.core import state
+from burr.tracking import LocalTrackingClient
 
 from examples.pytest import some_actions
 
@@ -113,6 +114,47 @@ def test_run_hypothesis_burr_fixture(input_state, expected_state, results_bag):
     # place asserts at end
     assert end_state["diagnosis"] is not None
     assert end_state["diagnosis"] != ""
+
+
+@pytest.mark.file_name(
+    "e2e_test_cases.json"
+)  # our fixture file with the expected inputs and outputs
+def test_run_hypothesis_burr_fixture_e2e_with_tracker(input_state, expected_state, results_bag):
+    """This example shows a parameterized example of running the agent end-to-end with a tracker."""
+    from opentelemetry.instrumentation.openai import OpenAIInstrumentor
+
+    # this will auto instrument the openAI client. No swapping of imports required!
+    OpenAIInstrumentor().instrument()
+    tracker = LocalTrackingClient(project="pytest-example")
+    graph = some_actions.build_graph()
+    input_state = state.State.deserialize(input_state)
+    app = some_actions.build_application(
+        app_id=None,
+        graph=graph,
+        initial_state=input_state,
+        initial_entrypoint="transcribe_audio",
+        partition_key="pytest_example",
+        tracker=tracker,
+        use_otel_tracing=True,
+    )
+    expected_state = state.State.deserialize(expected_state)
+    results_bag.input = input_state["audio"]
+    results_bag.expected = expected_state["final_diagnosis"]
+    results_bag.test_function = "test_run_hypothesis_burr_fixture_e2e_with_tracker"
+    last_action, _, agent_state = app.run(
+        halt_after=["determine_diagnosis"],
+    )
+
+    results_bag.actual = agent_state["final_diagnosis"]
+    results_bag.exact_match = (
+        agent_state["final_diagnosis"].lower() == expected_state["final_diagnosis"].lower()
+    )
+    print(results_bag)
+    # results_bag.jaccard = ... # other measures here
+    # e.g. LLM as judge if applicable
+    # place asserts at end
+    assert agent_state["final_diagnosis"] is not None
+    assert agent_state["final_diagnosis"] != ""
 
 
 def test_print_results(module_results_df):
