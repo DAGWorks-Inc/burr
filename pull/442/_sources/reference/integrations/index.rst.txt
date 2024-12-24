@@ -14,3 +14,4 @@ Integrations -- we will be adding more
    langchain
    pydantic
    haystack
+   ray

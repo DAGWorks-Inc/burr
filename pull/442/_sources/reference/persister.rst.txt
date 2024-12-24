@@ -37,7 +37,7 @@ Supported Implementations
 
 Currently we support the following, although we highly recommend you contribute your own! We will be adding more shortly.
 
-.. autoclass:: burr.core.persistence.SQLLitePersister
+.. autoclass:: burr.core.persistence.SQLitePersister
    :members:
 
    .. automethod:: __init__
@@ -48,13 +48,12 @@ Currently we support the following, although we highly recommend you contribute 
 
    .. automethod:: __init__
 
-
-.. autoclass:: burr.integrations.persisters.b_redis.RedisPersister
+.. autoclass:: burr.integrations.persisters.b_redis.RedisBasePersister
    :members:
 
    .. automethod:: __init__
 
-.. autoclass:: burr.integrations.persisters.b_mongodb.MongoDBPersister
+.. autoclass:: burr.integrations.persisters.b_mongodb.MongoDBBasePersister
    :members:
 
    .. automethod:: __init__

@@ -300,6 +300,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../reference/integrations/langchain/">Langchain</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../reference/integrations/pydantic/">Pydantic</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../reference/integrations/haystack/">Haystack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../reference/integrations/ray/">Ray</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../reference/telemetry/">Usage analytics + data privacy</a></li>
@@ -388,6 +389,17 @@
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># set your OpenAI API key to run the rest of the notebook</span>
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="o">...</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">RESTRICTIONS</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;You&#39;re a small corgi with short legs. You can&#39;t jump high,</span>
+<span class="s2">you can&#39;t run fast, you can&#39;t perform feats of athleticism in general</span>
+<span class="s2">to achieve any of your goals. You can&#39;t open doors, you can&#39;t use tools,</span>
+<span class="s2">you can&#39;t communicate with humans, you can&#39;t use your paws to manipulate</span>
+<span class="s2">objects, you can&#39;t use your mouth to communicate with humans&quot;&quot;&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -482,15 +494,7 @@
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">RESTRICTIONS</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;You&#39;re a small corgi with short legs. You can&#39;t jump high,</span>
-<span class="s2">you can&#39;t run fast, you can&#39;t perform feats of athleticism in general</span>
-<span class="s2">to achieve any of your goals. You can&#39;t open doors, you can&#39;t use tools,</span>
-<span class="s2">you can&#39;t communicate with humans, you can&#39;t use your paws to manipulate</span>
-<span class="s2">objects, you can&#39;t use your mouth to manipulate objects, you can&#39;t use</span>
-<span class="s2">your mouth to communicate with humans&quot;&quot;&quot;</span>
-
-
-<span class="n">challenges</span> <span class="o">=</span> <span class="p">[</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">challenges</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;There is a dish of dog food on the floor. You want to eat it&quot;</span><span class="p">,</span>
     <span class="s2">&quot;There is a dish of dog food on a table. You want to eat it&quot;</span><span class="p">,</span>
     <span class="s2">&quot;There is a dish of dog food in a locked car. You want to eat it&quot;</span><span class="p">,</span>
@@ -507,7 +511,7 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Application</span><span class="p">:</span>
     <span class="k">return</span> <span class="p">(</span>
         <span class="n">ApplicationBuilder</span><span class="p">()</span>
-        <span class="o">.</span><span class="n">with_state</span><span class="p">(</span><span class="n">did_win</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">with_state</span><span class="p">(</span><span class="n">did_win</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">challenges</span><span class="o">=</span><span class="n">challenges</span><span class="p">)</span>
         <span class="o">.</span><span class="n">with_actions</span><span class="p">(</span>
             <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
             <span class="n">prompt_for_challenge</span><span class="o">=</span><span class="n">prompt_for_challenge</span><span class="p">,</span>
@@ -533,10 +537,121 @@
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<img alt="../../../_images/f52a61a867091a818e1acc164177df0b8e6967c73e2babf6f81bade4ac0b6dc8.svg" src="../../../_images/f52a61a867091a818e1acc164177df0b8e6967c73e2babf6f81bade4ac0b6dc8.svg" />
+</div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">action</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">result</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">halt_after</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;win&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>What happened: You opened your mouth and attempted to eat the food, but without the ability to manipulate the dish, you couldn’t reach the food. It remained untouched on the floor, taunting you with its delicious aroma.
+What happened: You tugged at the dish with your mouth, but your short legs can&#39;t provide enough strength to pull it any closer. The dish remains out of reach, and your belly rumbles in disappointment as you realize you can&#39;t manipulate it like you hoped.
+What happened: You approach the dish of dog food with eager anticipation, but as you try to lean over and take a bite, your short legs make it difficult to reach the food comfortably. You can&#39;t quite get your mouth to the dish, and after a few attempts, you realize you&#39;ll need a different plan to enjoy your meal.
+What happened: You try to bite the side of the dish to tip it over, but your short legs and limited strength make it impossible. The dish remains firmly on the floor, and the tantalizing smell of the dog food wafts up to you, teasing you further.
+</pre></div>
+</div>
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">KeyboardInterrupt</span><span class="g g-Whitespace">                         </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">15</span><span class="p">],</span> <span class="n">line</span> <span class="mi">1</span>
+<span class="ne">----&gt; </span><span class="mi">1</span> <span class="n">action</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">result</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">halt_after</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;win&quot;</span><span class="p">])</span>
+
+<span class="nn">File ~/dagworks/burr/burr/telemetry.py:276,</span> in <span class="ni">capture_function_usage.&lt;locals&gt;.wrapped_fn</span><span class="nt">(*args, **kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">273</span> <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">call_fn</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">274</span> <span class="k">def</span> <span class="nf">wrapped_fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="g g-Whitespace">    </span><span class="mi">275</span>     <span class="k">try</span><span class="p">:</span>
+<span class="ne">--&gt; </span><span class="mi">276</span>         <span class="k">return</span> <span class="n">call_fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">277</span>     <span class="k">finally</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">278</span>         <span class="k">if</span> <span class="n">is_telemetry_enabled</span><span class="p">():</span>
+
+<span class="nn">File ~/dagworks/burr/burr/core/application.py:672,</span> in <span class="ni">_call_execute_method_pre_post.__call__.&lt;locals&gt;.wrapper_sync</span><span class="nt">(app_self, *args, **kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">670</span> <span class="n">exc</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="g g-Whitespace">    </span><span class="mi">671</span> <span class="k">try</span><span class="p">:</span>
+<span class="ne">--&gt; </span><span class="mi">672</span>     <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="n">app_self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">673</span> <span class="k">finally</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">674</span>     <span class="bp">self</span><span class="o">.</span><span class="n">call_post</span><span class="p">(</span><span class="n">app_self</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+
+<span class="nn">File ~/dagworks/burr/burr/core/application.py:1243,</span> in <span class="ni">Application.run</span><span class="nt">(self, halt_before, halt_after, inputs)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1241</span> <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+<span class="g g-Whitespace">   </span><span class="mi">1242</span>     <span class="k">try</span><span class="p">:</span>
+<span class="ne">-&gt; </span><span class="mi">1243</span>         <span class="nb">next</span><span class="p">(</span><span class="n">gen</span><span class="p">)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1244</span>     <span class="k">except</span> <span class="ne">StopIteration</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<span class="g g-Whitespace">   </span><span class="mi">1245</span>         <span class="n">result</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span>
+
+<span class="nn">File ~/dagworks/burr/burr/core/application.py:1186,</span> in <span class="ni">Application.iterate</span><span class="nt">(self, halt_before, halt_after, inputs)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1183</span> <span class="n">prior_action</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Action</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="g g-Whitespace">   </span><span class="mi">1184</span> <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_next_action</span><span class="p">():</span>
+<span class="g g-Whitespace">   </span><span class="mi">1185</span>     <span class="c1"># self.step will only return None if there is no next action, so we can rely on tuple unpacking</span>
+<span class="ne">-&gt; </span><span class="mi">1186</span>     <span class="n">prior_action</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1187</span>     <span class="k">yield</span> <span class="n">prior_action</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">state</span>
+<span class="g g-Whitespace">   </span><span class="mi">1188</span>     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_halt_iterate</span><span class="p">(</span><span class="n">halt_before</span><span class="p">,</span> <span class="n">halt_after</span><span class="p">,</span> <span class="n">prior_action</span><span class="p">):</span>
+
+<span class="nn">File ~/dagworks/burr/burr/core/application.py:672,</span> in <span class="ni">_call_execute_method_pre_post.__call__.&lt;locals&gt;.wrapper_sync</span><span class="nt">(app_self, *args, **kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">670</span> <span class="n">exc</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="g g-Whitespace">    </span><span class="mi">671</span> <span class="k">try</span><span class="p">:</span>
+<span class="ne">--&gt; </span><span class="mi">672</span>     <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="n">app_self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">673</span> <span class="k">finally</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">674</span>     <span class="bp">self</span><span class="o">.</span><span class="n">call_post</span><span class="p">(</span><span class="n">app_self</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+
+<span class="nn">File ~/dagworks/burr/burr/core/application.py:843,</span> in <span class="ni">Application.step</span><span class="nt">(self, inputs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">840</span> <span class="c1"># we need to increment the sequence before we start computing</span>
+<span class="g g-Whitespace">    </span><span class="mi">841</span> <span class="c1"># that way if we&#39;re replaying from state, we don&#39;t get stuck</span>
+<span class="g g-Whitespace">    </span><span class="mi">842</span> <span class="bp">self</span><span class="o">.</span><span class="n">_increment_sequence_id</span><span class="p">()</span>
+<span class="ne">--&gt; </span><span class="mi">843</span> <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_step</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="n">inputs</span><span class="p">,</span> <span class="n">_run_hooks</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">844</span> <span class="k">return</span> <span class="n">out</span>
+
+<span class="nn">File ~/dagworks/burr/burr/core/application.py:885,</span> in <span class="ni">Application._step</span><span class="nt">(self, inputs, _run_hooks)</span>
+<span class="g g-Whitespace">    </span><span class="mi">883</span> <span class="k">try</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">884</span>     <span class="k">if</span> <span class="n">next_action</span><span class="o">.</span><span class="n">single_step</span><span class="p">:</span>
+<span class="ne">--&gt; </span><span class="mi">885</span>         <span class="n">result</span><span class="p">,</span> <span class="n">new_state</span> <span class="o">=</span> <span class="n">_run_single_step_action</span><span class="p">(</span>
+<span class="g g-Whitespace">    </span><span class="mi">886</span>             <span class="n">next_action</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">,</span> <span class="n">action_inputs</span>
+<span class="g g-Whitespace">    </span><span class="mi">887</span>         <span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">888</span>     <span class="k">else</span><span class="p">:</span>
+<span class="g g-Whitespace">    </span><span class="mi">889</span>         <span class="n">result</span> <span class="o">=</span> <span class="n">_run_function</span><span class="p">(</span>
+<span class="g g-Whitespace">    </span><span class="mi">890</span>             <span class="n">next_action</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_state</span><span class="p">,</span> <span class="n">action_inputs</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">next_action</span><span class="o">.</span><span class="n">name</span>
+<span class="g g-Whitespace">    </span><span class="mi">891</span>         <span class="p">)</span>
+
+<span class="nn">File ~/dagworks/burr/burr/core/application.py:287,</span> in <span class="ni">_run_single_step_action</span><span class="nt">(action, state, inputs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">284</span> <span class="c1"># TODO -- guard all reads/writes with a subset of the state</span>
+<span class="g g-Whitespace">    </span><span class="mi">285</span> <span class="n">action</span><span class="o">.</span><span class="n">validate_inputs</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">286</span> <span class="n">result</span><span class="p">,</span> <span class="n">new_state</span> <span class="o">=</span> <span class="n">_adjust_single_step_output</span><span class="p">(</span>
+<span class="ne">--&gt; </span><span class="mi">287</span>     <span class="n">action</span><span class="o">.</span><span class="n">run_and_update</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="o">**</span><span class="n">inputs</span><span class="p">),</span> <span class="n">action</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">action</span><span class="o">.</span><span class="n">schema</span>
+<span class="g g-Whitespace">    </span><span class="mi">288</span> <span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">289</span> <span class="n">_validate_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">action</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">action</span><span class="o">.</span><span class="n">schema</span><span class="p">)</span>
+<span class="g g-Whitespace">    </span><span class="mi">290</span> <span class="n">out</span> <span class="o">=</span> <span class="n">result</span><span class="p">,</span> <span class="n">_state_update</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">new_state</span><span class="p">)</span>
+
+<span class="nn">File ~/dagworks/burr/burr/core/action.py:655,</span> in <span class="ni">FunctionBasedAction.run_and_update</span><span class="nt">(self, state, **run_kwargs)</span>
+<span class="g g-Whitespace">    </span><span class="mi">654</span> <span class="k">def</span> <span class="nf">run_and_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="o">**</span><span class="n">run_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">State</span><span class="p">]:</span>
+<span class="ne">--&gt; </span><span class="mi">655</span>     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fn</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_bound_params</span><span class="p">,</span> <span class="o">**</span><span class="n">run_kwargs</span><span class="p">)</span>
+
+<span class="nn">Cell In[12], line 12,</span> in <span class="ni">prompt_for_challenge</span><span class="nt">(state)</span>
+<span class="g g-Whitespace">     </span><span class="mi">10</span><span class="w"> </span><span class="sd">&quot;&quot;&quot;Request user input to solve the current challenge&quot;&quot;&quot;</span>
+<span class="g g-Whitespace">     </span><span class="mi">11</span> <span class="n">current_challenge</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;current_challenge&quot;</span><span class="p">]</span>
+<span class="ne">---&gt; </span><span class="mi">12</span> <span class="n">user_response</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">current_challenge</span><span class="si">}</span><span class="s1">. What do you do?</span><span class="se">\n</span><span class="s1"> $ &#39;</span><span class="p">)</span>
+<span class="g g-Whitespace">     </span><span class="mi">13</span> <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">attempts</span><span class="o">=</span><span class="n">user_response</span><span class="p">)</span>
+
+<span class="nn">File ~/.pyenv/versions/burr-py310/lib/python3.10/site-packages/ipykernel/kernelbase.py:1270,</span> in <span class="ni">Kernel.raw_input</span><span class="nt">(self, prompt)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1268</span>     <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;raw_input was called, but this frontend does not support input requests.&quot;</span>
+<span class="g g-Whitespace">   </span><span class="mi">1269</span>     <span class="k">raise</span> <span class="n">StdinNotImplementedError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<span class="ne">-&gt; </span><span class="mi">1270</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_input_request</span><span class="p">(</span>
+<span class="g g-Whitespace">   </span><span class="mi">1271</span>     <span class="nb">str</span><span class="p">(</span><span class="n">prompt</span><span class="p">),</span>
+<span class="g g-Whitespace">   </span><span class="mi">1272</span>     <span class="bp">self</span><span class="o">.</span><span class="n">_parent_ident</span><span class="p">[</span><span class="s2">&quot;shell&quot;</span><span class="p">],</span>
+<span class="g g-Whitespace">   </span><span class="mi">1273</span>     <span class="bp">self</span><span class="o">.</span><span class="n">get_parent</span><span class="p">(</span><span class="s2">&quot;shell&quot;</span><span class="p">),</span>
+<span class="g g-Whitespace">   </span><span class="mi">1274</span>     <span class="n">password</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="g g-Whitespace">   </span><span class="mi">1275</span> <span class="p">)</span>
+
+<span class="nn">File ~/.pyenv/versions/burr-py310/lib/python3.10/site-packages/ipykernel/kernelbase.py:1313,</span> in <span class="ni">Kernel._input_request</span><span class="nt">(self, prompt, ident, parent, password)</span>
+<span class="g g-Whitespace">   </span><span class="mi">1310</span> <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+<span class="g g-Whitespace">   </span><span class="mi">1311</span>     <span class="c1"># re-raise KeyboardInterrupt, to truncate traceback</span>
+<span class="g g-Whitespace">   </span><span class="mi">1312</span>     <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Interrupted by user&quot;</span>
+<span class="ne">-&gt; </span><span class="mi">1313</span>     <span class="k">raise</span> <span class="ne">KeyboardInterrupt</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span> <span class="kc">None</span>
+<span class="g g-Whitespace">   </span><span class="mi">1314</span> <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+<span class="g g-Whitespace">   </span><span class="mi">1315</span>     <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Invalid Message:&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="ne">KeyboardInterrupt</span>: Interrupted by user
 </pre></div>
 </div>
 </div>

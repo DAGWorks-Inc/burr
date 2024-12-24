@@ -80,7 +80,7 @@ Before we proceed, let's note the following about how we define these actions:
 
 1. State is a dictionary -- actions declare input fields (as strings) and write values to those fields
 2. Actions use a specific *immutable* state object and call operations on it (``.append(...)``, ``.update(...)``)
-3. Functions can do whatever you want -- they can use plain python, or delegate to `langchain <langchain.io>`_, `hamilton <https://github.com/dagworks-inc/hamilton>`_, etc... All they have to do is return the new state.
+3. Functions can do whatever you want -- they can use plain python, or delegate to `langchain <https://langchain.com>`_, `hamilton <https://github.com/dagworks-inc/hamilton>`_, etc... All they have to do is return the new state.
 4. We declare the parameter ``prompt``, meaning that we will expect the user to pass ``prompt`` every time they run the graph.
 
 .. note::
