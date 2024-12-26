@@ -60,15 +60,30 @@ def test_my_agent(input, expected_output):
 ```
 What we've shown above will fail on the first assertion failure. But what if we want to evaluate all the outputs before making a pass / fail decision?
 
+### What kind of "asserts" do we want?
+
+We might want to evaluate the output in a number of ways:
+1. Exact match - the output is exactly as expected.
+2. Fuzzy match - the output is close to what we expect, e.g. does it contain the right words, is it "close" to the answer, etc.
+3. Human grade - the output is graded by a human as to how close it is to the expected output.
+4. LLM grade - the output is graded by an LLM as to how close it is to the expected output.
+4. Static measures - the output has some static measures that we want to evaluate, e.g. length, etc.
+
+It is rare that you solely rely on (1) with LLMs, and you'll likely want to evaluate the output in a number of ways before making a pass / fail decision.
+E.g. that the output is close to the expected output, that it contains the right words, etc., and then make a pass / fail decision based on all these evaluations.
+
 ### Not failing on first assert failure / logging test results
 
-Here we use the `pytest-harvest` plugin to log what our tests are doing. This allows us to capture the results of our tests in a structured way without
+One limitation of pytest is that it fails on the first assertion failure. This is not ideal if you want to evaluate multiple aspects of the output before making a pass / fail decision.
+
+There are multiple ways one could solve this limitation, as pytest is very extensible. We will only go over one way here,
+which is to use the `pytest-harvest` plugin to log what our tests are doing. This allows us to capture the results of our tests in a structured way without
 breaking at the first asserting failure. This means we can mix and match where appropriate hard "assertions" - i.e. definitely fail, with
-softer ones where we want to evaluate all aspects before making an overall pass / fail decision. We walkthrough how to do this below using a few
+softer ones where we want to evaluate all aspects before making an overall pass / fail decision. We walk through how to do this below using a few
 pytest constructs.
 
 `results_bag` is a fixture that we can log values to from our tests. This is useful if we don't want to fail on the first assert statement,
-and instead capture a lot more. This is not native to pytest, and is why we use the `pytest-harvest` plugin to acheive this.
+and instead capture a lot more. This is not native to pytest, and is why we use the `pytest-harvest` plugin to achieve this.
 
 To use it, you just need to install `pytest-harvest` and then you can use the `results_bag` fixture in your tests:
 
@@ -92,7 +107,8 @@ def test_print_results(module_results_df):
 ```
 This enables us to get a dataframe of all the results from our tests, and then we can evaluate them as we see fit for our use case.
 E.g. we only pass tests if all the outputs are as expected, or we pass if 80% of the outputs are as expected, etc. You could
-also log this to a file, or a database, etc. for further inspection and record keeping.
+also log this to a file, or a database, etc. for further inspection and record keeping, or combining it with
+open source frameworks [mlflow](https://mlflow.org) and using their [evaluate functionality](https://mlflow.org/docs/latest/llms/llm-evaluate/index.html).
 
 Note: we can also combine `results_bag` with ``pytest.mark.parametrize`` to run the same test with different inputs and expected outputs:
 
