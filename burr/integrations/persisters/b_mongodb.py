@@ -1,7 +1,7 @@
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from pymongo import MongoClient
 
@@ -36,6 +36,11 @@ class MongoDBBasePersister(persistence.BaseStatePersister):
     """
 
     @classmethod
+    def default_client(cls) -> Any:
+        """Returns the default client for the persister."""
+        return MongoClient
+
+    @classmethod
     def from_values(
         cls,
         uri="mongodb://localhost:27017",
@@ -47,7 +52,7 @@ class MongoDBBasePersister(persistence.BaseStatePersister):
         """Initializes the MongoDBBasePersister class."""
         if mongo_client_kwargs is None:
             mongo_client_kwargs = {}
-        client = MongoClient(uri, **mongo_client_kwargs)
+        client = cls.default_client()(uri, **mongo_client_kwargs)
         return cls(
             client=client,
             db_name=db_name,
@@ -130,14 +135,18 @@ class MongoDBBasePersister(persistence.BaseStatePersister):
     def __del__(self):
         self.client.close()
 
-    def __getstate__(self) -> dict:
-        state = self.__dict__.copy()
-        state["connection_params"] = {
+    def get_connection_params(self) -> dict:
+        """Get the connection parameters for the MongoDB persister."""
+        return {
             "uri": self.client.address[0],
             "port": self.client.address[1],
             "db_name": self.db.name,
             "collection_name": self.collection.name,
         }
+
+    def __getstate__(self) -> dict:
+        state = self.__dict__.copy()
+        state["connection_params"] = self.get_connection_params()
         del state["client"]
         del state["db"]
         del state["collection"]
@@ -146,7 +155,7 @@ class MongoDBBasePersister(persistence.BaseStatePersister):
     def __setstate__(self, state: dict):
         connection_params = state.pop("connection_params")
         # we assume MongoClient.
-        self.client = MongoClient(connection_params["uri"], connection_params["port"])
+        self.client = self.default_client()(connection_params["uri"], connection_params["port"])
         self.db = self.client[connection_params["db_name"]]
         self.collection = self.db[connection_params["collection_name"]]
         self.__dict__.update(state)
@@ -169,7 +178,7 @@ class MongoDBPersister(MongoDBBasePersister):
         """Initializes the MongoDBPersister class."""
         if mongo_client_kwargs is None:
             mongo_client_kwargs = {}
-        client = MongoClient(uri, **mongo_client_kwargs)
+        client = self.default_client()(uri, **mongo_client_kwargs)
         super(MongoDBPersister, self).__init__(
             client=client,
             db_name=db_name,

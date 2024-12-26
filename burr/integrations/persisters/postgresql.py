@@ -7,7 +7,7 @@ except ImportError as e:
 
 import json
 import logging
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from burr.core import persistence, state
 
@@ -52,6 +52,11 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         )
 
     @classmethod
+    def default_client(cls) -> Any:
+        """Returns the default client for the persister."""
+        return psycopg2.connect
+
+    @classmethod
     def from_values(
         cls,
         db_name: str,
@@ -70,7 +75,7 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         :param port: the port of the PostgreSQL database.
         :param table_name:  the table name to store things under.
         """
-        connection = psycopg2.connect(
+        connection = cls.default_client()(
             dbname=db_name, user=user, password=password, host=host, port=port
         )
         return cls(connection, table_name)
@@ -246,27 +251,25 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         # closes connection at end when things are being shutdown.
         self.connection.close()
 
-    def __getstate__(self) -> dict:
-        state = self.__dict__.copy()
-        if not hasattr(self.connection, "info"):
-            logger.warning(
-                "Postgresql information for connection object not available. Cannot serialize persister."
-            )
-            return state
-        state["connection_params"] = {
+    def get_connection_params(self) -> dict:
+        """Returns the connection parameters for the persister."""
+        return {
             "dbname": self.connection.info.dbname,
             "user": self.connection.info.user,
             "password": self.connection.info.password,
             "host": self.connection.info.host,
             "port": self.connection.info.port,
         }
+
+    def __getstate__(self) -> dict:
+        state = self.__dict__.copy()
+        state["connection_params"] = self.get_connection_params()
         del state["connection"]
         return state
 
     def __setstate__(self, state: dict):
         connection_params = state.pop("connection_params")
-        # we assume normal psycopg2 client.
-        self.connection = psycopg2.connect(**connection_params)
+        self.connection = self.default_client()(**connection_params)
         self.__dict__.update(state)
 
 

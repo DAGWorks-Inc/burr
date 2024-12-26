@@ -9,7 +9,7 @@ except ImportError as e:
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from burr.core import persistence, state
 
@@ -29,6 +29,11 @@ class RedisBasePersister(persistence.BaseStatePersister):
     """
 
     @classmethod
+    def default_client(cls) -> Any:
+        """Returns the default client for the persister."""
+        return redis.Redis
+
+    @classmethod
     def from_values(
         cls,
         host: str,
@@ -42,7 +47,7 @@ class RedisBasePersister(persistence.BaseStatePersister):
         """Creates a new instance of the RedisBasePersister from passed in values."""
         if redis_client_kwargs is None:
             redis_client_kwargs = {}
-        connection = redis.Redis(
+        connection = cls.default_client()(
             host=host, port=port, db=db, password=password, **redis_client_kwargs
         )
         return cls(connection, serde_kwargs, namespace)
@@ -160,24 +165,26 @@ class RedisBasePersister(persistence.BaseStatePersister):
     def __del__(self):
         self.connection.close()
 
-    def __getstate__(self) -> dict:
-        state = self.__dict__.copy()
-        if not hasattr(self.connection, "connection_pool"):
-            logger.warning("Redis connection is not serializable.")
-            return state
-        state["connection_params"] = {
+    def get_connection_params(self) -> dict:
+        """Get the connection parameters for the Redis connection."""
+        return {
             "host": self.connection.connection_pool.connection_kwargs["host"],
             "port": self.connection.connection_pool.connection_kwargs["port"],
             "db": self.connection.connection_pool.connection_kwargs["db"],
             "password": self.connection.connection_pool.connection_kwargs["password"],
         }
+
+    def __getstate__(self) -> dict:
+        state = self.__dict__.copy()
+        # override self.get_connection_params if needed
+        state["connection_params"] = self.get_connection_params()
         del state["connection"]
         return state
 
     def __setstate__(self, state: dict):
         connection_params = state.pop("connection_params")
-        # we assume normal redis client.
-        self.connection = redis.Redis(**connection_params)
+        # override self.default_client if needed
+        self.connection = self.default_client()(**connection_params)
         self.__dict__.update(state)
 
 
@@ -211,7 +218,7 @@ class RedisPersister(RedisBasePersister):
         """
         if redis_client_kwargs is None:
             redis_client_kwargs = {}
-        connection = redis.Redis(
+        connection = self.default_client()(
             host=host, port=port, db=db, password=password, **redis_client_kwargs
         )
         super(RedisPersister, self).__init__(connection, serde_kwargs, namespace)
