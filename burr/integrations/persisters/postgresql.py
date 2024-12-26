@@ -246,6 +246,29 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         # closes connection at end when things are being shutdown.
         self.connection.close()
 
+    def __getstate__(self) -> dict:
+        state = self.__dict__.copy()
+        if not hasattr(self.connection, "info"):
+            logger.warning(
+                "Postgresql information for connection object not available. Cannot serialize persister."
+            )
+            return state
+        state["connection_params"] = {
+            "dbname": self.connection.info.dbname,
+            "user": self.connection.info.user,
+            "password": self.connection.info.password,
+            "host": self.connection.info.host,
+            "port": self.connection.info.port,
+        }
+        del state["connection"]
+        return state
+
+    def __setstate__(self, state: dict):
+        connection_params = state.pop("connection_params")
+        # we assume normal psycopg2 client.
+        self.connection = psycopg2.connect(**connection_params)
+        self.__dict__.update(state)
+
 
 if __name__ == "__main__":
     # test the PostgreSQLPersister class

@@ -160,6 +160,26 @@ class RedisBasePersister(persistence.BaseStatePersister):
     def __del__(self):
         self.connection.close()
 
+    def __getstate__(self) -> dict:
+        state = self.__dict__.copy()
+        if not hasattr(self.connection, "connection_pool"):
+            logger.warning("Redis connection is not serializable.")
+            return state
+        state["connection_params"] = {
+            "host": self.connection.connection_pool.connection_kwargs["host"],
+            "port": self.connection.connection_pool.connection_kwargs["port"],
+            "db": self.connection.connection_pool.connection_kwargs["db"],
+            "password": self.connection.connection_pool.connection_kwargs["password"],
+        }
+        del state["connection"]
+        return state
+
+    def __setstate__(self, state: dict):
+        connection_params = state.pop("connection_params")
+        # we assume normal redis client.
+        self.connection = redis.Redis(**connection_params)
+        self.__dict__.update(state)
+
 
 class RedisPersister(RedisBasePersister):
     """A class used to represent a Redis Persister.

@@ -130,6 +130,27 @@ class MongoDBBasePersister(persistence.BaseStatePersister):
     def __del__(self):
         self.client.close()
 
+    def __getstate__(self) -> dict:
+        state = self.__dict__.copy()
+        state["connection_params"] = {
+            "uri": self.client.address[0],
+            "port": self.client.address[1],
+            "db_name": self.db.name,
+            "collection_name": self.collection.name,
+        }
+        del state["client"]
+        del state["db"]
+        del state["collection"]
+        return state
+
+    def __setstate__(self, state: dict):
+        connection_params = state.pop("connection_params")
+        # we assume MongoClient.
+        self.client = MongoClient(connection_params["uri"], connection_params["port"])
+        self.db = self.client[connection_params["db_name"]]
+        self.collection = self.db[connection_params["collection_name"]]
+        self.__dict__.update(state)
+
 
 class MongoDBPersister(MongoDBBasePersister):
     """A class used to represent a MongoDB Persister.
