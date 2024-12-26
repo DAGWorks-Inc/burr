@@ -14,6 +14,12 @@ words or phrases, or using LLMs to grade the output, etc. We aren't opinionated 
 do this, but in any case, you'll need to write a test case to exercise things, and this
 is what we're showing you how to do here.
 
+Need to know more about pytest?
+-------------------------------
+For a more pytest walkthrough and example, see the `pytest example <https://github.com/DAGWorks-Inc/burr/tree/main/examples/pytest>`_,
+that explains what pytest is, how to evaluate more than just a single assert statement, how to aggregate results, etc.
+
+
 Test Case Creation Example
 --------------------------
 Video walkthrough:
@@ -57,11 +63,11 @@ test case with the module name of your serialization logic.
 Note (2): you can pass in `--action-name` to override the action name in the test case. This is useful if you want
 to use the output of one action as the input to another action; there are corner cases where this is useful.
 
+
 Future Work
 -----------
 We see many more improvements here:
 
-1. Annotating data in the UI to make it easier to pull out.
-2. Automatically suggesting tests cases for you to add.
-3. Data export / integration with evaluation tools.
-4. etc. Please let us know what you need!
+1. Automatically suggesting tests cases for you to add.
+2. Data export / integration with evaluation tools.
+3. etc. Please let us know what you need!
