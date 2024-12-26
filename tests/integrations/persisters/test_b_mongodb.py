@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import pytest
 
@@ -46,3 +47,21 @@ def test_backwards_compatible_persister():
     assert data["state"].get_all() == {"a": 5, "b": 5}
 
     persister.collection.drop()
+
+
+def test_serialization_with_pickle(mongodb_persister):
+    # Save some state
+    mongodb_persister.save(
+        "pk", "app_id_serde", 1, "pos", state.State({"a": 1, "b": 2}), "completed"
+    )
+
+    # Serialize the persister
+    serialized_persister = pickle.dumps(mongodb_persister)
+
+    # Deserialize the persister
+    deserialized_persister = pickle.loads(serialized_persister)
+
+    # Load the state from the deserialized persister
+    data = deserialized_persister.load("pk", "app_id_serde", 1)
+
+    assert data["state"].get_all() == {"a": 1, "b": 2}

@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import pytest
 
@@ -70,3 +71,21 @@ def test_redis_persister_class_backwards_compatible():
     data = persister.load("pk", "app_id", 2)
     assert data["state"].get_all() == {"a": 4, "b": 5}
     persister.connection.close()
+
+
+def test_serialization_with_pickle(redis_persister_with_ns):
+    # Save some state
+    redis_persister_with_ns.save(
+        "pk", "app_id_serde", 1, "pos", state.State({"a": 1, "b": 2}), "completed"
+    )
+
+    # Serialize the persister
+    serialized_persister = pickle.dumps(redis_persister_with_ns)
+
+    # Deserialize the persister
+    deserialized_persister = pickle.loads(serialized_persister)
+
+    # Load the state from the deserialized persister
+    data = deserialized_persister.load("pk", "app_id_serde", 1)
+
+    assert data["state"].get_all() == {"a": 1, "b": 2}

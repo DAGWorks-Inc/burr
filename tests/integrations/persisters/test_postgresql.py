@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import pytest
 
@@ -67,3 +68,21 @@ def test_is_initialized_false():
         table_name="testtable2",
     )
     assert not persister.is_initialized()
+
+
+def test_serialization_with_pickle(postgresql_persister):
+    # Save some state
+    postgresql_persister.save(
+        "pk", "app_id_serde", 1, "pos", state.State({"a": 1, "b": 2}), "completed"
+    )
+
+    # Serialize the persister
+    serialized_persister = pickle.dumps(postgresql_persister)
+
+    # Deserialize the persister
+    deserialized_persister = pickle.loads(serialized_persister)
+
+    # Load the state from the deserialized persister
+    data = deserialized_persister.load("pk", "app_id_serde", 1)
+
+    assert data["state"].get_all() == {"a": 1, "b": 2}
