@@ -9,6 +9,55 @@ export interface ModelCost {
 }
 
 export const modelCosts: ModelCost = {
+  'sambanova/Meta-Llama-3.1-8B-Instruct': {
+    max_tokens: 16000,
+    max_input_tokens: 16000,
+    max_output_tokens: 16000,
+    input_cost_per_token: 1e-7,
+    output_cost_per_token: 2e-7
+  },
+  'sambanova/Meta-Llama-3.1-70B-Instruct': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 128000,
+    input_cost_per_token: 6e-7,
+    output_cost_per_token: 1.2e-6
+  },
+  'sambanova/Meta-Llama-3.1-405B-Instruct': {
+    max_tokens: 16000,
+    max_input_tokens: 16000,
+    max_output_tokens: 16000,
+    input_cost_per_token: 5e-6,
+    output_cost_per_token: 1e-5
+  },
+  'sambanova/Meta-Llama-3.2-1B-Instruct': {
+    max_tokens: 16000,
+    max_input_tokens: 16000,
+    max_output_tokens: 16000,
+    input_cost_per_token: 4e-7,
+    output_cost_per_token: 8e-7
+  },
+  'sambanova/Meta-Llama-3.2-3B-Instruct': {
+    max_tokens: 4000,
+    max_input_tokens: 4000,
+    max_output_tokens: 4000,
+    input_cost_per_token: 8e-7,
+    output_cost_per_token: 1.6e-6
+  },
+  'sambanova/Qwen2.5-Coder-32B-Instruct': {
+    max_tokens: 8000,
+    max_input_tokens: 8000,
+    max_output_tokens: 8000,
+    input_cost_per_token: 1.5e-6,
+    output_cost_per_token: 3e-6
+  },
+  'sambanova/Qwen2.5-72B-Instruct': {
+    max_tokens: 8000,
+    max_input_tokens: 8000,
+    max_output_tokens: 8000,
+    input_cost_per_token: 2e-6,
+    output_cost_per_token: 4e-6
+  },
   'gpt-4': {
     max_tokens: 4096,
     max_input_tokens: 8192,
@@ -17,11 +66,39 @@ export const modelCosts: ModelCost = {
     output_cost_per_token: 6e-5
   },
   'gpt-4o': {
-    max_tokens: 4096,
+    max_tokens: 16384,
     max_input_tokens: 128000,
-    max_output_tokens: 4096,
-    input_cost_per_token: 5e-6,
-    output_cost_per_token: 1.5e-5
+    max_output_tokens: 16384,
+    input_cost_per_token: 2.5e-6,
+    output_cost_per_token: 1e-5
+  },
+  'gpt-4o-audio-preview': {
+    max_tokens: 16384,
+    max_input_tokens: 128000,
+    max_output_tokens: 16384,
+    input_cost_per_token: 2.5e-6,
+    output_cost_per_token: 1e-5
+  },
+  'gpt-4o-audio-preview-2024-12-17': {
+    max_tokens: 16384,
+    max_input_tokens: 128000,
+    max_output_tokens: 16384,
+    input_cost_per_token: 2.5e-6,
+    output_cost_per_token: 1e-5
+  },
+  'gpt-4o-audio-preview-2024-10-01': {
+    max_tokens: 16384,
+    max_input_tokens: 128000,
+    max_output_tokens: 16384,
+    input_cost_per_token: 2.5e-6,
+    output_cost_per_token: 1e-5
+  },
+  'gpt-4o-mini-audio-preview-2024-12-17': {
+    max_tokens: 16384,
+    max_input_tokens: 128000,
+    max_output_tokens: 16384,
+    input_cost_per_token: 1.5e-7,
+    output_cost_per_token: 6e-7
   },
   'gpt-4o-mini': {
     max_tokens: 16384,
@@ -36,6 +113,13 @@ export const modelCosts: ModelCost = {
     max_output_tokens: 16384,
     input_cost_per_token: 1.5e-7,
     output_cost_per_token: 6e-7
+  },
+  o1: {
+    max_tokens: 100000,
+    max_input_tokens: 200000,
+    max_output_tokens: 100000,
+    input_cost_per_token: 1.5e-5,
+    output_cost_per_token: 6e-5
   },
   'o1-mini': {
     max_tokens: 65536,
@@ -65,6 +149,13 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 1.5e-5,
     output_cost_per_token: 6e-5
   },
+  'o1-2024-12-17': {
+    max_tokens: 100000,
+    max_input_tokens: 200000,
+    max_output_tokens: 100000,
+    input_cost_per_token: 1.5e-5,
+    output_cost_per_token: 6e-5
+  },
   'chatgpt-4o-latest': {
     max_tokens: 4096,
     max_input_tokens: 128000,
@@ -85,6 +176,48 @@ export const modelCosts: ModelCost = {
     max_output_tokens: 16384,
     input_cost_per_token: 2.5e-6,
     output_cost_per_token: 1e-5
+  },
+  'gpt-4o-2024-11-20': {
+    max_tokens: 16384,
+    max_input_tokens: 128000,
+    max_output_tokens: 16384,
+    input_cost_per_token: 2.5e-6,
+    output_cost_per_token: 1e-5
+  },
+  'gpt-4o-realtime-preview-2024-10-01': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 5e-6,
+    output_cost_per_token: 2e-5
+  },
+  'gpt-4o-realtime-preview': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 5e-6,
+    output_cost_per_token: 2e-5
+  },
+  'gpt-4o-realtime-preview-2024-12-17': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 5e-6,
+    output_cost_per_token: 2e-5
+  },
+  'gpt-4o-mini-realtime-preview': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 6e-7,
+    output_cost_per_token: 2.4e-6
+  },
+  'gpt-4o-mini-realtime-preview-2024-12-17': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 6e-7,
+    output_cost_per_token: 2.4e-6
   },
   'gpt-4-turbo-preview': {
     max_tokens: 4096,
@@ -261,6 +394,13 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 3.75e-6,
     output_cost_per_token: 1.5e-5
   },
+  'ft:gpt-4o-2024-11-20': {
+    max_tokens: 16384,
+    max_input_tokens: 128000,
+    max_output_tokens: 16384,
+    input_cost_per_token: 3.75e-6,
+    output_cost_per_token: 1.5e-5
+  },
   'ft:gpt-4o-mini-2024-07-18': {
     max_tokens: 16384,
     max_input_tokens: 128000,
@@ -342,6 +482,34 @@ export const modelCosts: ModelCost = {
   'azure/tts-1': {},
   'azure/tts-1-hd': {},
   'azure/whisper-1': {},
+  'azure/o1-mini': {
+    max_tokens: 65536,
+    max_input_tokens: 128000,
+    max_output_tokens: 65536,
+    input_cost_per_token: 3e-6,
+    output_cost_per_token: 1.2e-5
+  },
+  'azure/o1-mini-2024-09-12': {
+    max_tokens: 65536,
+    max_input_tokens: 128000,
+    max_output_tokens: 65536,
+    input_cost_per_token: 3e-6,
+    output_cost_per_token: 1.2e-5
+  },
+  'azure/o1-preview': {
+    max_tokens: 32768,
+    max_input_tokens: 128000,
+    max_output_tokens: 32768,
+    input_cost_per_token: 1.5e-5,
+    output_cost_per_token: 6e-5
+  },
+  'azure/o1-preview-2024-09-12': {
+    max_tokens: 32768,
+    max_input_tokens: 128000,
+    max_output_tokens: 32768,
+    input_cost_per_token: 1.5e-5,
+    output_cost_per_token: 6e-5
+  },
   'azure/gpt-4o': {
     max_tokens: 4096,
     max_input_tokens: 128000,
@@ -356,7 +524,28 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 2.75e-6,
     output_cost_per_token: 1.1e-5
   },
+  'azure/gpt-4o-2024-11-20': {
+    max_tokens: 16384,
+    max_input_tokens: 128000,
+    max_output_tokens: 16384,
+    input_cost_per_token: 2.75e-6,
+    output_cost_per_token: 1.1e-5
+  },
+  'azure/gpt-4o-2024-05-13': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 5e-6,
+    output_cost_per_token: 1.5e-5
+  },
   'azure/global-standard/gpt-4o-2024-08-06': {
+    max_tokens: 16384,
+    max_input_tokens: 128000,
+    max_output_tokens: 16384,
+    input_cost_per_token: 2.5e-6,
+    output_cost_per_token: 1e-5
+  },
+  'azure/global-standard/gpt-4o-2024-11-20': {
     max_tokens: 16384,
     max_input_tokens: 128000,
     max_output_tokens: 16384,
@@ -371,6 +560,13 @@ export const modelCosts: ModelCost = {
     output_cost_per_token: 6e-7
   },
   'azure/gpt-4o-mini': {
+    max_tokens: 16384,
+    max_input_tokens: 128000,
+    max_output_tokens: 16384,
+    input_cost_per_token: 1.65e-7,
+    output_cost_per_token: 6.6e-7
+  },
+  'azure/gpt-4o-mini-2024-07-18': {
     max_tokens: 16384,
     max_input_tokens: 128000,
     max_output_tokens: 16384,
@@ -550,13 +746,27 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 2e-8,
     output_cost_per_token: 0.0
   },
-  'azure/standard/1024-x-1024/dall-e-3': { output_cost_per_token: 0.0 },
-  'azure/hd/1024-x-1024/dall-e-3': { output_cost_per_token: 0.0 },
-  'azure/standard/1024-x-1792/dall-e-3': { output_cost_per_token: 0.0 },
-  'azure/standard/1792-x-1024/dall-e-3': { output_cost_per_token: 0.0 },
-  'azure/hd/1024-x-1792/dall-e-3': { output_cost_per_token: 0.0 },
-  'azure/hd/1792-x-1024/dall-e-3': { output_cost_per_token: 0.0 },
-  'azure/standard/1024-x-1024/dall-e-2': { output_cost_per_token: 0.0 },
+  'azure/standard/1024-x-1024/dall-e-3': {
+    output_cost_per_token: 0.0
+  },
+  'azure/hd/1024-x-1024/dall-e-3': {
+    output_cost_per_token: 0.0
+  },
+  'azure/standard/1024-x-1792/dall-e-3': {
+    output_cost_per_token: 0.0
+  },
+  'azure/standard/1792-x-1024/dall-e-3': {
+    output_cost_per_token: 0.0
+  },
+  'azure/hd/1024-x-1792/dall-e-3': {
+    output_cost_per_token: 0.0
+  },
+  'azure/hd/1792-x-1024/dall-e-3': {
+    output_cost_per_token: 0.0
+  },
+  'azure/standard/1024-x-1024/dall-e-2': {
+    output_cost_per_token: 0.0
+  },
   'azure_ai/jamba-instruct': {
     max_tokens: 4096,
     max_input_tokens: 70000,
@@ -578,33 +788,131 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 1e-6,
     output_cost_per_token: 3e-6
   },
+  'azure_ai/mistral-large-2407': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 2e-6,
+    output_cost_per_token: 6e-6
+  },
+  'azure_ai/ministral-3b': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 4e-8,
+    output_cost_per_token: 4e-8
+  },
+  'azure_ai/Llama-3.2-11B-Vision-Instruct': {
+    max_tokens: 2048,
+    max_input_tokens: 128000,
+    max_output_tokens: 2048,
+    input_cost_per_token: 3.7e-7,
+    output_cost_per_token: 3.7e-7
+  },
+  'azure_ai/Llama-3.3-70B-Instruct': {
+    max_tokens: 2048,
+    max_input_tokens: 128000,
+    max_output_tokens: 2048,
+    input_cost_per_token: 7.1e-7,
+    output_cost_per_token: 7.1e-7
+  },
+  'azure_ai/Llama-3.2-90B-Vision-Instruct': {
+    max_tokens: 2048,
+    max_input_tokens: 128000,
+    max_output_tokens: 2048,
+    input_cost_per_token: 2.04e-6,
+    output_cost_per_token: 2.04e-6
+  },
   'azure_ai/Meta-Llama-3-70B-Instruct': {
-    max_tokens: 8192,
+    max_tokens: 2048,
     max_input_tokens: 8192,
-    max_output_tokens: 8192,
+    max_output_tokens: 2048,
     input_cost_per_token: 1.1e-6,
     output_cost_per_token: 3.7e-7
   },
-  'azure_ai/Meta-Llama-31-8B-Instruct': {
-    max_tokens: 128000,
+  'azure_ai/Meta-Llama-3.1-8B-Instruct': {
+    max_tokens: 2048,
     max_input_tokens: 128000,
-    max_output_tokens: 128000,
+    max_output_tokens: 2048,
     input_cost_per_token: 3e-7,
     output_cost_per_token: 6.1e-7
   },
-  'azure_ai/Meta-Llama-31-70B-Instruct': {
-    max_tokens: 128000,
+  'azure_ai/Meta-Llama-3.1-70B-Instruct': {
+    max_tokens: 2048,
     max_input_tokens: 128000,
-    max_output_tokens: 128000,
+    max_output_tokens: 2048,
     input_cost_per_token: 2.68e-6,
     output_cost_per_token: 3.54e-6
   },
-  'azure_ai/Meta-Llama-31-405B-Instruct': {
-    max_tokens: 128000,
+  'azure_ai/Meta-Llama-3.1-405B-Instruct': {
+    max_tokens: 2048,
     max_input_tokens: 128000,
-    max_output_tokens: 128000,
+    max_output_tokens: 2048,
     input_cost_per_token: 5.33e-6,
     output_cost_per_token: 1.6e-5
+  },
+  'azure_ai/Phi-3.5-mini-instruct': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1.3e-7,
+    output_cost_per_token: 5.2e-7
+  },
+  'azure_ai/Phi-3.5-vision-instruct': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1.3e-7,
+    output_cost_per_token: 5.2e-7
+  },
+  'azure_ai/Phi-3.5-MoE-instruct': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1.6e-7,
+    output_cost_per_token: 6.4e-7
+  },
+  'azure_ai/Phi-3-mini-4k-instruct': {
+    max_tokens: 4096,
+    max_input_tokens: 4096,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1.3e-7,
+    output_cost_per_token: 5.2e-7
+  },
+  'azure_ai/Phi-3-mini-128k-instruct': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1.3e-7,
+    output_cost_per_token: 5.2e-7
+  },
+  'azure_ai/Phi-3-small-8k-instruct': {
+    max_tokens: 4096,
+    max_input_tokens: 8192,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1.5e-7,
+    output_cost_per_token: 6e-7
+  },
+  'azure_ai/Phi-3-small-128k-instruct': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1.5e-7,
+    output_cost_per_token: 6e-7
+  },
+  'azure_ai/Phi-3-medium-4k-instruct': {
+    max_tokens: 4096,
+    max_input_tokens: 4096,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1.7e-7,
+    output_cost_per_token: 6.8e-7
+  },
+  'azure_ai/Phi-3-medium-128k-instruct': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1.7e-7,
+    output_cost_per_token: 6.8e-7
   },
   'azure_ai/cohere-rerank-v3-multilingual': {
     max_tokens: 4096,
@@ -800,7 +1108,11 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 2.5e-7,
     output_cost_per_token: 2.5e-7
   },
-  'mistral/mistral-embed': { max_tokens: 8192, max_input_tokens: 8192, input_cost_per_token: 1e-7 },
+  'mistral/mistral-embed': {
+    max_tokens: 8192,
+    max_input_tokens: 8192,
+    input_cost_per_token: 1e-7
+  },
   'deepseek-chat': {
     max_tokens: 4096,
     max_input_tokens: 128000,
@@ -836,12 +1148,33 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 0.0,
     output_cost_per_token: 0.0
   },
+  'xai/grok-beta': {
+    max_tokens: 131072,
+    max_input_tokens: 131072,
+    max_output_tokens: 131072,
+    input_cost_per_token: 5e-6,
+    output_cost_per_token: 1.5e-5
+  },
   'deepseek-coder': {
     max_tokens: 4096,
     max_input_tokens: 128000,
     max_output_tokens: 4096,
     input_cost_per_token: 1.4e-7,
     output_cost_per_token: 2.8e-7
+  },
+  'groq/llama-3.3-70b-versatile': {
+    max_tokens: 8192,
+    max_input_tokens: 128000,
+    max_output_tokens: 8192,
+    input_cost_per_token: 5.9e-7,
+    output_cost_per_token: 7.9e-7
+  },
+  'groq/llama-3.3-70b-specdec': {
+    max_tokens: 8192,
+    max_input_tokens: 8192,
+    max_output_tokens: 8192,
+    input_cost_per_token: 5.9e-7,
+    output_cost_per_token: 9.9e-7
   },
   'groq/llama2-70b-4096': {
     max_tokens: 4096,
@@ -857,6 +1190,48 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 5e-8,
     output_cost_per_token: 8e-8
   },
+  'groq/llama-3.2-1b-preview': {
+    max_tokens: 8192,
+    max_input_tokens: 8192,
+    max_output_tokens: 8192,
+    input_cost_per_token: 4e-8,
+    output_cost_per_token: 4e-8
+  },
+  'groq/llama-3.2-3b-preview': {
+    max_tokens: 8192,
+    max_input_tokens: 8192,
+    max_output_tokens: 8192,
+    input_cost_per_token: 6e-8,
+    output_cost_per_token: 6e-8
+  },
+  'groq/llama-3.2-11b-text-preview': {
+    max_tokens: 8192,
+    max_input_tokens: 8192,
+    max_output_tokens: 8192,
+    input_cost_per_token: 1.8e-7,
+    output_cost_per_token: 1.8e-7
+  },
+  'groq/llama-3.2-11b-vision-preview': {
+    max_tokens: 8192,
+    max_input_tokens: 8192,
+    max_output_tokens: 8192,
+    input_cost_per_token: 1.8e-7,
+    output_cost_per_token: 1.8e-7
+  },
+  'groq/llama-3.2-90b-text-preview': {
+    max_tokens: 8192,
+    max_input_tokens: 8192,
+    max_output_tokens: 8192,
+    input_cost_per_token: 9e-7,
+    output_cost_per_token: 9e-7
+  },
+  'groq/llama-3.2-90b-vision-preview': {
+    max_tokens: 8192,
+    max_input_tokens: 8192,
+    max_output_tokens: 8192,
+    input_cost_per_token: 9e-7,
+    output_cost_per_token: 9e-7
+  },
   'groq/llama3-70b-8192': {
     max_tokens: 8192,
     max_input_tokens: 8192,
@@ -868,8 +1243,8 @@ export const modelCosts: ModelCost = {
     max_tokens: 8192,
     max_input_tokens: 8192,
     max_output_tokens: 8192,
-    input_cost_per_token: 5.9e-7,
-    output_cost_per_token: 7.9e-7
+    input_cost_per_token: 5e-8,
+    output_cost_per_token: 8e-8
   },
   'groq/llama-3.1-70b-versatile': {
     max_tokens: 8192,
@@ -983,6 +1358,13 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 2.5e-7,
     output_cost_per_token: 1.25e-6
   },
+  'claude-3-5-haiku-20241022': {
+    max_tokens: 8192,
+    max_input_tokens: 200000,
+    max_output_tokens: 8192,
+    input_cost_per_token: 1e-6,
+    output_cost_per_token: 5e-6
+  },
   'claude-3-opus-20240229': {
     max_tokens: 4096,
     max_input_tokens: 200000,
@@ -1004,9 +1386,28 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 3e-6,
     output_cost_per_token: 1.5e-5
   },
-  'text-bison': { max_tokens: 2048, max_input_tokens: 8192, max_output_tokens: 2048 },
-  'text-bison@001': { max_tokens: 1024, max_input_tokens: 8192, max_output_tokens: 1024 },
-  'text-bison@002': { max_tokens: 1024, max_input_tokens: 8192, max_output_tokens: 1024 },
+  'claude-3-5-sonnet-20241022': {
+    max_tokens: 8192,
+    max_input_tokens: 200000,
+    max_output_tokens: 8192,
+    input_cost_per_token: 3e-6,
+    output_cost_per_token: 1.5e-5
+  },
+  'text-bison': {
+    max_tokens: 2048,
+    max_input_tokens: 8192,
+    max_output_tokens: 2048
+  },
+  'text-bison@001': {
+    max_tokens: 1024,
+    max_input_tokens: 8192,
+    max_output_tokens: 1024
+  },
+  'text-bison@002': {
+    max_tokens: 1024,
+    max_input_tokens: 8192,
+    max_output_tokens: 1024
+  },
   'text-bison32k': {
     max_tokens: 1024,
     max_input_tokens: 8192,
@@ -1221,78 +1622,78 @@ export const modelCosts: ModelCost = {
     max_tokens: 8192,
     max_input_tokens: 2097152,
     max_output_tokens: 8192,
-    input_cost_per_token: 5e-6,
-    output_cost_per_token: 1.5e-5
+    input_cost_per_token: 1.25e-6,
+    output_cost_per_token: 5e-6
   },
   'gemini-1.5-pro-002': {
     max_tokens: 8192,
     max_input_tokens: 2097152,
     max_output_tokens: 8192,
-    input_cost_per_token: 5e-6,
-    output_cost_per_token: 1.5e-5
+    input_cost_per_token: 1.25e-6,
+    output_cost_per_token: 5e-6
   },
   'gemini-1.5-pro-001': {
     max_tokens: 8192,
     max_input_tokens: 1000000,
     max_output_tokens: 8192,
-    input_cost_per_token: 5e-6,
-    output_cost_per_token: 1.5e-5
+    input_cost_per_token: 1.25e-6,
+    output_cost_per_token: 5e-6
   },
   'gemini-1.5-pro-preview-0514': {
     max_tokens: 8192,
     max_input_tokens: 1000000,
     max_output_tokens: 8192,
-    input_cost_per_token: 5e-6,
-    output_cost_per_token: 1.5e-5
+    input_cost_per_token: 7.8125e-8,
+    output_cost_per_token: 3.125e-7
   },
   'gemini-1.5-pro-preview-0215': {
     max_tokens: 8192,
     max_input_tokens: 1000000,
     max_output_tokens: 8192,
-    input_cost_per_token: 5e-6,
-    output_cost_per_token: 1.5e-5
+    input_cost_per_token: 7.8125e-8,
+    output_cost_per_token: 3.125e-7
   },
   'gemini-1.5-pro-preview-0409': {
     max_tokens: 8192,
     max_input_tokens: 1000000,
     max_output_tokens: 8192,
-    input_cost_per_token: 5e-6,
-    output_cost_per_token: 1.5e-5
+    input_cost_per_token: 7.8125e-8,
+    output_cost_per_token: 3.125e-7
   },
   'gemini-1.5-flash': {
     max_tokens: 8192,
     max_input_tokens: 1000000,
     max_output_tokens: 8192,
-    input_cost_per_token: 5e-7,
-    output_cost_per_token: 1.5e-6
+    input_cost_per_token: 7.5e-8,
+    output_cost_per_token: 3e-7
   },
   'gemini-1.5-flash-exp-0827': {
     max_tokens: 8192,
     max_input_tokens: 1000000,
     max_output_tokens: 8192,
-    input_cost_per_token: 5e-7,
-    output_cost_per_token: 1.5e-6
+    input_cost_per_token: 4.688e-9,
+    output_cost_per_token: 4.6875e-9
   },
   'gemini-1.5-flash-002': {
     max_tokens: 8192,
     max_input_tokens: 1048576,
     max_output_tokens: 8192,
-    input_cost_per_token: 5e-7,
-    output_cost_per_token: 1.5e-6
+    input_cost_per_token: 7.5e-8,
+    output_cost_per_token: 3e-7
   },
   'gemini-1.5-flash-001': {
     max_tokens: 8192,
     max_input_tokens: 1000000,
     max_output_tokens: 8192,
-    input_cost_per_token: 5e-7,
-    output_cost_per_token: 1.5e-6
+    input_cost_per_token: 7.5e-8,
+    output_cost_per_token: 3e-7
   },
   'gemini-1.5-flash-preview-0514': {
     max_tokens: 8192,
     max_input_tokens: 1000000,
     max_output_tokens: 8192,
-    input_cost_per_token: 5e-7,
-    output_cost_per_token: 1.5e-6
+    input_cost_per_token: 7.5e-8,
+    output_cost_per_token: 4.6875e-9
   },
   'gemini-pro-experimental': {
     max_tokens: 8192,
@@ -1301,7 +1702,7 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 0,
     output_cost_per_token: 0
   },
-  'gemini-pro-flash': {
+  'gemini-flash-experimental': {
     max_tokens: 8192,
     max_input_tokens: 1000000,
     max_output_tokens: 8192,
@@ -1329,12 +1730,48 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 2.5e-7,
     output_cost_per_token: 5e-7
   },
-  'medlm-medium': { max_tokens: 8192, max_input_tokens: 32768, max_output_tokens: 8192 },
-  'medlm-large': { max_tokens: 1024, max_input_tokens: 8192, max_output_tokens: 1024 },
+  'medlm-medium': {
+    max_tokens: 8192,
+    max_input_tokens: 32768,
+    max_output_tokens: 8192
+  },
+  'medlm-large': {
+    max_tokens: 1024,
+    max_input_tokens: 8192,
+    max_output_tokens: 1024
+  },
+  'gemini-2.0-flash-exp': {
+    max_tokens: 8192,
+    max_input_tokens: 1048576,
+    max_output_tokens: 8192,
+    input_cost_per_token: 0,
+    output_cost_per_token: 0
+  },
+  'gemini/gemini-2.0-flash-exp': {
+    max_tokens: 8192,
+    max_input_tokens: 1048576,
+    max_output_tokens: 8192,
+    input_cost_per_token: 0,
+    output_cost_per_token: 0
+  },
+  'vertex_ai/claude-3-sonnet': {
+    max_tokens: 4096,
+    max_input_tokens: 200000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 3e-6,
+    output_cost_per_token: 1.5e-5
+  },
   'vertex_ai/claude-3-sonnet@20240229': {
     max_tokens: 4096,
     max_input_tokens: 200000,
     max_output_tokens: 4096,
+    input_cost_per_token: 3e-6,
+    output_cost_per_token: 1.5e-5
+  },
+  'vertex_ai/claude-3-5-sonnet': {
+    max_tokens: 8192,
+    max_input_tokens: 200000,
+    max_output_tokens: 8192,
     input_cost_per_token: 3e-6,
     output_cost_per_token: 1.5e-5
   },
@@ -1345,12 +1782,54 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 3e-6,
     output_cost_per_token: 1.5e-5
   },
+  'vertex_ai/claude-3-5-sonnet-v2': {
+    max_tokens: 8192,
+    max_input_tokens: 200000,
+    max_output_tokens: 8192,
+    input_cost_per_token: 3e-6,
+    output_cost_per_token: 1.5e-5
+  },
+  'vertex_ai/claude-3-5-sonnet-v2@20241022': {
+    max_tokens: 8192,
+    max_input_tokens: 200000,
+    max_output_tokens: 8192,
+    input_cost_per_token: 3e-6,
+    output_cost_per_token: 1.5e-5
+  },
+  'vertex_ai/claude-3-haiku': {
+    max_tokens: 4096,
+    max_input_tokens: 200000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 2.5e-7,
+    output_cost_per_token: 1.25e-6
+  },
   'vertex_ai/claude-3-haiku@20240307': {
     max_tokens: 4096,
     max_input_tokens: 200000,
     max_output_tokens: 4096,
     input_cost_per_token: 2.5e-7,
     output_cost_per_token: 1.25e-6
+  },
+  'vertex_ai/claude-3-5-haiku': {
+    max_tokens: 8192,
+    max_input_tokens: 200000,
+    max_output_tokens: 8192,
+    input_cost_per_token: 1e-6,
+    output_cost_per_token: 5e-6
+  },
+  'vertex_ai/claude-3-5-haiku@20241022': {
+    max_tokens: 8192,
+    max_input_tokens: 200000,
+    max_output_tokens: 8192,
+    input_cost_per_token: 1e-6,
+    output_cost_per_token: 5e-6
+  },
+  'vertex_ai/claude-3-opus': {
+    max_tokens: 4096,
+    max_input_tokens: 200000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1.5e-5,
+    output_cost_per_token: 7.5e-5
   },
   'vertex_ai/claude-3-opus@20240229': {
     max_tokens: 4096,
@@ -1381,9 +1860,9 @@ export const modelCosts: ModelCost = {
     output_cost_per_token: 0.0
   },
   'vertex_ai/meta/llama-3.2-90b-vision-instruct-maas': {
-    max_tokens: 8192,
+    max_tokens: 128000,
     max_input_tokens: 128000,
-    max_output_tokens: 8192,
+    max_output_tokens: 2048,
     input_cost_per_token: 0.0,
     output_cost_per_token: 0.0
   },
@@ -1468,45 +1947,51 @@ export const modelCosts: ModelCost = {
   'vertex_ai/imagen-3.0-generate-001': {},
   'vertex_ai/imagen-3.0-fast-generate-001': {},
   'text-embedding-004': {
-    max_tokens: 3072,
-    max_input_tokens: 3072,
-    input_cost_per_token: 6.25e-9,
+    max_tokens: 2048,
+    max_input_tokens: 2048,
+    input_cost_per_token: 1e-7,
+    output_cost_per_token: 0
+  },
+  'text-embedding-005': {
+    max_tokens: 2048,
+    max_input_tokens: 2048,
+    input_cost_per_token: 1e-7,
     output_cost_per_token: 0
   },
   'text-multilingual-embedding-002': {
     max_tokens: 2048,
     max_input_tokens: 2048,
-    input_cost_per_token: 6.25e-9,
+    input_cost_per_token: 1e-7,
     output_cost_per_token: 0
   },
   'textembedding-gecko': {
     max_tokens: 3072,
     max_input_tokens: 3072,
-    input_cost_per_token: 6.25e-9,
+    input_cost_per_token: 1e-7,
     output_cost_per_token: 0
   },
   'textembedding-gecko-multilingual': {
     max_tokens: 3072,
     max_input_tokens: 3072,
-    input_cost_per_token: 6.25e-9,
+    input_cost_per_token: 1e-7,
     output_cost_per_token: 0
   },
   'textembedding-gecko-multilingual@001': {
     max_tokens: 3072,
     max_input_tokens: 3072,
-    input_cost_per_token: 6.25e-9,
+    input_cost_per_token: 1e-7,
     output_cost_per_token: 0
   },
   'textembedding-gecko@001': {
     max_tokens: 3072,
     max_input_tokens: 3072,
-    input_cost_per_token: 6.25e-9,
+    input_cost_per_token: 1e-7,
     output_cost_per_token: 0
   },
   'textembedding-gecko@003': {
     max_tokens: 3072,
     max_input_tokens: 3072,
-    input_cost_per_token: 6.25e-9,
+    input_cost_per_token: 1e-7,
     output_cost_per_token: 0
   },
   'text-embedding-preview-0409': {
@@ -1591,9 +2076,30 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 7.5e-8,
     output_cost_per_token: 3e-7
   },
+  'gemini/gemini-1.5-flash-8b': {
+    max_tokens: 8192,
+    max_input_tokens: 1048576,
+    max_output_tokens: 8192,
+    input_cost_per_token: 0,
+    output_cost_per_token: 0
+  },
   'gemini/gemini-1.5-flash-8b-exp-0924': {
     max_tokens: 8192,
     max_input_tokens: 1048576,
+    max_output_tokens: 8192,
+    input_cost_per_token: 0,
+    output_cost_per_token: 0
+  },
+  'gemini/gemini-exp-1114': {
+    max_tokens: 8192,
+    max_input_tokens: 1048576,
+    max_output_tokens: 8192,
+    input_cost_per_token: 0,
+    output_cost_per_token: 0
+  },
+  'gemini/gemini-exp-1206': {
+    max_tokens: 8192,
+    max_input_tokens: 2097152,
     max_output_tokens: 8192,
     input_cost_per_token: 0,
     output_cost_per_token: 0
@@ -1729,6 +2235,13 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 1e-6,
     output_cost_per_token: 2e-6
   },
+  'rerank-v3.5': {
+    max_tokens: 4096,
+    max_input_tokens: 4096,
+    max_output_tokens: 4096,
+    input_cost_per_token: 0.0,
+    output_cost_per_token: 0.0
+  },
   'rerank-english-v3.0': {
     max_tokens: 4096,
     max_input_tokens: 4096,
@@ -1757,39 +2270,39 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 0.0,
     output_cost_per_token: 0.0
   },
-  'embed-english-v3.0': {
-    max_tokens: 512,
-    max_input_tokens: 512,
-    input_cost_per_token: 1e-7,
-    output_cost_per_token: 0.0
-  },
   'embed-english-light-v3.0': {
-    max_tokens: 512,
-    max_input_tokens: 512,
+    max_tokens: 1024,
+    max_input_tokens: 1024,
     input_cost_per_token: 1e-7,
     output_cost_per_token: 0.0
   },
   'embed-multilingual-v3.0': {
-    max_tokens: 512,
-    max_input_tokens: 512,
+    max_tokens: 1024,
+    max_input_tokens: 1024,
     input_cost_per_token: 1e-7,
     output_cost_per_token: 0.0
   },
   'embed-english-v2.0': {
-    max_tokens: 512,
-    max_input_tokens: 512,
+    max_tokens: 4096,
+    max_input_tokens: 4096,
     input_cost_per_token: 1e-7,
     output_cost_per_token: 0.0
   },
   'embed-english-light-v2.0': {
-    max_tokens: 512,
-    max_input_tokens: 512,
+    max_tokens: 1024,
+    max_input_tokens: 1024,
     input_cost_per_token: 1e-7,
     output_cost_per_token: 0.0
   },
   'embed-multilingual-v2.0': {
-    max_tokens: 256,
-    max_input_tokens: 256,
+    max_tokens: 768,
+    max_input_tokens: 768,
+    input_cost_per_token: 1e-7,
+    output_cost_per_token: 0.0
+  },
+  'embed-english-v3.0': {
+    max_tokens: 1024,
+    max_input_tokens: 1024,
     input_cost_per_token: 1e-7,
     output_cost_per_token: 0.0
   },
@@ -1923,12 +2436,24 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 2.5e-7,
     output_cost_per_token: 1.25e-6
   },
+  'openrouter/anthropic/claude-3-5-haiku': {
+    max_tokens: 200000,
+    input_cost_per_token: 1e-6,
+    output_cost_per_token: 5e-6
+  },
   'openrouter/anthropic/claude-3-haiku-20240307': {
     max_tokens: 4096,
     max_input_tokens: 200000,
     max_output_tokens: 4096,
     input_cost_per_token: 2.5e-7,
     output_cost_per_token: 1.25e-6
+  },
+  'openrouter/anthropic/claude-3-5-haiku-20241022': {
+    max_tokens: 8192,
+    max_input_tokens: 200000,
+    max_output_tokens: 8192,
+    input_cost_per_token: 1e-6,
+    output_cost_per_token: 5e-6
   },
   'openrouter/anthropic/claude-3.5-sonnet': {
     max_tokens: 8192,
@@ -2135,6 +2660,13 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 0.0,
     output_cost_per_token: 0.0
   },
+  'openrouter/qwen/qwen-2.5-coder-32b-instruct': {
+    max_tokens: 33792,
+    max_input_tokens: 33792,
+    max_output_tokens: 33792,
+    input_cost_per_token: 1.8e-7,
+    output_cost_per_token: 1.8e-7
+  },
   'j2-ultra': {
     max_tokens: 8192,
     max_input_tokens: 8192,
@@ -2205,7 +2737,11 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 5e-7,
     output_cost_per_token: 5e-7
   },
-  'luminous-base': { max_tokens: 2048, input_cost_per_token: 3e-5, output_cost_per_token: 3.3e-5 },
+  'luminous-base': {
+    max_tokens: 2048,
+    input_cost_per_token: 3e-5,
+    output_cost_per_token: 3.3e-5
+  },
   'luminous-base-control': {
     max_tokens: 2048,
     input_cost_per_token: 3.75e-5,
@@ -2283,6 +2819,12 @@ export const modelCosts: ModelCost = {
     max_tokens: 8192,
     max_input_tokens: 8192,
     input_cost_per_token: 2e-7,
+    output_cost_per_token: 0.0
+  },
+  'amazon.titan-embed-image-v1': {
+    max_tokens: 128,
+    max_input_tokens: 128,
+    input_cost_per_token: 8e-7,
     output_cost_per_token: 0.0
   },
   'mistral.mistral-7b-instruct-v0:2': {
@@ -2383,6 +2925,27 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 1.04e-5,
     output_cost_per_token: 3.12e-5
   },
+  'amazon.nova-micro-v1:0': {
+    max_tokens: 4096,
+    max_input_tokens: 300000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 3.5e-8,
+    output_cost_per_token: 1.4e-7
+  },
+  'amazon.nova-lite-v1:0': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 6e-8,
+    output_cost_per_token: 2.4e-7
+  },
+  'amazon.nova-pro-v1:0': {
+    max_tokens: 4096,
+    max_input_tokens: 300000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 8e-7,
+    output_cost_per_token: 3.2e-6
+  },
   'anthropic.claude-3-sonnet-20240229-v1:0': {
     max_tokens: 4096,
     max_input_tokens: 200000,
@@ -2397,12 +2960,26 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 3e-6,
     output_cost_per_token: 1.5e-5
   },
+  'anthropic.claude-3-5-sonnet-20241022-v2:0': {
+    max_tokens: 8192,
+    max_input_tokens: 200000,
+    max_output_tokens: 8192,
+    input_cost_per_token: 3e-6,
+    output_cost_per_token: 1.5e-5
+  },
   'anthropic.claude-3-haiku-20240307-v1:0': {
     max_tokens: 4096,
     max_input_tokens: 200000,
     max_output_tokens: 4096,
     input_cost_per_token: 2.5e-7,
     output_cost_per_token: 1.25e-6
+  },
+  'anthropic.claude-3-5-haiku-20241022-v1:0': {
+    max_tokens: 4096,
+    max_input_tokens: 200000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1e-6,
+    output_cost_per_token: 5e-6
   },
   'anthropic.claude-3-opus-20240229-v1:0': {
     max_tokens: 4096,
@@ -2425,12 +3002,26 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 3e-6,
     output_cost_per_token: 1.5e-5
   },
+  'us.anthropic.claude-3-5-sonnet-20241022-v2:0': {
+    max_tokens: 8192,
+    max_input_tokens: 200000,
+    max_output_tokens: 8192,
+    input_cost_per_token: 3e-6,
+    output_cost_per_token: 1.5e-5
+  },
   'us.anthropic.claude-3-haiku-20240307-v1:0': {
     max_tokens: 4096,
     max_input_tokens: 200000,
     max_output_tokens: 4096,
     input_cost_per_token: 2.5e-7,
     output_cost_per_token: 1.25e-6
+  },
+  'us.anthropic.claude-3-5-haiku-20241022-v1:0': {
+    max_tokens: 4096,
+    max_input_tokens: 200000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1e-6,
+    output_cost_per_token: 5e-6
   },
   'us.anthropic.claude-3-opus-20240229-v1:0': {
     max_tokens: 4096,
@@ -2453,12 +3044,26 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 3e-6,
     output_cost_per_token: 1.5e-5
   },
+  'eu.anthropic.claude-3-5-sonnet-20241022-v2:0': {
+    max_tokens: 8192,
+    max_input_tokens: 200000,
+    max_output_tokens: 8192,
+    input_cost_per_token: 3e-6,
+    output_cost_per_token: 1.5e-5
+  },
   'eu.anthropic.claude-3-haiku-20240307-v1:0': {
     max_tokens: 4096,
     max_input_tokens: 200000,
     max_output_tokens: 4096,
     input_cost_per_token: 2.5e-7,
     output_cost_per_token: 1.25e-6
+  },
+  'eu.anthropic.claude-3-5-haiku-20241022-v1:0': {
+    max_tokens: 4096,
+    max_input_tokens: 200000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1e-6,
+    output_cost_per_token: 5e-6
   },
   'eu.anthropic.claude-3-opus-20240229-v1:0': {
     max_tokens: 4096,
@@ -2827,6 +3432,13 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 1e-7,
     output_cost_per_token: 0.0
   },
+  'meta.llama3-3-70b-instruct-v1:0': {
+    max_tokens: 4096,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 7.2e-7,
+    output_cost_per_token: 7.2e-7
+  },
   'meta.llama2-13b-chat-v1': {
     max_tokens: 4096,
     max_input_tokens: 4096,
@@ -2960,7 +3572,21 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 2.2e-7,
     output_cost_per_token: 2.2e-7
   },
+  'us.meta.llama3-1-8b-instruct-v1:0': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 2048,
+    input_cost_per_token: 2.2e-7,
+    output_cost_per_token: 2.2e-7
+  },
   'meta.llama3-1-70b-instruct-v1:0': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 2048,
+    input_cost_per_token: 9.9e-7,
+    output_cost_per_token: 9.9e-7
+  },
+  'us.meta.llama3-1-70b-instruct-v1:0': {
     max_tokens: 128000,
     max_input_tokens: 128000,
     max_output_tokens: 2048,
@@ -2974,12 +3600,112 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 5.32e-6,
     output_cost_per_token: 1.6e-5
   },
-  '512-x-512/50-steps/stability.stable-diffusion-xl-v0': { max_tokens: 77, max_input_tokens: 77 },
-  '512-x-512/max-steps/stability.stable-diffusion-xl-v0': { max_tokens: 77, max_input_tokens: 77 },
-  'max-x-max/50-steps/stability.stable-diffusion-xl-v0': { max_tokens: 77, max_input_tokens: 77 },
-  'max-x-max/max-steps/stability.stable-diffusion-xl-v0': { max_tokens: 77, max_input_tokens: 77 },
-  '1024-x-1024/50-steps/stability.stable-diffusion-xl-v1': { max_tokens: 77, max_input_tokens: 77 },
+  'us.meta.llama3-1-405b-instruct-v1:0': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 5.32e-6,
+    output_cost_per_token: 1.6e-5
+  },
+  'meta.llama3-2-1b-instruct-v1:0': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1e-7,
+    output_cost_per_token: 1e-7
+  },
+  'us.meta.llama3-2-1b-instruct-v1:0': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1e-7,
+    output_cost_per_token: 1e-7
+  },
+  'eu.meta.llama3-2-1b-instruct-v1:0': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1.3e-7,
+    output_cost_per_token: 1.3e-7
+  },
+  'meta.llama3-2-3b-instruct-v1:0': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1.5e-7,
+    output_cost_per_token: 1.5e-7
+  },
+  'us.meta.llama3-2-3b-instruct-v1:0': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1.5e-7,
+    output_cost_per_token: 1.5e-7
+  },
+  'eu.meta.llama3-2-3b-instruct-v1:0': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 1.9e-7,
+    output_cost_per_token: 1.9e-7
+  },
+  'meta.llama3-2-11b-instruct-v1:0': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 3.5e-7,
+    output_cost_per_token: 3.5e-7
+  },
+  'us.meta.llama3-2-11b-instruct-v1:0': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 3.5e-7,
+    output_cost_per_token: 3.5e-7
+  },
+  'meta.llama3-2-90b-instruct-v1:0': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 2e-6,
+    output_cost_per_token: 2e-6
+  },
+  'us.meta.llama3-2-90b-instruct-v1:0': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 4096,
+    input_cost_per_token: 2e-6,
+    output_cost_per_token: 2e-6
+  },
+  '512-x-512/50-steps/stability.stable-diffusion-xl-v0': {
+    max_tokens: 77,
+    max_input_tokens: 77
+  },
+  '512-x-512/max-steps/stability.stable-diffusion-xl-v0': {
+    max_tokens: 77,
+    max_input_tokens: 77
+  },
+  'max-x-max/50-steps/stability.stable-diffusion-xl-v0': {
+    max_tokens: 77,
+    max_input_tokens: 77
+  },
+  'max-x-max/max-steps/stability.stable-diffusion-xl-v0': {
+    max_tokens: 77,
+    max_input_tokens: 77
+  },
+  '1024-x-1024/50-steps/stability.stable-diffusion-xl-v1': {
+    max_tokens: 77,
+    max_input_tokens: 77
+  },
   '1024-x-1024/max-steps/stability.stable-diffusion-xl-v1': {
+    max_tokens: 77,
+    max_input_tokens: 77
+  },
+  'stability.sd3-large-v1:0': {
+    max_tokens: 77,
+    max_input_tokens: 77
+  },
+  'stability.stable-image-ultra-v1:0': {
     max_tokens: 77,
     max_input_tokens: 77
   },
@@ -3025,20 +3751,50 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 0.0,
     output_cost_per_token: 0.0
   },
-  'together-ai-up-to-4b': { input_cost_per_token: 1e-7, output_cost_per_token: 1e-7 },
-  'together-ai-4.1b-8b': { input_cost_per_token: 2e-7, output_cost_per_token: 2e-7 },
+  'together-ai-up-to-4b': {
+    input_cost_per_token: 1e-7,
+    output_cost_per_token: 1e-7
+  },
+  'together-ai-4.1b-8b': {
+    input_cost_per_token: 2e-7,
+    output_cost_per_token: 2e-7
+  },
   'together-ai-8.1b-21b': {
     max_tokens: 1000,
     input_cost_per_token: 3e-7,
     output_cost_per_token: 3e-7
   },
-  'together-ai-21.1b-41b': { input_cost_per_token: 8e-7, output_cost_per_token: 8e-7 },
-  'together-ai-41.1b-80b': { input_cost_per_token: 9e-7, output_cost_per_token: 9e-7 },
-  'together-ai-81.1b-110b': { input_cost_per_token: 1.8e-6, output_cost_per_token: 1.8e-6 },
-  'together-ai-embedding-up-to-150m': { input_cost_per_token: 8e-9, output_cost_per_token: 0.0 },
+  'together-ai-21.1b-41b': {
+    input_cost_per_token: 8e-7,
+    output_cost_per_token: 8e-7
+  },
+  'together-ai-41.1b-80b': {
+    input_cost_per_token: 9e-7,
+    output_cost_per_token: 9e-7
+  },
+  'together-ai-81.1b-110b': {
+    input_cost_per_token: 1.8e-6,
+    output_cost_per_token: 1.8e-6
+  },
+  'together-ai-embedding-up-to-150m': {
+    input_cost_per_token: 8e-9,
+    output_cost_per_token: 0.0
+  },
   'together-ai-embedding-151m-to-350m': {
     input_cost_per_token: 1.6e-8,
     output_cost_per_token: 0.0
+  },
+  'together_ai/meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo': {
+    input_cost_per_token: 1.8e-7,
+    output_cost_per_token: 1.8e-7
+  },
+  'together_ai/meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo': {
+    input_cost_per_token: 8.8e-7,
+    output_cost_per_token: 8.8e-7
+  },
+  'together_ai/meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo': {
+    input_cost_per_token: 3.5e-6,
+    output_cost_per_token: 3.5e-6
   },
   'together_ai/mistralai/Mixtral-8x7B-Instruct-v0.1': {
     input_cost_per_token: 6e-7,
@@ -3347,6 +4103,13 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 5.9e-7,
     output_cost_per_token: 7.9e-7
   },
+  'deepinfra/meta-llama/Meta-Llama-3.1-405B-Instruct': {
+    max_tokens: 32768,
+    max_input_tokens: 32768,
+    max_output_tokens: 32768,
+    input_cost_per_token: 9e-7,
+    output_cost_per_token: 9e-7
+  },
   'deepinfra/01-ai/Yi-34B-200K': {
     max_tokens: 4096,
     max_input_tokens: 200000,
@@ -3550,6 +4313,13 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 9e-7,
     output_cost_per_token: 9e-7
   },
+  'fireworks_ai/accounts/fireworks/models/qwen2p5-coder-32b-instruct': {
+    max_tokens: 4096,
+    max_input_tokens: 4096,
+    max_output_tokens: 4096,
+    input_cost_per_token: 9e-7,
+    output_cost_per_token: 9e-7
+  },
   'fireworks_ai/accounts/fireworks/models/yi-large': {
     max_tokens: 32768,
     max_input_tokens: 32768,
@@ -3594,12 +4364,30 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 8e-9,
     output_cost_per_token: 0.0
   },
-  'fireworks-ai-up-to-16b': { input_cost_per_token: 2e-7, output_cost_per_token: 2e-7 },
-  'fireworks-ai-16.1b-to-80b': { input_cost_per_token: 9e-7, output_cost_per_token: 9e-7 },
-  'fireworks-ai-moe-up-to-56b': { input_cost_per_token: 5e-7, output_cost_per_token: 5e-7 },
-  'fireworks-ai-56b-to-176b': { input_cost_per_token: 1.2e-6, output_cost_per_token: 1.2e-6 },
-  'fireworks-ai-default': { input_cost_per_token: 0.0, output_cost_per_token: 0.0 },
-  'fireworks-ai-embedding-up-to-150m': { input_cost_per_token: 8e-9, output_cost_per_token: 0.0 },
+  'fireworks-ai-up-to-16b': {
+    input_cost_per_token: 2e-7,
+    output_cost_per_token: 2e-7
+  },
+  'fireworks-ai-16.1b-to-80b': {
+    input_cost_per_token: 9e-7,
+    output_cost_per_token: 9e-7
+  },
+  'fireworks-ai-moe-up-to-56b': {
+    input_cost_per_token: 5e-7,
+    output_cost_per_token: 5e-7
+  },
+  'fireworks-ai-56b-to-176b': {
+    input_cost_per_token: 1.2e-6,
+    output_cost_per_token: 1.2e-6
+  },
+  'fireworks-ai-default': {
+    input_cost_per_token: 0.0,
+    output_cost_per_token: 0.0
+  },
+  'fireworks-ai-embedding-up-to-150m': {
+    input_cost_per_token: 8e-9,
+    output_cost_per_token: 0.0
+  },
   'fireworks-ai-embedding-150m-to-350m': {
     input_cost_per_token: 1.6e-8,
     output_cost_per_token: 0.0
@@ -3758,6 +4546,12 @@ export const modelCosts: ModelCost = {
     input_cost_per_token: 1e-7,
     output_cost_per_token: 0.0
   },
+  'voyage/voyage-finance-2': {
+    max_tokens: 4000,
+    max_input_tokens: 4000,
+    input_cost_per_token: 1.2e-7,
+    output_cost_per_token: 0.0
+  },
   'databricks/databricks-meta-llama-3-1-405b-instruct': {
     max_tokens: 128000,
     max_input_tokens: 128000,
@@ -3766,6 +4560,13 @@ export const modelCosts: ModelCost = {
     output_cost_per_token: 1.500002e-5
   },
   'databricks/databricks-meta-llama-3-1-70b-instruct': {
+    max_tokens: 128000,
+    max_input_tokens: 128000,
+    max_output_tokens: 128000,
+    input_cost_per_token: 1.00002e-6,
+    output_cost_per_token: 2.99999e-6
+  },
+  'databricks/meta-llama-3.3-70b-instruct': {
     max_tokens: 128000,
     max_input_tokens: 128000,
     max_output_tokens: 128000,
