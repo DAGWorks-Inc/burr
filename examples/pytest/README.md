@@ -307,3 +307,9 @@ To run the tests, you can run them with pytest:
 ```bash
 pytest test_some_actions.py
 ```
+
+After running the tests, you can see the results in a CSV file called `results.csv` in the same directory as the tests.
+
+You should also see the following in the Burr UI:
+
+<img src="burr_ui.png" alt="Burr UI" style="width:1000px;"/>
