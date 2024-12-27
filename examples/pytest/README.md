@@ -86,6 +86,10 @@ We might want to evaluate the output in a number of ways:
 It is rare that you solely rely on (1) with LLMs, and you'll likely want to evaluate the output in a number of ways before making a pass / fail decision.
 E.g. that the output is close to the expected output, that it contains the right words, etc., and then make a pass / fail decision based on all these evaluations.
 
+We will not dive deep into what evaluation logic you should use. If you want to dive deeper there, we
+suggest you start with [posts like this](https://hamel.dev/notes/llm/officehours/evalmultiturn.html) - you need to understand your data and outcomes to
+choose the right evaluation logic.
+
 ### Not failing on first assert failure / logging test results
 
 One limitation of pytest is that it fails on the first assertion failure. This is not ideal if you want to evaluate multiple aspects of the output before making a pass / fail decision.
