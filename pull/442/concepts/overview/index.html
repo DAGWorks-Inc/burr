@@ -197,7 +197,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -263,6 +263,7 @@
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../">Concepts</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Concepts</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Cheat Sheet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sdlc-with-llm-based-applications">SDLC with LLM based applications</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../actions/">Actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../state/">State</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../state-machine/">Applications</a></li>
@@ -362,7 +363,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -379,8 +380,9 @@
 </ul>
 <p>Note that we did not mention LLMs above at all! That’s good – you want your LLM frameworks to be ever-so-slightly decoupled from them for the best experience (all of AI is just software, plain and simple, after all…).</p>
 <p>And that’s the basics! Let’s dive into the details.</p>
+</section>
 <section id="sdlc-with-llm-based-applications">
-<h2>SDLC with LLM based applications<a class="headerlink" href="#sdlc-with-llm-based-applications" title="Link to this heading">¶</a></h2>
+<h1>SDLC with LLM based applications<a class="headerlink" href="#sdlc-with-llm-based-applications" title="Link to this heading">¶</a></h1>
 <p>If you’re building an LLM-based application, you’ll want to follow a slightly different SDLC than you would for a traditional software project. Here’s a rough outline of what that might look like:</p>
 <img alt="SDLC with LLMs" class="align-center" src="../../_images/burr_sdlc.png" />
 <p>The two cycles that exist are:</p>
@@ -400,7 +402,6 @@
 <li><p>Either adjust code or prompts, or ship the code.</p></li>
 <li><p>Iterate using one of the loops…</p></li>
 </ol>
-</section>
 </section>
 
         </article>
@@ -446,27 +447,8 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">Cheat Sheet</a><ul>
-<li><a class="reference internal" href="#sdlc-with-llm-based-applications">SDLC with LLM based applications</a></li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

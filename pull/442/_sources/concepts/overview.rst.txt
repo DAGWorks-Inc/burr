@@ -13,6 +13,7 @@ Note that we did not mention LLMs above at all! That's good -- you want your LLM
 
 And that's the basics! Let's dive into the details.
 
+================================
 SDLC with LLM based applications
 ================================
 If you're building an LLM-based application, you'll want to follow a slightly different SDLC than you would for a traditional software project. Here's a rough outline of what that might look like:
