@@ -1,3 +1,17 @@
+# A SDLC with Burr and pytest
+Here we show a quick example of a software development lifecycle (SDLC) with Burr and pytest.
+
+![Burr and pytest](burr_sdlc.png)
+
+While we don't cover everything in the diagram, in this example we specifically show how to do most of the TDD loop:
+
+1. Create a test case.
+2. Run the test case.
+3. Create a dataset.
+4. Show how you might construct evaluation logic to evaluate the output of your agent / augmented LLM / application.
+
+using Burr and pytest.
+
 # Using pytest to evaluate your agent  / augmented LLM / application
 
 An agent / augmented LLM is a combination of LLM calls and logic. But how do we know if it's working? Well we can test & evaluate it.
