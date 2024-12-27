@@ -1,5 +1,3 @@
-# TODO: create some code to test
-
 from typing import Any, Callable, Dict, Generator, List, Tuple
 
 import openai
@@ -22,12 +20,12 @@ def run_hypothesis(state: State) -> State:
     hypothesis = state["hypothesis"]
     transcription = state["transcription"]
     prompt = (
-        f"Given the following diagnosis hypothesis and medical transcription:\n\n"
+        "Given the following diagnosis hypothesis and medical transcription:\n\n"
         f"Diagnosis hypothesis:{hypothesis}\n\n"
         f"Transcription:\n```{transcription}```\n\n"
-        f"Answer 'yes' if you believe the hypothesis has a strong reason to hold given the content of the transcription."
-        f"Answer 'no' if you do not believe the hypothesis holds given the content of the transcription."
-        f"Answer 'unsure' if you are unsure and need more details."
+        "Answer 'yes' if you believe the hypothesis has a strong reason to hold given the content of the transcription. "
+        "Answer 'no' if you do not believe the hypothesis holds given the content of the transcription. "
+        "Answer 'unsure' if you are unsure and need more details. "
     )
     response = client.chat.completions.create(
         messages=[
@@ -155,6 +153,7 @@ if __name__ == "__main__":
     print(run_my_agent("Patient has a limp and is unable to flex right ankle. Ankle is swollen."))
     print(
         run_my_agent(
-            "Patient fell off and landed on their right arm. Their right wrist is swollen, they can still move their fingers, and there is only minor pain or discomfort when the wrist is moved or touched."
+            "Patient fell off and landed on their right arm. Their right wrist is swollen, they can still move their "
+            "fingers, and there is only minor pain or discomfort when the wrist is moved or touched."
         )
     )
