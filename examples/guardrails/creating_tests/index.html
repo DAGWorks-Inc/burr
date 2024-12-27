@@ -12,7 +12,7 @@
         gtag('js', new Date());
         gtag('config', 'G-20Z3J1CR22');
     </script>
-    <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="🧪 Data science" href="../../data-science/" /><link rel="prev" title="🚧 Guardrails" href="../" />
+    <link rel="index" title="Index" href="../../../genindex/" /><link rel="search" title="Search" href="../../../search/" /><link rel="next" title="🧪 Data science" href="../../data-science/" /><link rel="prev" title="🚧 Guardrails / Tests" href="../" />
         <link rel="canonical" href="https://burr.dagworks.io/examples/guardrails/creating_tests/" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
@@ -250,7 +250,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../deployment/monitoring/">Monitoring in Production</a></li>
 </ul>
 </li>
-<li class="toctree-l2 current has-children"><a class="reference internal" href="../">🚧 Guardrails</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of 🚧 Guardrails</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="../">🚧 Guardrails / Tests</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of 🚧 Guardrails / Tests</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l3 current current-page"><a class="current reference internal" href="#">Creating Test Cases</a></li>
 </ul>
 </li>
@@ -263,6 +263,7 @@
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../concepts/">Concepts</a><input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Concepts</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../concepts/overview/">Cheat Sheet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/sdlc/">SDLC with LLMs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../concepts/actions/">Actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../concepts/state/">State</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../concepts/state-machine/">Applications</a></li>
@@ -380,6 +381,11 @@ and you’ll need to resort to more fuzzy tests like checking for the presence o
 words or phrases, or using LLMs to grade the output, etc. We aren’t opinionated on how you
 do this, but in any case, you’ll need to write a test case to exercise things, and this
 is what we’re showing you how to do here.</p>
+<section id="need-to-know-more-about-pytest">
+<h2>Need to know more about pytest?<a class="headerlink" href="#need-to-know-more-about-pytest" title="Link to this heading">¶</a></h2>
+<p>For a more pytest walkthrough and example, see the <a class="reference external" href="https://github.com/DAGWorks-Inc/burr/tree/main/examples/pytest">pytest example</a>,
+that explains what pytest is, how to evaluate more than just a single assert statement, how to aggregate results, etc.</p>
+</section>
 <section id="test-case-creation-example">
 <h2>Test Case Creation Example<a class="headerlink" href="#test-case-creation-example" title="Link to this heading">¶</a></h2>
 <p>Video walkthrough:</p>
@@ -417,7 +423,6 @@ to use the output of one action as the input to another action; there are corner
 <h2>Future Work<a class="headerlink" href="#future-work" title="Link to this heading">¶</a></h2>
 <p>We see many more improvements here:</p>
 <ol class="arabic simple">
-<li><p>Annotating data in the UI to make it easier to pull out.</p></li>
 <li><p>Automatically suggesting tests cases for you to add.</p></li>
 <li><p>Data export / integration with evaluation tools.</p></li>
 <li><p>etc. Please let us know what you need!</p></li>
@@ -446,7 +451,7 @@ to use the output of one action as the input to another action; there are corner
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">🚧 Guardrails</div>
+                <div class="title">🚧 Guardrails / Tests</div>
                 
               </div>
             </a>
@@ -481,6 +486,7 @@ to use the output of one action as the input to another action; there are corner
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Creating Test Cases</a><ul>
+<li><a class="reference internal" href="#need-to-know-more-about-pytest">Need to know more about pytest?</a></li>
 <li><a class="reference internal" href="#test-case-creation-example">Test Case Creation Example</a></li>
 <li><a class="reference internal" href="#future-work">Future Work</a></li>
 </ul>
