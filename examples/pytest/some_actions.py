@@ -1,3 +1,8 @@
+"""
+This is an example module that defines a Burr application.
+
+It hypothetically transcribes audio and then runs a hypothesis on the transcription to determine a medical diagnosis.
+"""
 from typing import Any, Callable, Dict, Generator, List, Tuple
 
 import openai
@@ -10,12 +15,14 @@ from burr.tracking import LocalTrackingClient
 
 @action(reads=["audio"], writes=["transcription"])
 def transcribe_audio(state: State) -> State:
+    """Action to transcribe audio."""
     # here we fake transcription. For this example the audio is text already...
     return state.update(transcription=state["audio"])
 
 
 @action(reads=["hypothesis", "transcription"], writes=["diagnosis"])
 def run_hypothesis(state: State) -> State:
+    """Action to run a hypothesis on a transcription."""
     client = openai.Client()  # here for simplicity because clients and SERDE don't mix well.
     hypothesis = state["hypothesis"]
     transcription = state["transcription"]
@@ -42,15 +49,20 @@ def run_hypothesis(state: State) -> State:
 
 
 class TestMultipleHypotheses(MapStates):
+    """Parallel action to test multiple hypotheses."""
+
     def action(self, state: State, inputs: Dict[str, Any]) -> Action | Callable | RunnableGraph:
+        """which action to run for each state."""
         return run_hypothesis
 
     def states(
         self, state: State, context: ApplicationContext, inputs: Dict[str, Any]
     ) -> Generator[State, None, None]:
-        # You could easily have a list_hypotheses upstream action that writes to "hypothesis" in state
-        # And loop through those
-        # This hardcodes for simplicity
+        """Generate the states to run the action on.
+        You could easily have a list_hypotheses upstream action that writes to "hypothesis" in state
+        And loop through those
+        This hardcodes for simplicity
+        """
         for hypothesis in [
             "Common cold",
             "Sprained ankle",
@@ -59,6 +71,7 @@ class TestMultipleHypotheses(MapStates):
             yield state.update(hypothesis=hypothesis)
 
     def reduce(self, state: State, states: Generator[State, None, None]) -> State:
+        """Combine the outputs of the parallel action."""
         all_diagnoses_outputs = []
         for _sub_state in states:
             all_diagnoses_outputs.append(
@@ -77,6 +90,7 @@ class TestMultipleHypotheses(MapStates):
 
 @action(reads=["diagnosis_outputs"], writes=["final_diagnosis"])
 def determine_diagnosis(state: State) -> State:
+    """Action to determine the final diagnosis."""
     # could also get an LLM to decide here, or have a human decide, etc.
     possible_hypotheses = [d for d in state["diagnosis_outputs"] if d["diagnosis"].lower() == "yes"]
     if len(possible_hypotheses) == 1:
@@ -90,6 +104,7 @@ def determine_diagnosis(state: State) -> State:
 
 
 def build_graph() -> core.Graph:
+    """Builds the graph for the application"""
     graph = (
         GraphBuilder()
         .with_actions(
@@ -115,7 +130,17 @@ def build_application(
     tracker,
     use_otel_tracing: bool = False,
 ) -> core.Application:
-    """Builds an application with the given parameters."""
+    """Builds an application with the given parameters.
+
+    :param app_id:
+    :param graph:
+    :param initial_state:
+    :param initial_entrypoint:
+    :param partition_key:
+    :param tracker:
+    :param use_otel_tracing:
+    :return:
+    """
     app_builder = (
         core.ApplicationBuilder()
         .with_graph(graph)
@@ -132,6 +157,13 @@ def build_application(
 def run_my_agent(
     input_audio: str, partition_key: str = None, app_id: str = None, tracking_project: str = None
 ) -> Tuple[str, str]:
+    """Runs the agent with the given input audio (in this case a string transcription...).
+    :param input_audio: we fake it here, and ask for a string...
+    :param partition_key:
+    :param app_id:
+    :param tracking_project:
+    :return:
+    """
     graph = build_graph()
     tracker = None
     if tracking_project:
