@@ -12,7 +12,7 @@
         gtag('js', new Date());
         gtag('config', 'G-20Z3J1CR22');
     </script>
-    <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Actions" href="../actions/" /><link rel="prev" title="Concepts" href="../" />
+    <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="SDLC with LLMs" href="../sdlc/" /><link rel="prev" title="Concepts" href="../" />
         <link rel="canonical" href="https://burr.dagworks.io/concepts/overview/" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
@@ -263,7 +263,7 @@
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../">Concepts</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Concepts</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Cheat Sheet</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#sdlc-with-llm-based-applications">SDLC with LLM based applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sdlc/">SDLC with LLMs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../actions/">Actions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../state/">State</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../state-machine/">Applications</a></li>
@@ -381,40 +381,18 @@
 <p>Note that we did not mention LLMs above at all! That’s good – you want your LLM frameworks to be ever-so-slightly decoupled from them for the best experience (all of AI is just software, plain and simple, after all…).</p>
 <p>And that’s the basics! Let’s dive into the details.</p>
 </section>
-<section id="sdlc-with-llm-based-applications">
-<h1>SDLC with LLM based applications<a class="headerlink" href="#sdlc-with-llm-based-applications" title="Link to this heading">¶</a></h1>
-<p>If you’re building an LLM-based application, you’ll want to follow a slightly different SDLC than you would for a traditional software project. Here’s a rough outline of what that might look like:</p>
-<img alt="SDLC with LLMs" class="align-center" src="../../_images/burr_sdlc.png" />
-<p>The two cycles that exist are:</p>
-<ol class="arabic simple">
-<li><p>App Dev Loop.</p></li>
-<li><p>Test Driven Development Loop.</p></li>
-</ol>
-<p>and you will use one to feed into the other, etc.</p>
-<p>Walking through the diagram the SDLC looks like this:</p>
-<ol class="arabic simple">
-<li><p>Write code with Burr.</p></li>
-<li><p>Use Burr’s integrated observability, and trace all parts of your application.</p></li>
-<li><p>With the data collected, you can: (1) annotate what was captured and export it, or (2) create a pytest fixture with it.</p></li>
-<li><p>Create a data set from the annotated data or by running tests.</p></li>
-<li><p>Evaluate the data set.</p></li>
-<li><p>Analyze the results.</p></li>
-<li><p>Either adjust code or prompts, or ship the code.</p></li>
-<li><p>Iterate using one of the loops…</p></li>
-</ol>
-</section>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../actions/">
+          <a class="next-page" href="../sdlc/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Actions</div>
+                <div class="title">SDLC with LLMs</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
