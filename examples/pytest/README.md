@@ -128,7 +128,9 @@ E.g. we only pass tests if all the outputs are as expected, or we pass if 80% of
 also log this to a file, or a database, etc. for further inspection and record keeping, or combining it with
 open source frameworks [mlflow](https://mlflow.org) and using their [evaluate functionality](https://mlflow.org/docs/latest/llms/llm-evaluate/index.html).
 
-Note: we can also combine `results_bag` with ``pytest.mark.parametrize`` to run the same test with different inputs and expected outputs:
+Note (1): if you want to build your own way to aggregate, you can see another way using a very simple fixture in `conftest.py`.
+
+Note (2) : we can also combine `results_bag` with ``pytest.mark.parametrize`` to run the same test with different inputs and expected outputs:
 
 ```python
 import pytest
@@ -298,8 +300,10 @@ def test_an_agent_e2e_with_tracker(input_state, expected_state, results_bag, tra
 # An example
 Here in this directory we have:
 
- - `some_actions.py` - a file that defines an augmented LLM application (it's not a full agent) with some actions
+ - `some_actions.py` - a file that defines an augmented LLM application (it's not a full agent) with some actions. See image below - note the hypotheses action runs multiple in parallel.
  - `test_some_actions.py` - a file that defines some tests for the actions in `some_actions.py`.
+
+![toy example](diagnosis.png)
 
 You'll see that we use the `results_bag` fixture to log the results of our tests,and then we can access these results
 via the `module_results_df` fixture that provides a pandas dataframe of the results. This dataframe is then

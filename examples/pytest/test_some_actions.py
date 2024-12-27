@@ -158,6 +158,9 @@ def test_run_hypothesis_burr_fixture_e2e_with_tracker(input_state, expected_stat
 
 
 def test_print_results(module_results_df):
+    """This is an example using pytest-harvest to return results to a central location.
+    You could use other plugins, or create your own fixtures (e.g. see conftest.py for a simpler custom fixture).
+    """
     print(module_results_df.columns)
     print(module_results_df.head())
     # compute statistics
