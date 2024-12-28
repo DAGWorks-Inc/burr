@@ -296,6 +296,27 @@ def test_an_agent_e2e_with_tracker(input_state, expected_state, results_bag, tra
     # place any asserts at the end of the test
     assert exact_match
 ```
+# One trick we like - run things multiple times
+
+LLMs are inherently generative. So one way to explore and determine how the variance of a single prompt + data input leads to different outputs, is to run it multiple times.
+
+With pytest this can take the form of a test that runs an action multiple times, and then aggregates the responses to see how different they are. Using this approach can help you better tweak prompts to reduce variance.
+
+```python
+def test_an_actions_stability():
+    """Let's run it a few times to see output variability."""
+    audio = ...
+    outputs = [run_our_action(State({"audio": audio}))
+               for _ in range(5)]
+    # Check for consistency - for each key create a set of values
+    variances = {}
+    for key in outputs[0].keys():
+        all_values = set(json.dumps(output[key]) for output in outputs)
+        if len(all_values) > 1:
+            variances[key] = list(all_values)
+    variances_str = json.dumps(variances, indent=2)
+    assert len(variances) == 0, "Outputs vary across iterations:\n" + variances_str
+```
 
 # An example
 Here in this directory we have:
