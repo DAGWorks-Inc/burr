@@ -72,6 +72,39 @@ def test_my_agent(input, expected_output):
     assert actual_output == expected_output
     # assert some other property of the output...
 ```
+
+### pytest fixtures
+
+Another useful construct to know are pytest fixtures. A "fixture" is a function that is
+used to provide a fixed baseline upon which tests can reliably and repeatedly execute.
+They are used to set up  preconditions for a test, such as creating test data, initializing
+objects, or establishing database connections, etc. To use one in pytest, you just need to
+declare a function and annotate it:
+
+```python
+import pytest
+
+@pytest.fixture(scope="module")
+def database_connection():
+    """Fixture that creates a DB connection"""
+    db_client = SomeDBClient()
+    yield db_client
+    print("\nStopped client:\n")
+```
+
+Then to use it, one just needs to "declare" it as a function parameter for a test.
+
+```python
+def test_my_function(database_connection):
+    """pytest will inject the result of the 'database_connection' function into `database_connection` here in this test function"""
+    ...
+
+def test_my_other_function(database_connection):
+    """pytest will inject the result of the 'database_connection' function into `database_connection` here in this test function"""
+    ...
+```
+
+
 What we've shown above will fail on the first assertion failure. But what if we want to evaluate all the outputs before making a pass / fail decision?
 
 ### What kind of "asserts" do we want?
@@ -318,11 +351,61 @@ def test_an_actions_stability():
     assert len(variances) == 0, "Outputs vary across iterations:\n" + variances_str
 ```
 
+# Capturing versions of your prompts to go with the datasets you generate via pytest
+As you start to iterate and generate datasets (that's what happens if you log the output of the dataframe), one needs to tie together the version of the code that generated the data set with the data set itself. This is useful for debugging, and for ensuring that you can reproduce results. One way to do this is to capture the version of the code that generated the data set in the data set itself. This can be done by using the `gitpython` library to capture the git commit hash of the code that generated the data set,
+i.e. the prompts + business logic. If you treat prompts as code, then here's how you might do it:
+
+1. Use git to commit changes.
+2. Then create a pytest fixture that captures the git commit hash of the current state of the git repo.
+3. When you log the results of your tests, log the git commit hash as well as a column.
+4. When you then load / look at the data set, you can see the git commit hash that generated the data set to tie it back to the code that generated it.
+
+```python
+import pytest
+import subprocess
+
+@pytest.fixture
+def git_info():
+    """Fixture that returns the git commit, branch, latest_tag.
+
+    Note if there are uncommitted changes, the commit will have '-dirty' appended.
+    """
+    try:
+        commit = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode('utf-8')
+        dirty = subprocess.check_output(['git', 'status', '--porcelain']).strip() != b''
+        commit = f"{commit}{'-dirty' if dirty else ''}"
+    except subprocess.CalledProcessError:
+        commit = None
+    try:
+        latest_tag = subprocess.check_output(['git', 'describe', '--tags', '--abbrev=0']).strip().decode('utf-8')
+    except subprocess.CalledProcessError:
+        latest_tag = None
+    try:
+        branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).strip().decode('utf-8')
+    except subprocess.CalledProcessError:
+        branch = None
+    return {'commit': commit, 'latest_tag': latest_tag, "branch": branch}
+```
+
+Then to use it - we'd add the fixture to the function that saves the results:
+
+```python
+def test_print_results(module_results_df, git_info):
+    """Function that uses pytest-harvest and our custom git fixture that goes at the end of the module to evaluate & save the results."""
+    ...
+    # add the git information
+    module_results_df["git_commit"] = git_info["commit"]
+    module_results_df["git_latest_tag"] = git_info["latest_tag"]
+    # save results
+    module_results_df.to_csv("results.csv")
+```
+
 # An example
 Here in this directory we have:
 
  - `some_actions.py` - a file that defines an augmented LLM application (it's not a full agent) with some actions. See image below - note the hypotheses action runs multiple in parallel.
  - `test_some_actions.py` - a file that defines some tests for the actions in `some_actions.py`.
+ - `conftest.py` - a file that defines some fixtures & pytest configuration for the tests in `test_some_actions.py`.
 
 ![toy example](diagnosis.png)
 
