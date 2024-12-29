@@ -1,10 +1,9 @@
 """This module shows example tests for testing actions and agents."""
 import pytest
+import some_actions
 
 from burr.core import state
 from burr.tracking import LocalTrackingClient
-
-from examples.pytest import some_actions
 
 
 def test_example1(result_collector):
@@ -157,10 +156,12 @@ def test_run_hypothesis_burr_fixture_e2e_with_tracker(input_state, expected_stat
     assert agent_state["final_diagnosis"] != ""
 
 
-def test_print_results(module_results_df):
-    """This is an example using pytest-harvest to return results to a central location.
+def test_print_results(module_results_df, git_info):
+    """This is an example using pytest-harvest and our custom git fixture to return results to a central location.
     You could use other plugins, or create your own fixtures (e.g. see conftest.py for a simpler custom fixture).
     """
+    module_results_df["git_commit"] = git_info["commit"]
+    module_results_df["git_branch"] = git_info["branch"]
     print(module_results_df.columns)
     print(module_results_df.head())
     # compute statistics
@@ -173,6 +174,8 @@ def test_print_results(module_results_df):
     tests_of_interest[
         [
             "test_function",
+            "git_branch",
+            "git_commit",
             "duration_ms",
             "status",
             "input",
