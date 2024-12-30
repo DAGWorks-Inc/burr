@@ -9,7 +9,7 @@ from typing import Any, Dict, Literal, Optional, TypedDict
 from burr.common.types import BaseCopyable
 from burr.core import Action
 from burr.core.state import State, logger
-from burr.lifecycle import PostRunStepHook
+from burr.lifecycle import PostRunStepHook, PostRunStepHookAsync
 
 try:
     from typing import Self
@@ -52,9 +52,41 @@ class BaseStateLoader(abc.ABC):
         """Returns list of app IDs for a given primary key"""
         pass
 
+    def is_async(self) -> bool:
+        return False
+
+
+class AsyncBaseStateLoader(abc.ABC):
+    """Asynchronous base class for state initialization. This goes together with a AsyncBaseStateSaver
+    to form the database for your application."""
+
+    @abc.abstractmethod
+    async def load(
+        self, partition_key: str, app_id: Optional[str], sequence_id: Optional[int] = None, **kwargs
+    ) -> Optional[PersistedStateData]:
+        """Loads the state for a given app_id
+
+        :param partition_key: the partition key. Note this could be None, but it's up to the persistor to whether
+            that is a valid value it can handle.
+        :param app_id: the identifier for the app instance being recorded.
+        :param sequence_id: optional, the state corresponding to a specific point in time. Specifically state at the
+            end of the action with this sequence_id. If sequence_id is not provided, persistor should return the state
+            from the latest fully completed action.
+        :return: PersistedStateData or None
+        """
+        pass
+
+    @abc.abstractmethod
+    async def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
+        """Returns list of app IDs for a given primary key"""
+        pass
+
+    def is_async(self) -> bool:
+        return True
+
 
 class BaseStateSaver(abc.ABC):
-    """Basic Interface for state writing. This goes together with a BaseStateLoader to form the
+    """Base class for state writing. This goes together with a BaseStateLoader to form the
     database for your application.
     """
 
@@ -94,9 +126,63 @@ class BaseStateSaver(abc.ABC):
         """
         pass
 
+    def is_async(self) -> bool:
+        return False
+
+
+class AsyncBaseStateSaver(abc.ABC):
+    """Asynchronous base class for state writing. This goes together with a AsyncBaseStateLoader
+    to form the database for your application.
+    """
+
+    async def initialize(self):
+        """Initializes the app for saving, set up any databases, etc.. you want to here."""
+        pass
+
+    async def is_initialized(self) -> bool:
+        """Check if the persister has been initialized appropriately."""
+        raise NotImplementedError("Implement this method in your subclass if you need to.")
+
+    @abc.abstractmethod
+    async def save(
+        self,
+        partition_key: Optional[str],
+        app_id: str,
+        sequence_id: int,
+        position: str,
+        state: State,
+        status: Literal["completed", "failed"],
+        **kwargs,
+    ):
+        """Saves the state for a given app_id, sequence_id, position
+
+        (PK, App_id, sequence_id, position) are a unique identifier for the state. Why not just
+        (PK, App_id, sequence_id)? Because we're over-engineering this here. We're always going to have
+        a position so might as well make it a quadruple.
+
+        :param partition_key: the partition key. Note this could be None, but it's up to the persistor to whether
+            that is a valid value it can handle.
+        :param app_id: Appliaction UID to write with
+        :param sequence_id: Sequence ID of the last executed step
+        :param position: The action name that was implemented
+        :param state: The current state of the application
+        :param status: The status of this state, either "completed" or "failed". If "failed" the state is what it was
+            before the action was applied.
+        """
+        pass
+
+    def is_async(self) -> bool:
+        return True
+
 
 class BaseStatePersister(BaseStateLoader, BaseStateSaver, metaclass=ABCMeta):
     """Utility interface for a state reader/writer. This both persists and initializes state.
+    Extend this class if you want an easy way to implement custom state storage.
+    """
+
+
+class AsyncBaseStatePersister(AsyncBaseStateLoader, AsyncBaseStateSaver, metaclass=ABCMeta):
+    """Utility interface for an asynchronous state reader/writer. This both persists and initializes state.
     Extend this class if you want an easy way to implement custom state storage.
     """
 
@@ -122,6 +208,33 @@ class PersisterHook(PostRunStepHook):
             self.persister.save(partition_key, app_id, sequence_id, action.name, state, "completed")
         else:
             self.persister.save(partition_key, app_id, sequence_id, action.name, state, "failed")
+
+
+class PersisterHookAsync(PostRunStepHookAsync):
+    """Wrapper class for bridging the persistence interface with asynchronous lifecycle hooks. This is used internally."""
+
+    def __init__(self, persister: AsyncBaseStateSaver):
+        self.persister = persister
+
+    async def post_run_step(
+        self,
+        app_id: str,
+        partition_key: str,
+        sequence_id: int,
+        state: "State",
+        action: "Action",
+        result: Optional[Dict[str, Any]],
+        exception: Exception,
+        **future_kwargs: Any,
+    ):
+        if exception is None:
+            await self.persister.save(
+                partition_key, app_id, sequence_id, action.name, state, "completed"
+            )
+        else:
+            await self.persister.save(
+                partition_key, app_id, sequence_id, action.name, state, "failed"
+            )
 
 
 class DevNullPersister(BaseStatePersister):
