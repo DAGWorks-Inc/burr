@@ -352,8 +352,13 @@ def test_an_actions_stability():
 ```
 
 # Capturing versions of your prompts to go with the datasets you generate via pytest
-As you start to iterate and generate datasets (that's what happens if you log the output of the dataframe), one needs to tie together the version of the code that generated the data set with the data set itself. This is useful for debugging, and for ensuring that you can reproduce results. One way to do this is to capture the version of the code that generated the data set in the data set itself. This can be done by using the `gitpython` library to capture the git commit hash of the code that generated the data set,
-i.e. the prompts + business logic. If you treat prompts as code, then here's how you might do it:
+As you start to iterate and generate datasets (that's what happens if you log the output of the dataframe),
+one needs to tie together the version of the code that generated the data set to the data set itself.
+This is useful for debugging, and for ensuring that you can reproduce results (e.g. which version of
+the code / prompt created this output?). One way to do this is to capture the version of the code that
+generated the data set in the data set itself. Assuming you’re using `git` for version control, one
+just needs to capture the git commit hash of the code that generated the data set, i.e. the
+prompts + business logic. If you treat prompts as code, then here's how you might do it:
 
 1. Use git to commit changes.
 2. Then create a pytest fixture that captures the git commit hash of the current state of the git repo.
