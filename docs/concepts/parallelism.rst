@@ -307,7 +307,7 @@ This might look as follows -- say we have a simple subflow that takes in a raw p
     runnable_graph = RunnableGraph(
         graph=graph,
         entrypoint="process_prompt",
-        halt_after="query_llm"
+        halt_after=["query_llm"]
     )
 
     class TestMultiplePromptsWithSubgraph(MapStates):
