@@ -341,7 +341,7 @@ This looks as follows:
 
 .. code-block:: python
 
-    from burr.core import action, State
+    from burr.core import action, State, ApplicationContext
     from burr.core.graph import Graph
 
     @action(reads=["prompt"], writes=["processed_prompt"])
