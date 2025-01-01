@@ -281,6 +281,7 @@ This might look as follows -- say we have a simple subflow that takes in a raw p
     from typing import Dict, Any
     from burr.core import action, state
     from burr.core.graph import Graph
+    from burr.core.parallelism import RunnableGraph
 
     @action(reads=["prompt"], writes=["processed_prompt"])
     def process_prompt(state: State) -> State:
