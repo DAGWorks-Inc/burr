@@ -281,6 +281,7 @@ This might look as follows -- say we have a simple subflow that takes in a raw p
     from typing import Dict, Any
     from burr.core import action, state
     from burr.core.graph import Graph
+    from burr.core.parallelism import RunnableGraph
 
     @action(reads=["prompt"], writes=["processed_prompt"])
     def process_prompt(state: State) -> State:
@@ -306,7 +307,7 @@ This might look as follows -- say we have a simple subflow that takes in a raw p
     runnable_graph = RunnableGraph(
         graph=graph,
         entrypoint="process_prompt",
-        halt_after="query_llm"
+        halt_after=["query_llm"]
     )
 
     class TestMultiplePromptsWithSubgraph(MapStates):
@@ -340,7 +341,7 @@ This looks as follows:
 
 .. code-block:: python
 
-    from burr.core import action, state
+    from burr.core import action, State, ApplicationContext
     from burr.core.graph import Graph
 
     @action(reads=["prompt"], writes=["processed_prompt"])
