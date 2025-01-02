@@ -3,11 +3,14 @@ but they're specifically meant to be a smoke-screen. If you ever
 see failures in these tests, you should make a unit test, demonstrate the failure there,
 then fix both in that test and the end-to-end test."""
 import asyncio
+import datetime
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from io import StringIO
-from typing import Any, AsyncGenerator, Dict, Generator, Tuple
+from typing import Any, AsyncGenerator, Dict, Generator, Literal, Optional, Tuple
 from unittest.mock import patch
+
+import pytest
 
 from burr.core import (
     Action,
@@ -369,3 +372,114 @@ def test_echo_bot():
         format="png",
     )
     assert result["response"] == prompt
+
+
+async def test_async_save_and_load_from_persister_end_to_end():
+    await asyncio.sleep(0.00001)
+
+    @action(reads=[], writes=["prompt", "chat_history"])
+    async def dummy_input(state: State) -> Tuple[dict, State]:
+        await asyncio.sleep(0.0001)
+        if state["chat_history"]:
+            new = state["chat_history"][-1] + 1
+        else:
+            new = 1
+        return (
+            {"prompt": "PROMPT"},
+            state.update(prompt="PROMPT").append(chat_history=new),
+        )
+
+    @action(reads=["chat_history"], writes=["response", "chat_history"])
+    async def dummy_response(state: State) -> Tuple[dict, State]:
+        await asyncio.sleep(0.0001)
+        if state["chat_history"]:
+            new = state["chat_history"][-1] + 1
+        else:
+            new = 1
+        return (
+            {"response": "RESPONSE"},
+            state.update(response="RESPONSE").append(chat_history=new),
+        )
+
+    class AsyncDummyPersister(persistence.AsyncBaseStatePersister):
+        def __init__(self):
+            self.persisted_state = None
+
+        async def load(
+            self,
+            partition_key: str,
+            app_id: Optional[str],
+            sequence_id: Optional[int] = None,
+            **kwargs,
+        ) -> Optional[persistence.PersistedStateData]:
+            await asyncio.sleep(0.0001)
+            return self.persisted_state
+
+        async def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
+            return []
+
+        async def save(
+            self,
+            partition_key: Optional[str],
+            app_id: str,
+            sequence_id: int,
+            position: str,
+            state: State,
+            status: Literal["completed", "failed"],
+            **kwargs,
+        ):
+            await asyncio.sleep(0.0001)
+            self.persisted_state: persistence.PersistedStateData = {
+                "partition_key": partition_key or "",
+                "app_id": app_id,
+                "sequence_id": sequence_id,
+                "position": position,
+                "state": state,
+                "created_at": datetime.datetime.now().isoformat(),
+                "status": status,
+            }
+
+    dummy_persister = AsyncDummyPersister()
+    app = await (
+        ApplicationBuilder()
+        .with_actions(dummy_input, dummy_response)
+        .with_transitions(("dummy_input", "dummy_response"), ("dummy_response", "dummy_input"))
+        .initialize_from(
+            initializer=dummy_persister,
+            resume_at_next_action=True,
+            default_state={"chat_history": []},
+            default_entrypoint="dummy_input",
+        )
+        .with_state_persister(dummy_persister)
+        .abuild()
+    )
+
+    *_, state = await app.arun(halt_after=["dummy_response"])
+
+    assert state["chat_history"][0] == 1
+    assert state["chat_history"][1] == 2
+    del app
+
+    new_app = await (
+        ApplicationBuilder()
+        .with_actions(dummy_input, dummy_response)
+        .with_transitions(("dummy_input", "dummy_response"), ("dummy_response", "dummy_input"))
+        .initialize_from(
+            initializer=dummy_persister,
+            resume_at_next_action=True,
+            default_state={"chat_history": []},
+            default_entrypoint="dummy_input",
+        )
+        .with_state_persister(dummy_persister)
+        .abuild()
+    )
+
+    assert new_app.state["chat_history"][0] == 1
+    assert new_app.state["chat_history"][1] == 2
+
+    *_, state = await new_app.arun(halt_after=["dummy_response"])
+    assert state["chat_history"][2] == 3
+    assert state["chat_history"][3] == 4
+
+    with pytest.raises(ValueError, match="The application was build with .abuild()"):
+        *_, state = new_app.run(halt_after=["dummy_response"])

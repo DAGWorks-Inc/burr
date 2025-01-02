@@ -30,8 +30,8 @@ Internally, this interface combines the following two interfaces:
     .. automethod:: __init__
 
 
-Supported Implementations
-=========================
+Supported Sync Implementations
+================================
 
 .. _persistersref:
 
@@ -61,3 +61,16 @@ Currently we support the following, although we highly recommend you contribute 
 
 Note that the :py:class:`LocalTrackingClient <burr.tracking.client.LocalTrackingClient>` leverages the :py:class:`BaseStateLoader <burr.core.persistence.BaseStateLoader>` to allow loading state,
 although it uses different mechanisms to save state (as it tracks more than just state).
+
+
+Supported Async Implementations
+================================
+
+Currently we support the following, although we highly recommend you contribute your own! We will be adding more shortly.
+
+.. _asyncpersistersref:
+
+.. autoclass:: burr.core.persistence.AsyncSQLitePersister
+   :members:
+
+   .. automethod:: __init__

@@ -44,6 +44,7 @@ from burr.core.application import (
 )
 from burr.core.graph import Graph, GraphBuilder, Transition
 from burr.core.persistence import (
+    AsyncDevNullPersister,
     BaseStatePersister,
     DevNullPersister,
     PersistedStateData,
@@ -2770,9 +2771,9 @@ class BrokenPersister(BaseStatePersister):
 
 def test_application_builder_initialize_raises_on_broken_persistor():
     """Persisters should return None when there is no state to be loaded and the default used."""
+    counter_action = base_counter_action.with_name("counter")
+    result_action = Result("count").with_name("result")
     with pytest.raises(ValueError, match="but value for state was None"):
-        counter_action = base_counter_action.with_name("counter")
-        result_action = Result("count").with_name("result")
         (
             ApplicationBuilder()
             .with_actions(counter_action, result_action)
@@ -2785,6 +2786,37 @@ def test_application_builder_initialize_raises_on_broken_persistor():
             )
             .build()
         )
+
+
+def test_load_from_sync_cannot_have_async_persistor_error():
+    builder = ApplicationBuilder()
+    builder.initialize_from(
+        AsyncDevNullPersister(),
+        resume_at_next_action=True,
+        default_state={},
+        default_entrypoint="foo",
+    )
+    with pytest.raises(
+        ValueError, match="are building the sync application, but have used an async initializer."
+    ):
+        # we have not initialized
+        builder._load_from_sync_persister()
+
+
+async def test_load_from_async_cannot_have_sync_persistor_error():
+    await asyncio.sleep(0.00001)
+    builder = ApplicationBuilder()
+    builder.initialize_from(
+        DevNullPersister(),
+        resume_at_next_action=True,
+        default_state={},
+        default_entrypoint="foo",
+    )
+    with pytest.raises(
+        ValueError, match="are building the async application, but have used an sync initializer."
+    ):
+        # we have not initialized
+        await builder._load_from_async_persister()
 
 
 def test_application_builder_assigns_correct_actions_with_dual_api():
@@ -3290,13 +3322,51 @@ def test_builder_captures_typing_system():
     assert state.data["count"] == 10
 
 
-def test_with_state_persister_is_not_initialized_error(tmp_path):
+def test_set_sync_state_persister_cannot_have_async_error():
+    builder = ApplicationBuilder()
+    persister = AsyncDevNullPersister()
+    builder.with_state_persister(persister)
+    with pytest.raises(
+        ValueError, match="are building the sync application, but have used an async persister."
+    ):
+        # we have not initialized
+        builder._set_sync_state_persister()
+
+
+def test_set_sync_state_persister_is_not_initialized_error(tmp_path):
     builder = ApplicationBuilder()
     persister = SQLLitePersister(db_path=":memory:", table_name="test_table")
-
+    builder.with_state_persister(persister)
     with pytest.raises(RuntimeError):
         # we have not initialized
-        builder.with_state_persister(persister)
+        builder._set_sync_state_persister()
+
+
+async def test_set_async_state_persister_cannot_have_sync_error():
+    await asyncio.sleep(0.00001)
+    builder = ApplicationBuilder()
+    persister = DevNullPersister()
+    builder.with_state_persister(persister)
+    with pytest.raises(
+        ValueError, match="are building the async application, but have used an sync persister."
+    ):
+        # we have not initialized
+        await builder._set_async_state_persister()
+
+
+async def test_set_async_state_persister_is_not_initialized_error(tmp_path):
+    await asyncio.sleep(0.00001)
+    builder = ApplicationBuilder()
+
+    class FakePersister(AsyncDevNullPersister):
+        async def is_initialized(self):
+            return False
+
+    persister = FakePersister()
+    builder.with_state_persister(persister)
+    with pytest.raises(RuntimeError):
+        # we have not initialized
+        await builder._set_async_state_persister()
 
 
 def test_with_state_persister_is_initialized_not_implemented():
@@ -3419,3 +3489,43 @@ def test_remap_context_variable_without_mangled_context():
     inputs = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
     expected = {"__context": "context_value", "other_key": "other_value", "foo": "foo_value"}
     assert _remap_dunder_parameters(_action.run, inputs, ["__context", "__tracer"]) == expected
+
+
+async def test_async_application_builder_initialize_raises_on_broken_persistor():
+    """Persisters should return None when there is no state to be loaded and the default used."""
+    await asyncio.sleep(0.00001)
+    counter_action = base_counter_action_async.with_name("counter")
+    result_action = Result("count").with_name("result")
+
+    class AsyncBrokenPersister(AsyncDevNullPersister):
+        async def load(
+            self,
+            partition_key: str,
+            app_id: Optional[str],
+            sequence_id: Optional[int] = None,
+            **kwargs,
+        ) -> Optional[PersistedStateData]:
+            await asyncio.sleep(0.0001)
+            return dict(
+                partition_key="key",
+                app_id="id",
+                sequence_id=0,
+                position="foo",
+                state=None,
+                created_at="",
+                status="completed",
+            )
+
+    with pytest.raises(ValueError, match="but value for state was None"):
+        await (
+            ApplicationBuilder()
+            .with_actions(counter_action, result_action)
+            .with_transitions(("counter", "result", default))
+            .initialize_from(
+                AsyncBrokenPersister(),
+                resume_at_next_action=True,
+                default_state={},
+                default_entrypoint="foo",
+            )
+            .abuild()
+        )

@@ -44,7 +44,12 @@ from burr.core.action import (
     StreamingResultContainer,
 )
 from burr.core.graph import Graph, GraphBuilder
-from burr.core.persistence import BaseStateLoader, BaseStateSaver
+from burr.core.persistence import (
+    AsyncBaseStateLoader,
+    AsyncBaseStateSaver,
+    BaseStateLoader,
+    BaseStateSaver,
+)
 from burr.core.state import State
 from burr.core.typing import ActionSchema, DictBasedTypingSystem, TypingSystem
 from burr.core.validation import BASE_ERROR_MESSAGE
@@ -87,7 +92,9 @@ def _raise_fn_return_validation_error(output: Any, action_name: str):
 
 
 def _adjust_single_step_output(
-    output: Union[State, Tuple[dict, State]], action_name: str, action_schema: ActionSchema
+    output: Union[State, Tuple[dict, State]],
+    action_name: str,
+    action_schema: ActionSchema,
 ):
     """Adjusts the output of a single step action to be a tuple of (result, state) or just state"""
 
@@ -839,6 +846,7 @@ class Application(Generic[ApplicationStateType]):
         """
         # we need to increment the sequence before we start computing
         # that way if we're replaying from state, we don't get stuck
+        self.validate_correct_async_use()
         self._increment_sequence_id()
         out = self._step(inputs=inputs, _run_hooks=True)
         return out
@@ -1037,7 +1045,10 @@ class Application(Generic[ApplicationStateType]):
                     )
                 else:
                     result = await _arun_function(
-                        next_action, self._state, inputs=action_inputs, name=next_action.name
+                        next_action,
+                        self._state,
+                        inputs=action_inputs,
+                        name=next_action.name,
                     )
                     new_state = _run_reducer(next_action, self._state, result, next_action.name)
                 new_state = self._update_internal_state_value(new_state, next_action)
@@ -1174,6 +1185,7 @@ class Application(Generic[ApplicationStateType]):
         :return: Each iteration returns the result of running `step`. This generator also returns a tuple of
             [action, result, current state]
         """
+        self.validate_correct_async_use()
         halt_before, halt_after, inputs = self._clean_iterate_params(
             halt_before, halt_after, inputs
         )
@@ -1237,6 +1249,7 @@ class Application(Generic[ApplicationStateType]):
             Note that this is only used for the first iteration -- subsequent iterations will not use this.
         :return: The final state, and the results of running the actions in the order that they were specified.
         """
+        self.validate_correct_async_use()
         gen = self.iterate(halt_before=halt_before, halt_after=halt_after, inputs=inputs)
         while True:
             try:
@@ -1382,6 +1395,7 @@ class Application(Generic[ApplicationStateType]):
                 result, state = output.get()
                 print(format(result['response'], color))
         """
+        self.validate_correct_async_use()
         call_execute_method_wrapper = _call_execute_method_pre_post(ExecuteMethod.stream_result)
         call_execute_method_wrapper.call_pre(self)
         halt_before, halt_after, inputs = self._clean_iterate_params(
@@ -1957,6 +1971,29 @@ class Application(Generic[ApplicationStateType]):
         dot = self.visualize(include_conditions=True, include_state=False)
         return dot._repr_mimebundle_(include=include, exclude=exclude, **kwargs)
 
+    def validate_correct_async_use(self):
+        """Validates that the application is meant to run async.
+        This validation is performed in synchronous application methods."""
+
+        # This is a gentle warning for existing users to use the async application
+        if self._adapter_set.async_hooks:
+            logger.warning(
+                "There are asynchronous hooks present in the application that will be ignored. "
+                "Please use async methods to run the application and have them executed. "
+                f"The application has following asynchronous hooks: {self._adapter_set.async_hooks} "
+            )
+
+        # We check that if:
+        # - we have build the application using .abuild()
+        # - we have async hooks present
+        # this application is meant to be run in async mode.
+        if self._builder and self._builder.is_async:
+            raise ValueError(
+                "The application was build with .abuild() "
+                "which needs to be executed in an asynchronous run. "
+                "Please use the async run methods to run the application."
+            )
+
 
 def _validate_app_id(app_id: Optional[str]):
     if app_id is None:
@@ -1999,6 +2036,7 @@ class ApplicationBuilder(Generic[StateType]):
         self.typing_system = None
         self.parallel_executor_factory = None
         self.state_persister = None
+        self._is_async: bool = False
 
     def with_identifiers(
         self, app_id: str = None, partition_key: str = None, sequence_id: int = None
@@ -2150,7 +2188,9 @@ class ApplicationBuilder(Generic[StateType]):
         return self
 
     def with_actions(
-        self, *action_list: Union[Action, Callable], **action_dict: Union[Action, Callable]
+        self,
+        *action_list: Union[Action, Callable],
+        **action_dict: Union[Action, Callable],
     ) -> "ApplicationBuilder[StateType]":
         """Adds an action to the application. The actions are granted names (using the with_name)
         method post-adding, using the kw argument. If it already has a name (or you wish to use the function name, raw, and
@@ -2168,7 +2208,8 @@ class ApplicationBuilder(Generic[StateType]):
     def with_transitions(
         self,
         *transitions: Union[
-            Tuple[Union[str, list[str]], str], Tuple[Union[str, list[str]], str, Condition]
+            Tuple[Union[str, list[str]], str],
+            Tuple[Union[str, list[str]], str, Condition],
         ],
     ) -> "ApplicationBuilder[StateType]":
         """Adds transitions to the application. Transitions are specified as tuples of either:
@@ -2249,7 +2290,7 @@ class ApplicationBuilder(Generic[StateType]):
 
     def initialize_from(
         self,
-        initializer: BaseStateLoader,
+        initializer: Union[BaseStateLoader, AsyncBaseStateLoader],
         resume_at_next_action: bool,
         default_state: dict,
         default_entrypoint: str,
@@ -2295,7 +2336,9 @@ class ApplicationBuilder(Generic[StateType]):
         return self
 
     def with_state_persister(
-        self, persister: Union[BaseStateSaver, LifecycleAdapter], on_every: str = "step"
+        self,
+        persister: Union[BaseStateSaver, AsyncBaseStateSaver, LifecycleAdapter],
+        on_every: str = "step",
     ) -> "ApplicationBuilder[StateType]":
         """Adds a state persister to the application. This is a way to persist state out to a database, file, etc...
         at the specified interval. This is one of two options:
@@ -2312,20 +2355,7 @@ class ApplicationBuilder(Generic[StateType]):
         if on_every != "step":
             raise ValueError(f"on_every {on_every} not supported")
 
-        if not isinstance(persister, persistence.BaseStateSaver):
-            self.lifecycle_adapters.append(persister)
-        else:
-            # Check if 'is_initialized' exists and is False; raise RuntimeError, else continue if not implemented
-            try:
-                if not persister.is_initialized():
-                    raise RuntimeError(
-                        "RuntimeError: Uninitialized persister. Make sure to call .initialize() before passing it to "
-                        "the ApplicationBuilder."
-                    )
-            except NotImplementedError:
-                pass
-            self.lifecycle_adapters.append(persistence.PersisterHook(persister))
-        self.state_persister = persister  # track for later
+        self.state_persister = persister  # tracks for later; validates in build / abuild
         return self
 
     def with_spawning_parent(
@@ -2349,15 +2379,58 @@ class ApplicationBuilder(Generic[StateType]):
         self.spawn_from_partition_key = partition_key
         return self
 
-    def _load_from_persister(self):
-        """Loads from the set persister and into this current object.
-
-        Mutates:
-         - self.state
-         - self.sequence_id
-         - maybe self.start
-
+    def _set_sync_state_persister(self):
+        """Inits the synchronous with_state_persister to save the state (local/DB/custom implementations).
+        Moved here to mimic the async case.
         """
+        if self.state_persister.is_async():
+            raise ValueError(
+                "You are building the sync application, but have used an "
+                "async persister. Please use a sync persister or use the "
+                ".abuild() method to build an async application."
+            )
+
+        if not isinstance(self.state_persister, persistence.BaseStateSaver):
+            self.lifecycle_adapters.append(self.state_persister)
+        else:
+            # Check if 'is_initialized' exists and is False; raise RuntimeError, else continue if not implemented
+            try:
+                if not self.state_persister.is_initialized():
+                    raise RuntimeError(
+                        "RuntimeError: Uninitialized persister. Make sure to call .initialize() before passing it to "
+                        "the ApplicationBuilder."
+                    )
+            except NotImplementedError:
+                pass
+            self.lifecycle_adapters.append(persistence.PersisterHook(self.state_persister))
+
+    async def _set_async_state_persister(self):
+        """Inits the asynchronous with_state_persister to save the state (local/DB/custom implementations).
+        Moved here to be able to chain methods and delay the execution until we can chain coroutines in abuild().
+        """
+        if not self.state_persister.is_async():
+            raise ValueError(
+                "You are building the async application, but have used an "
+                "sync persister. Please use an async persister or use the "
+                ".build() method to build an sync application."
+            )
+
+        if not isinstance(self.state_persister, persistence.AsyncBaseStateSaver):
+            self.lifecycle_adapters.append(self.state_persister)
+        else:
+            # Check if 'is_initialized' exists and is False; raise RuntimeError, else continue if not implemented
+            try:
+                if not await self.state_persister.is_initialized():
+                    raise RuntimeError(
+                        "RuntimeError: Uninitialized persister. Make sure to call .initialize() before passing it to "
+                        "the ApplicationBuilder."
+                    )
+            except NotImplementedError:
+                pass
+            self.lifecycle_adapters.append(persistence.PersisterHookAsync(self.state_persister))
+
+    def _identify_state_to_load(self):
+        """Helper to determine which state to load."""
         if self.fork_from_app_id is not None:
             if self.app_id == self.fork_from_app_id:
                 raise ValueError(
@@ -2373,14 +2446,26 @@ class ApplicationBuilder(Generic[StateType]):
             _partition_key = self.partition_key
             _app_id = self.app_id
             _sequence_id = self.sequence_id
-        # load state from persister
-        load_result = self.state_initializer.load(_partition_key, _app_id, _sequence_id)
+
+        return _partition_key, _app_id, _sequence_id
+
+    def _init_state_from_persister(
+        self,
+        load_result: Optional[persistence.PersistedStateData],
+        partition_key: str,
+        app_id: Optional[str],
+        sequence_id: Optional[int],
+    ):
+        """Initializes the state of the application.
+
+        Either there is a loaded configuration provided or we use the default state to initialize.
+        """
         if load_result is None:
             if self.fork_from_app_id is not None:
                 logger.warning(
                     f"{self.state_initializer.__class__.__name__} returned None while trying to fork from: "
-                    f"partition_key:{_partition_key}, app_id:{_app_id}, "
-                    f"sequence_id:{_sequence_id}. "
+                    f"partition_key:{partition_key}, app_id:{app_id}, "
+                    f"sequence_id:{sequence_id}. "
                     "You explicitly requested to fork from a prior application run, but it does not exist. "
                     "Defaulting to state defaults instead."
                 )
@@ -2393,8 +2478,8 @@ class ApplicationBuilder(Generic[StateType]):
                 raise ValueError(
                     BASE_ERROR_MESSAGE
                     + f"Error: {self.state_initializer.__class__.__name__} returned {load_result} for "
-                    f"partition_key:{_partition_key}, app_id:{_app_id}, "
-                    f"sequence_id:{_sequence_id}, "
+                    f"partition_key:{partition_key}, app_id:{app_id}, "
+                    f"sequence_id:{sequence_id}, "
                     "but value for state was None! This is not allowed. Please return just None in this case, "
                     "or double check that persisted state can never be a None value."
                 )
@@ -2417,6 +2502,50 @@ class ApplicationBuilder(Generic[StateType]):
                 # self.start is already set to the default. We don't need to do anything.
                 pass
 
+    def _load_from_sync_persister(self):
+        """Loads from the set sync persister and into this current object.
+
+        Mutates:
+         - self.state
+         - self.sequence_id
+         - maybe self.start
+
+        """
+        if self.state_initializer.is_async():
+            raise ValueError(
+                "You are building the sync application, but have used an "
+                "async initializer. Please use a sync initializer or use the "
+                ".abuild() method to build an async application."
+            )
+
+        _partition_key, _app_id, _sequence_id = self._identify_state_to_load()
+
+        # load state from persister
+        load_result = self.state_initializer.load(_partition_key, _app_id, _sequence_id)
+        self._init_state_from_persister(load_result, _partition_key, _app_id, _sequence_id)
+
+    async def _load_from_async_persister(self):
+        """Loads from the set async persister and into this current object.
+
+        Mutates:
+         - self.state
+         - self.sequence_id
+         - maybe self.start
+
+        """
+        if not self.state_initializer.is_async():
+            raise ValueError(
+                "You are building the async application, but have used an "
+                "sync initializer. Please use an async initializer or use the "
+                ".build() method to build an sync application."
+            )
+
+        _partition_key, _app_id, _sequence_id = self._identify_state_to_load()
+
+        # load state from persister
+        load_result = await self.state_initializer.load(_partition_key, _app_id, _sequence_id)
+        self._init_state_from_persister(load_result, _partition_key, _app_id, _sequence_id)
+
     def reset_to_entrypoint(self):
         self.state = self.state.wipe(delete=[PRIOR_STEP])
 
@@ -2431,21 +2560,7 @@ class ApplicationBuilder(Generic[StateType]):
             return self.graph_builder.build()
         return self.prebuilt_graph
 
-    @telemetry.capture_function_usage
-    def build(self) -> Application[StateType]:
-        """Builds the application.
-
-        This function is a bit messy as we iron out the exact logic and rigor we want around things.
-
-        :return: The application object
-        """
-
-        _validate_app_id(self.app_id)
-        if self.state is None:
-            self.state = State()
-        if self.state_initializer:
-            # sets state, sequence_id, and maybe start
-            self._load_from_persister()
+    def _build_common(self) -> Application:
         graph = self._get_built_graph()
         _validate_start(self.start, {action.name for action in graph.actions})
         typing_system: TypingSystem[StateType] = (
@@ -2484,3 +2599,94 @@ class ApplicationBuilder(Generic[StateType]):
             state_persister=self.state_persister,
             state_initializer=self.state_initializer,
         )
+
+    @telemetry.capture_function_usage
+    def build(self) -> Application[StateType]:
+        """Builds the application for synchronous runs.
+
+        We support both synchronous and asynchronous applications. In case you are using state initializers
+        and persisters, the synchronous application should be used in the following cases:
+
+        .. table:: When to use .build()
+            :widths: auto
+
+            +-----------------------------------------+----------+------------------------+
+            | Cases (persister and app methods)       | Status   | Remarks                |
+            +=========================================+==========+========================+
+            | Sync and Sync                           |  ✅      |                        |
+            +-----------------------------------------+----------+------------------------+
+            | Sync and Async                          |  ✅ ⚠️   | Will be deprecated     |
+            +-----------------------------------------+----------+------------------------+
+            | Async and Sync                          |  ❌      |                        |
+            +-----------------------------------------+----------+------------------------+
+            | Async and Async                         |  ❌      |                        |
+            +-----------------------------------------+----------+------------------------+
+
+        We originally only had sync persistence and as such this still can be used when running the
+        app async. However, we strongly encourage to switch to async persisters if you are running
+        an async application.
+
+        :return: The application object.
+        """
+        _validate_app_id(self.app_id)
+        if self.state is None:
+            self.state = State()
+
+        if self.state_persister:
+            self._set_sync_state_persister()  # this is used to save the state during application run
+        if self.state_initializer:
+            # sets state, sequence_id, and maybe start
+            self._load_from_sync_persister()  # this is used to load application from a previously saved state
+
+        return self._build_common()
+
+    @telemetry.capture_function_usage
+    async def abuild(self) -> Application[StateType]:
+        """Builds the application for asynchronous runs.
+
+        We support both synchronous and asynchronous applications. To save/load in an asynchronous
+        manner add the async persister versions and use this method to initialize them. This will
+        also enforce the application to be run with async methods as an additional safety check that
+        you are not introducing unnecessary bottlenecks.
+
+        Note: When you run an async application you can still use the normal sync functionalities, i.e.
+        sync hooks of other adapters, but they will block the async event loop until finished.
+
+        In case you are using state initializers and persisters, the asynchronous application should
+        be used in the following cases:
+
+        .. table:: When to use .abuild()
+            :widths: auto
+
+            +-----------------------------------------+----------+
+            | Cases (persister and app methods)       | Status   |
+            +=========================================+==========+
+            | Sync and Sync                           |  ❌      |
+            +-----------------------------------------+----------+
+            | Sync and Async                          |  ❌      |
+            +-----------------------------------------+----------+
+            | Async and Sync                          |  ❌      |
+            +-----------------------------------------+----------+
+            | Async and Async                         |  ✅      |
+            +-----------------------------------------+----------+
+
+        :return: The application object.
+        """
+        self._is_async = True
+
+        _validate_app_id(self.app_id)
+        if self.state is None:
+            self.state = State()
+
+        if self.state_persister:
+            await self._set_async_state_persister()  # this is used to save the state during application run
+
+        if self.state_initializer:
+            # sets state, sequence_id, and maybe start
+            await self._load_from_async_persister()  # this is used to load application from a previously saved state
+
+        return self._build_common()
+
+    @property
+    def is_async(self) -> bool:
+        return self._is_async

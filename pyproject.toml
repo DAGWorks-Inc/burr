@@ -29,7 +29,7 @@ streamlit = [
   "streamlit",
   "graphviz",
   "matplotlib",
-  "sf-hamilton"
+  "sf-hamilton",
 ]
 
 hamilton = [
@@ -38,6 +38,10 @@ hamilton = [
 
 graphviz = [
   "graphviz"
+]
+
+sqlite = [
+  "aiosqlite"
 ]
 
 postgresql = [
@@ -61,6 +65,7 @@ tests = [
   "pydantic[email]",
   "pyarrow",
   "redis",
+  "aiosqlite",
   "burr[opentelemetry]",
   "burr[haystack]",
   "burr[ray]"
@@ -77,6 +82,7 @@ documentation = [
   "psycopg2-binary",
   "redis",
   "ray",
+  "aiosqlite",
   "sphinxcontrib-googleanalytics"
 ]
 
