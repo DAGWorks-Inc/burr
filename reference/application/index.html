@@ -278,6 +278,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../concepts/parallelism/">Parallelism</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../concepts/recursion/">Recursive Applications</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../concepts/planned-capabilities/">Planned Capabilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/sync-vs-async/">Sync vs Async Applications</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../">API reference</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of API reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
@@ -377,13 +378,89 @@ and not the <code class="docutils literal notranslate"><span class="pre">Applica
 <dt class="sig sig-object py" id="burr.core.application.ApplicationBuilder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.application.</span></span><span class="sig-name descname"><span class="pre">ApplicationBuilder</span></span><a class="headerlink" href="#burr.core.application.ApplicationBuilder" title="Link to this definition">¶</a></dt>
 <dd><dl class="py method">
-<dt class="sig sig-object py" id="burr.core.application.ApplicationBuilder.build">
-<span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.core.application.Application" title="burr.core.application.Application"><span class="pre">Application</span></a><span class="p"><span class="pre">[</span></span><span class="pre">StateType</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.application.ApplicationBuilder.build" title="Link to this definition">¶</a></dt>
-<dd><p>Builds the application.</p>
-<p>This function is a bit messy as we iron out the exact logic and rigor we want around things.</p>
+<dt class="sig sig-object py" id="burr.core.application.ApplicationBuilder.abuild">
+<span class="sig-name descname"><span class="pre">abuild</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.core.application.Application" title="burr.core.application.Application"><span class="pre">Application</span></a><span class="p"><span class="pre">[</span></span><span class="pre">StateType</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.application.ApplicationBuilder.abuild" title="Link to this definition">¶</a></dt>
+<dd><p>Builds the application for asynchronous runs.</p>
+<p>We support both synchronous and asynchronous applications. To save/load in an asynchronous
+manner add the async persister versions and use this method to initialize them. This will
+also enforce the application to be run with async methods as an additional safety check that
+you are not introducing unnecessary bottlenecks.</p>
+<p>Note: When you run an async application you can still use the normal sync functionalities, i.e.
+sync hooks of other adapters, but they will block the async event loop until finished.</p>
+<p>In case you are using state initializers and persisters, the asynchronous application should
+be used in the following cases:</p>
+<div class="table-wrapper colwidths-auto docutils container" id="id1">
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">When to use .abuild()</span><a class="headerlink" href="#id1" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Cases (persister and app methods)</p></th>
+<th class="head"><p>Status</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Sync and Sync</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-odd"><td><p>Sync and Async</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-even"><td><p>Async and Sync</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-odd"><td><p>Async and Async</p></td>
+<td><p>✅</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>The application object</p>
+<dd class="field-odd"><p>The application object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.application.ApplicationBuilder.build">
+<span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.core.application.Application" title="burr.core.application.Application"><span class="pre">Application</span></a><span class="p"><span class="pre">[</span></span><span class="pre">StateType</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.application.ApplicationBuilder.build" title="Link to this definition">¶</a></dt>
+<dd><p>Builds the application for synchronous runs.</p>
+<p>We support both synchronous and asynchronous applications. In case you are using state initializers
+and persisters, the synchronous application should be used in the following cases:</p>
+<div class="table-wrapper colwidths-auto docutils container" id="id2">
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">When to use .build()</span><a class="headerlink" href="#id2" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Cases (persister and app methods)</p></th>
+<th class="head"><p>Status</p></th>
+<th class="head"><p>Remarks</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Sync and Sync</p></td>
+<td><p>✅</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Sync and Async</p></td>
+<td><p>✅ ⚠️</p></td>
+<td><p>Will be deprecated</p></td>
+</tr>
+<tr class="row-even"><td><p>Async and Sync</p></td>
+<td><p>❌</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Async and Async</p></td>
+<td><p>❌</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>We originally only had sync persistence and as such this still can be used when running the
+app async. However, we strongly encourage to switch to async persisters if you are running
+an async application.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The application object.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -393,7 +470,7 @@ and not the <code class="docutils literal notranslate"><span class="pre">Applica
 <span class="sig-name descname"><span class="pre">initialize_from</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">initializer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../persister/#burr.core.persistence.BaseStateLoader" title="burr.core.persistence.BaseStateLoader"><span class="pre">BaseStateLoader</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">initializer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../persister/#burr.core.persistence.BaseStateLoader" title="burr.core.persistence.BaseStateLoader"><span class="pre">BaseStateLoader</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">AsyncBaseStateLoader</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">resume_at_next_action</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">default_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">default_entrypoint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
@@ -628,7 +705,7 @@ you can do so here and pass the values in.</p>
 <span class="sig-name descname"><span class="pre">with_state_persister</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">persister</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../persister/#burr.core.persistence.BaseStateSaver" title="burr.core.persistence.BaseStateSaver"><span class="pre">BaseStateSaver</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">DoLogAttributeHook</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PreRunStepHook" title="burr.lifecycle.base.PreRunStepHook"><span class="pre">PreRunStepHook</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PreRunStepHookAsync" title="burr.lifecycle.base.PreRunStepHookAsync"><span class="pre">PreRunStepHookAsync</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PostRunStepHook" title="burr.lifecycle.base.PostRunStepHook"><span class="pre">PostRunStepHook</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PostRunStepHookAsync" title="burr.lifecycle.base.PostRunStepHookAsync"><span class="pre">PostRunStepHookAsync</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PreApplicationExecuteCallHook" title="burr.lifecycle.base.PreApplicationExecuteCallHook"><span class="pre">PreApplicationExecuteCallHook</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PreApplicationExecuteCallHookAsync" title="burr.lifecycle.base.PreApplicationExecuteCallHookAsync"><span class="pre">PreApplicationExecuteCallHookAsync</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PostApplicationExecuteCallHook" title="burr.lifecycle.base.PostApplicationExecuteCallHook"><span class="pre">PostApplicationExecuteCallHook</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PostApplicationExecuteCallHookAsync" title="burr.lifecycle.base.PostApplicationExecuteCallHookAsync"><span class="pre">PostApplicationExecuteCallHookAsync</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PostApplicationCreateHook" title="burr.lifecycle.base.PostApplicationCreateHook"><span class="pre">PostApplicationCreateHook</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PreStartSpanHook" title="burr.lifecycle.base.PreStartSpanHook"><span class="pre">PreStartSpanHook</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PreStartSpanHookAsync" title="burr.lifecycle.base.PreStartSpanHookAsync"><span class="pre">PreStartSpanHookAsync</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PostEndSpanHook" title="burr.lifecycle.base.PostEndSpanHook"><span class="pre">PostEndSpanHook</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PostEndSpanHookAsync" title="burr.lifecycle.base.PostEndSpanHookAsync"><span class="pre">PostEndSpanHookAsync</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PreStartStreamHook</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PostStreamItemHook</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PostEndStreamHook</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PreStartStreamHookAsync</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PostStreamItemHookAsync</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PostEndStreamHookAsync</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">persister</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../persister/#burr.core.persistence.BaseStateSaver" title="burr.core.persistence.BaseStateSaver"><span class="pre">BaseStateSaver</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">AsyncBaseStateSaver</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">DoLogAttributeHook</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PreRunStepHook" title="burr.lifecycle.base.PreRunStepHook"><span class="pre">PreRunStepHook</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PreRunStepHookAsync" title="burr.lifecycle.base.PreRunStepHookAsync"><span class="pre">PreRunStepHookAsync</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PostRunStepHook" title="burr.lifecycle.base.PostRunStepHook"><span class="pre">PostRunStepHook</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PostRunStepHookAsync" title="burr.lifecycle.base.PostRunStepHookAsync"><span class="pre">PostRunStepHookAsync</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PreApplicationExecuteCallHook" title="burr.lifecycle.base.PreApplicationExecuteCallHook"><span class="pre">PreApplicationExecuteCallHook</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PreApplicationExecuteCallHookAsync" title="burr.lifecycle.base.PreApplicationExecuteCallHookAsync"><span class="pre">PreApplicationExecuteCallHookAsync</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PostApplicationExecuteCallHook" title="burr.lifecycle.base.PostApplicationExecuteCallHook"><span class="pre">PostApplicationExecuteCallHook</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PostApplicationExecuteCallHookAsync" title="burr.lifecycle.base.PostApplicationExecuteCallHookAsync"><span class="pre">PostApplicationExecuteCallHookAsync</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PostApplicationCreateHook" title="burr.lifecycle.base.PostApplicationCreateHook"><span class="pre">PostApplicationCreateHook</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PreStartSpanHook" title="burr.lifecycle.base.PreStartSpanHook"><span class="pre">PreStartSpanHook</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PreStartSpanHookAsync" title="burr.lifecycle.base.PreStartSpanHookAsync"><span class="pre">PreStartSpanHookAsync</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PostEndSpanHook" title="burr.lifecycle.base.PostEndSpanHook"><span class="pre">PostEndSpanHook</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../lifecycle/#burr.lifecycle.base.PostEndSpanHookAsync" title="burr.lifecycle.base.PostEndSpanHookAsync"><span class="pre">PostEndSpanHookAsync</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PreStartStreamHook</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PostStreamItemHook</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PostEndStreamHook</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PreStartStreamHookAsync</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PostStreamItemHookAsync</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">PostEndStreamHookAsync</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">on_every</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'step'</span></span></em>,</dd>
 </dl>
 
@@ -1347,6 +1424,13 @@ anything with the state. For example:
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="burr.core.application.Application.validate_correct_async_use">
+<span class="sig-name descname"><span class="pre">validate_correct_async_use</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.application.Application.validate_correct_async_use" title="Link to this definition">¶</a></dt>
+<dd><p>Validates that the application is meant to run async.
+This validation is performed in synchronous application methods.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="burr.core.application.Application.visualize">
 <span class="sig-name descname"><span class="pre">visualize</span></span><span class="sig-paren">(</span>
 
@@ -1656,6 +1740,7 @@ for graphviz, instead pass <cite>format</cite> in <cite>engine_kwargs</cite> (e.
             <ul>
 <li><a class="reference internal" href="#">Applications</a><ul>
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder</span></code></a><ul>
+<li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.abuild"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.abuild()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.build"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.build()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.initialize_from"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.initialize_from()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_actions"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_actions()</span></code></a></li>
@@ -1694,6 +1779,7 @@ for graphviz, instead pass <cite>format</cite> in <cite>engine_kwargs</cite> (e.
 <li><a class="reference internal" href="#burr.core.application.Application.stream_result"><code class="docutils literal notranslate"><span class="pre">Application.stream_result()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.Application.uid"><code class="docutils literal notranslate"><span class="pre">Application.uid</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.Application.update_state"><code class="docutils literal notranslate"><span class="pre">Application.update_state()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.application.Application.validate_correct_async_use"><code class="docutils literal notranslate"><span class="pre">Application.validate_correct_async_use()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.Application.visualize"><code class="docutils literal notranslate"><span class="pre">Application.visualize()</span></code></a></li>
 </ul>
 </li>

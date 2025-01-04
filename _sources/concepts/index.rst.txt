@@ -25,3 +25,4 @@ Overview of the concepts -- read these to get a mental model for how Burr works.
     parallelism
     recursion
     planned-capabilities
+    sync-vs-async
