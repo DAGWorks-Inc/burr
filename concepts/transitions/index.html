@@ -17,7 +17,7 @@
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>Transitions - Burr</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
@@ -387,7 +387,7 @@ You can think of them as edges in a graph.</p>
 <section id="conditions">
 <h2>Conditions<a class="headerlink" href="#conditions" title="Link to this heading">¶</a></h2>
 <p>Conditions have a few APIs, but the most common are the three convenience functions:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">when</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">default</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">when</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">default</span>
 <span class="n">with_transitions</span><span class="p">(</span>
     <span class="p">(</span><span class="s2">&quot;from&quot;</span><span class="p">,</span> <span class="s2">&quot;to&quot;</span><span class="p">,</span> <span class="n">when</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="s2">&quot;bar&quot;</span><span class="p">),</span>  <span class="c1"># will evaluate when the state has the variable &quot;foo&quot; set to the value &quot;bar&quot;</span>
     <span class="p">(</span><span class="s2">&quot;from&quot;</span><span class="p">,</span> <span class="s2">&quot;to&quot;</span><span class="p">,</span> <span class="n">expr</span><span class="p">(</span><span class="s1">&#39;epochs&gt;100&#39;</span><span class="p">))</span> <span class="c1"># will evaluate to True when epochs is greater than 100</span>
@@ -399,7 +399,7 @@ You can think of them as edges in a graph.</p>
 <p>Conditions are evaluated in the order they are specified, and the first one that evaluates to True will be the transition that is selected
 when determining which action to run next. If no condition evaluates to <code class="docutils literal notranslate"><span class="pre">True</span></code>, the application execution will stop early.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">~</span></code> operator will invert a condition. For instance:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">when</span><span class="p">,</span> <span class="n">expr</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">when</span><span class="p">,</span> <span class="n">expr</span>
 <span class="n">with_transitions</span><span class="p">(</span>
     <span class="p">(</span><span class="s2">&quot;from&quot;</span><span class="p">,</span> <span class="s2">&quot;to&quot;</span><span class="p">,</span> <span class="o">~</span><span class="n">when</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="s2">&quot;baz&quot;</span><span class="p">),</span>  <span class="c1"># will evaluate to True when foo != baz</span>
     <span class="p">(</span><span class="s2">&quot;from&quot;</span><span class="p">,</span> <span class="s2">&quot;to&quot;</span><span class="p">,</span> <span class="o">~</span><span class="n">expr</span><span class="p">(</span><span class="s1">&#39;epochs&lt;=100&#39;</span><span class="p">))</span> <span class="c1"># will evaluate to True when epochs hits 101</span>

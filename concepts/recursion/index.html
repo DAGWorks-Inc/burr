@@ -17,7 +17,7 @@
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>Recursive Applications - Burr</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
@@ -397,7 +397,7 @@ but we are actively working on building first-level constructs that allow this.<
 </ol>
 <p>After creating a simple application (1)/(2) above, you can wire through the tracker like this (some pseudocode, see the example for a fully working application).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;parameters_to_map&quot;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;joined_results&quot;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">run_multiple_sub_apps</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_multiple_sub_apps</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
     <span class="c1"># for every parameter incoming, run a sub-application</span>
     <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">parameter_set</span> <span class="ow">in</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;parameters_to_map&quot;</span><span class="p">]:</span>
@@ -427,8 +427,8 @@ The tracker knows how to record the link so its in the UI.</p>
 <p>You can also run this in parallel – this leverages <a class="reference external" href="https://joblib.readthedocs.io/en/latest/">joblib</a>’s
 Parallel and delayed functions, but you can use whatever tooling you want (multiprocessing, threading, etc…).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;parameters_to_map&quot;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;joined_results&quot;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">run_multiple_sub_apps</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
-    <span class="k">def</span> <span class="nf">run_subapp</span><span class="p">(</span><span class="n">parameter_set</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_multiple_sub_apps</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_subapp</span><span class="p">(</span><span class="n">parameter_set</span><span class="p">):</span>
         <span class="n">subapp</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">ApplicationBuilder</span><span class="p">()</span>
             <span class="o">.</span><span class="n">with_actions</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
@@ -466,12 +466,12 @@ yourself.</p>
 <h3>Alternatives<a class="headerlink" href="#alternatives" title="Link to this heading">¶</a></h3>
 <p>If, for some reason, you want to run a Burr application inside a burr application but can’t effectively wire through the tracker/context
 (say, for instance, that it’s run through levels of other frameworks), you can get access to the active context and tracker by using the following:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr</span> <span class="kn">import</span> <span class="n">get_active_context</span><span class="p">,</span> <span class="n">get_active_tracker</span><span class="p">,</span> <span class="n">ApplicationContext</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_active_context</span><span class="p">,</span> <span class="n">get_active_tracker</span><span class="p">,</span> <span class="n">ApplicationContext</span>
 
 <span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;parameters_to_map&quot;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;joined_results&quot;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
    <span class="n">context</span> <span class="o">=</span> <span class="n">ApplicationContext</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
-   <span class="k">def</span> <span class="nf">run_subapp</span><span class="p">(</span><span class="n">parameter_set</span><span class="p">):</span>
+   <span class="k">def</span><span class="w"> </span><span class="nf">run_subapp</span><span class="p">(</span><span class="n">parameter_set</span><span class="p">):</span>
         <span class="n">subapp</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">ApplicationBuilder</span><span class="p">()</span>
             <span class="o">.</span><span class="n">with_actions</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>

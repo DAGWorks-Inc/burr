@@ -17,7 +17,7 @@
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>Basic - Burr</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=302659d7" />
@@ -376,12 +376,12 @@
 <h2>Setup<a class="headerlink" href="#setup" title="Link to this heading">¶</a></h2>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">uuid</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tuple</span>
 
-<span class="kn">import</span> <span class="nn">openai</span>  <span class="c1"># replace with your favorite LLM client library</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">openai</span>  <span class="c1"># replace with your favorite LLM client library</span>
 
-<span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">State</span><span class="p">,</span> <span class="n">ApplicationBuilder</span><span class="p">,</span> <span class="n">when</span><span class="p">,</span> <span class="n">persistence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">State</span><span class="p">,</span> <span class="n">ApplicationBuilder</span><span class="p">,</span> <span class="n">when</span><span class="p">,</span> <span class="n">persistence</span>
 </pre></div>
 </div>
 </div>
@@ -398,7 +398,7 @@
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">,</span> <span class="s2">&quot;chat_history&quot;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">human_input</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">State</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">human_input</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">State</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Pulls human input from the outside world and massages it into a standard chat format.</span>
 <span class="sd">    Note we&#39;re adding it into the chat history (with an `append` operation). This </span>
 <span class="sd">    is just for convenience of reference -- we could easily just store the chat history</span>
@@ -417,7 +417,7 @@
     <span class="p">)</span>
 
 <span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;chat_history&quot;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;response&quot;</span><span class="p">,</span> <span class="s2">&quot;chat_history&quot;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">ai_response</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">State</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ai_response</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">State</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Queries OpenAI with the chat. You could easily use langchain, etc... to handle this,</span>
 <span class="sd">    but we wanted to keep it simple to demonstrate&quot;&quot;&quot;</span>
     <span class="n">client</span> <span class="o">=</span> <span class="n">openai</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>  <span class="c1"># replace with your favorite LLM client library</span>
@@ -488,13 +488,13 @@ We’re going to add one step that checks for safety, and another that drafts a 
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;safe&quot;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">safety_check</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">State</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">safety_check</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">State</span><span class="p">]:</span>
     <span class="n">safe</span> <span class="o">=</span> <span class="s2">&quot;unsafe&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">]</span>
     <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;safe&quot;</span><span class="p">:</span> <span class="n">safe</span><span class="p">},</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">safe</span><span class="o">=</span><span class="n">safe</span><span class="p">)</span>
 
 
 <span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;response&quot;</span><span class="p">,</span> <span class="s2">&quot;chat_history&quot;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">unsafe_response</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">State</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">unsafe_response</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">State</span><span class="p">]:</span>
     <span class="n">content</span> <span class="o">=</span> <span class="s2">&quot;I&#39;m sorry, my overlords have forbidden me to respond.&quot;</span>
     <span class="n">new_state</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">state</span>
@@ -599,7 +599,7 @@ We’re going to add one step that checks for safety, and another that drafts a 
 <p>Press the refresh button (🔄) by “Live” to watch it live. Run the above cell to query.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">Markdown</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">Markdown</span>
 <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[Link to UI](http://localhost:7241/project/demo_getting_started/</span><span class="si">{</span><span class="n">app_with_tracker</span><span class="o">.</span><span class="n">uid</span><span class="si">}</span><span class="s2">)&quot;</span>
 <span class="n">Markdown</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
 </pre></div>
@@ -608,9 +608,9 @@ We’re going to add one step that checks for safety, and another that drafts a 
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">HTML</span>
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTML</span>
 <span class="n">get_ipython</span><span class="p">()</span><span class="o">.</span><span class="n">system</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">system</span>
 <span class="o">!</span>burr<span class="w"> </span>--no-open<span class="w"> </span>&gt;<span class="w"> </span>/dev/null<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="c1"># quick trick to wait for the server to start</span>
@@ -643,7 +643,7 @@ We’re going to add one step that checks for safety, and another that drafts a 
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># we&#39;re going to be creating this multiple times to demonstrate so let&#39;s stick it in a function</span>
-<span class="k">def</span> <span class="nf">create_persistable_app</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_persistable_app</span><span class="p">():</span>
     <span class="n">sqllite_persister</span> <span class="o">=</span> <span class="n">persistence</span><span class="o">.</span><span class="n">SQLLitePersister</span><span class="p">(</span><span class="n">db_path</span><span class="o">=</span><span class="s2">&quot;./sqlite.db&quot;</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;burr_state&quot;</span><span class="p">)</span>
     <span class="n">sqllite_persister</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
     <span class="k">return</span> <span class="p">(</span>

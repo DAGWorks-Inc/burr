@@ -17,7 +17,7 @@
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>Hooks - Burr</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
@@ -393,11 +393,11 @@ These have synchronous and asynchronous versions, and your hook can subclass as 
 <p>To use them, you pass them into the <a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationBuilder" title="burr.core.application.ApplicationBuilder"><code class="xref py py-class docutils literal notranslate"><span class="pre">ApplicationBuilder</span></code></a> as a <code class="docutils literal notranslate"><span class="pre">*args</span></code> list of hooks. For instance,
 a hook that prints out the nodes name during execution looks like this.
 We implement the pre/post run step hooks.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">PrintLnHook</span><span class="p">(</span><span class="n">PostRunStepHook</span><span class="p">,</span> <span class="n">PreRunStepHook</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">pre_run_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="s2">&quot;State&quot;</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="s2">&quot;Action&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">future_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">PrintLnHook</span><span class="p">(</span><span class="n">PostRunStepHook</span><span class="p">,</span> <span class="n">PreRunStepHook</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pre_run_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="s2">&quot;State&quot;</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="s2">&quot;Action&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">future_kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Starting action: </span><span class="si">{</span><span class="n">action</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">post_run_step</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post_run_step</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">state</span><span class="p">:</span> <span class="s2">&quot;State&quot;</span><span class="p">,</span>

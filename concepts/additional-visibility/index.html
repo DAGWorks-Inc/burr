@@ -17,7 +17,7 @@
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>Additional Visibility - Burr</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
@@ -400,7 +400,7 @@ pip<span class="w"> </span>install<span class="w"> </span>opentelemetry-instrume
 </pre></div>
 </div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># add the right imports</span>
-<span class="kn">from</span> <span class="nn">opentelemetry.instrumentation.openai</span> <span class="kn">import</span> <span class="n">OpenAIInstrumentor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.instrumentation.openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIInstrumentor</span>
 <span class="n">OpenAIInstrumentor</span><span class="p">()</span><span class="o">.</span><span class="n">instrument</span><span class="p">()</span>  <span class="c1"># this instruments openai clients</span>
 
 <span class="c1"># create the local tracker</span>
@@ -424,11 +424,11 @@ the <a class="reference external" href="https://opentelemetry.io/">OpenTelemetry
 an object that instantiates spans and tracks state.</p>
 <p>Then, using the <code class="docutils literal notranslate"><span class="pre">__tracer</span></code> as a callable, you can instantiate spans and track state.</p>
 <p>For the function-based API, this would look as follows:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.visibility</span> <span class="kn">import</span> <span class="n">TracerFactory</span>
-<span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">action</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracerFactory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span>
 
 <span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;prompt&#39;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;response&#39;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__tracer</span><span class="p">:</span> <span class="n">TracerFactory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__tracer</span><span class="p">:</span> <span class="n">TracerFactory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
     <span class="k">with</span> <span class="n">__tracer</span><span class="p">(</span><span class="s1">&#39;create_prompt&#39;</span><span class="p">):</span>
         <span class="n">modified_prompt</span> <span class="o">=</span> <span class="n">_modify_prompt</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">])</span>
         <span class="k">with</span> <span class="n">__tracer</span><span class="p">(</span><span class="s1">&#39;check_prompt_safety&#39;</span><span class="p">):</span>
@@ -466,11 +466,11 @@ These just function as callbacks (on enter/exit). The <a class="reference intern
 or the root tracer factory. Note: the <cite>trace()</cite> decorator explained below can substitute for the following approach in many cases.</p>
 <p>This allows you to log any arbitrary observations (think token count prompt, whatnot) that may not be part of state/results.</p>
 <p>For instance:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.visibility</span> <span class="kn">import</span> <span class="n">TracerFactory</span>
-<span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">action</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracerFactory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span>
 
 <span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;prompt&#39;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;response&#39;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__tracer</span><span class="p">:</span> <span class="n">TracerFactory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__tracer</span><span class="p">:</span> <span class="n">TracerFactory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
     <span class="n">__tracer</span><span class="o">.</span><span class="n">log_attributes</span><span class="p">(</span><span class="n">prompt_length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">]),</span> <span class="n">prompt</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">])</span>
 
     <span class="c1"># note: see `@trace()` below as an alternative to this approach.</span>
@@ -497,23 +497,23 @@ or the root tracer factory. Note: the <cite>trace()</cite> decorator explained b
 function with the <a class="reference internal" href="../../reference/visibility/#burr.visibility.tracing.trace" title="burr.visibility.tracing.trace"><code class="xref py py-func docutils literal notranslate"><span class="pre">&#64;trace</span></code></a> decorator. This will automatically create a span
 for the function (within the approprite context), and log as attributes the parameters + return value.</p>
 <p>For instance:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">action</span>
-<span class="kn">from</span> <span class="nn">burr.visibility</span> <span class="kn">import</span> <span class="n">trace</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">burr.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">trace</span>
 
 <span class="nd">@trace</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">_modify_prompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_modify_prompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="k">return</span> <span class="o">...</span>
 
 <span class="nd">@trace</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">_fix</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_fix</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="k">return</span> <span class="o">...</span>
 
 <span class="nd">@trace</span><span class="p">()</span>
-<span class="k">def</span> <span class="nf">_query</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_query</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="k">return</span> <span class="o">...</span>
 
 <span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;prompt&#39;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;response&#39;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
     <span class="n">modified_prompt</span> <span class="o">=</span> <span class="n">_modify_prompt</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">])</span>
     <span class="k">if</span> <span class="n">_is_unsafe</span><span class="p">(</span><span class="n">modified_prompt</span><span class="p">):</span>
           <span class="n">modified_prompt</span> <span class="o">=</span> <span class="n">_fix</span><span class="p">(</span><span class="n">modified_prompt</span><span class="p">)</span>
@@ -523,10 +523,10 @@ for the function (within the approprite context), and log as attributes the para
 </div>
 <p>This will create spans for the <code class="docutils literal notranslate"><span class="pre">_modify_prompt</span></code>, <code class="docutils literal notranslate"><span class="pre">_fix</span></code>, and <code class="docutils literal notranslate"><span class="pre">_query</span></code> functions, and log the parameters and return values. You can opt out of logging paramers or return values and adding a filter to the decorator to exclude certain parameters.
 To contrast what you can instrument manually, the <code class="docutils literal notranslate"><span class="pre">&#64;trace</span></code> decorator allows you to get more visibility and replace manual code such as the following (though you can happily combine the two approaches):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.visibility</span> <span class="kn">import</span> <span class="n">TracerFactory</span>
-<span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">action</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracerFactory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span>
 <span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;prompt&#39;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;response&#39;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__tracer</span><span class="p">:</span> <span class="n">TracerFactory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__tracer</span><span class="p">:</span> <span class="n">TracerFactory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
     <span class="k">with</span> <span class="n">__tracer</span><span class="p">(</span><span class="s1">&#39;create_prompt&#39;</span><span class="p">):</span>
         <span class="n">modified_prompt</span> <span class="o">=</span> <span class="n">_modify_prompt</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">])</span>
         <span class="k">with</span> <span class="n">__tracer</span><span class="p">(</span><span class="s1">&#39;check_prompt_safety&#39;</span><span class="p">):</span>
@@ -553,13 +553,13 @@ These get tracked in the UI, which can display traces and attributes, as explain
 <p>To do this, you just have to set the <code class="docutils literal notranslate"><span class="pre">use_otel_tracing</span></code> flag on <a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationBuilder.with_tracker" title="burr.core.application.ApplicationBuilder.with_tracker"><code class="xref py py-meth docutils literal notranslate"><span class="pre">with_tracker</span></code></a>
 function in the <code class="docutils literal notranslate"><span class="pre">ApplicationBuilder</span></code>. This will automatically capture all OpenTelemetry traces, mixing them with Burr traces. Take the following (contrived)
 example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.visibility</span> <span class="kn">import</span> <span class="n">TracerFactory</span>
-<span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">action</span>
-<span class="kn">from</span> <span class="nn">opentelemetry</span> <span class="kn">import</span> <span class="n">trace</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracerFactory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">trace</span>
 <span class="n">otel_tracer</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">get_tracer</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;prompt&#39;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;response&#39;</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__tracer</span><span class="p">:</span> <span class="n">TracerFactory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__tracer</span><span class="p">:</span> <span class="n">TracerFactory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
     <span class="k">with</span> <span class="n">__tracer</span><span class="p">:</span>
         <span class="c1"># Burr logging</span>
         <span class="n">__tracer</span><span class="o">.</span><span class="n">log_attributes</span><span class="p">(</span><span class="n">prompt_length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">]),</span> <span class="n">prompt</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">])</span>
@@ -598,7 +598,7 @@ you simply need to pass an instance of the <a class="reference internal" href=".
 <a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationBuilder.with_hooks" title="burr.core.application.ApplicationBuilder.with_hooks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">with_hooks</span></code></a> method of the <code class="docutils literal notranslate"><span class="pre">ApplicationBuilder</span></code>. This will automatically
 log all spans to the OpenTelemetry provider of choice (and you are responsible for initializes
 it as you see fit).</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.integrations.opentelemetry</span> <span class="kn">import</span> <span class="n">OpenTelemetryBridge</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.integrations.opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenTelemetryBridge</span>
 
 <span class="n">otel_tracer</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">get_tracer</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 <span class="n">app</span> <span class="o">=</span> <span class="p">(</span>
@@ -618,7 +618,7 @@ it as you see fit).</p>
 <h3>Instrumenting libraries<a class="headerlink" href="#instrumenting-libraries" title="Link to this heading">¶</a></h3>
 <p>One way to gain observability is to <strong>instrument</strong> a library with OpenTelemetry. This involves importing an object that will automatically patch the library in order to produce and report telemetry (learn more about <a class="reference external" href="https://opentelemetry.io/docs/zero-code/python/">autoinstrumentation</a>). The Python community has implemented <a class="reference external" href="https://opentelemetry-python-contrib.readthedocs.io/en/latest/">instrumentation for many popular libraries</a> (FastAPI, AWS Lambda, requests, etc.).</p>
 <p>This snippet enables automatically logging HTTP requests done via the <code class="docutils literal notranslate"><span class="pre">requests</span></code> library:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">opentelemetry.instrumentation.requests</span> <span class="kn">import</span> <span class="n">RequestsInstrumentor</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.instrumentation.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestsInstrumentor</span>
 <span class="n">RequestsInstrumentor</span><span class="p">()</span><span class="o">.</span><span class="n">instrument</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -628,7 +628,7 @@ it as you see fit).</p>
 <h4>LLM-specific Telemetry<a class="headerlink" href="#llm-specific-telemetry" title="Link to this heading">¶</a></h4>
 <p><a class="reference external" href="https://github.com/traceloop/openllmetry/">Openllmetry</a> is a project implementing autoinstrumentation for components of LLM stacks (LLM providers, vector databases, frameworks, etc.). This enables tracking prompts, token counts, temperature, vector search operations, etc.</p>
 <p>The following instruments the <code class="docutils literal notranslate"><span class="pre">openai</span></code> Python library</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">opentelemetry.instrumentation.openai</span> <span class="kn">import</span> <span class="n">OpenAIInstrumentor</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.instrumentation.openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIInstrumentor</span>
 <span class="n">OpenAIInstrumentor</span><span class="p">()</span><span class="o">.</span><span class="n">instrument</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -637,14 +637,14 @@ it as you see fit).</p>
 <h4>Burr’s <code class="docutils literal notranslate"><span class="pre">init_instruments()</span></code><a class="headerlink" href="#burr-s-init-instruments" title="Link to this heading">¶</a></h4>
 <p>The Burr integration for OpenTelemetry includes the convenience function <code class="docutils literal notranslate"><span class="pre">init_instruments()</span></code>. You can provide it the names of modules to instrument as strings and it will try to instrument them. This feature has good IDE autocompletion support. Another benefit is the ability to instrument multiple libraries at once.</p>
 <p>The following instruments the module <code class="docutils literal notranslate"><span class="pre">openai</span></code> (equivalent to the previous snippet) along with <code class="docutils literal notranslate"><span class="pre">lancedb</span></code> and <code class="docutils literal notranslate"><span class="pre">fastapi</span></code>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.integrations.opentelemetry</span> <span class="kn">import</span> <span class="n">init_instruments</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.integrations.opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_instruments</span>
 <span class="n">init_instruments</span><span class="p">(</span><span class="s2">&quot;openai&quot;</span><span class="p">,</span> <span class="s2">&quot;lancedb&quot;</span><span class="p">,</span> <span class="s2">&quot;fastapi&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Specifying the keyword argument <code class="docutils literal notranslate"><span class="pre">init_all=True</span></code> will try to instrument currently imported libraries with the instrumentation packages installed.</p>
 <p>You can get the logger to view in detail which library is instrumented.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">burr.integrations.opentelemetry</span> <span class="kn">import</span> <span class="n">init_instruments</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">burr.integrations.opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_instruments</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;burr.integrations.opentelemetry&quot;</span><span class="p">)</span>
 <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">())</span>

@@ -17,7 +17,7 @@
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>State Persistence - Burr</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
@@ -407,10 +407,10 @@ Note that <code class="docutils literal notranslate"><span class="pre">partition
 <p>You set these values using the <a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationBuilder.with_identifiers" title="burr.core.application.ApplicationBuilder.with_identifiers"><code class="xref py py-meth docutils literal notranslate"><span class="pre">with_identifiers()</span></code></a> method.</p>
 <p>Note: to access <code class="docutils literal notranslate"><span class="pre">app_id</span></code> and <code class="docutils literal notranslate"><span class="pre">partition_key</span></code> in your running application, you can have the <a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationContext" title="burr.core.application.ApplicationContext"><code class="xref py py-class docutils literal notranslate"><span class="pre">ApplicationContext</span></code></a>
 injected into your Burr Actions. This is done by adding <code class="docutils literal notranslate"><span class="pre">__context</span></code> to the action signature:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.core</span> <span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">State</span><span class="p">,</span> <span class="n">ApplicationContext</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">State</span><span class="p">,</span> <span class="n">ApplicationContext</span>
 
 <span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">])</span>
-<span class="k">def</span> <span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
     <span class="n">app_id</span> <span class="o">=</span> <span class="n">__context</span><span class="o">.</span><span class="n">app_id</span>
     <span class="n">partition_key</span> <span class="o">=</span> <span class="n">__context</span><span class="o">.</span><span class="n">partition_key</span>
     <span class="o">...</span>

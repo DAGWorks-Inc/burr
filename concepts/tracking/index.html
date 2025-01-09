@@ -17,7 +17,7 @@
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
         <title>Tracking Burr - Burr</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
     <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
@@ -416,7 +416,7 @@ writes to a local file system, although we will be making it pluggable in the fu
 useful for debugging, because you can quickly recreate the issue by running the state machine with the same point in time.</p>
 <p>To do so, you’d use the classmethod _load()_ on the <a class="reference internal" href="../../reference/tracking/#burr.tracking.LocalTrackingClient" title="burr.tracking.LocalTrackingClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">LocalTrackingClient</span></code></a>.</p>
 <p>For example, to debug your Burr Application, you’d have some control flow like this using the <cite>.initialize_from(…)</cite> and <cite>fork_from_*</cite> functionality:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">burr.tracking</span> <span class="kn">import</span> <span class="n">LocalTrackingClient</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.tracking</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalTrackingClient</span>
 
 <span class="n">prior_app_id</span> <span class="o">=</span> <span class="o">...</span> <span class="c1"># some value</span>
 <span class="n">sequence_id</span> <span class="o">=</span> <span class="o">...</span> <span class="c1"># None or some prior step</span>
@@ -463,7 +463,7 @@ This will print the URL to access the Burr UI web app.</p>
 </pre></div>
 </div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># But you need to expose the port to the browser:</span>
-<span class="kn">from</span> <span class="nn">google.colab</span> <span class="kn">import</span> <span class="n">output</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">google.colab</span><span class="w"> </span><span class="kn">import</span> <span class="n">output</span>
 <span class="n">output</span><span class="o">.</span><span class="n">serve_kernel_port_as_window</span><span class="p">(</span><span class="mi">7241</span><span class="p">)</span> <span class="c1"># this will open a new window</span>
 <span class="n">output</span><span class="o">.</span><span class="n">serve_kernel_port_as_iframe</span><span class="p">(</span><span class="mi">7241</span><span class="p">)</span> <span class="c1"># this will inline in an iframe</span>
 </pre></div>
