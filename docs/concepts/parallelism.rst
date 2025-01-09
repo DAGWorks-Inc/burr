@@ -621,6 +621,10 @@ Notes
 =====
 
 This is in an experimental release phase. While we anticipate the API to be stable, we reserve the right to make slight changes (and will obviously add new features).
+Caveats:
+
+1. Parallelism does not work with typed state (yet) -- we aim to fix this to work soon, but do not rely on sub-actions or parallel actions working together with typed state yet.
+
 
 Things that may change:
 
