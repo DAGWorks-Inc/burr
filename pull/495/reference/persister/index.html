@@ -1131,7 +1131,157 @@ although it uses different mechanisms to save state (as it tracks more than just
 <section id="supported-async-implementations">
 <h2>Supported Async Implementations<a class="headerlink" href="#supported-async-implementations" title="Link to this heading">¶</a></h2>
 <p>Currently we support the following, although we highly recommend you contribute your own! We will be adding more shortly.</p>
-<span class="target" id="asyncpersistersref"></span></section>
+<dl class="py class" id="asyncpersistersref">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.b_aiosqlite.</span></span><span class="sig-name descname"><span class="pre">AsyncSQLitePersister</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister" title="Link to this definition">¶</a></dt>
+<dd><p>Class for asynchronous SQLite persistence of state. This is a simple implementation.</p>
+<p>SQLite is specifically single-threaded and <a class="reference external" href="https://aiosqlite.omnilib.dev/en/latest/index.html">aiosqlite</a>
+creates async support through multi-threading. This persister is mainly here for quick prototyping and testing;
+we suggest to consider a different database with native async support for production.</p>
+<p>Note the third-party library <a class="reference external" href="https://aiosqlite.omnilib.dev/en/latest/index.html">aiosqlite</a>,
+is maintained and considered stable considered stable: <a class="reference external" href="https://github.com/omnilib/aiosqlite/issues/309">https://github.com/omnilib/aiosqlite/issues/309</a>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Constructor.</p>
+<p>NOTE: you are responsible to handle closing of the connection / teardown manually. To help,
+we provide a close() method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>connection</strong> – the path the DB will be stored.</p></li>
+<li><p><strong>table_name</strong> – the table name to store things under.</p></li>
+<li><p><strong>serde_kwargs</strong> – kwargs for state serialization/deserialization.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.create_table_if_not_exists">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_table_if_not_exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.create_table_if_not_exists" title="Link to this definition">¶</a></dt>
+<dd><p>Helper function to create the table where things are stored if it doesn’t exist.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.from_values">
+<em class="property"><span class="pre">async</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_values</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">db_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">connect_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister" title="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister"><span class="pre">AsyncSQLitePersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.from_values" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a new instance of the AsyncSQLitePersister from passed in values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>db_path</strong> – the path the DB will be stored.</p></li>
+<li><p><strong>table_name</strong> – the table name to store things under.</p></li>
+<li><p><strong>serde_kwargs</strong> – kwargs for state serialization/deserialization.</p></li>
+<li><p><strong>connect_kwargs</strong> – kwargs to pass to the aiosqlite.connect method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>async sqlite persister instance with an open connection. You are responsible
+for closing the connection yourself.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.initialize">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.initialize" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously creates the table if it doesn’t exist</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.is_initialized">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.is_initialized" title="Link to this definition">¶</a></dt>
+<dd><p>This checks to see if the table has been created in the database or not.
+It defaults to using the initialized field, else queries the database to see if the table exists.
+It then sets the initialized field to True if the table exists.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.list_app_ids">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.list_app_ids" title="Link to this definition">¶</a></dt>
+<dd><p>Returns list of app IDs for a given primary key</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.load">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.load" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously loads state for a given partition id.</p>
+<p>Depending on the parameters, this will return the last thing written, the last thing written for a given app_id,
+or a specific sequence_id for a given app_id.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong></p></li>
+<li><p><strong>app_id</strong></p></li>
+<li><p><strong>sequence_id</strong></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.save">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'completed'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'failed'</span></span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.save" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronously saves the state for a given app_id, sequence_id, and position.</p>
+<p>This method connects to the SQLite database, converts the state to a JSON string, and inserts a new record
+into the table with the provided partition_key, app_id, sequence_id, position, and state. After the operation,
+it commits the changes and closes the connection to the database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong> – The partition key. This could be None, but it’s up to the persister to whether
+that is a valid value it can handle.</p></li>
+<li><p><strong>app_id</strong> – The identifier for the app instance being recorded.</p></li>
+<li><p><strong>sequence_id</strong> – The state corresponding to a specific point in time.</p></li>
+<li><p><strong>position</strong> – The position in the sequence of states.</p></li>
+<li><p><strong>state</strong> – The state to be saved, an instance of the State class.</p></li>
+<li><p><strong>status</strong> – The status of this state, either “completed” or “failed”. If “failed” the state is what it was
+before the action was applied.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
 </section>
 
         </article>
@@ -1255,7 +1405,20 @@ although it uses different mechanisms to save state (as it tracks more than just
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#supported-async-implementations">Supported Async Implementations</a></li>
+<li><a class="reference internal" href="#supported-async-implementations">Supported Async Implementations</a><ul>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister</span></code></a><ul>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.__init__"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.create_table_if_not_exists"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.create_table_if_not_exists()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.from_values"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.from_values()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.initialize"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.initialize()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.is_initialized"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.is_initialized()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.list_app_ids()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.load"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.load()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.save"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.save()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
