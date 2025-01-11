@@ -45,7 +45,8 @@ aiosqlite = [
 ]
 
 postgresql = [
-  "psycopg2-binary"
+  "psycopg2-binary",
+  "asyncpg"
 ]
 
 redis = [
@@ -62,6 +63,7 @@ tests = [
   "langchain_community",
   "pandas",
   "psycopg2",
+  "asyncpg",
   "pydantic[email]",
   "pyarrow",
   "redis",
