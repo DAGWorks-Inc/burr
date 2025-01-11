@@ -19,6 +19,15 @@ Other LLM providers (e.g., Cohere, HuggingFace) have their own set of endpoints.
 ## OpenAI API compatible Burr application
 This example contains a very simple Burr application (`application.py`) and a FastAPI server to deploy this agent behind the OpenAI `v1/chat/completions` endpoint. After starting the server with `server.py`, you should be able to interact with it from your other tools ([Jan](https://jan.ai/docs) is easy and quick to install across platforms).
 
+To run, execute:
+
+```bash
+python server.py
+```
+
+If you're using Jan, untoggle the `Stream` parameter (we will add an example of a stream-compatible application later).
+
+
 ![](statemachine.png)
 
 This is great because we can quickly integrate our Burr Agent with high-quality UIs and tools. Simulaneously, you gain Burr's observability, logging, and persistence across your applications.
