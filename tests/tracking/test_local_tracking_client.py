@@ -467,3 +467,13 @@ def test_that_we_can_read_write_local_tracker(tmp_path):
         )
 
         app.run(halt_after=["state_2"])
+
+
+def test_local_tracking_client_copy():
+    """Tests tracking client .copy() method for serialization/parallelism.
+    Internal-facing contracts but we want coverage here."""
+    tracking_client = LocalTrackingClient("foo", "storage_dir", serde_kwargs={"foo": "bar"})
+    copy = tracking_client.copy()
+    assert copy.project_id == tracking_client.project_id
+    assert copy.serde_kwargs == tracking_client.serde_kwargs
+    assert copy.storage_dir == tracking_client.storage_dir
