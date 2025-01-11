@@ -262,6 +262,7 @@ class LocalTrackingClient(
         return LocalTrackingClient(
             project=self.project_id,
             storage_dir=self.raw_storage_dir,
+            serde_kwargs=self.serde_kwargs,
         )
 
     @classmethod
