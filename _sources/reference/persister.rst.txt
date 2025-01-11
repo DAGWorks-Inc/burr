@@ -70,7 +70,7 @@ Currently we support the following, although we highly recommend you contribute 
 
 .. _asyncpersistersref:
 
-.. autoclass:: burr.core.persistence.AsyncSQLitePersister
+.. autoclass:: burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister
    :members:
 
    .. automethod:: __init__
