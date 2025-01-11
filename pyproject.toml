@@ -40,7 +40,7 @@ graphviz = [
   "graphviz"
 ]
 
-sqlite = [
+aiosqlite = [
   "aiosqlite"
 ]
 

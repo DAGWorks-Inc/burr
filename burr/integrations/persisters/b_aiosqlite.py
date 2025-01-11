@@ -29,10 +29,7 @@ class AsyncSQLitePersister(AsyncBaseStatePersister, BaseCopyable):
 
     def copy(self) -> "Self":
         return AsyncSQLitePersister(
-            db_path=self.db_path,
-            table_name=self.table_name,
-            serde_kwargs=self.serde_kwargs,
-            connect_kwargs=self._connect_kwargs,
+            connection=self.connection, table_name=self.table_name, serde_kwargs=self.serde_kwargs
         )
 
     PARTITION_KEY_DEFAULT = ""
