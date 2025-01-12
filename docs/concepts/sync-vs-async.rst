@@ -4,36 +4,54 @@ Sync vs Async Applications
 
 TL;DR
 ------
-1. For applications with horizontal scaling: multiple users, lots of i/o throughput,... go with async. Check out:
+
+Burr supports synchronous (standard python) and asynchronous (``async def``/``await``) applications. At a high leveL:
+
+1. Use the `async` interfaces when you have I/O-heavy applications that require horizontal scaling, and have avaialble asynchronous APIs (E.G. async LLM APIs)
 
    * :py:meth:`.abuild() <.ApplicationBuilder.abuild()>`
    * :py:meth:`.aiterate() <.Application.aiterate()>`
    * :py:meth:`.arun() <.Application.arun()>`
    * :py:meth:`.astream_result() <.Application.astream_result()>`
 
-2. For prototyping applications or high stakes operations,... go with sync.Check out:
+2. Use the synchronous interfaces otherwise -- when you have high CPU-bound applications (running models locally), or do not have async APIs to use:
 
    * :py:meth:`.build() <.ApplicationBuilder.build()>`
    * :py:meth:`.iterate() <.Application.iterate()>`
    * :py:meth:`.run() <.Application.run()>`
    * :py:meth:`.stream_result() <.Application.stream_result()>`
 
+Comparison
+----------
 
-Burr does both sync and async
-------------------------------
-Bellow we give a short breakdown when to consider each case.
+A synchronous application processes tasks sequentially for every thread/process it executes, blocking entirely on the result
+of the prior call. For Burr, this means that two separate applications have to run in a separate thread/process, and that running
+parallel processes have to launch in a multithreaded/multi-processing environment, run, and join the results.
+
+In the case of Burr, this means that you have a 1:1 app -> thread/process mapping (unless you're using :ref:`parallelism <parallelism>` and explicitly multithreading sub-actions).
+
+An asynchronous application can parallelize multiple I/O bound tasks within the confines of a single thread. At the time that
+a task blocks on I/O it can give control back to the process, allow it to run other tasks simultaneously.
+
+In the case of Burr, this allows you to run more than one applications,in parallel, on the same thread.
+Note, however, that you have to ensure the application is async all the way down -- E.G. that every blocking call
+is called using `await` -- if it blocks the event loop through a slow, synchronous call, it will block *all* current
+applications.
 
 In general, Burr is equipped to handle both synchronous and asynchronous runs. We usually do that by
 providing both methods (see specific references for more detail and reach out if you feel like we
-are missing a specific implementation).
+are missing a specific implementation). Furthermore, Burr suports the following APIs for both synchronous/asynchronous interfaces:
 
-We hope the switch from one to another is as convenient as possible; you only need to substitute
-functions/adapters/method calls.
+- :ref:`hooks <hooksref>`
+- :ref:`persisters <persistersref>`
 
-We highly encourage to make a decision to either commit fully to sync or async. Having said that,
+Nuances of Sync + Async together
+--------------------------------
+
+We encourage to make a decision to either commit fully to sync or async. That said,
 there are cases where a hybrid situation may be desirable or unavoidable (testing, prototyping,
 legacy code, ...) and we give some options to handle that. The table bellow shows the
-possibilities Burr now supports.
+possibilities Burr now supports -- combining the set of synchronous/asynchronous.
 
 
 .. table:: Cases Burr supports
@@ -73,67 +91,3 @@ possibilities Burr now supports.
     |                                                |          | should really use the sync       |
     |                                                |          | builder                          |
     +------------------------------------------------+----------+----------------------------------+
-
-
-Synchronous Applications
---------------------------
-A synchronous application processes tasks sequentially, where the user or calling system must wait for
-the agent to finish a task before proceeding.
-
-Advantages
-~~~~~~~~~~~~
-
-1. Simplicity:
-    * Easier to design and implement as the logic flows linearly.
-    * Debugging and maintenance are more straightforward.
-2. Deterministic Behavior:
-    * Results are predictable and occur in a defined sequence.
-    * Ideal for workflows where steps must be completed in strict order.
-3. Low Overhead:
-    * Useful for tasks that don’t require extensive multitasking or background processing.
-    * Rapid prototyping.
-
-
-Use Cases
-~~~~~~~~~~~
-
-1. Short, straightforward tasks:
-    * For example, fetching a single database entry or making a quick calculation.
-2. High-stakes operations:
-    * When the process must proceed step-by-step without the risk of race conditions or overlapping tasks.
-3. Interactive applications:
-    * Situations where the user must receive immediate feedback before taking the next step, like form validations.
-
-Asynchronous Application
---------------------------
-An asynchronous application can perform tasks in parallel or handle multiple requests without waiting for
-one to finish before starting another.
-
-Advantages
-~~~~~~~~~~~~
-
-1. Efficiency:
-    * Makes better use of system resources by handling multiple tasks simultaneously.
-    * Reduces idle time, especially when dealing with I/O-bound or network-bound operations.
-2. Scalability:
-    * Handles large volumes of concurrent tasks more effectively.
-    * Useful in systems requiring high throughput, like web servers or chatbots.
-3. Non-blocking Execution:
-    * Allows other operations to continue while waiting for longer processes to complete.
-    * Provides a smoother experience in real-time systems.
-
-
-Use Cases
-~~~~~~~~~~~~
-
-1. Long-running processes:
-    * Training machine learning models.
-    * Data processing pipelines.
-2. I/O-bound tasks:
-    * Calling APIs.
-    * Retrieving data from remote servers or databases.
-3. High-concurrency systems:
-    * Chatbots serving multiple users.
-    * Customer support systems.
-4. Background processing:
-    * Notifications, logs, and analytics tasks running while the main application continues.
