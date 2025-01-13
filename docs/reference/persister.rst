@@ -103,3 +103,8 @@ Currently we support the following, although we highly recommend you contribute 
    :members:
 
    .. automethod:: __init__
+
+.. autoclass:: burr.integrations.persisters.b_redis.AsyncRedisBasePersister
+   :members:
+
+   .. automethod:: __init__
