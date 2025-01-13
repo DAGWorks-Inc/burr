@@ -5,9 +5,9 @@ Sync vs Async Applications
 TL;DR
 ------
 
-Burr supports synchronous (standard python) and asynchronous (``async def``/``await``) applications. At a high leveL:
+Burr gives you the ability to write synchronous (standard python) and asynchronous (``async def``/``await``) Burr applications. You then run these applications in some sort of python context (e.g. script, web-service, aws lambda, etc). Whether you choose to write your Burr application using Burr's synchronous or asynchronous features depends on where you plan to run your Burr application. At a high level:
 
-1. Use the `async` interfaces when you have I/O-heavy applications that require horizontal scaling, and have avaialble asynchronous APIs (E.G. async LLM APIs)
+1. Use the `async` interfaces when you have I/O-heavy applications that require horizontal scaling, and have avaialble asynchronous APIs (E.G. async LLM APIs in a web-service like FastAPI)
 
    * :py:meth:`.abuild() <.ApplicationBuilder.abuild()>`
    * :py:meth:`.aiterate() <.Application.aiterate()>`
@@ -24,21 +24,20 @@ Burr supports synchronous (standard python) and asynchronous (``async def``/``aw
 Comparison
 ----------
 
-A synchronous application processes tasks sequentially for every thread/process it executes, blocking entirely on the result
-of the prior call. For Burr, this means that two separate applications have to run in a separate thread/process, and that running
-parallel processes have to launch in a multithreaded/multi-processing environment, run, and join the results.
+A synchronous Python application processes tasks sequentially for every thread/process it executes, blocking entirely on the result
+of the prior call. When using Burr, this means that two (or more) separate Burr applications, if they are to run concurrently, have to be run in separate threads/processes which you manage / control.
 
-In the case of Burr, this means that you have a 1:1 app -> thread/process mapping (unless you're using :ref:`parallelism <parallelism>` and explicitly multithreading sub-actions).
+Specifically for Burr, this means that you have a 1:1 app -> thread/process mapping (unless you're using :ref:`parallelism <parallelism>` and explicitly multithreading sub-actions).
 
 An asynchronous application can parallelize multiple I/O bound tasks within the confines of a single thread. At the time that
 a task blocks on I/O it can give control back to the process, allow it to run other tasks simultaneously.
 
-In the case of Burr, this allows you to run more than one applications,in parallel, on the same thread.
-Note, however, that you have to ensure the application is async all the way down -- E.G. that every blocking call
+In the case of Burr, Burr supports this model in running multiple Burr applications, in parallel, on the same as thread (i.e. the asyncio event loop).
+Note, however, that you have to ensure your Burr application is async all the way down -- E.G. that every blocking call
 is called using `await` -- if it blocks the event loop through a slow, synchronous call, it will block *all* current
 applications.
 
-In general, Burr is equipped to handle both synchronous and asynchronous runs. We usually do that by
+In general, Burr gives you the constructs for synchronous and asynchronous execution. We usually do that by
 providing both methods (see specific references for more detail and reach out if you feel like we
 are missing a specific implementation). Furthermore, Burr suports the following APIs for both synchronous/asynchronous interfaces:
 
