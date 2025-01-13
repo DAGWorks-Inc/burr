@@ -12,7 +12,7 @@
         gtag('js', new Date());
         gtag('config', 'G-20Z3J1CR22');
     </script>
-    <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="API reference" href="../../reference/" /><link rel="prev" title="Planned Capabilities" href="../planned-capabilities/" />
+    <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Planned Capabilities" href="../planned-capabilities/" /><link rel="prev" title="Recursive Applications" href="../recursion/" />
         <link rel="canonical" href="https://burr.dagworks.io/concepts/sync-vs-async/" />
 
     <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
@@ -277,8 +277,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../additional-visibility/">Additional Visibility</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../parallelism/">Parallelism</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../recursion/">Recursive Applications</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../planned-capabilities/">Planned Capabilities</a></li>
 <li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Sync vs Async Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../planned-capabilities/">Planned Capabilities</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../reference/">API reference</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of API reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -374,8 +374,9 @@
 <h1>Sync vs Async Applications<a class="headerlink" href="#sync-vs-async-applications" title="Link to this heading">¶</a></h1>
 <section id="tl-dr">
 <h2>TL;DR<a class="headerlink" href="#tl-dr" title="Link to this heading">¶</a></h2>
+<p>Burr gives you the ability to write synchronous (standard python) and asynchronous (<code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">def</span></code>/<code class="docutils literal notranslate"><span class="pre">await</span></code>) Burr applications. You then run these applications in some sort of python context (e.g. script, web-service, aws lambda, etc). Whether you choose to write your Burr application using Burr’s synchronous or asynchronous features depends on where you plan to run your Burr application. At a high level:</p>
 <ol class="arabic simple">
-<li><p>For applications with horizontal scaling: multiple users, lots of i/o throughput,… go with async. Check out:</p>
+<li><p>Use the <cite>async</cite> interfaces when you have I/O-heavy applications that require horizontal scaling, and have avaialble asynchronous APIs (E.G. async LLM APIs in a web-service like FastAPI)</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationBuilder.abuild" title="burr.core.application.ApplicationBuilder.abuild"><code class="xref py py-meth docutils literal notranslate"><span class="pre">.abuild()</span></code></a></p></li>
 <li><p><a class="reference internal" href="../../reference/application/#burr.core.application.Application.aiterate" title="burr.core.application.Application.aiterate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">.aiterate()</span></code></a></p></li>
@@ -383,7 +384,7 @@
 <li><p><a class="reference internal" href="../../reference/application/#burr.core.application.Application.astream_result" title="burr.core.application.Application.astream_result"><code class="xref py py-meth docutils literal notranslate"><span class="pre">.astream_result()</span></code></a></p></li>
 </ul>
 </li>
-<li><p>For prototyping applications or high stakes operations,… go with sync.Check out:</p>
+<li><p>Use the synchronous interfaces otherwise – when you have high CPU-bound applications (running models locally), or do not have async APIs to use:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationBuilder.build" title="burr.core.application.ApplicationBuilder.build"><code class="xref py py-meth docutils literal notranslate"><span class="pre">.build()</span></code></a></p></li>
 <li><p><a class="reference internal" href="../../reference/application/#burr.core.application.Application.iterate" title="burr.core.application.Application.iterate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">.iterate()</span></code></a></p></li>
@@ -393,21 +394,34 @@
 </li>
 </ol>
 </section>
-<section id="burr-does-both-sync-and-async">
-<h2>Burr does both sync and async<a class="headerlink" href="#burr-does-both-sync-and-async" title="Link to this heading">¶</a></h2>
-<p>Bellow we give a short breakdown when to consider each case.</p>
-<p>In general, Burr is equipped to handle both synchronous and asynchronous runs. We usually do that by
+<section id="comparison">
+<h2>Comparison<a class="headerlink" href="#comparison" title="Link to this heading">¶</a></h2>
+<p>A synchronous Python application processes tasks sequentially for every thread/process it executes, blocking entirely on the result
+of the prior call. When using Burr, this means that two (or more) separate Burr applications, if they are to run concurrently, have to be run in separate threads/processes which you manage / control.</p>
+<p>Specifically for Burr, this means that you have a 1:1 app -&gt; thread/process mapping (unless you’re using <a class="reference internal" href="../parallelism/#parallelism"><span class="std std-ref">parallelism</span></a> and explicitly multithreading sub-actions).</p>
+<p>An asynchronous application can parallelize multiple I/O bound tasks within the confines of a single thread. At the time that
+a task blocks on I/O it can give control back to the process, allow it to run other tasks simultaneously.</p>
+<p>In the case of Burr, Burr supports this model in running multiple Burr applications, in parallel, on the same as thread (i.e. the asyncio event loop).
+Note, however, that you have to ensure your Burr application is async all the way down – E.G. that every blocking call
+is called using <cite>await</cite> – if it blocks the event loop through a slow, synchronous call, it will block <em>all</em> current
+applications.</p>
+<p>In general, Burr gives you the constructs for synchronous and asynchronous execution. We usually do that by
 providing both methods (see specific references for more detail and reach out if you feel like we
-are missing a specific implementation).</p>
-<p>We hope the switch from one to another is as convenient as possible; you only need to substitute
-functions/adapters/method calls.</p>
-<p>We highly encourage to make a decision to either commit fully to sync or async. Having said that,
+are missing a specific implementation). Furthermore, Burr suports the following APIs for both synchronous/asynchronous interfaces:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../../reference/lifecycle/#hooksref"><span class="std std-ref">hooks</span></a></p></li>
+<li><p><a class="reference internal" href="../../reference/persister/#persistersref"><span class="std std-ref">persisters</span></a></p></li>
+</ul>
+</section>
+<section id="nuances-of-sync-async-together">
+<h2>Nuances of Sync + Async together<a class="headerlink" href="#nuances-of-sync-async-together" title="Link to this heading">¶</a></h2>
+<p>We encourage to make a decision to either commit fully to sync or async. That said,
 there are cases where a hybrid situation may be desirable or unavoidable (testing, prototyping,
 legacy code, …) and we give some options to handle that. The table bellow shows the
-possibilities Burr now supports.</p>
-<div class="table-wrapper colwidths-auto docutils container" id="id3">
-<table class="docutils align-default" id="id3">
-<caption><span class="caption-text">Cases Burr supports</span><a class="headerlink" href="#id3" title="Link to this table">¶</a></caption>
+possibilities Burr now supports – combining the set of synchronous/asynchronous.</p>
+<div class="table-wrapper colwidths-auto docutils container" id="id1">
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Cases Burr supports</span><a class="headerlink" href="#id1" title="Link to this table">¶</a></caption>
 <thead>
 <tr class="row-odd"><th class="head"><p>Cases</p></th>
 <th class="head"><p>Works?</p></th>
@@ -466,136 +480,6 @@ builder</p></td>
 </table>
 </div>
 </section>
-<section id="synchronous-applications">
-<h2>Synchronous Applications<a class="headerlink" href="#synchronous-applications" title="Link to this heading">¶</a></h2>
-<p>A synchronous application processes tasks sequentially, where the user or calling system must wait for
-the agent to finish a task before proceeding.</p>
-<section id="advantages">
-<h3>Advantages<a class="headerlink" href="#advantages" title="Link to this heading">¶</a></h3>
-<ol class="arabic simple">
-<li><dl class="simple">
-<dt>Simplicity:</dt><dd><ul class="simple">
-<li><p>Easier to design and implement as the logic flows linearly.</p></li>
-<li><p>Debugging and maintenance are more straightforward.</p></li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>Deterministic Behavior:</dt><dd><ul class="simple">
-<li><p>Results are predictable and occur in a defined sequence.</p></li>
-<li><p>Ideal for workflows where steps must be completed in strict order.</p></li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>Low Overhead:</dt><dd><ul class="simple">
-<li><p>Useful for tasks that don’t require extensive multitasking or background processing.</p></li>
-<li><p>Rapid prototyping.</p></li>
-</ul>
-</dd>
-</dl>
-</li>
-</ol>
-</section>
-<section id="use-cases">
-<h3>Use Cases<a class="headerlink" href="#use-cases" title="Link to this heading">¶</a></h3>
-<ol class="arabic simple">
-<li><dl class="simple">
-<dt>Short, straightforward tasks:</dt><dd><ul class="simple">
-<li><p>For example, fetching a single database entry or making a quick calculation.</p></li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>High-stakes operations:</dt><dd><ul class="simple">
-<li><p>When the process must proceed step-by-step without the risk of race conditions or overlapping tasks.</p></li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>Interactive applications:</dt><dd><ul class="simple">
-<li><p>Situations where the user must receive immediate feedback before taking the next step, like form validations.</p></li>
-</ul>
-</dd>
-</dl>
-</li>
-</ol>
-</section>
-</section>
-<section id="asynchronous-application">
-<h2>Asynchronous Application<a class="headerlink" href="#asynchronous-application" title="Link to this heading">¶</a></h2>
-<p>An asynchronous application can perform tasks in parallel or handle multiple requests without waiting for
-one to finish before starting another.</p>
-<section id="id1">
-<h3>Advantages<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
-<ol class="arabic simple">
-<li><dl class="simple">
-<dt>Efficiency:</dt><dd><ul class="simple">
-<li><p>Makes better use of system resources by handling multiple tasks simultaneously.</p></li>
-<li><p>Reduces idle time, especially when dealing with I/O-bound or network-bound operations.</p></li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>Scalability:</dt><dd><ul class="simple">
-<li><p>Handles large volumes of concurrent tasks more effectively.</p></li>
-<li><p>Useful in systems requiring high throughput, like web servers or chatbots.</p></li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>Non-blocking Execution:</dt><dd><ul class="simple">
-<li><p>Allows other operations to continue while waiting for longer processes to complete.</p></li>
-<li><p>Provides a smoother experience in real-time systems.</p></li>
-</ul>
-</dd>
-</dl>
-</li>
-</ol>
-</section>
-<section id="id2">
-<h3>Use Cases<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
-<ol class="arabic simple">
-<li><dl class="simple">
-<dt>Long-running processes:</dt><dd><ul class="simple">
-<li><p>Training machine learning models.</p></li>
-<li><p>Data processing pipelines.</p></li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>I/O-bound tasks:</dt><dd><ul class="simple">
-<li><p>Calling APIs.</p></li>
-<li><p>Retrieving data from remote servers or databases.</p></li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>High-concurrency systems:</dt><dd><ul class="simple">
-<li><p>Chatbots serving multiple users.</p></li>
-<li><p>Customer support systems.</p></li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>Background processing:</dt><dd><ul class="simple">
-<li><p>Notifications, logs, and analytics tasks running while the main application continues.</p></li>
-</ul>
-</dd>
-</dl>
-</li>
-</ol>
-</section>
-</section>
 </section>
 
         </article>
@@ -603,23 +487,23 @@ one to finish before starting another.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../../reference/">
+          <a class="next-page" href="../planned-capabilities/">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">API reference</div>
+                <div class="title">Planned Capabilities</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="../planned-capabilities/">
+          <a class="prev-page" href="../recursion/">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">Planned Capabilities</div>
+                <div class="title">Recursive Applications</div>
                 
               </div>
             </a>
@@ -655,17 +539,8 @@ one to finish before starting another.</p>
             <ul>
 <li><a class="reference internal" href="#">Sync vs Async Applications</a><ul>
 <li><a class="reference internal" href="#tl-dr">TL;DR</a></li>
-<li><a class="reference internal" href="#burr-does-both-sync-and-async">Burr does both sync and async</a></li>
-<li><a class="reference internal" href="#synchronous-applications">Synchronous Applications</a><ul>
-<li><a class="reference internal" href="#advantages">Advantages</a></li>
-<li><a class="reference internal" href="#use-cases">Use Cases</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#asynchronous-application">Asynchronous Application</a><ul>
-<li><a class="reference internal" href="#id1">Advantages</a></li>
-<li><a class="reference internal" href="#id2">Use Cases</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#comparison">Comparison</a></li>
+<li><a class="reference internal" href="#nuances-of-sync-async-together">Nuances of Sync + Async together</a></li>
 </ul>
 </li>
 </ul>

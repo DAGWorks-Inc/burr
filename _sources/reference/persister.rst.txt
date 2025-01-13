@@ -29,6 +29,30 @@ Internally, this interface combines the following two interfaces:
 
     .. automethod:: __init__
 
+Note we also have the corresponding async implementations:
+
+.. autoclass:: burr.core.persistence.AsyncBaseStatePersister
+   :members:
+   :show-inheritance:
+   :inherited-members:
+
+   .. automethod:: __init__
+
+Internally, this interface combines the following two interfaces:
+
+.. autoclass:: burr.core.persistence.AsyncBaseStateLoader
+   :members:
+
+   .. automethod:: __init__
+
+.. autoclass:: burr.core.persistence.AsyncBaseStateSaver
+    :members:
+    :show-inheritance:
+    :inherited-members:
+
+    .. automethod:: __init__
+
+
 
 Supported Sync Implementations
 ================================

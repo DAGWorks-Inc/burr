@@ -275,8 +275,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../concepts/additional-visibility/">Additional Visibility</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../concepts/parallelism/">Parallelism</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../concepts/recursion/">Recursive Applications</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../concepts/planned-capabilities/">Planned Capabilities</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../concepts/sync-vs-async/">Sync vs Async Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/planned-capabilities/">Planned Capabilities</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../reference/">API reference</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of API reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -382,6 +382,12 @@
 </li>
           <li><a href="../reference/application/#burr.core.application.Application.__init__">(burr.core.application.Application method)</a>
 </li>
+          <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStateLoader.__init__">(burr.core.persistence.AsyncBaseStateLoader method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStatePersister.__init__">(burr.core.persistence.AsyncBaseStatePersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStateSaver.__init__">(burr.core.persistence.AsyncBaseStateSaver method)</a>
+</li>
           <li><a href="../reference/persister/#burr.core.persistence.BaseStateLoader.__init__">(burr.core.persistence.BaseStateLoader method)</a>
 </li>
           <li><a href="../reference/persister/#burr.core.persistence.BaseStatePersister.__init__">(burr.core.persistence.BaseStatePersister method)</a>
@@ -449,12 +455,12 @@
 </li>
         <li><a href="../reference/tracking/#burr.tracking.LocalTrackingClient.app_log_exists">app_log_exists() (burr.tracking.LocalTrackingClient class method)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/state/#burr.core.state.State.append">append() (burr.core.state.State method)</a>
 </li>
         <li><a href="../reference/integrations/hamilton/#burr.integrations.hamilton.append_state">append_state() (in module burr.integrations.hamilton)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/application/#burr.core.application.Application">Application (class in burr.core.application)</a>
 </li>
         <li><a href="../reference/application/#burr.core.application.ApplicationBuilder">ApplicationBuilder (class in burr.core.application)</a>
@@ -470,6 +476,12 @@
         <li><a href="../reference/application/#burr.core.application.Application.astep">astep() (burr.core.application.Application method)</a>
 </li>
         <li><a href="../reference/application/#burr.core.application.Application.astream_result">astream_result() (burr.core.application.Application method)</a>
+</li>
+        <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStateLoader">AsyncBaseStateLoader (class in burr.core.persistence)</a>
+</li>
+        <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStatePersister">AsyncBaseStatePersister (class in burr.core.persistence)</a>
+</li>
+        <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStateSaver">AsyncBaseStateSaver (class in burr.core.persistence)</a>
 </li>
         <li><a href="../reference/persister/#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister">AsyncSQLitePersister (class in burr.integrations.persisters.b_aiosqlite)</a>
 </li>
@@ -708,9 +720,13 @@
 </li>
         <li><a href="../reference/integrations/opentelemetry/#burr.integrations.opentelemetry.init_instruments">init_instruments() (in module burr.integrations.opentelemetry)</a>
 </li>
-        <li><a href="../reference/persister/#burr.core.persistence.BaseStatePersister.initialize">initialize() (burr.core.persistence.BaseStatePersister method)</a>
+        <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStatePersister.initialize">initialize() (burr.core.persistence.AsyncBaseStatePersister method)</a>
 
         <ul>
+          <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStateSaver.initialize">(burr.core.persistence.AsyncBaseStateSaver method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.core.persistence.BaseStatePersister.initialize">(burr.core.persistence.BaseStatePersister method)</a>
+</li>
           <li><a href="../reference/persister/#burr.core.persistence.BaseStateSaver.initialize">(burr.core.persistence.BaseStateSaver method)</a>
 </li>
           <li><a href="../reference/persister/#burr.core.persistence.SQLitePersister.initialize">(burr.core.persistence.SQLitePersister method)</a>
@@ -746,9 +762,13 @@
           <li><a href="../reference/parallelism/#burr.core.parallelism.TaskBasedParallelAction.is_async">(burr.core.parallelism.TaskBasedParallelAction method)</a>
 </li>
         </ul></li>
-        <li><a href="../reference/persister/#burr.core.persistence.BaseStatePersister.is_initialized">is_initialized() (burr.core.persistence.BaseStatePersister method)</a>
+        <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStatePersister.is_initialized">is_initialized() (burr.core.persistence.AsyncBaseStatePersister method)</a>
 
         <ul>
+          <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStateSaver.is_initialized">(burr.core.persistence.AsyncBaseStateSaver method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.core.persistence.BaseStatePersister.is_initialized">(burr.core.persistence.BaseStatePersister method)</a>
+</li>
           <li><a href="../reference/persister/#burr.core.persistence.BaseStateSaver.is_initialized">(burr.core.persistence.BaseStateSaver method)</a>
 </li>
           <li><a href="../reference/persister/#burr.core.persistence.SQLitePersister.is_initialized">(burr.core.persistence.SQLitePersister method)</a>
@@ -768,9 +788,13 @@
   <h2>L</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="../reference/persister/#burr.core.persistence.BaseStateLoader.list_app_ids">list_app_ids() (burr.core.persistence.BaseStateLoader method)</a>
+        <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStateLoader.list_app_ids">list_app_ids() (burr.core.persistence.AsyncBaseStateLoader method)</a>
 
         <ul>
+          <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStatePersister.list_app_ids">(burr.core.persistence.AsyncBaseStatePersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.core.persistence.BaseStateLoader.list_app_ids">(burr.core.persistence.BaseStateLoader method)</a>
+</li>
           <li><a href="../reference/persister/#burr.core.persistence.BaseStatePersister.list_app_ids">(burr.core.persistence.BaseStatePersister method)</a>
 </li>
           <li><a href="../reference/persister/#burr.core.persistence.SQLitePersister.list_app_ids">(burr.core.persistence.SQLitePersister method)</a>
@@ -788,9 +812,13 @@
         </ul></li>
         <li><a href="../reference/conditions/#burr.core.action.Condition.lmda">lmda() (burr.core.action.Condition static method)</a>
 </li>
-        <li><a href="../reference/persister/#burr.core.persistence.BaseStateLoader.load">load() (burr.core.persistence.BaseStateLoader method)</a>
+        <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStateLoader.load">load() (burr.core.persistence.AsyncBaseStateLoader method)</a>
 
         <ul>
+          <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStatePersister.load">(burr.core.persistence.AsyncBaseStatePersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.core.persistence.BaseStateLoader.load">(burr.core.persistence.BaseStateLoader method)</a>
+</li>
           <li><a href="../reference/persister/#burr.core.persistence.BaseStatePersister.load">(burr.core.persistence.BaseStatePersister method)</a>
 </li>
           <li><a href="../reference/persister/#burr.core.persistence.SQLitePersister.load">(burr.core.persistence.SQLitePersister method)</a>
@@ -1041,9 +1069,13 @@
   <h2>S</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="../reference/persister/#burr.core.persistence.BaseStatePersister.save">save() (burr.core.persistence.BaseStatePersister method)</a>
+        <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStatePersister.save">save() (burr.core.persistence.AsyncBaseStatePersister method)</a>
 
         <ul>
+          <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStateSaver.save">(burr.core.persistence.AsyncBaseStateSaver method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.core.persistence.BaseStatePersister.save">(burr.core.persistence.BaseStatePersister method)</a>
+</li>
           <li><a href="../reference/persister/#burr.core.persistence.BaseStateSaver.save">(burr.core.persistence.BaseStateSaver method)</a>
 </li>
           <li><a href="../reference/persister/#burr.core.persistence.SQLitePersister.save">(burr.core.persistence.SQLitePersister method)</a>
@@ -1087,10 +1119,10 @@
 </li>
         <li><a href="../reference/state/#burr.core.state.State">State (class in burr.core.state)</a>
 </li>
-        <li><a href="../reference/parallelism/#burr.core.parallelism.MapActions.state">state() (burr.core.parallelism.MapActions method)</a>
-</li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../reference/parallelism/#burr.core.parallelism.MapActions.state">state() (burr.core.parallelism.MapActions method)</a>
+</li>
         <li><a href="../reference/parallelism/#burr.core.parallelism.MapActionsAndStates.state_initializer">state_initializer() (burr.core.parallelism.MapActionsAndStates method)</a>
 </li>
         <li><a href="../reference/parallelism/#burr.core.parallelism.MapActionsAndStates.state_persister">state_persister() (burr.core.parallelism.MapActionsAndStates method)</a>

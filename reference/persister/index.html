@@ -277,8 +277,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../../concepts/additional-visibility/">Additional Visibility</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../concepts/parallelism/">Parallelism</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../concepts/recursion/">Recursive Applications</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../concepts/planned-capabilities/">Planned Capabilities</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../concepts/sync-vs-async/">Sync vs Async Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/planned-capabilities/">Planned Capabilities</a></li>
 </ul>
 </li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../">API reference</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of API reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
@@ -559,6 +559,212 @@ database for your application.</p>
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.BaseStateSaver.save" title="Link to this definition">¶</a></dt>
+<dd><p>Saves the state for a given app_id, sequence_id, position</p>
+<p>(PK, App_id, sequence_id, position) are a unique identifier for the state. Why not just
+(PK, App_id, sequence_id)? Because we’re over-engineering this here. We’re always going to have
+a position so might as well make it a quadruple.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong> – the partition key. Note this could be None, but it’s up to the persistor to whether
+that is a valid value it can handle.</p></li>
+<li><p><strong>app_id</strong> – Appliaction UID to write with</p></li>
+<li><p><strong>sequence_id</strong> – Sequence ID of the last executed step</p></li>
+<li><p><strong>position</strong> – The action name that was implemented</p></li>
+<li><p><strong>state</strong> – The current state of the application</p></li>
+<li><p><strong>status</strong> – The status of this state, either “completed” or “failed”. If “failed” the state is what it was
+before the action was applied.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>Note we also have the corresponding async implementations:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStatePersister">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.persistence.</span></span><span class="sig-name descname"><span class="pre">AsyncBaseStatePersister</span></span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStatePersister" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#burr.core.persistence.AsyncBaseStateLoader" title="burr.core.persistence.AsyncBaseStateLoader"><code class="xref py py-class docutils literal notranslate"><span class="pre">AsyncBaseStateLoader</span></code></a>, <a class="reference internal" href="#burr.core.persistence.AsyncBaseStateSaver" title="burr.core.persistence.AsyncBaseStateSaver"><code class="xref py py-class docutils literal notranslate"><span class="pre">AsyncBaseStateSaver</span></code></a></p>
+<p>Utility interface for an asynchronous state reader/writer. This both persists and initializes state.
+Extend this class if you want an easy way to implement custom state storage.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStatePersister.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStatePersister.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStatePersister.initialize">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStatePersister.initialize" title="Link to this definition">¶</a></dt>
+<dd><p>Initializes the app for saving, set up any databases, etc.. you want to here.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStatePersister.is_initialized">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStatePersister.is_initialized" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the persister has been initialized appropriately.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStatePersister.list_app_ids">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStatePersister.list_app_ids" title="Link to this definition">¶</a></dt>
+<dd><p>Returns list of app IDs for a given primary key</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStatePersister.load">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStatePersister.load" title="Link to this definition">¶</a></dt>
+<dd><p>Loads the state for a given app_id</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong> – the partition key. Note this could be None, but it’s up to the persistor to whether
+that is a valid value it can handle.</p></li>
+<li><p><strong>app_id</strong> – the identifier for the app instance being recorded.</p></li>
+<li><p><strong>sequence_id</strong> – optional, the state corresponding to a specific point in time. Specifically state at the
+end of the action with this sequence_id. If sequence_id is not provided, persistor should return the state
+from the latest fully completed action.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>PersistedStateData or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStatePersister.save">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'completed'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'failed'</span></span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStatePersister.save" title="Link to this definition">¶</a></dt>
+<dd><p>Saves the state for a given app_id, sequence_id, position</p>
+<p>(PK, App_id, sequence_id, position) are a unique identifier for the state. Why not just
+(PK, App_id, sequence_id)? Because we’re over-engineering this here. We’re always going to have
+a position so might as well make it a quadruple.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong> – the partition key. Note this could be None, but it’s up to the persistor to whether
+that is a valid value it can handle.</p></li>
+<li><p><strong>app_id</strong> – Appliaction UID to write with</p></li>
+<li><p><strong>sequence_id</strong> – Sequence ID of the last executed step</p></li>
+<li><p><strong>position</strong> – The action name that was implemented</p></li>
+<li><p><strong>state</strong> – The current state of the application</p></li>
+<li><p><strong>status</strong> – The status of this state, either “completed” or “failed”. If “failed” the state is what it was
+before the action was applied.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>Internally, this interface combines the following two interfaces:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStateLoader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.persistence.</span></span><span class="sig-name descname"><span class="pre">AsyncBaseStateLoader</span></span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStateLoader" title="Link to this definition">¶</a></dt>
+<dd><p>Asynchronous base class for state initialization. This goes together with a AsyncBaseStateSaver
+to form the database for your application.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStateLoader.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStateLoader.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStateLoader.list_app_ids">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStateLoader.list_app_ids" title="Link to this definition">¶</a></dt>
+<dd><p>Returns list of app IDs for a given primary key</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStateLoader.load">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStateLoader.load" title="Link to this definition">¶</a></dt>
+<dd><p>Loads the state for a given app_id</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong> – the partition key. Note this could be None, but it’s up to the persistor to whether
+that is a valid value it can handle.</p></li>
+<li><p><strong>app_id</strong> – the identifier for the app instance being recorded.</p></li>
+<li><p><strong>sequence_id</strong> – optional, the state corresponding to a specific point in time. Specifically state at the
+end of the action with this sequence_id. If sequence_id is not provided, persistor should return the state
+from the latest fully completed action.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>PersistedStateData or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStateSaver">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.persistence.</span></span><span class="sig-name descname"><span class="pre">AsyncBaseStateSaver</span></span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStateSaver" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Asynchronous base class for state writing. This goes together with a AsyncBaseStateLoader
+to form the database for your application.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStateSaver.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStateSaver.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStateSaver.initialize">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStateSaver.initialize" title="Link to this definition">¶</a></dt>
+<dd><p>Initializes the app for saving, set up any databases, etc.. you want to here.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStateSaver.is_initialized">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStateSaver.is_initialized" title="Link to this definition">¶</a></dt>
+<dd><p>Check if the persister has been initialized appropriately.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.AsyncBaseStateSaver.save">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'completed'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'failed'</span></span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.AsyncBaseStateSaver.save" title="Link to this definition">¶</a></dt>
 <dd><p>Saves the state for a given app_id, sequence_id, position</p>
 <p>(PK, App_id, sequence_id, position) are a unique identifier for the state. Why not just
 (PK, App_id, sequence_id)? Because we’re over-engineering this here. We’re always going to have
@@ -1360,6 +1566,28 @@ before the action was applied.</p></li>
 <li><a class="reference internal" href="#burr.core.persistence.BaseStateSaver.initialize"><code class="docutils literal notranslate"><span class="pre">BaseStateSaver.initialize()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.BaseStateSaver.is_initialized"><code class="docutils literal notranslate"><span class="pre">BaseStateSaver.is_initialized()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.BaseStateSaver.save"><code class="docutils literal notranslate"><span class="pre">BaseStateSaver.save()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStatePersister"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStatePersister</span></code></a><ul>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStatePersister.__init__"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStatePersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStatePersister.initialize"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStatePersister.initialize()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStatePersister.is_initialized"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStatePersister.is_initialized()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStatePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStatePersister.list_app_ids()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStatePersister.load"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStatePersister.load()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStatePersister.save"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStatePersister.save()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStateLoader"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStateLoader</span></code></a><ul>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStateLoader.__init__"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStateLoader.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStateLoader.list_app_ids"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStateLoader.list_app_ids()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStateLoader.load"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStateLoader.load()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStateSaver"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStateSaver</span></code></a><ul>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStateSaver.__init__"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStateSaver.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStateSaver.initialize"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStateSaver.initialize()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStateSaver.is_initialized"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStateSaver.is_initialized()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.AsyncBaseStateSaver.save"><code class="docutils literal notranslate"><span class="pre">AsyncBaseStateSaver.save()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#supported-sync-implementations">Supported Sync Implementations</a><ul>
