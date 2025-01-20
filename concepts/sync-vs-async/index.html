@@ -376,7 +376,7 @@
 <h2>TL;DR<a class="headerlink" href="#tl-dr" title="Link to this heading">¶</a></h2>
 <p>Burr gives you the ability to write synchronous (standard python) and asynchronous (<code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">def</span></code>/<code class="docutils literal notranslate"><span class="pre">await</span></code>) Burr applications. You then run these applications in some sort of python context (e.g. script, web-service, aws lambda, etc). Whether you choose to write your Burr application using Burr’s synchronous or asynchronous features depends on where you plan to run your Burr application. At a high level:</p>
 <ol class="arabic simple">
-<li><p>Use the <cite>async</cite> interfaces when you have I/O-heavy applications that require horizontal scaling, and have avaialble asynchronous APIs (E.G. async LLM APIs in a web-service like FastAPI)</p>
+<li><p>Use the <code class="docutils literal notranslate"><span class="pre">async</span></code> interfaces when you have I/O-heavy applications that require horizontal scaling, and have available asynchronous APIs (E.G. async LLM APIs in a web-service like FastAPI)</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationBuilder.abuild" title="burr.core.application.ApplicationBuilder.abuild"><code class="xref py py-meth docutils literal notranslate"><span class="pre">.abuild()</span></code></a></p></li>
 <li><p><a class="reference internal" href="../../reference/application/#burr.core.application.Application.aiterate" title="burr.core.application.Application.aiterate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">.aiterate()</span></code></a></p></li>
