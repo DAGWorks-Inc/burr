@@ -7,7 +7,7 @@ TL;DR
 
 Burr gives you the ability to write synchronous (standard python) and asynchronous (``async def``/``await``) Burr applications. You then run these applications in some sort of python context (e.g. script, web-service, aws lambda, etc). Whether you choose to write your Burr application using Burr's synchronous or asynchronous features depends on where you plan to run your Burr application. At a high level:
 
-1. Use the `async` interfaces when you have I/O-heavy applications that require horizontal scaling, and have avaialble asynchronous APIs (E.G. async LLM APIs in a web-service like FastAPI)
+1. Use the ``async`` interfaces when you have I/O-heavy applications that require horizontal scaling, and have available asynchronous APIs (E.G. async LLM APIs in a web-service like FastAPI)
 
    * :py:meth:`.abuild() <.ApplicationBuilder.abuild()>`
    * :py:meth:`.aiterate() <.Application.aiterate()>`
