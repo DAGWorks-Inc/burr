@@ -16,7 +16,7 @@ class AsyncSQLiteContextManager:
         return self.client
 
     async def __aexit__(self, exc_type, exc, tb):
-        await self.client.close()
+        await self.client.cleanup()
 
 
 async def test_copy_persister(async_persistence: AsyncSQLitePersister):

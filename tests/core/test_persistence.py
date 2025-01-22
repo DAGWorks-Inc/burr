@@ -13,15 +13,19 @@ from burr.core.persistence import InMemoryPersister, SQLLitePersister
 def persistence(request):
     which = request.param["which"]
     if which == "sqlite":
-        return SQLLitePersister(db_path=":memory:", table_name="test_table")
+        persister = SQLLitePersister(db_path=":memory:", table_name="test_table")
+        yield persister
+        persister.cleanup()
     elif which == "memory":
-        return InMemoryPersister()
+        yield InMemoryPersister()
     # return SQLLitePersister(db_path=":memory:", table_name="test_table")
 
 
 @pytest.fixture()
 def initializing_persistence():
-    return SQLLitePersister(db_path=":memory:", table_name="test_table")
+    persister = SQLLitePersister(db_path=":memory:", table_name="test_table")
+    yield persister
+    persister.cleanup()
 
 
 def test_persistence_initialization_creates_table(initializing_persistence):
@@ -69,6 +73,8 @@ def test_sqlite_persistence_is_initialized_true_new_connection(tmp_path):
     assert p.is_initialized()
     p2 = SQLLitePersister(db_path=db_path, table_name="test_table")
     assert p2.is_initialized()
+    p.cleanup()
+    p2.cleanup()
 
 
 @pytest.mark.parametrize(
