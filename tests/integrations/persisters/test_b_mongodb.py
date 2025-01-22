@@ -4,7 +4,8 @@ import pickle
 import pytest
 
 from burr.core import state
-from burr.integrations.persisters.b_mongodb import MongoDBBasePersister, MongoDBPersister
+from burr.integrations.persisters.b_mongodb import MongoDBPersister
+from burr.integrations.persisters.b_pymongo import MongoDBBasePersister
 
 if not os.environ.get("BURR_CI_INTEGRATION_TESTS") == "true":
     pytest.skip("Skipping integration tests", allow_module_level=True)
