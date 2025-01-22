@@ -288,6 +288,40 @@ class AsyncDevNullPersister(AsyncBaseStatePersister):
 class SQLitePersister(BaseStatePersister, BaseCopyable):
     """Class for SQLite persistence of state. This is a simple implementation."""
 
+    @classmethod
+    def from_config(cls, config: dict) -> "SQLitePersister":
+        """Creates a new instance of the SQLitePersister from a configuration dictionary.
+
+        The config key:value pair needed are:
+        db_path: str,
+        table_name: str,
+        serde_kwargs: dict,
+        connect_kwargs: dict,
+        """
+        return cls.from_values(**config)
+
+    @classmethod
+    def from_values(
+        cls,
+        db_path: str,
+        table_name: str = "burr_state",
+        serde_kwargs: dict = None,
+        connect_kwargs: dict = None,
+    ) -> "SQLitePersister":
+        """Creates a new instance of the SQLitePersister from passed in values.
+
+        :param db_path: the path the DB will be stored.
+        :param table_name: the table name to store things under.
+        :param serde_kwargs: kwargs for state serialization/deserialization.
+        :param connect_kwargs: kwargs to pass to the aiosqlite.connect method.
+        :return: async sqlite persister instance with an open connection. You are responsible
+            for closing the connection yourself.
+        """
+        connection = sqlite3.connect(
+            db_path, **connect_kwargs if connect_kwargs is not None else {}
+        )
+        return cls(db_path, table_name, serde_kwargs, connection=connection)
+
     def copy(self) -> "Self":
         return SQLitePersister(
             db_path=self.db_path,
@@ -304,6 +338,7 @@ class SQLitePersister(BaseStatePersister, BaseCopyable):
         table_name: str = "burr_state",
         serde_kwargs: dict = None,
         connect_kwargs: dict = None,
+        connection: sqlite3.Connection = None,
     ):
         """Constructor
 
@@ -312,15 +347,36 @@ class SQLitePersister(BaseStatePersister, BaseCopyable):
         :param serde_kwargs: kwargs for state serialization/deserialization.
         :param connect_kwargs: kwargs to pass to the sqlite3.connect method.
             Use check_same_thread=False to enable use ina  multithreaded context
+        :param connection: ability to instantiate a db outside of the persister and pass
+            in the connection to be used.
         """
         self.db_path = db_path
         self.table_name = table_name
-        self.connection = sqlite3.connect(
-            db_path, **connect_kwargs if connect_kwargs is not None else {}
-        )
+
+        # Here for backwards compatibility, the original idea was to create the connection
+        # but later we realized it also makes sense to pass the connection to the class and
+        # handle cleanup manually.
+        if connection is None:
+            self.connection = sqlite3.connect(
+                db_path, **connect_kwargs if connect_kwargs is not None else {}
+            )
+        else:
+            self.connection = connection
+
         self.serde_kwargs = serde_kwargs or {}
         self._initialized = False
         self._connect_kwargs = connect_kwargs
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.connection.close()
+        return False
+
+    def set_serde_kwargs(self, serde_kwargs: dict):
+        """Sets the serde_kwargs for the persister."""
+        self.serde_kwargs = serde_kwargs
 
     def create_table_if_not_exists(self, table_name: str):
         """Helper function to create the table where things are stored if it doesn't exist."""
@@ -485,7 +541,15 @@ class SQLitePersister(BaseStatePersister, BaseCopyable):
         )
         self.connection.commit()
 
+    def cleanup(self):
+        """Closes the connection to the database."""
+        self.connection.close()
+
     def __del__(self):
+        # This should be deprecated -- using __del__ is unreliable for closing connections to db's;
+        # the preferred way should be for the user to use a context manager or use the `.cleanup()`
+        # method within a REST API framework.
+
         # closes connection at end when things are being shutdown.
         self.connection.close()
 
