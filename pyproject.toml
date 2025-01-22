@@ -44,9 +44,20 @@ aiosqlite = [
   "aiosqlite"
 ]
 
-postgresql = [
-  "psycopg2-binary",
+asyncpg = [
   "asyncpg"
+]
+
+postgresql = [
+  "psycopg2-binary"
+] # leaving it here for backwards compatibility
+
+psycopg2 = [
+  "psycopg2-binary"
+]
+
+pymongo = [
+  "pymongo"
 ]
 
 redis = [
@@ -57,17 +68,17 @@ tests = [
   "pytest",
   "pytest-asyncio",
   "burr[hamilton]",
-  "pymongo",
   "burr[hamilton]",
   "langchain_core",
   "langchain_community",
   "pandas",
-  "psycopg2",
-  "asyncpg",
   "pydantic[email]",
   "pyarrow",
-  "redis",
-  "aiosqlite",
+  "burr[aiosqlite]",
+  "burr[asyncpg]",
+  "burr[psycopg2]",
+  "burr[pymongo]",
+  "burr[redis]",
   "burr[opentelemetry]",
   "burr[haystack]",
   "burr[ray]"
@@ -81,10 +92,12 @@ documentation = [
   "furo",
   "sphinx-sitemap",
   "sphinx-toolbox",
-  "psycopg2-binary",
-  "redis",
-  "ray",
-  "aiosqlite",
+  "burr[aiosqlite]",
+  "burr[asyncpg]",
+  "burr[psycopg2]",
+  "burr[pymongo]",
+  "burr[redis]",
+  "burr[ray]",
   "sphinxcontrib-googleanalytics"
 ]
 
@@ -180,8 +193,9 @@ opentelemetry = [
 ]
 
 ray = [
-  "ray"
+  "ray[default]"
 ]
+
 [tool.setuptools]
 include-package-data = true
 
