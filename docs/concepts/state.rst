@@ -27,6 +27,11 @@ State manipulation is done through calling methods on the ``State`` class. The m
 
     The ``State`` object can only be treated immutably! Calling ``state.update(foo=bar)`` will do nothing if you don't use the value returned by the call.
 
+.. warning::
+
+    State contains a set of "private" variables that start with `__`. -- E.G. `__SEQUENCE_ID`. These are internal to Burr, used by the application to track state.
+    Any modifications to them outside of the framework is considered undefined behavior -- it could be dropped, or error out (we reserve the right to alter this later).
+
 The read operations extend from those in the `Mapping <https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping>`_
 interface, but there are a few extra:
 
