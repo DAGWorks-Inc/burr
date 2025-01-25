@@ -391,6 +391,11 @@ meaning that you can only create new states from old ones, not modify them in pl
 <p class="admonition-title">Warning</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">State</span></code> object can only be treated immutably! Calling <code class="docutils literal notranslate"><span class="pre">state.update(foo=bar)</span></code> will do nothing if you don’t use the value returned by the call.</p>
 </div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>State contains a set of “private” variables that start with <cite>__</cite>. – E.G. <cite>__SEQUENCE_ID</cite>. These are internal to Burr, used by the application to track state.
+Any modifications to them outside of the framework is considered undefined behavior – it could be dropped, or error out (we reserve the right to alter this later).</p>
+</div>
 <p>The read operations extend from those in the <a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a>
 interface, but there are a few extra:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">state</span><span class="o">.</span><span class="n">subset</span><span class="p">([</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="s2">&quot;bar&quot;</span><span class="p">])</span>  <span class="c1"># return a new state with only the keys &quot;foo&quot; and &quot;bar&quot;</span>
