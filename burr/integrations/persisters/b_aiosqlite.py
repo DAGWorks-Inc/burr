@@ -19,12 +19,20 @@ except ImportError:
 class AsyncSQLitePersister(AsyncBaseStatePersister, BaseCopyable):
     """Class for asynchronous SQLite persistence of state. This is a simple implementation.
 
-    SQLite is specifically single-threaded and `aiosqlite <https://aiosqlite.omnilib.dev/en/latest/index.html>`_
-    creates async support through multi-threading. This persister is mainly here for quick prototyping and testing;
-    we suggest to consider a different database with native async support for production.
+    .. warning::
+        The synchronous persister closes the connection on deletion of the class using the ``__del__`` method.
+        In an async context that is not reliable (the event loop may already be closed by the time ``__del__``
+        gets invoked). Therefore, you are responsible for closing the connection yourself (i.e. manual cleanup).
+        We suggest to use the persister either as a context manager through the ``async with`` clause or
+        using the method ``.cleanup()``.
 
-    Note the third-party library `aiosqlite <https://aiosqlite.omnilib.dev/en/latest/index.html>`_,
-    is maintained and considered stable considered stable: https://github.com/omnilib/aiosqlite/issues/309.
+    .. note::
+        SQLite is specifically single-threaded and `aiosqlite <https://aiosqlite.omnilib.dev/en/latest/index.html>`_
+        creates async support through multi-threading. This persister is mainly here for quick prototyping and testing;
+        we suggest to consider a different database with native async support for production.
+
+        Note the third-party library `aiosqlite <https://aiosqlite.omnilib.dev/en/latest/index.html>`_,
+        is maintained and considered stable considered stable: https://github.com/omnilib/aiosqlite/issues/309.
     """
 
     def copy(self) -> "Self":
@@ -33,6 +41,18 @@ class AsyncSQLitePersister(AsyncBaseStatePersister, BaseCopyable):
         )
 
     PARTITION_KEY_DEFAULT = ""
+
+    @classmethod
+    async def from_config(cls, config: dict) -> "AsyncSQLitePersister":
+        """Creates a new instance of the AsyncSQLitePersister from a configuration dictionary.
+
+        The config key:value pair needed are:
+        db_path: str,
+        table_name: str,
+        serde_kwargs: dict,
+        connect_kwargs: dict,
+        """
+        return await cls.from_values(**config)
 
     @classmethod
     async def from_values(
@@ -75,6 +95,17 @@ class AsyncSQLitePersister(AsyncBaseStatePersister, BaseCopyable):
         self.table_name = table_name
         self.serde_kwargs = serde_kwargs or {}
         self._initialized = False
+
+    def set_serde_kwargs(self, serde_kwargs: dict):
+        """Sets the serde_kwargs for the persister."""
+        self.serde_kwargs = serde_kwargs
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        await self.connection.close()
+        return False
 
     async def create_table_if_not_exists(self, table_name: str):
         """Helper function to create the table where things are stored if it doesn't exist."""
@@ -246,5 +277,11 @@ class AsyncSQLitePersister(AsyncBaseStatePersister, BaseCopyable):
         )
         await self.connection.commit()
 
+    async def cleanup(self):
+        """Closes the connection to the database."""
+        await self.connection.close()
+
     async def close(self):
+        """This is deprecated, please use .cleanup()"""
+        logger.warning("The .close() method will be deprecated, please use .cleanup() instead.")
         await self.connection.close()
