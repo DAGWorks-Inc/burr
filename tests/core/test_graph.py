@@ -15,6 +15,7 @@ class PassedInAction(Action):
         fn: Callable[..., dict],
         update_fn: Callable[[dict, State], State],
         inputs: list[str],
+        tags: list[str] = None,
     ):
         super(PassedInAction, self).__init__()
         self._reads = reads
@@ -22,6 +23,7 @@ class PassedInAction(Action):
         self._fn = fn
         self._update_fn = update_fn
         self._inputs = inputs
+        self._tags = tags
 
     def run(self, state: State, **run_kwargs) -> dict:
         return self._fn(state, **run_kwargs)
@@ -40,6 +42,10 @@ class PassedInAction(Action):
     @property
     def writes(self) -> list[str]:
         return self._writes
+
+    @property
+    def tags(self) -> list[str]:
+        return self._tags or []
 
 
 def test__validate_transitions_correct():
@@ -87,6 +93,7 @@ base_counter_action = PassedInAction(
     fn=lambda state: {"count": state.get("count", 0) + 1},
     update_fn=lambda result, state: state.update(**result),
     inputs=[],
+    tags=["tag1", "tag2"],
 )
 
 
@@ -115,3 +122,36 @@ def test_graph_builder_get_next_node():
     assert len(graph.actions) == 2
     assert len(graph.transitions) == 2
     assert graph.get_next_node(None, State({"count": 0}), entrypoint="counter").name == "counter"
+
+
+def test_get_actions_by_tag():
+    action_with_tags = PassedInAction(
+        reads=["count"],
+        writes=["count"],
+        fn=lambda state: {"count": state.get("count", 0) + 1},
+        update_fn=lambda result, state: state.update(**result),
+        inputs=[],
+        tags=["tag1", "tag2"],
+    )
+
+    action_with_tags_2 = PassedInAction(
+        reads=["count"],
+        writes=["count"],
+        fn=lambda state: {"count": state.get("count", 0) + 1},
+        update_fn=lambda result, state: state.update(**result),
+        inputs=[],
+        tags=["tag1", "tag3"],
+    )
+    graph = (
+        GraphBuilder()
+        .with_actions(counter1=action_with_tags, counter2=action_with_tags_2)
+        .with_transitions(("counter1", "counter2"))
+        .with_transitions(("counter2", "counter1"))
+        .build()
+    )
+    # tag1 is in both actions, tag2 is in one, tag3 is in one
+    assert len(graph.get_actions_by_tag("tag1")) == 2
+    assert len(graph.get_actions_by_tag("tag2")) == 1
+    assert len(graph.get_actions_by_tag("tag3")) == 1
+    with pytest.raises(ValueError, match="not found"):
+        graph.get_actions_by_tag("tag4")

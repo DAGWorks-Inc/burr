@@ -68,6 +68,10 @@ class BasicAction(Action):
     def update(self, result: dict, state: State) -> State:
         return state.update(**result)
 
+    @property
+    def tags(self) -> list[str]:
+        return ["tag1", "tag2"]
+
 
 def test_with_name():
     action = BasicAction()
@@ -76,6 +80,7 @@ def test_with_name():
     assert with_name.name == "my_action"  # Name set on copy
     assert with_name.reads == action.reads
     assert with_name.writes == action.writes
+    assert with_name.tags == action.tags
 
 
 def test_condition():
@@ -230,7 +235,7 @@ def test_input():
 
 
 def test_function_based_action():
-    @action(reads=["input_variable"], writes=["output_variable"])
+    @action(reads=["input_variable"], writes=["output_variable"], tags=["tag1", "tag2"])
     def my_action(state: State) -> Tuple[dict, State]:
         return {"output_variable": state["input_variable"]}, state.update(
             output_variable=state["input_variable"]
@@ -241,13 +246,14 @@ def test_function_based_action():
     assert fn_based_action.name == "my_action"
     assert fn_based_action.reads == ["input_variable"]
     assert fn_based_action.writes == ["output_variable"]
+    assert fn_based_action.tags == ["tag1", "tag2"]
     result, state = fn_based_action.run_and_update(State({"input_variable": "foo"}))
     assert result == {"output_variable": "foo"}
     assert state.get_all() == {"input_variable": "foo", "output_variable": "foo"}
 
 
 def test_function_based_action_with_inputs():
-    @action(reads=["input_variable"], writes=["output_variable"])
+    @action(reads=["input_variable"], writes=["output_variable"], tags=["tag1", "tag2"])
     def my_action(state: State, bound_input: int, unbound_input: int) -> Tuple[dict, State]:
         res = state["input_variable"] + bound_input + unbound_input
         return {"output_variable": res}, state.update(output_variable=res)
@@ -256,6 +262,7 @@ def test_function_based_action_with_inputs():
         SingleStepAction, create_action(my_action.bind(bound_input=10), name="my_action")
     )
     assert fn_based_action.inputs == (["unbound_input"], [])
+    assert fn_based_action.tags == ["tag1", "tag2"]
     result, state = fn_based_action.run_and_update(State({"input_variable": 1}), unbound_input=100)
     assert state.get_all() == {"input_variable": 1, "output_variable": 111}
     assert result == {"output_variable": 111}
@@ -328,7 +335,7 @@ def test_function_based_action_with_defaults_unbound():
 
 
 async def test_function_based_action_async():
-    @action(reads=["input_variable"], writes=["output_variable"])
+    @action(reads=["input_variable"], writes=["output_variable"], tags=["tag1", "tag2"])
     async def my_action(state: State) -> Tuple[dict, State]:
         await asyncio.sleep(0.01)
         return {"output_variable": state["input_variable"]}, state.update(
@@ -341,6 +348,7 @@ async def test_function_based_action_async():
     assert fn_based_action.name == "my_action"
     assert fn_based_action.reads == ["input_variable"]
     assert fn_based_action.writes == ["output_variable"]
+    assert fn_based_action.tags == ["tag1", "tag2"]
     result, state = await fn_based_action.run_and_update(State({"input_variable": "foo"}))
     assert result == {"output_variable": "foo"}
     assert state.get_all() == {"input_variable": "foo", "output_variable": "foo"}
@@ -391,10 +399,11 @@ def test_create_action_class_api():
     assert created_action.name == "my_action"
     assert created_action.reads == raw_action.reads
     assert created_action.writes == raw_action.writes
+    assert created_action.tags == raw_action.tags
 
 
 def test_create_action_fn_api():
-    @action(reads=["input_variable"], writes=["output_variable"])
+    @action(reads=["input_variable"], writes=["output_variable"], tags=["tag1", "tag2"])
     def test_action(state: State) -> Tuple[dict, State]:
         result = {"output_variable": state["input_variable"]}
         return result, state.update(output_variable=result["output_variable"])
@@ -404,6 +413,7 @@ def test_create_action_fn_api():
     assert created_action.reads == ["input_variable"]
     assert created_action.writes == ["output_variable"]
     assert created_action.single_step
+    assert created_action.tags == ["tag1", "tag2"]
     result, state = created_action.run_and_update(State({"input_variable": "foo"}))
     assert result == {"output_variable": "foo"}
     assert state.get_all() == {"input_variable": "foo", "output_variable": "foo"}
@@ -435,7 +445,7 @@ def test_create_action_fn_api_with_bind():
 
 
 def test_create_action_streaming_fn_api_with_bind():
-    @streaming_action(reads=["input_variable"], writes=["output_variable"])
+    @streaming_action(reads=["input_variable"], writes=["output_variable"], tags=["tag1", "tag2"])
     def test_action(
         state: State, prefix: str
     ) -> Generator[Tuple[dict, Optional[State]], None, None]:
@@ -452,6 +462,7 @@ def test_create_action_streaming_fn_api_with_bind():
     assert created_action.name == "my_action"
     assert created_action.reads == ["input_variable"]
     assert created_action.writes == ["output_variable"]
+    assert created_action.tags == ["tag1", "tag2"]
     assert created_action.single_step
     gen = created_action.stream_run_and_update(State({"input_variable": "foo"}))
     out = [item for item in gen]
@@ -463,7 +474,7 @@ def test_create_action_streaming_fn_api_with_bind():
 
 
 async def test_create_action_streaming_fn_api_with_bind_async():
-    @streaming_action(reads=["input_variable"], writes=["output_variable"])
+    @streaming_action(reads=["input_variable"], writes=["output_variable"], tags=["tag1", "tag2"])
     async def test_action(
         state: State, prefix: str
     ) -> AsyncGenerator[Tuple[dict, Optional[State]], None]:
@@ -483,6 +494,7 @@ async def test_create_action_streaming_fn_api_with_bind_async():
     assert created_action.reads == ["input_variable"]
     assert created_action.writes == ["output_variable"]
     assert created_action.single_step
+    assert created_action.tags == ["tag1", "tag2"]
     gen = created_action.stream_run_and_update(State({"input_variable": "foo"}))
     out = [item async for item in gen]
     final_result, state = out[-1]

@@ -286,3 +286,28 @@ We need to pass in `client` and `prompt` somehow. Here are the ways to do that:
 
 For instance, say you have a chatbot. The first step will likely declare the ``input`` parameter ``prompt`` --
 it will take that, process it, and put the result in state. The subsequent steps will read the result of that from state.
+
+---------------
+Tagging Actions
+---------------
+
+You can tag actions with a list of strings -- this effectively functions as a "alias" for the action,
+so that a single alias can refer to multiple actions. This allows you to refer to a set of actions
+that have similar capabilities as one, using a variety of :ref:`application <applications>` APIs.
+
+.. code-block:: python
+
+    @action(reads=["..."], writes=["..."], tags=["response_to_display"])
+    def text_response(state: State, client: Client, prompt: str) -> State:
+        """client & `prompt` here are something we need to pass in."""
+        context = client.get_data(state["..."])
+        result = llm_call(prompt, context) # some LLM call...
+        return state.update(**result)
+
+This can be referred to either as the name of the action within the application, and/or as the tag
+``response_to_display`` -- referred to as ``@tag:response_to_display`` in the ``halt_after`` or ``halt_before`` parameters
+of :py:func:`Application.run <burr.core.application.Application.run>`, :py:func:`Application.iterate <burr.core.application.Application.iterate>`, etc.
+APIs.
+
+In all function-based APIs, you can pass in a list of tags with the ``tags`` parameter.
+In class-based APIs, you can set the ``tags`` property.
