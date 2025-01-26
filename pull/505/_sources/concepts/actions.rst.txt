@@ -304,3 +304,6 @@ that have similar capabilities as one, using a variety of :ref:`application <app
 
 This can be referred to either as the name of the action within the application, and/or as the tag
 ``response_to_display``.
+
+In all function-based APIs, you can pass in a list of tags with the ``tags`` parameter.
+In class-based APIs, you can set the ``tags`` property.
