@@ -601,6 +601,22 @@ be injected into the action. This is done by adding <cite>__context</cite> to th
 <p>For instance, say you have a chatbot. The first step will likely declare the <code class="docutils literal notranslate"><span class="pre">input</span></code> parameter <code class="docutils literal notranslate"><span class="pre">prompt</span></code> –
 it will take that, process it, and put the result in state. The subsequent steps will read the result of that from state.</p>
 </section>
+<section id="tagging-actions">
+<h2>Tagging Actions<a class="headerlink" href="#tagging-actions" title="Link to this heading">¶</a></h2>
+<p>You can tag actions with a list of strings – this effectively functions as a “alias” for the action,
+so that a single alias can refer to multiple actions. This allows you to refer to a set of actions
+that have similar capabilities as one, using a variety of <a class="reference internal" href="../state-machine/#id1"><span class="std std-ref">application</span></a> APIs.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;...&quot;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;...&quot;</span><span class="p">],</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;response_to_display&quot;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">text_response</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Client</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;client &amp; `prompt` here are something we need to pass in.&quot;&quot;&quot;</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;...&quot;</span><span class="p">])</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">llm_call</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span> <span class="c1"># some LLM call...</span>
+    <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This can be referred to either as the name of the action within the application, and/or as the tag
+<code class="docutils literal notranslate"><span class="pre">response_to_display</span></code>.</p>
+</section>
 </section>
 
         </article>
@@ -662,6 +678,7 @@ it will take that, process it, and put the result in state. The subsequent steps
 <li><a class="reference internal" href="#function-based-actions">Function-based actions</a></li>
 <li><a class="reference internal" href="#class-based-actions">Class-Based Actions</a></li>
 <li><a class="reference internal" href="#runtime-inputs">Runtime Inputs</a></li>
+<li><a class="reference internal" href="#tagging-actions">Tagging Actions</a></li>
 </ul>
 </li>
 </ul>

@@ -899,8 +899,8 @@ of the system as it updates. This is the asynchronous version so it has no capab
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>halt_before</strong> – The list of actions to halt before execution of. It will halt on the first one.</p></li>
-<li><p><strong>halt_after</strong> – The list of actions to halt after execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_before</strong> – The list of actions/tags to halt before execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_after</strong> – The list of actions/tags to halt after execution of. It will halt on the first one.</p></li>
 <li><p><strong>inputs</strong> – Inputs to the action – this is if this action requires an input that is passed in from the outside world.
 Note that this is only used for the first iteration – subsequent iterations will not use this.</p></li>
 </ul>
@@ -929,8 +929,8 @@ not give access to the state along the way – if you want that, use iterate().<
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>halt_before</strong> – The list of actions to halt before execution of. It will halt on the first one.</p></li>
-<li><p><strong>halt_after</strong> – The list of actions to halt after execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_before</strong> – The list of actions/tags to halt before execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_after</strong> – The list of actions/tags to halt after execution of. It will halt on the first one.</p></li>
 <li><p><strong>inputs</strong> – Inputs to the action – this is if this action requires an input that is passed in from the outside world</p></li>
 </ul>
 </dd>
@@ -976,8 +976,8 @@ requires an input that is passed in from the outside world</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>halt_after</strong> – The list of actions to halt after execution of. It will halt on the first one.</p></li>
-<li><p><strong>halt_before</strong> – The list of actions to halt before execution of. It will halt on the first one. Note that
+<li><p><strong>halt_after</strong> – The list of actions/tags to halt after execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_before</strong> – The list of actions/tags to halt before execution of. It will halt on the first one. Note that
 if this is met, the streaming result container will be empty (and return None) for the result, having an empty generator.</p></li>
 <li><p><strong>inputs</strong> – Inputs to the action – this is if this action requires an input that is passed in from the outside world</p></li>
 </ul>
@@ -1138,8 +1138,8 @@ a single iteration will always be executed prior to testing for any halting cond
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>halt_before</strong> – The list of actions to halt before execution of. It will halt prior to the execution of the first one it sees.</p></li>
-<li><p><strong>halt_after</strong> – The list of actions to halt after execution of. It will halt after the execution of the first one it sees.</p></li>
+<li><p><strong>halt_before</strong> – The list of actions/tags to halt before execution of. It will halt prior to the execution of the first one it sees.</p></li>
+<li><p><strong>halt_after</strong> – The list of actions/tags to halt after execution of. It will halt after the execution of the first one it sees.</p></li>
 <li><p><strong>inputs</strong> – Inputs to the action – this is if this action requires an input that is passed in from the outside world.
 Note that this is only used for the first iteration – subsequent iterations will not use this.</p></li>
 </ul>
@@ -1202,8 +1202,8 @@ not give access to the state along the way – if you want that, use iterate().<
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>halt_before</strong> – The list of actions to halt before execution of. It will halt on the first one.</p></li>
-<li><p><strong>halt_after</strong> – The list of actions to halt after execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_before</strong> – The list of actions/tags to halt before execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_after</strong> – The list of actions/tags to halt after execution of. It will halt on the first one.</p></li>
 <li><p><strong>inputs</strong> – Inputs to the action – this is if this action requires an input that is passed in from the outside world.
 Note that this is only used for the first iteration – subsequent iterations will not use this.</p></li>
 </ul>
@@ -1295,8 +1295,8 @@ results along the way), or run() (if you just want the final state/results).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>halt_after</strong> – The list of actions to halt after execution of. It will halt on the first one.</p></li>
-<li><p><strong>halt_before</strong> – The list of actions to halt before execution of. It will halt on the first one. Note that
+<li><p><strong>halt_after</strong> – The list of actions/tags to halt after execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_before</strong> – The list of actions/tags to halt before execution of. It will halt on the first one. Note that
 if this is met, the streaming result container will be empty (and return None) for the result, having an empty generator.</p></li>
 <li><p><strong>inputs</strong> – Inputs to the action – this is if this action requires an input that is passed in from the outside world</p></li>
 </ul>
