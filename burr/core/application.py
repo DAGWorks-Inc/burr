@@ -1076,7 +1076,7 @@ class Application(Generic[ApplicationStateType]):
 
             return next_action, result, new_state
 
-    def _clean_iterate_params(
+    def _process_control_flow_params(
         self,
         halt_before: list[str] = None,
         halt_after: list[str] = None,
@@ -1089,13 +1089,20 @@ class Application(Generic[ApplicationStateType]):
             logger.warning(
                 "No halt termination specified -- this has the possibility of running forever!"
             )
-        if halt_before is None:
-            halt_before = []
-        if halt_after is None:
-            halt_after = []
-        if inputs is None:
-            inputs = {}
-        return halt_before, halt_after, inputs
+        halt_before = halt_before or []
+        halt_after = halt_after or []
+        inputs = inputs or {}
+        halt_before_unaliased = set()
+        for halt_condition in halt_before:
+            halt_before_unaliased.update(
+                [item.name for item in self.graph.get_actions_by_alias(halt_condition)]
+            )
+        halt_after_unaliased = set()
+        for halt_condition in halt_after:
+            halt_after_unaliased.update(
+                [item.name for item in self.graph.get_actions_by_alias(halt_condition)]
+            )
+        return list(halt_before_unaliased), list(halt_after_unaliased), inputs
 
     def _validate_halt_conditions(self, halt_before: list[str], halt_after: list[str]) -> None:
         """Utility function to validate halt conditions"""
@@ -1182,16 +1189,18 @@ class Application(Generic[ApplicationStateType]):
         Note the nuance with halt_before and halt_after. halt_before conditions will take precedence to halt_after. Furthermore,
         a single iteration will always be executed prior to testing for any halting conditions.
 
-        :param halt_before: The list of actions to halt before execution of. It will halt prior to the execution of the first one it sees.
-        :param halt_after: The list of actions to halt after execution of. It will halt after the execution of the first one it sees.
+        :param halt_before: The list of actions/tags to halt before execution of. It will halt prior to the execution of the first one it sees.
+        :param halt_after: The list of actions/tags to halt after execution of. It will halt after the execution of the first one it sees.
         :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world.
             Note that this is only used for the first iteration -- subsequent iterations will not use this.
         :return: Each iteration returns the result of running `step`. This generator also returns a tuple of
             [action, result, current state]
         """
         self.validate_correct_async_use()
-        halt_before, halt_after, inputs = self._clean_iterate_params(
-            halt_before, halt_after, inputs
+        halt_before, halt_after, inputs = self._process_control_flow_params(
+            halt_before,
+            halt_after,
+            inputs,
         )
         self._validate_halt_conditions(halt_before, halt_after)
 
@@ -1217,14 +1226,14 @@ class Application(Generic[ApplicationStateType]):
         """Returns a generator that calls step() in a row, enabling you to see the state
         of the system as it updates. This is the asynchronous version so it has no capability of t
 
-        :param halt_before: The list of actions to halt before execution of. It will halt on the first one.
-        :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
+        :param halt_before: The list of actions/tags to halt before execution of. It will halt on the first one.
+        :param halt_after: The list of actions/tags to halt after execution of. It will halt on the first one.
         :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world.
             Note that this is only used for the first iteration -- subsequent iterations will not use this.
         :return: Each iteration returns the result of running `step`. This returns nothing -- it's an async generator which is not
             allowed to have a return value.
         """
-        halt_before, halt_after, inputs = self._clean_iterate_params(
+        halt_before, halt_after, inputs = self._process_control_flow_params(
             halt_before, halt_after, inputs
         )
         self._validate_halt_conditions(halt_before, halt_after)
@@ -1247,8 +1256,8 @@ class Application(Generic[ApplicationStateType]):
         """Runs your application through until completion. Does
         not give access to the state along the way -- if you want that, use iterate().
 
-        :param halt_before: The list of actions to halt before execution of. It will halt on the first one.
-        :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
+        :param halt_before: The list of actions/tags to halt before execution of. It will halt on the first one.
+        :param halt_after: The list of actions/tags to halt after execution of. It will halt on the first one.
         :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world.
             Note that this is only used for the first iteration -- subsequent iterations will not use this.
         :return: The final state, and the results of running the actions in the order that they were specified.
@@ -1274,15 +1283,15 @@ class Application(Generic[ApplicationStateType]):
         """Runs your application through until completion, using async. Does
         not give access to the state along the way -- if you want that, use iterate().
 
-        :param halt_before: The list of actions to halt before execution of. It will halt on the first one.
-        :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
+        :param halt_before: The list of actions/tags to halt before execution of. It will halt on the first one.
+        :param halt_after: The list of actions/tags to halt after execution of. It will halt on the first one.
         :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world
         :return: The final state, and the results of running the actions in the order that they were specified.
         """
 
         prior_action = None
         result = None
-        halt_before, halt_after, inputs = self._clean_iterate_params(
+        halt_before, halt_after, inputs = self._process_control_flow_params(
             halt_before, halt_after, inputs
         )
         self._validate_halt_conditions(halt_before, halt_after)
@@ -1301,8 +1310,8 @@ class Application(Generic[ApplicationStateType]):
     ) -> Tuple[Action, StreamingResultContainer[ApplicationStateType, Union[dict, Any]]]:
         """Streams a result out.
 
-        :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
-        :param halt_before: The list of actions to halt before execution of. It will halt on the first one. Note that
+        :param halt_after: The list of actions/tags to halt after execution of. It will halt on the first one.
+        :param halt_before: The list of actions/tags to halt before execution of. It will halt on the first one. Note that
             if this is met, the streaming result container will be empty (and return None) for the result, having an empty generator.
         :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world
         :return: A streaming result container, which is a generator that will yield results as they come in, as well as cache/give you the final result,
@@ -1402,7 +1411,7 @@ class Application(Generic[ApplicationStateType]):
         self.validate_correct_async_use()
         call_execute_method_wrapper = _call_execute_method_pre_post(ExecuteMethod.stream_result)
         call_execute_method_wrapper.call_pre(self)
-        halt_before, halt_after, inputs = self._clean_iterate_params(
+        halt_before, halt_after, inputs = self._process_control_flow_params(
             halt_before, halt_after, inputs
         )
         self._validate_halt_conditions(halt_before, halt_after)
@@ -1551,8 +1560,8 @@ class Application(Generic[ApplicationStateType]):
     ) -> Tuple[Action, AsyncStreamingResultContainer[ApplicationStateType, Union[dict, Any]]]:
         """Streams a result out in an asynchronous manner.
 
-        :param halt_after: The list of actions to halt after execution of. It will halt on the first one.
-        :param halt_before: The list of actions to halt before execution of. It will halt on the first one. Note that
+        :param halt_after: The list of actions/tags to halt after execution of. It will halt on the first one.
+        :param halt_before: The list of actions/tags to halt before execution of. It will halt on the first one. Note that
             if this is met, the streaming result container will be empty (and return None) for the result, having an empty generator.
         :param inputs: Inputs to the action -- this is if this action requires an input that is passed in from the outside world
         :return: An asynchronous :py:class:`AsyncStreamingResultContainer <burr.core.action.AsyncStreamingResultContainer>`, which is a generator that will yield results as they come in, as well as cache/give you the final result,
@@ -1654,7 +1663,7 @@ class Application(Generic[ApplicationStateType]):
         """
         call_execute_method_wrapper = _call_execute_method_pre_post(ExecuteMethod.stream_result)
         await call_execute_method_wrapper.acall_pre(self)
-        halt_before, halt_after, inputs = self._clean_iterate_params(
+        halt_before, halt_after, inputs = self._process_control_flow_params(
             halt_before, halt_after, inputs
         )
         self._validate_halt_conditions(halt_before, halt_after)

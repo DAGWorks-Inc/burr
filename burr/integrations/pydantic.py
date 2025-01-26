@@ -172,6 +172,7 @@ def pydantic_action(
     writes: List[str],
     state_input_type: Optional[Type[pydantic.BaseModel]] = None,
     state_output_type: Optional[Type[pydantic.BaseModel]] = None,
+    tags: Optional[List[str]] = None,
 ) -> Callable[[PydanticActionFunction], PydanticActionFunction]:
     """See docstring for @action.pydantic"""
 
@@ -234,6 +235,7 @@ def pydantic_action(
                     output_type=SubsetOutputType,
                     intermediate_result_type=dict,
                 ),
+                tags=tags,
             ),
         )
         setattr(fn, "bind", types.MethodType(bind, fn))
@@ -290,6 +292,7 @@ def pydantic_streaming_action(
     state_input_type: Type[pydantic.BaseModel],
     state_output_type: Type[pydantic.BaseModel],
     stream_type: PartialType,
+    tags: Optional[List[str]] = None,
 ) -> Callable[[PydanticStreamingActionFunction], PydanticStreamingActionFunction]:
     """See docstring for @streaming_action.pydantic"""
 
@@ -353,6 +356,7 @@ def pydantic_streaming_action(
                     output_type=SubsetOutputType,
                     intermediate_result_type=stream_type_processed,
                 ),
+                tags=tags,
             ),
         )
         setattr(fn, "bind", types.MethodType(bind, fn))
