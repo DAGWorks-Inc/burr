@@ -98,7 +98,8 @@ class Graph:
     def __post_init__(self):
         """Sets up initial state for easy graph operations later"""
         self._action_map = {action.name: action for action in self.actions}
-        self._adjacency_map = Graph._create_adjacency_map(self.transitions)
+        self._adjacency_map = self._create_adjacency_map(self.transitions)
+        self._action_tag_map = self._create_action_tag_map(self.actions)
 
     @staticmethod
     def _create_adjacency_map(transitions: List[Transition]) -> dict:
@@ -108,6 +109,19 @@ class Graph:
             to = transition.to
             adjacency_map[from_.name].append((to.name, transition.condition))
         return adjacency_map
+
+    @staticmethod
+    def _create_action_tag_map(actions: List[Action]) -> dict[str, List[Action]]:
+        """Creates a mapping of action tags to lists of corresponding actions.
+
+        :param actions: List of Action objects
+        :return: Dictionary mapping action tags to lists of matching Action objects
+        """
+        tag_map = collections.defaultdict(list)
+        for action in actions:
+            for tag in action.tags:
+                tag_map[tag].append(action)
+        return dict(tag_map)
 
     def get_next_node(
         self, prior_step: Optional[str], state: State, entrypoint: str
@@ -129,6 +143,15 @@ class Graph:
                 f"Actions are: {self._action_map.keys()}"
             )
         return self._action_map.get(action_name)
+
+    def get_actions_by_tag(self, tag: str) -> List[Action]:
+        """Gets a list of actions given a tag. Note that, if no tags match the action a ValueError will be raised."""
+        if tag not in self._action_tag_map:
+            raise ValueError(
+                BASE_ERROR_MESSAGE + f"Tag: {tag} not found in graph. "
+                f"Tags are: {self._action_tag_map.keys()}."
+            )
+        return self._action_tag_map.get(tag)
 
     @telemetry.capture_function_usage
     def visualize(

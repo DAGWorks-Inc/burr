@@ -3529,3 +3529,29 @@ async def test_async_application_builder_initialize_raises_on_broken_persistor()
             )
             .abuild()
         )
+
+
+def test_application__process_control_flow_params():
+    @action(reads=[], writes=[], tags=["tag1", "tag2"])
+    def test_action(state: State) -> State:
+        return state
+
+    @action(reads=[], writes=[], tags=["tag1", "tag3"])
+    def test_action_2(state: State) -> State:
+        return state
+
+    app = (
+        ApplicationBuilder()
+        .with_state(count=0)
+        .with_actions(test_action, test_action_2)
+        .with_transitions(("test_action", "test_action_2"))
+        .with_entrypoint("test_action")
+        .build()
+    )
+    halt_before, halt_after, inputs = app._process_control_flow_params(
+        halt_after=["@tag:tag1"], halt_before=["@tag:tag2"]
+    )
+
+    assert sorted(halt_after) == ["test_action", "test_action_2"]
+    assert halt_before == ["test_action"]
+    assert inputs == {}

@@ -239,6 +239,15 @@ class Action(Function, Reducer, abc.ABC):
         write_repr = ", ".join(self.writes) if self.writes else "{}"
         return f"{self.name}: {read_repr} -> {write_repr}"
 
+    @property
+    def tags(self) -> list[str]:
+        """Returns the tags associated with this action.
+        Tags are effectively action aliases -- names that apply towards multiple actions.
+
+        :return: List of string tags
+        """
+        return []
+
 
 class Condition(Function):
     KEY = "PROCEED"
@@ -586,6 +595,7 @@ class FunctionBasedAction(SingleStepAction):
         input_spec: Optional[tuple[list[str], list[str]]] = None,
         originating_fn: Optional[Callable] = None,
         schema: ActionSchema = DEFAULT_SCHEMA,
+        tags: Optional[List[str]] = None,
     ):
         """Instantiates a function-based action with the given function, reads, and writes.
         The function must take in a state and return a tuple of (result, new_state).
@@ -611,6 +621,7 @@ class FunctionBasedAction(SingleStepAction):
             )
         )
         self._schema = schema
+        self._tags = tags if tags is not None else []
 
     @property
     def fn(self) -> Callable:
@@ -632,6 +643,10 @@ class FunctionBasedAction(SingleStepAction):
     def schema(self) -> ActionSchema:
         return self._schema
 
+    @property
+    def tags(self) -> list[str]:
+        return self._tags
+
     def with_params(self, **kwargs: Any) -> "FunctionBasedAction":
         """Binds parameters to the function.
         Note that there is no reason to call this by the user. This *could*
@@ -649,6 +664,7 @@ class FunctionBasedAction(SingleStepAction):
             input_spec=self._inputs,
             originating_fn=self._originating_fn,
             schema=self._schema,
+            tags=self._tags,
         )
 
     def run_and_update(self, state: State, **run_kwargs) -> tuple[dict, State]:
@@ -1063,6 +1079,7 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         input_spec: Optional[tuple[list[str], list[str]]] = None,
         originating_fn: Optional[Callable] = None,
         schema: ActionSchema = DEFAULT_SCHEMA,
+        tags: Optional[List[str]] = None,
     ):
         """Instantiates a function-based streaming action with the given function, reads, and writes.
         The function must take in a state (and inputs) and return a generator of (result, new_state).
@@ -1086,6 +1103,7 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
         )
         self._originating_fn = originating_fn if originating_fn is not None else fn
         self._schema = schema
+        self._tags = tags if tags is not None else []
 
     async def _a_stream_run_and_update(
         self, state: State, **run_kwargs
@@ -1115,6 +1133,10 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
     def streaming(self) -> bool:
         return True
 
+    @property
+    def tags(self) -> list[str]:
+        return self._tags
+
     def with_params(self, **kwargs: Any) -> "FunctionBasedStreamingAction":
         """Binds parameters to the function. This is not user-facing -- this is
         meant to be used internally by the API.
@@ -1130,6 +1152,7 @@ class FunctionBasedStreamingAction(SingleStepStreamingAction):
             input_spec=self._inputs,
             originating_fn=self._originating_fn,
             schema=self._schema,
+            tags=self._tags,
         )
 
     @property
@@ -1204,6 +1227,7 @@ class action:
         writes: List[str],
         state_input_type: Optional[Type["BaseModel"]] = None,
         state_output_type: Optional[Type["BaseModel"]] = None,
+        tags: Optional[List[str]] = None,
     ) -> Callable:
         """Action that specifies inputs/outputs using pydantic models.
         This should make it easier to develop with guardrails.
@@ -1216,6 +1240,7 @@ class action:
             If this is None it will attempt to derive from the signature.
         :param state_output_type: The pydantic model type that is used to represent the output state.
             If this is None it will attempt to derive from the signature.
+        :param tags: Optional list of tags to associate with this action
         :return:
         """
         try:
@@ -1230,9 +1255,10 @@ class action:
             writes=writes,
             state_input_type=state_input_type,
             state_output_type=state_output_type,
+            tags=tags,
         )
 
-    def __init__(self, reads: List[str], writes: List[str]):
+    def __init__(self, reads: List[str], writes: List[str], tags: Optional[List[str]] = None):
         """Decorator to create a function-based action. This is user-facing.
         Note that, in the future, with typed state, we may not need this for
         all cases.
@@ -1247,12 +1273,13 @@ class action:
         """
         self.reads = reads
         self.writes = writes
+        self.tags = tags
 
     def __call__(self, fn) -> FunctionRepresentingAction:
         setattr(
             fn,
             FunctionBasedAction.ACTION_FUNCTION,
-            FunctionBasedAction(fn, self.reads, self.writes),
+            FunctionBasedAction(fn, self.reads, self.writes, tags=self.tags),
         )
         setattr(fn, "bind", types.MethodType(bind, fn))
         return fn
@@ -1266,6 +1293,7 @@ class streaming_action:
         state_input_type: Type["BaseModel"],
         state_output_type: Type["BaseModel"],
         stream_type: Union[Type["BaseModel"], Type[dict]],
+        tags: Optional[List[str]] = None,
     ) -> Callable:
         """Creates a streaming action that uses pydantic models.
 
@@ -1275,6 +1303,7 @@ class streaming_action:
             Use a dict if you want this untyped.
         :param state_input_type: The pydantic model type that is used to represent the input state.
         :param state_output_type: The pydantic model type that is used to represent the output state.
+        :param tags: Optional list of tags to associate with this action
         :return: The same function, decorated function.
         """
         try:
@@ -1290,9 +1319,10 @@ class streaming_action:
             state_input_type=state_input_type,
             state_output_type=state_output_type,
             stream_type=stream_type,
+            tags=tags,
         )
 
-    def __init__(self, reads: List[str], writes: List[str]):
+    def __init__(self, reads: List[str], writes: List[str], tags: Optional[List[str]] = None):
         """Decorator to create a streaming function-based action. This is user-facing.
 
         If parameters are not bound, they will be interpreted as inputs and must be passed in at runtime.
@@ -1325,16 +1355,20 @@ class streaming_action:
                 # return the final result
                 return {'response': full_response}, state.update(response=full_response)
 
+        :param reads: The fields this consumes from the state.
+        :param writes: The fields this writes to the state.
+        :param tags: Optional list of tags to associate with this action
         """
         self.reads = reads
         self.writes = writes
+        self.tags = tags
 
     def __call__(self, fn: Callable) -> FunctionRepresentingAction:
         fn = copy_func(fn)
         setattr(
             fn,
             FunctionBasedAction.ACTION_FUNCTION,
-            FunctionBasedStreamingAction(fn, self.reads, self.writes),
+            FunctionBasedStreamingAction(fn, self.reads, self.writes, tags=self.tags),
         )
         setattr(fn, "bind", types.MethodType(bind, fn))
         return fn
