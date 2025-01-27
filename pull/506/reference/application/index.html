@@ -1504,6 +1504,7 @@ for graphviz, instead pass <cite>format</cite> in <cite>engine_kwargs</cite> (e.
 <span class="sig-paren">)</span><a class="headerlink" href="#burr.core.application.ApplicationContext" title="Link to this definition">¶</a></dt>
 <dd><p>Application context. This is anything your node might need to know about the application.
 Often used for recursive tracking.</p>
+<p>Note this is also a context manager (allowing you to pass context to sub-applications).</p>
 <p>To access this object in a running application, you can use the <cite>__context</cite> variable in the
 action signature:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">State</span><span class="p">,</span> <span class="n">ApplicationContext</span>
