@@ -43,7 +43,7 @@ Note that ``partition_key`` can be `None` if this is not relevant. A UUID is alw
 
 You set these values using the :py:meth:`with_identifiers() <burr.core.application.ApplicationBuilder.with_identifiers>` method.
 
-Note: to access ``app_id`` and ``partition_key`` in your running application, you can have the :py:class:`ApplicationContext <burr.core.application.ApplicationContext>`
+Note: to access application-level metadata such as ``app_id``, ``partition_key``, ``sequence_id``, and ``action_name`` in your running application, you can have the :py:class:`ApplicationContext <burr.core.application.ApplicationContext>`
 injected into your Burr Actions. This is done by adding ``__context`` to the action signature:
 
 .. code-block:: python
@@ -54,6 +54,8 @@ injected into your Burr Actions. This is done by adding ``__context`` to the act
     def my_action(state: State, __context: ApplicationContext) -> State:
         app_id = __context.app_id
         partition_key = __context.partition_key
+        action_name = __context.action_name
+        sequence_id = __context.sequence_id
         ...
 
 
