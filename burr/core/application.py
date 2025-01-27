@@ -556,6 +556,7 @@ class ApplicationContext(AbstractContextManager, ApplicationIdentifiers):
         def my_action(state: State, __context: ApplicationContext) -> State:
             app_id = __context.app_id
             partition_key = __context.partition_key
+            current_action_name = __context.action_name  # Access the current action name
             ...
 
     """
@@ -564,6 +565,7 @@ class ApplicationContext(AbstractContextManager, ApplicationIdentifiers):
     parallel_executor_factory: Callable[[], Executor]
     state_initializer: Optional[BaseStateLoader]
     state_persister: Optional[BaseStateSaver]
+    action_name: Optional[str]  # Store just the action name
 
     @staticmethod
     def get() -> Optional["ApplicationContext"]:
@@ -865,6 +867,7 @@ class Application(Generic[ApplicationStateType]):
             parallel_executor_factory=self._parallel_executor_factory,
             state_initializer=self._state_initializer,
             state_persister=self._state_persister,
+            action_name=action.name if action else None,  # Pass just the action name
         )
 
     def _step(

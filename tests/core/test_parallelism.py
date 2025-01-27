@@ -1201,6 +1201,7 @@ def test_map_actions_and_states_uses_same_persister_as_loader():
             state_persister=persister,
             state_initializer=persister,
             parallel_executor_factory=lambda: concurrent.futures.ThreadPoolExecutor(),
+            action_name=action.name,
         ),
         inputs={},
     )
