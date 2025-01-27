@@ -1353,6 +1353,7 @@ def test_app_step_context():
         assert __context.sequence_id == 0
         assert __context.partition_key == PARTITION_KEY
         assert __context.app_id == APP_ID
+        assert __context.action_name == "test_action"
         return state
 
     app = (
@@ -1379,6 +1380,7 @@ async def test_app_astep_context():
         assert __context.sequence_id == 0
         assert __context.partition_key == PARTITION_KEY
         assert __context.app_id == APP_ID
+        assert __context.action_name == "test_action"
         return state
 
     app = (
