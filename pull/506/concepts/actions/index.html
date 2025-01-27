@@ -465,6 +465,8 @@ injected into your Burr Actions. This is done by adding <code class="docutils li
 <span class="k">def</span><span class="w"> </span><span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
     <span class="n">app_id</span> <span class="o">=</span> <span class="n">__context</span><span class="o">.</span><span class="n">app_id</span>
     <span class="n">partition_key</span> <span class="o">=</span> <span class="n">__context</span><span class="o">.</span><span class="n">partition_key</span>
+    <span class="n">action_name</span> <span class="o">=</span> <span class="n">__context</span><span class="o">.</span><span class="n">action_name</span>
+    <span class="n">sequence_id</span> <span class="o">=</span> <span class="n">__context</span><span class="o">.</span><span class="n">sequence_id</span>
     <span class="o">...</span>
 </pre></div>
 </div>
