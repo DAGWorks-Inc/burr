@@ -81,7 +81,7 @@ def human_input(state: State, prompt: str) -> State:
 def ai_response(state: State) -> State:
     # query the LLM however you want (or don't use an LLM, up to you...)
     response = _query_llm(state["chat_history"]) # Burr doesn't care how you use LLMs!
-    chat_item = {"role" : "system", "content" : "response"}
+    chat_item = {"role" : "system", "content" : response}
     return state.update(response=content).append(chat_history=chat_item)
 
 app = (
