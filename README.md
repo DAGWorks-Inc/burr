@@ -71,7 +71,7 @@ The core API is simple -- the Burr hello-world looks like this (plug in your own
 ```python
 from burr.core import action, State, ApplicationBuilder
 
-@action(reads=[], writes=["chat_history"])
+@action(reads=[], writes=["prompt", "chat_history"])
 def human_input(state: State, prompt: str) -> State:
     # your code -- write what you want here, for example
     chat_item = {"role" : "user", "content" : prompt}
