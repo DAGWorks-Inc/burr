@@ -71,14 +71,17 @@ The core API is simple -- the Burr hello-world looks like this (plug in your own
 ```python
 from burr.core import action, State, ApplicationBuilder
 
-@action(reads=[], writes=["prompt", "chat_history"])
+@action(reads=[], writes=["chat_history"])
 def human_input(state: State, prompt: str) -> State:
-    # your code -- write what you want here!
+    # your code -- write what you want here, for example
+    chat_item = {"role" : "user", "content" : prompt}
     return state.update(prompt=prompt).append(chat_history=chat_item)
 
 @action(reads=["chat_history"], writes=["response", "chat_history"])
 def ai_response(state: State) -> State:
+    # query the LLM however you want (or don't use an LLM, up to you...)
     response = _query_llm(state["chat_history"]) # Burr doesn't care how you use LLMs!
+    chat_item = {"role" : "system", "content" : "response"}
     return state.update(response=content).append(chat_history=chat_item)
 
 app = (
