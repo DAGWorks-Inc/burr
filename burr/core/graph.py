@@ -98,7 +98,8 @@ class Graph:
     def __post_init__(self):
         """Sets up initial state for easy graph operations later"""
         self._action_map = {action.name: action for action in self.actions}
-        self._adjacency_map = Graph._create_adjacency_map(self.transitions)
+        self._adjacency_map = self._create_adjacency_map(self.transitions)
+        self._action_alias_map = self._create_action_alias_map(self.actions)
 
     @staticmethod
     def _create_adjacency_map(transitions: List[Transition]) -> dict:
@@ -108,6 +109,19 @@ class Graph:
             to = transition.to
             adjacency_map[from_.name].append((to.name, transition.condition))
         return adjacency_map
+
+    @staticmethod
+    def _create_action_alias_map(actions: List[Action]) -> dict[str, List[Action]]:
+        """Creates a mapping of action names to lists of corresponding actions.
+
+        :param actions: List of Action objects
+        :return: Dictionary mapping action names to lists of matching Action objects
+        """
+        alias_map = collections.defaultdict(list)
+        for action in actions:
+            for alias in [action.name, *action.tags]:
+                alias_map[alias].append(action)
+        return dict(alias_map)
 
     def get_next_node(
         self, prior_step: Optional[str], state: State, entrypoint: str
@@ -129,6 +143,15 @@ class Graph:
                 f"Actions are: {self._action_map.keys()}"
             )
         return self._action_map.get(action_name)
+
+    def get_actions_by_alias(self, alias: str) -> List[Action]:
+        """Gets a list of actions given an alias"""
+        if alias not in self._action_alias_map:
+            raise ValueError(
+                BASE_ERROR_MESSAGE + f"Alias: {alias} not found in graph. "
+                f"Aliases are: {self._action_alias_map.keys()}"
+            )
+        return self._action_alias_map.get(alias)
 
     @telemetry.capture_function_usage
     def visualize(
