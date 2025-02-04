@@ -117,7 +117,7 @@ To make the above more concrete, let's look at a basic chatbot:
 
 .. code-block:: python
 
-    state_persister =  SQLLitePersister(db_path=".sqllite.db", table_name="burr_state")
+    state_persister =  SQLLitePersister.from_values(db_path=".sqllite.db", table_name="burr_state")
     app = (
         ApplicationBuilder()
         .with_actions(
@@ -153,10 +153,75 @@ See :ref:`available persisters here <persistersref>`.
 Note that the tracker also allows reloading from a file, but this is not recommended for production use.
 
 
+Persister Usage
+______________________________
+We follow the naming convention ``b_database-dependency-library``, where the ``b_`` is used to avoid name
+clashing with the underlying library. We chose the library name in case we implement the same database
+persister with different dependency libraries to keep the class naming convention.
+
+To initialize the persister we recommend using one of the two class methods: ``.from_config(...)`` or ``.from_values(...)`` that
+establish a connection to the database and return the persister object. In case you already have a database connection
+established (or using a connection pool), you can also initialize the persister directly and pass in the database
+connection as the first argument.
+
+We recommend that you manually handle the database connection cleanup. For now, in the case of
+synchronous persisters, the connection gets closed when the object is deleted. For asynchronous
+persisters this is not possible. Therefore, we suggest that you either use the persister as a context
+manager
+
+.. code-block:: python
+
+    with SQLLitePersister.from_values(
+            db_path=".sqllite.db",
+            table_name="burr_state"
+            ) as state_persister:
+
+        app = (
+            ApplicationBuilder()
+            .with_actions(...)
+            .with_transitions(...)
+            .initialize_from(
+                state_persister, ...
+                )
+            .with_state_persister(state_persister)
+            .with_identifiers(app_id=app_id)
+            .build()
+        )
+
+        *_, state = app.run(...)
+
+or manually close the connection to the database, by using the `.cleanup()` method of the persister
+
+.. code-block:: python
+
+    state_persister = SQLLitePersister.from_values(db_path=".sqllite.db", table_name="burr_state")
+    app = (
+        ApplicationBuilder()
+        .with_actions(...)
+        .with_transitions(...)
+        .initialize_from(
+            state_persister, ...
+            )
+        .with_state_persister(state_persister)
+        .with_identifiers(app_id=app_id)
+        .build()
+    )
+
+    try:
+        *_, state = app.run(...)
+    except Exception as e:
+        ...
+    finally:
+        state_persister.cleanup()
+
+to ensure no database connection leakage.
+
+
 Customizing State Persistence
 -----------------------------
 
-Burr exposes the :py:class:`BaseStatePersister <burr.core.persistence.BaseStatePersister>` API for custom state persistence. Implement,
+Burr exposes two APIs :py:class:`BaseStatePersister <burr.core.persistence.BaseStatePersister>` (sync) and
+:py:class:`AsyncBaseStatePersister <burr.core.persistence.AsyncBaseStatePersister>` (async) for custom state persistence. Implement,
 pass into the above functions, and you can write to whatever database you want! Please contribute back to the community if you do so.
 
 
