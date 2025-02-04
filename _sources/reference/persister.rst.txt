@@ -2,6 +2,8 @@
 State Persistence
 =================
 
+.. _persistersref:
+
 Burr provides a set of tools to make loading and saving state easy. These are functions
 that will be used by lifecycle hooks to save and load state.
 
@@ -77,8 +79,6 @@ Internally, this interface combines the following two interfaces:
 
 Supported Sync Implementations
 ================================
-
-.. _persistersref:
 
 Currently we support the following, although we highly recommend you contribute your own! We will be adding more shortly.
 
