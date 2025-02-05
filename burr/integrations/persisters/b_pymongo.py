@@ -96,7 +96,7 @@ class MongoDBBasePersister(persistence.BaseStatePersister):
         return app_ids
 
     def load(
-        self, partition_key: str, app_id: str, sequence_id: int = None, **kwargs
+        self, partition_key: Optional[str], app_id: str, sequence_id: int = None, **kwargs
     ) -> Optional[persistence.PersistedStateData]:
         """Load the state data for a given partition key, app id, and sequence id."""
         query = {"partition_key": partition_key, "app_id": app_id}
@@ -118,7 +118,7 @@ class MongoDBBasePersister(persistence.BaseStatePersister):
 
     def save(
         self,
-        partition_key: str,
+        partition_key: Optional[str],
         app_id: str,
         sequence_id: int,
         position: str,
