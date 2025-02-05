@@ -66,3 +66,21 @@ def test_serialization_with_pickle(mongodb_persister):
     data = deserialized_persister.load("pk", "app_id_serde", 1)
 
     assert data["state"].get_all() == {"a": 1, "b": 2}
+
+
+def test_partition_key_is_optional(mongodb_persister):
+    # 1. Save and load with partition key = None
+    mongodb_persister.save(
+        None, "app_id_none", 1, "pos1", state.State({"foo": "bar"}), "in_progress"
+    )
+    loaded_data = mongodb_persister.load(None, "app_id_none", 1)
+    assert loaded_data is not None
+    assert loaded_data["state"].get_all() == {"foo": "bar"}
+
+    # 2. Save and load again (different key/index) with partition key = None
+    mongodb_persister.save(
+        None, "app_id_none2", 2, "pos2", state.State({"hello": "world"}), "completed"
+    )
+    loaded_data2 = mongodb_persister.load(None, "app_id_none2", 2)
+    assert loaded_data2 is not None
+    assert loaded_data2["state"].get_all() == {"hello": "world"}

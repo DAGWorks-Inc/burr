@@ -96,9 +96,21 @@ class MongoDBBasePersister(persistence.BaseStatePersister):
         return app_ids
 
     def load(
-        self, partition_key: str, app_id: str, sequence_id: int = None, **kwargs
+        self, partition_key: Optional[str], app_id: str, sequence_id: int = None, **kwargs
     ) -> Optional[persistence.PersistedStateData]:
-        """Load the state data for a given partition key, app id, and sequence id."""
+        """Loads the state data for a given partition key, app_id, and sequence_id.
+
+        This method retrieves the most recent state data for the specified (partition_key, app_id) combination.
+        If a sequence ID is provided, it will attempt to fetch the specific state at that sequence.
+
+        :param partition_key: The partition key. Defaults to `None`. **Note:** The partition key defaults to `None`. If a partition key was used during saving, it must be provided
+        consistently during retrieval, or no results will be returned.
+        :param app_id: Application UID to read from.
+        :param sequence_id: (Optional) The sequence ID to retrieve a specific state. If not provided,
+            the latest state is returned.
+
+        :returns: The state data if found, otherwise None.
+        """
         query = {"partition_key": partition_key, "app_id": app_id}
         if sequence_id is not None:
             query["sequence_id"] = sequence_id
@@ -118,7 +130,7 @@ class MongoDBBasePersister(persistence.BaseStatePersister):
 
     def save(
         self,
-        partition_key: str,
+        partition_key: Optional[str],
         app_id: str,
         sequence_id: int,
         position: str,
@@ -126,7 +138,19 @@ class MongoDBBasePersister(persistence.BaseStatePersister):
         status: Literal["completed", "failed"],
         **kwargs,
     ):
-        """Save the state data to the MongoDB database."""
+        """Save the state data to the MongoDB database.
+
+        :param partition_key: the partition key. Note this could be None, but it's up to the persistor to whether
+        that is a valid value it can handle. If a partition key was used during saving, it must be provided
+        consistently during retrieval, or no results will be returned.
+        :param app_id: Application UID to write with.
+        :param sequence_id: Sequence ID of the last executed step.
+        :param position: The action name that was implemented.
+        :param state: The current state of the application.
+        :param status: The status of this state, either "completed" or "failed". If "failed", the state is what it was
+            before the action was applied.
+        :return:
+        """
         key = {"partition_key": partition_key, "app_id": app_id, "sequence_id": sequence_id}
         if self.collection.find_one(key):
             raise ValueError(f"partition_key:app_id:sequence_id[{key}] already exists.")
