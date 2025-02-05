@@ -103,10 +103,10 @@ class MongoDBBasePersister(persistence.BaseStatePersister):
         This method retrieves the most recent state data for the specified (partition_key, app_id) combination.
         If a sequence ID is provided, it will attempt to fetch the specific state at that sequence.
 
-        :param partition_key: The partition key. Defaults to `None`. **Note:** The partition key defaults to `None`. If a partition key was used during saving, it must be provided 
+        :param partition_key: The partition key. Defaults to `None`. **Note:** The partition key defaults to `None`. If a partition key was used during saving, it must be provided
         consistently during retrieval, or no results will be returned.
         :param app_id: Application UID to read from.
-        :param sequence_id: (Optional) The sequence ID to retrieve a specific state. If not provided, 
+        :param sequence_id: (Optional) The sequence ID to retrieve a specific state. If not provided,
             the latest state is returned.
 
         :returns: The state data if found, otherwise None.
@@ -139,9 +139,9 @@ class MongoDBBasePersister(persistence.BaseStatePersister):
         **kwargs,
     ):
         """Save the state data to the MongoDB database.
-        
+
         :param partition_key: the partition key. Note this could be None, but it's up to the persistor to whether
-        that is a valid value it can handle. If a partition key was used during saving, it must be provided 
+        that is a valid value it can handle. If a partition key was used during saving, it must be provided
         consistently during retrieval, or no results will be returned.
         :param app_id: Application UID to write with.
         :param sequence_id: Sequence ID of the last executed step.
