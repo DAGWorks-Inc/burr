@@ -1446,14 +1446,32 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 <span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.load" title="Link to this definition">¶</a></dt>
-<dd><p>Load the state data for a given partition key, app id, and sequence id.</p>
+<dd><p>Loads the state data for a given partition key, app_id, and sequence_id.</p>
+<p>This method retrieves the most recent state data for the specified (partition_key, app_id) combination.
+If a sequence ID is provided, it will attempt to fetch the specific state at that sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>partition_key</strong> – The partition key. Defaults to <cite>None</cite>. <strong>Note:</strong> The partition key defaults to <cite>None</cite>. If a partition key was used during saving, it must be provided</p>
+</dd>
+</dl>
+<p>consistently during retrieval, or no results will be returned.
+:param app_id: Application UID to read from.
+:param sequence_id: (Optional) The sequence ID to retrieve a specific state. If not provided,</p>
+<blockquote>
+<div><p>the latest state is returned.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The state data if found, otherwise None.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -1461,7 +1479,7 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 <span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
@@ -1472,6 +1490,26 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.save" title="Link to this definition">¶</a></dt>
 <dd><p>Save the state data to the MongoDB database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>partition_key</strong> – the partition key. Note this could be None, but it’s up to the persistor to whether</p>
+</dd>
+</dl>
+<p>that is a valid value it can handle. If a partition key was used during saving, it must be provided
+consistently during retrieval, or no results will be returned.
+:param app_id: Application UID to write with.
+:param sequence_id: Sequence ID of the last executed step.
+:param position: The action name that was implemented.
+:param state: The current state of the application.
+:param status: The status of this state, either “completed” or “failed”. If “failed”, the state is what it was</p>
+<blockquote>
+<div><p>before the action was applied.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
