@@ -402,11 +402,15 @@
 </li>
           <li><a href="../reference/persister/#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.__init__">(burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister method)</a>
 </li>
-          <li><a href="../reference/persister/#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.__init__">(burr.integrations.persisters.b_mongodb.MongoDBBasePersister method)</a>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.__init__">(burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.__init__">(burr.integrations.persisters.b_psycopg2.PostgreSQLPersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.__init__">(burr.integrations.persisters.b_pymongo.MongoDBBasePersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.__init__">(burr.integrations.persisters.b_redis.AsyncRedisBasePersister method)</a>
 </li>
           <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.RedisBasePersister.__init__">(burr.integrations.persisters.b_redis.RedisBasePersister method)</a>
-</li>
-          <li><a href="../reference/persister/#burr.integrations.persisters.postgresql.PostgreSQLPersister.__init__">(burr.integrations.persisters.postgresql.PostgreSQLPersister method)</a>
 </li>
           <li><a href="../reference/typing/#burr.integrations.pydantic.PydanticTypingSystem.__init__">(burr.integrations.pydantic.PydanticTypingSystem method)</a>
 </li>
@@ -459,10 +463,10 @@
 </li>
         <li><a href="../reference/integrations/hamilton/#burr.integrations.hamilton.append_state">append_state() (in module burr.integrations.hamilton)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/application/#burr.core.application.Application">Application (class in burr.core.application)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/application/#burr.core.application.ApplicationBuilder">ApplicationBuilder (class in burr.core.application)</a>
 </li>
         <li><a href="../reference/application/#burr.core.application.ApplicationContext">ApplicationContext (class in burr.core.application)</a>
@@ -482,6 +486,10 @@
         <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStatePersister">AsyncBaseStatePersister (class in burr.core.persistence)</a>
 </li>
         <li><a href="../reference/persister/#burr.core.persistence.AsyncBaseStateSaver">AsyncBaseStateSaver (class in burr.core.persistence)</a>
+</li>
+        <li><a href="../reference/persister/#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister">AsyncPostgreSQLPersister (class in burr.integrations.persisters.b_asyncpg)</a>
+</li>
+        <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.AsyncRedisBasePersister">AsyncRedisBasePersister (class in burr.integrations.persisters.b_redis)</a>
 </li>
         <li><a href="../reference/persister/#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister">AsyncSQLitePersister (class in burr.integrations.persisters.b_aiosqlite)</a>
 </li>
@@ -556,6 +564,24 @@
   <h2>C</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../reference/persister/#burr.core.persistence.SQLitePersister.cleanup">cleanup() (burr.core.persistence.SQLitePersister method)</a>
+
+        <ul>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.cleanup">(burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.cleanup">(burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.cleanup">(burr.integrations.persisters.b_psycopg2.PostgreSQLPersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.cleanup">(burr.integrations.persisters.b_pymongo.MongoDBBasePersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.cleanup">(burr.integrations.persisters.b_redis.AsyncRedisBasePersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.RedisBasePersister.cleanup">(burr.integrations.persisters.b_redis.RedisBasePersister method)</a>
+</li>
+        </ul></li>
+        <li><a href="../reference/persister/#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.close">close() (burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister method)</a>
+</li>
         <li><a href="../reference/conditions/#burr.core.action.Condition">Condition (class in burr.core.action)</a>
 </li>
         <li><a href="../reference/typing/#burr.core.typing.TypingSystem.construct_data">construct_data() (burr.core.typing.TypingSystem method)</a>
@@ -564,6 +590,8 @@
           <li><a href="../reference/typing/#burr.integrations.pydantic.PydanticTypingSystem.construct_data">(burr.integrations.pydantic.PydanticTypingSystem method)</a>
 </li>
         </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/typing/#burr.core.typing.TypingSystem.construct_state">construct_state() (burr.core.typing.TypingSystem method)</a>
 
         <ul>
@@ -572,18 +600,24 @@
         </ul></li>
         <li><a href="../reference/application/#burr.core.application.Application.context">context (burr.core.application.Application property)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/tracking/#burr.tracking.LocalTrackingClient.copy">copy() (burr.tracking.LocalTrackingClient method)</a>
 </li>
         <li><a href="../reference/parallelism/#burr.core.parallelism.RunnableGraph.create">create() (burr.core.parallelism.RunnableGraph static method)</a>
 </li>
         <li><a href="../reference/visibility/#burr.visibility.tracing.ActionSpan.create_initial">create_initial() (burr.visibility.tracing.ActionSpan class method)</a>
 </li>
-        <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.RedisBasePersister.create_key">create_key() (burr.integrations.persisters.b_redis.RedisBasePersister method)</a>
+        <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.create_key">create_key() (burr.integrations.persisters.b_redis.AsyncRedisBasePersister method)</a>
+
+        <ul>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.RedisBasePersister.create_key">(burr.integrations.persisters.b_redis.RedisBasePersister method)</a>
 </li>
-        <li><a href="../reference/persister/#burr.integrations.persisters.postgresql.PostgreSQLPersister.create_table">create_table() (burr.integrations.persisters.postgresql.PostgreSQLPersister method)</a>
+        </ul></li>
+        <li><a href="../reference/persister/#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.create_table">create_table() (burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister method)</a>
+
+        <ul>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.create_table">(burr.integrations.persisters.b_psycopg2.PostgreSQLPersister method)</a>
 </li>
+        </ul></li>
         <li><a href="../reference/persister/#burr.core.persistence.SQLitePersister.create_table_if_not_exists">create_table_if_not_exists() (burr.core.persistence.SQLitePersister method)</a>
 
         <ul>
@@ -644,24 +678,44 @@
   <h2>F</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="../reference/persister/#burr.integrations.persisters.postgresql.PostgreSQLPersister.from_config">from_config() (burr.integrations.persisters.postgresql.PostgreSQLPersister class method)</a>
-</li>
-        <li><a href="../reference/integrations/hamilton/#burr.integrations.hamilton.from_state">from_state() (in module burr.integrations.hamilton)</a>
-</li>
-        <li><a href="../reference/integrations/hamilton/#burr.integrations.hamilton.from_value">from_value() (in module burr.integrations.hamilton)</a>
-</li>
-        <li><a href="../reference/persister/#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.from_values">from_values() (burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister class method)</a>
+        <li><a href="../reference/persister/#burr.core.persistence.SQLitePersister.from_config">from_config() (burr.core.persistence.SQLitePersister class method)</a>
 
         <ul>
-          <li><a href="../reference/persister/#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.from_values">(burr.integrations.persisters.b_mongodb.MongoDBBasePersister class method)</a>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.from_config">(burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister class method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.from_config">(burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister class method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.from_config">(burr.integrations.persisters.b_psycopg2.PostgreSQLPersister class method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.from_config">(burr.integrations.persisters.b_pymongo.MongoDBBasePersister class method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.from_config">(burr.integrations.persisters.b_redis.AsyncRedisBasePersister class method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.RedisBasePersister.from_config">(burr.integrations.persisters.b_redis.RedisBasePersister class method)</a>
+</li>
+        </ul></li>
+        <li><a href="../reference/integrations/hamilton/#burr.integrations.hamilton.from_state">from_state() (in module burr.integrations.hamilton)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="../reference/integrations/hamilton/#burr.integrations.hamilton.from_value">from_value() (in module burr.integrations.hamilton)</a>
+</li>
+        <li><a href="../reference/persister/#burr.core.persistence.SQLitePersister.from_values">from_values() (burr.core.persistence.SQLitePersister class method)</a>
+
+        <ul>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.from_values">(burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister class method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.from_values">(burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister class method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.from_values">(burr.integrations.persisters.b_psycopg2.PostgreSQLPersister class method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.from_values">(burr.integrations.persisters.b_pymongo.MongoDBBasePersister class method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.from_values">(burr.integrations.persisters.b_redis.AsyncRedisBasePersister class method)</a>
 </li>
           <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.RedisBasePersister.from_values">(burr.integrations.persisters.b_redis.RedisBasePersister class method)</a>
 </li>
-          <li><a href="../reference/persister/#burr.integrations.persisters.postgresql.PostgreSQLPersister.from_values">(burr.integrations.persisters.postgresql.PostgreSQLPersister class method)</a>
-</li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/actions/#burr.core.action.Function">Function (class in burr.core.action)</a>
 </li>
     </ul></td>
@@ -676,7 +730,7 @@
 </li>
         <li><a href="../reference/application/#burr.core.graph.Graph.get_action">get_action() (burr.core.graph.Graph method)</a>
 </li>
-        <li><a href="../reference/application/#burr.core.graph.Graph.get_actions_by_alias">get_actions_by_alias() (burr.core.graph.Graph method)</a>
+        <li><a href="../reference/application/#burr.core.graph.Graph.get_actions_by_tag">get_actions_by_tag() (burr.core.graph.Graph method)</a>
 </li>
         <li><a href="../reference/state/#burr.core.state.State.get_all">get_all() (burr.core.state.State method)</a>
 </li>
@@ -735,7 +789,9 @@
 </li>
           <li><a href="../reference/persister/#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.initialize">(burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister method)</a>
 </li>
-          <li><a href="../reference/persister/#burr.integrations.persisters.postgresql.PostgreSQLPersister.initialize">(burr.integrations.persisters.postgresql.PostgreSQLPersister method)</a>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.initialize">(burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.initialize">(burr.integrations.persisters.b_psycopg2.PostgreSQLPersister method)</a>
 </li>
         </ul></li>
         <li><a href="../reference/application/#burr.core.application.ApplicationBuilder.initialize_from">initialize_from() (burr.core.application.ApplicationBuilder method)</a>
@@ -777,7 +833,9 @@
 </li>
           <li><a href="../reference/persister/#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.is_initialized">(burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister method)</a>
 </li>
-          <li><a href="../reference/persister/#burr.integrations.persisters.postgresql.PostgreSQLPersister.is_initialized">(burr.integrations.persisters.postgresql.PostgreSQLPersister method)</a>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.is_initialized">(burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.is_initialized">(burr.integrations.persisters.b_psycopg2.PostgreSQLPersister method)</a>
 </li>
         </ul></li>
         <li><a href="../reference/application/#burr.core.application.Application.iterate">iterate() (burr.core.application.Application method)</a>
@@ -803,11 +861,15 @@
 </li>
           <li><a href="../reference/persister/#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.list_app_ids">(burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister method)</a>
 </li>
-          <li><a href="../reference/persister/#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.list_app_ids">(burr.integrations.persisters.b_mongodb.MongoDBBasePersister method)</a>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.list_app_ids">(burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.list_app_ids">(burr.integrations.persisters.b_psycopg2.PostgreSQLPersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.list_app_ids">(burr.integrations.persisters.b_pymongo.MongoDBBasePersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.list_app_ids">(burr.integrations.persisters.b_redis.AsyncRedisBasePersister method)</a>
 </li>
           <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.RedisBasePersister.list_app_ids">(burr.integrations.persisters.b_redis.RedisBasePersister method)</a>
-</li>
-          <li><a href="../reference/persister/#burr.integrations.persisters.postgresql.PostgreSQLPersister.list_app_ids">(burr.integrations.persisters.postgresql.PostgreSQLPersister method)</a>
 </li>
           <li><a href="../reference/tracking/#burr.tracking.LocalTrackingClient.list_app_ids">(burr.tracking.LocalTrackingClient method)</a>
 </li>
@@ -827,11 +889,15 @@
 </li>
           <li><a href="../reference/persister/#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.load">(burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister method)</a>
 </li>
-          <li><a href="../reference/persister/#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.load">(burr.integrations.persisters.b_mongodb.MongoDBBasePersister method)</a>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.load">(burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.load">(burr.integrations.persisters.b_psycopg2.PostgreSQLPersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.load">(burr.integrations.persisters.b_pymongo.MongoDBBasePersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.load">(burr.integrations.persisters.b_redis.AsyncRedisBasePersister method)</a>
 </li>
           <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.RedisBasePersister.load">(burr.integrations.persisters.b_redis.RedisBasePersister method)</a>
-</li>
-          <li><a href="../reference/persister/#burr.integrations.persisters.postgresql.PostgreSQLPersister.load">(burr.integrations.persisters.postgresql.PostgreSQLPersister method)</a>
 </li>
           <li><a href="../reference/tracking/#burr.tracking.LocalTrackingClient.load">(burr.tracking.LocalTrackingClient method)</a>
 </li>
@@ -881,7 +947,7 @@
         </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="../reference/persister/#burr.integrations.persisters.b_mongodb.MongoDBBasePersister">MongoDBBasePersister (class in burr.integrations.persisters.b_mongodb)</a>
+        <li><a href="../reference/persister/#burr.integrations.persisters.b_pymongo.MongoDBBasePersister">MongoDBBasePersister (class in burr.integrations.persisters.b_pymongo)</a>
 </li>
     </ul></td>
   </tr></table>
@@ -957,7 +1023,7 @@
 </li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="../reference/persister/#burr.integrations.persisters.postgresql.PostgreSQLPersister">PostgreSQLPersister (class in burr.integrations.persisters.postgresql)</a>
+        <li><a href="../reference/persister/#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister">PostgreSQLPersister (class in burr.integrations.persisters.b_psycopg2)</a>
 </li>
         <li><a href="../reference/lifecycle/#burr.lifecycle.base.PostRunStepHook">PostRunStepHook (class in burr.lifecycle.base)</a>
 </li>
@@ -1084,11 +1150,15 @@
 </li>
           <li><a href="../reference/persister/#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.save">(burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister method)</a>
 </li>
-          <li><a href="../reference/persister/#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.save">(burr.integrations.persisters.b_mongodb.MongoDBBasePersister method)</a>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.save">(burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.save">(burr.integrations.persisters.b_psycopg2.PostgreSQLPersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.save">(burr.integrations.persisters.b_pymongo.MongoDBBasePersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.save">(burr.integrations.persisters.b_redis.AsyncRedisBasePersister method)</a>
 </li>
           <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.RedisBasePersister.save">(burr.integrations.persisters.b_redis.RedisBasePersister method)</a>
-</li>
-          <li><a href="../reference/persister/#burr.integrations.persisters.postgresql.PostgreSQLPersister.save">(burr.integrations.persisters.postgresql.PostgreSQLPersister method)</a>
 </li>
         </ul></li>
         <li><a href="../reference/application/#burr.core.application.Application.sequence_id">sequence_id (burr.core.application.Application property)</a>
@@ -1107,12 +1177,28 @@
 </li>
         <li><a href="../reference/serde/#burr.integrations.serde.pydantic.serialize_pydantic">serialize_pydantic() (in module burr.integrations.serde.pydantic)</a>
 </li>
-        <li><a href="../reference/persister/#burr.integrations.persisters.postgresql.PostgreSQLPersister.set_serde_kwargs">set_serde_kwargs() (burr.integrations.persisters.postgresql.PostgreSQLPersister method)</a>
+        <li><a href="../reference/persister/#burr.core.persistence.SQLitePersister.set_serde_kwargs">set_serde_kwargs() (burr.core.persistence.SQLitePersister method)</a>
+
+        <ul>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.set_serde_kwargs">(burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister method)</a>
 </li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.set_serde_kwargs">(burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.set_serde_kwargs">(burr.integrations.persisters.b_psycopg2.PostgreSQLPersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.set_serde_kwargs">(burr.integrations.persisters.b_pymongo.MongoDBBasePersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.set_serde_kwargs">(burr.integrations.persisters.b_redis.AsyncRedisBasePersister method)</a>
+</li>
+          <li><a href="../reference/persister/#burr.integrations.persisters.b_redis.RedisBasePersister.set_serde_kwargs">(burr.integrations.persisters.b_redis.RedisBasePersister method)</a>
+</li>
+        </ul></li>
         <li><a href="../reference/integrations/ray/#burr.integrations.ray.RayExecutor.shutdown">shutdown() (burr.integrations.ray.RayExecutor method)</a>
 </li>
         <li><a href="../reference/lifecycle/#burr.lifecycle.default.SlowDownHook">SlowDownHook (class in burr.lifecycle.default)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/application/#burr.core.application.Application.spawning_parent_pointer">spawning_parent_pointer (burr.core.application.Application property)</a>
 </li>
         <li><a href="../reference/persister/#burr.core.persistence.SQLitePersister">SQLitePersister (class in burr.core.persistence)</a>
@@ -1121,8 +1207,6 @@
 </li>
         <li><a href="../reference/state/#burr.core.state.State">State (class in burr.core.state)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="../reference/parallelism/#burr.core.parallelism.MapActions.state">state() (burr.core.parallelism.MapActions method)</a>
 </li>
         <li><a href="../reference/parallelism/#burr.core.parallelism.MapActionsAndStates.state_initializer">state_initializer() (burr.core.parallelism.MapActionsAndStates method)</a>

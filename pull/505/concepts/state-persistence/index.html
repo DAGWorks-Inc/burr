@@ -405,7 +405,7 @@ and you want to store the state of the process after each action, and then reloa
 <p>In the case of a chatbot, the <code class="docutils literal notranslate"><span class="pre">app_id</span></code> could be a uuid, and the <code class="docutils literal notranslate"><span class="pre">partition_key</span></code> could be the user’s ID or email, etc.
 Note that <code class="docutils literal notranslate"><span class="pre">partition_key</span></code> can be <cite>None</cite> if this is not relevant. A UUID is always generated for the <code class="docutils literal notranslate"><span class="pre">app_id</span></code> if not provided.</p>
 <p>You set these values using the <a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationBuilder.with_identifiers" title="burr.core.application.ApplicationBuilder.with_identifiers"><code class="xref py py-meth docutils literal notranslate"><span class="pre">with_identifiers()</span></code></a> method.</p>
-<p>Note: to access <code class="docutils literal notranslate"><span class="pre">app_id</span></code> and <code class="docutils literal notranslate"><span class="pre">partition_key</span></code> in your running application, you can have the <a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationContext" title="burr.core.application.ApplicationContext"><code class="xref py py-class docutils literal notranslate"><span class="pre">ApplicationContext</span></code></a>
+<p>Note: to access application-level metadata such as <code class="docutils literal notranslate"><span class="pre">app_id</span></code>, <code class="docutils literal notranslate"><span class="pre">partition_key</span></code>, <code class="docutils literal notranslate"><span class="pre">sequence_id</span></code>, and <code class="docutils literal notranslate"><span class="pre">action_name</span></code> in your running application, you can have the <a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationContext" title="burr.core.application.ApplicationContext"><code class="xref py py-class docutils literal notranslate"><span class="pre">ApplicationContext</span></code></a>
 injected into your Burr Actions. This is done by adding <code class="docutils literal notranslate"><span class="pre">__context</span></code> to the action signature:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span><span class="p">,</span> <span class="n">State</span><span class="p">,</span> <span class="n">ApplicationContext</span>
 
@@ -413,6 +413,8 @@ injected into your Burr Actions. This is done by adding <code class="docutils li
 <span class="k">def</span><span class="w"> </span><span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__context</span><span class="p">:</span> <span class="n">ApplicationContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
     <span class="n">app_id</span> <span class="o">=</span> <span class="n">__context</span><span class="o">.</span><span class="n">app_id</span>
     <span class="n">partition_key</span> <span class="o">=</span> <span class="n">__context</span><span class="o">.</span><span class="n">partition_key</span>
+    <span class="n">action_name</span> <span class="o">=</span> <span class="n">__context</span><span class="o">.</span><span class="n">action_name</span>
+    <span class="n">sequence_id</span> <span class="o">=</span> <span class="n">__context</span><span class="o">.</span><span class="n">sequence_id</span>
     <span class="o">...</span>
 </pre></div>
 </div>
@@ -457,7 +459,7 @@ video on how they use this feature:</p>
 <section id="an-example">
 <h3>An example<a class="headerlink" href="#an-example" title="Link to this heading">¶</a></h3>
 <p>To make the above more concrete, let’s look at a basic chatbot:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">state_persister</span> <span class="o">=</span>  <span class="n">SQLLitePersister</span><span class="p">(</span><span class="n">db_path</span><span class="o">=</span><span class="s2">&quot;.sqllite.db&quot;</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;burr_state&quot;</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">state_persister</span> <span class="o">=</span>  <span class="n">SQLLitePersister</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">db_path</span><span class="o">=</span><span class="s2">&quot;.sqllite.db&quot;</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;burr_state&quot;</span><span class="p">)</span>
 <span class="n">app</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">ApplicationBuilder</span><span class="p">()</span>
     <span class="o">.</span><span class="n">with_actions</span><span class="p">(</span>
@@ -491,10 +493,68 @@ you can leave out <code class="docutils literal notranslate"><span class="pre">i
 <p>See <a class="reference internal" href="../../reference/persister/#persistersref"><span class="std std-ref">available persisters here</span></a>.
 Note that the tracker also allows reloading from a file, but this is not recommended for production use.</p>
 </section>
+<section id="persister-usage">
+<h3>Persister Usage<a class="headerlink" href="#persister-usage" title="Link to this heading">¶</a></h3>
+<p>We follow the naming convention <code class="docutils literal notranslate"><span class="pre">b_database-dependency-library</span></code>, where the <code class="docutils literal notranslate"><span class="pre">b_</span></code> is used to avoid name
+clashing with the underlying library. We chose the library name in case we implement the same database
+persister with different dependency libraries to keep the class naming convention.</p>
+<p>To initialize the persister we recommend using one of the two class methods: <code class="docutils literal notranslate"><span class="pre">.from_config(...)</span></code> or <code class="docutils literal notranslate"><span class="pre">.from_values(...)</span></code> that
+establish a connection to the database and return the persister object. In case you already have a database connection
+established (or using a connection pool), you can also initialize the persister directly and pass in the database
+connection as the first argument.</p>
+<p>We recommend that you manually handle the database connection cleanup. For now, in the case of
+synchronous persisters, the connection gets closed when the object is deleted. For asynchronous
+persisters this is not possible. Therefore, we suggest that you either use the persister as a context
+manager</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">SQLLitePersister</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span>
+        <span class="n">db_path</span><span class="o">=</span><span class="s2">&quot;.sqllite.db&quot;</span><span class="p">,</span>
+        <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;burr_state&quot;</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">state_persister</span><span class="p">:</span>
+
+    <span class="n">app</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">ApplicationBuilder</span><span class="p">()</span>
+        <span class="o">.</span><span class="n">with_actions</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">with_transitions</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">initialize_from</span><span class="p">(</span>
+            <span class="n">state_persister</span><span class="p">,</span> <span class="o">...</span>
+            <span class="p">)</span>
+        <span class="o">.</span><span class="n">with_state_persister</span><span class="p">(</span><span class="n">state_persister</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">with_identifiers</span><span class="p">(</span><span class="n">app_id</span><span class="o">=</span><span class="n">app_id</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">build</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="o">*</span><span class="n">_</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>or manually close the connection to the database, by using the <cite>.cleanup()</cite> method of the persister</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">state_persister</span> <span class="o">=</span> <span class="n">SQLLitePersister</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">db_path</span><span class="o">=</span><span class="s2">&quot;.sqllite.db&quot;</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;burr_state&quot;</span><span class="p">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">ApplicationBuilder</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">with_actions</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">with_transitions</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">initialize_from</span><span class="p">(</span>
+        <span class="n">state_persister</span><span class="p">,</span> <span class="o">...</span>
+        <span class="p">)</span>
+    <span class="o">.</span><span class="n">with_state_persister</span><span class="p">(</span><span class="n">state_persister</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">with_identifiers</span><span class="p">(</span><span class="n">app_id</span><span class="o">=</span><span class="n">app_id</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">build</span><span class="p">()</span>
+<span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="o">*</span><span class="n">_</span><span class="p">,</span> <span class="n">state</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="o">...</span>
+<span class="k">finally</span><span class="p">:</span>
+    <span class="n">state_persister</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>to ensure no database connection leakage.</p>
+</section>
 </section>
 <section id="customizing-state-persistence">
 <h2>Customizing State Persistence<a class="headerlink" href="#customizing-state-persistence" title="Link to this heading">¶</a></h2>
-<p>Burr exposes the <a class="reference internal" href="../../reference/persister/#burr.core.persistence.BaseStatePersister" title="burr.core.persistence.BaseStatePersister"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseStatePersister</span></code></a> API for custom state persistence. Implement,
+<p>Burr exposes two APIs <a class="reference internal" href="../../reference/persister/#burr.core.persistence.BaseStatePersister" title="burr.core.persistence.BaseStatePersister"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseStatePersister</span></code></a> (sync) and
+<a class="reference internal" href="../../reference/persister/#burr.core.persistence.AsyncBaseStatePersister" title="burr.core.persistence.AsyncBaseStatePersister"><code class="xref py py-class docutils literal notranslate"><span class="pre">AsyncBaseStatePersister</span></code></a> (async) for custom state persistence. Implement,
 pass into the above functions, and you can write to whatever database you want! Please contribute back to the community if you do so.</p>
 </section>
 <section id="loading-from-the-tracker">
@@ -601,6 +661,7 @@ as <a class="reference internal" href="../serde/#state-field-serialization"><spa
 <li><a class="reference internal" href="#writing-state">Writing state</a></li>
 <li><a class="reference internal" href="#an-example">An example</a></li>
 <li><a class="reference internal" href="#supported-persistence-backends">Supported Persistence Backends</a></li>
+<li><a class="reference internal" href="#persister-usage">Persister Usage</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#customizing-state-persistence">Customizing State Persistence</a></li>

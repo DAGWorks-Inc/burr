@@ -372,10 +372,51 @@
         <article role="main" id="furo-main-content">
           <section id="state-persistence">
 <h1>State Persistence<a class="headerlink" href="#state-persistence" title="Link to this heading">¶</a></h1>
-<p>Burr provides a set of tools to make loading and saving state easy. These are functions
+<p id="persistersref">Burr provides a set of tools to make loading and saving state easy. These are functions
 that will be used by lifecycle hooks to save and load state.</p>
+<p>We currently support the following database integrations:</p>
+<div class="table-wrapper colwidths-auto docutils container" id="id2">
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Burr Implemented Persisters</span><a class="headerlink" href="#id2" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Database</p></th>
+<th class="head" colspan="2"><p>Sync</p></th>
+<th class="head" colspan="2"><p>Async</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>SQLite</p></td>
+<td><p>sqlite3</p></td>
+<td><p><a class="reference internal" href="#syncsqliteref"><span class="std std-ref">SQLitePersister</span></a></p></td>
+<td><p>aiosqlite</p></td>
+<td><p><a class="reference internal" href="#asyncsqliteref"><span class="std std-ref">AsyncSQLitePersister</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>PostgreSQL</p></td>
+<td><p>psycopg2</p></td>
+<td><p><a class="reference internal" href="#syncpostgresref"><span class="std std-ref">PostgreSQLPersister</span></a></p></td>
+<td><p>asyncpg</p></td>
+<td><p><a class="reference internal" href="#asyncpostgresref"><span class="std std-ref">AsyncPostgreSQLPersister</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>Redis</p></td>
+<td><p>redis</p></td>
+<td><p><a class="reference internal" href="#syncredisref"><span class="std std-ref">RedisBasePersister</span></a></p></td>
+<td><p>redis.asyncio</p></td>
+<td><p><a class="reference internal" href="#asyncredisref"><span class="std std-ref">AsyncRedisBasePersister</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>MongoDB</p></td>
+<td><p>pymongo</p></td>
+<td><p><a class="reference internal" href="#syncmongoref"><span class="std std-ref">MongoDBBasePersister</span></a></p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>We follow the naming convention <code class="docutils literal notranslate"><span class="pre">b_dependency-library</span></code>, where the <code class="docutils literal notranslate"><span class="pre">b_</span></code> is used to avoid name
+clashing with the underlying library. We chose the library name in case we implement the same database
+persister with different dependency libraries to keep the class naming convention.</p>
 <p>If you want to implement your own state persister (to bridge it with a database), you should implement
-the <code class="docutils literal notranslate"><span class="pre">BaseStatePersister</span></code> interface.</p>
+the <code class="docutils literal notranslate"><span class="pre">BaseStatePersister</span></code> or the <code class="docutils literal notranslate"><span class="pre">AsyncBaseStatePersister</span></code> interface.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.core.persistence.BaseStatePersister">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.persistence.</span></span><span class="sig-name descname"><span class="pre">BaseStatePersister</span></span><a class="headerlink" href="#burr.core.persistence.BaseStatePersister" title="Link to this definition">¶</a></dt>
@@ -789,8 +830,8 @@ before the action was applied.</p></li>
 
 <section id="supported-sync-implementations">
 <h2>Supported Sync Implementations<a class="headerlink" href="#supported-sync-implementations" title="Link to this heading">¶</a></h2>
-<p id="persistersref">Currently we support the following, although we highly recommend you contribute your own! We will be adding more shortly.</p>
-<dl class="py class">
+<p>Currently we support the following, although we highly recommend you contribute your own! We will be adding more shortly.</p>
+<dl class="py class" id="syncsqliteref">
 <dt class="sig sig-object py" id="burr.core.persistence.SQLitePersister">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.persistence.</span></span><span class="sig-name descname"><span class="pre">SQLitePersister</span></span><span class="sig-paren">(</span>
 
@@ -799,6 +840,7 @@ before the action was applied.</p></li>
 <dd><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">connect_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">connection</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Connection</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.SQLitePersister" title="Link to this definition">¶</a></dt>
@@ -812,6 +854,7 @@ before the action was applied.</p></li>
 <dd><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">connect_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">connection</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Connection</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.SQLitePersister.__init__" title="Link to this definition">¶</a></dt>
@@ -824,15 +867,63 @@ before the action was applied.</p></li>
 <li><p><strong>serde_kwargs</strong> – kwargs for state serialization/deserialization.</p></li>
 <li><p><strong>connect_kwargs</strong> – kwargs to pass to the sqlite3.connect method.
 Use check_same_thread=False to enable use ina  multithreaded context</p></li>
+<li><p><strong>connection</strong> – ability to instantiate a db outside of the persister and pass
+in the connection to be used.</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.SQLitePersister.cleanup">
+<span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.SQLitePersister.cleanup" title="Link to this definition">¶</a></dt>
+<dd><p>Closes the connection to the database.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="burr.core.persistence.SQLitePersister.create_table_if_not_exists">
 <span class="sig-name descname"><span class="pre">create_table_if_not_exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.SQLitePersister.create_table_if_not_exists" title="Link to this definition">¶</a></dt>
 <dd><p>Helper function to create the table where things are stored if it doesn’t exist.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.SQLitePersister.from_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.core.persistence.SQLitePersister" title="burr.core.persistence.SQLitePersister"><span class="pre">SQLitePersister</span></a></span></span><a class="headerlink" href="#burr.core.persistence.SQLitePersister.from_config" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a new instance of the SQLitePersister from a configuration dictionary.</p>
+<p>The config key:value pair needed are:
+db_path: str,
+table_name: str,
+serde_kwargs: dict,
+connect_kwargs: dict,</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.SQLitePersister.from_values">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_values</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">db_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">connect_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.core.persistence.SQLitePersister" title="burr.core.persistence.SQLitePersister"><span class="pre">SQLitePersister</span></a></span></span><a class="headerlink" href="#burr.core.persistence.SQLitePersister.from_values" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a new instance of the SQLitePersister from passed in values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>db_path</strong> – the path the DB will be stored.</p></li>
+<li><p><strong>table_name</strong> – the table name to store things under.</p></li>
+<li><p><strong>serde_kwargs</strong> – kwargs for state serialization/deserialization.</p></li>
+<li><p><strong>connect_kwargs</strong> – kwargs to pass to the aiosqlite.connect method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>async sqlite persister instance with an open connection. You are responsible
+for closing the connection yourself.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -922,11 +1013,17 @@ before the action was applied.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.persistence.SQLitePersister.set_serde_kwargs">
+<span class="sig-name descname"><span class="pre">set_serde_kwargs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.core.persistence.SQLitePersister.set_serde_kwargs" title="Link to this definition">¶</a></dt>
+<dd><p>Sets the serde_kwargs for the persister.</p>
 </dd></dl>
 
-<dl class="py class">
-<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.postgresql.</span></span><span class="sig-name descname"><span class="pre">PostgreSQLPersister</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister" title="Link to this definition">¶</a></dt>
+</dd></dl>
+
+<dl class="py class" id="syncpostgresref">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_psycopg2.PostgreSQLPersister">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.b_psycopg2.</span></span><span class="sig-name descname"><span class="pre">PostgreSQLPersister</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister" title="Link to this definition">¶</a></dt>
 <dd><p>Class for PostgreSQL persistence of state. This is a simple implementation.</p>
 <p>To try it out locally with docker – here’s a command – change the values as appropriate.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>local-psql<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># container name</span>
@@ -942,8 +1039,8 @@ before the action was applied.</p></li>
 </pre></div>
 </div>
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.__init__" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.__init__" title="Link to this definition">¶</a></dt>
 <dd><p>Constructor</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -956,25 +1053,31 @@ before the action was applied.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.create_table">
-<span class="sig-name descname"><span class="pre">create_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.create_table" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.cleanup">
+<span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.cleanup" title="Link to this definition">¶</a></dt>
+<dd><p>Closes the connection to the database.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.create_table">
+<span class="sig-name descname"><span class="pre">create_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.create_table" title="Link to this definition">¶</a></dt>
 <dd><p>Helper function to create the table where things are stored.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.from_config">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.from_config">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister" title="burr.integrations.persisters.postgresql.PostgreSQLPersister"><span class="pre">PostgreSQLPersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.from_config" title="Link to this definition">¶</a></dt>
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister" title="burr.integrations.persisters.b_psycopg2.PostgreSQLPersister"><span class="pre">PostgreSQLPersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.from_config" title="Link to this definition">¶</a></dt>
 <dd><p>Creates a new instance of the PostgreSQLPersister from a configuration dictionary.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.from_values">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.from_values">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_values</span></span><span class="sig-paren">(</span>
 
 <dl>
@@ -986,7 +1089,7 @@ before the action was applied.</p></li>
 <dd><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.from_values" title="Link to this definition">¶</a></dt>
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.from_values" title="Link to this definition">¶</a></dt>
 <dd><p>Builds a new instance of the PostgreSQLPersister from the provided values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1003,27 +1106,27 @@ before the action was applied.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.initialize">
-<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.initialize" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.initialize">
+<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.initialize" title="Link to this definition">¶</a></dt>
 <dd><p>Creates the table</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.is_initialized">
-<span class="sig-name descname"><span class="pre">is_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.is_initialized" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.is_initialized">
+<span class="sig-name descname"><span class="pre">is_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.is_initialized" title="Link to this definition">¶</a></dt>
 <dd><p>This checks to see if the table has been created in the database or not.
 It defaults to using the initialized field, else queries the database to see if the table exists.
 It then sets the initialized field to True if the table exists.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.list_app_ids">
-<span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.list_app_ids" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.list_app_ids">
+<span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.list_app_ids" title="Link to this definition">¶</a></dt>
 <dd><p>Lists the app_ids for a given partition_key.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.load">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.load">
 <span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
 
 <dl>
@@ -1033,7 +1136,7 @@ It then sets the initialized field to True if the table exists.</p>
 <dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.load" title="Link to this definition">¶</a></dt>
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.load" title="Link to this definition">¶</a></dt>
 <dd><p>Loads state for a given partition id.</p>
 <p>Depending on the parameters, this will return the last thing written, the last thing written for a given app_id,
 or a specific sequence_id for a given app_id.</p>
@@ -1052,7 +1155,7 @@ or a specific sequence_id for a given app_id.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.save">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.save">
 <span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
 
 <dl>
@@ -1065,7 +1168,7 @@ or a specific sequence_id for a given app_id.</p>
 <dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.save" title="Link to this definition">¶</a></dt>
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.save" title="Link to this definition">¶</a></dt>
 <dd><p>Saves the state for a given app_id, sequence_id, and position.</p>
 <p>This method connects to the SQLite database, converts the state to a JSON string, and inserts a new record
 into the table with the provided partition_key, app_id, sequence_id, position, and state. After the operation,
@@ -1090,14 +1193,14 @@ before the action was applied.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.postgresql.PostgreSQLPersister.set_serde_kwargs">
-<span class="sig-name descname"><span class="pre">set_serde_kwargs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.set_serde_kwargs" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.set_serde_kwargs">
+<span class="sig-name descname"><span class="pre">set_serde_kwargs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.set_serde_kwargs" title="Link to this definition">¶</a></dt>
 <dd><p>Sets the serde_kwargs for the persister.</p>
 </dd></dl>
 
 </dd></dl>
 
-<dl class="py class">
+<dl class="py class" id="syncredisref">
 <dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.b_redis.</span></span><span class="sig-name descname"><span class="pre">RedisBasePersister</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister" title="Link to this definition">¶</a></dt>
 <dd><p>Main class for Redis persister.</p>
@@ -1122,9 +1225,27 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.cleanup">
+<span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.cleanup" title="Link to this definition">¶</a></dt>
+<dd><p>Closes the connection to the database.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.create_key">
 <span class="sig-name descname"><span class="pre">create_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">app_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partition_key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.create_key" title="Link to this definition">¶</a></dt>
 <dd><p>Create a key for the Redis database.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.from_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister" title="burr.integrations.persisters.b_redis.RedisBasePersister"><span class="pre">RedisBasePersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.from_config" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a new instance of the RedisBasePersister from a configuration dictionary.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1214,11 +1335,17 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.RedisBasePersister.set_serde_kwargs">
+<span class="sig-name descname"><span class="pre">set_serde_kwargs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.RedisBasePersister.set_serde_kwargs" title="Link to this definition">¶</a></dt>
+<dd><p>Sets the serde_kwargs for the persister.</p>
 </dd></dl>
 
-<dl class="py class">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.b_mongodb.</span></span><span class="sig-name descname"><span class="pre">MongoDBBasePersister</span></span><span class="sig-paren">(</span>
+</dd></dl>
+
+<dl class="py class" id="syncmongoref">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_pymongo.MongoDBBasePersister">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.b_pymongo.</span></span><span class="sig-name descname"><span class="pre">MongoDBBasePersister</span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">client</span></span></em>,</dd>
@@ -1227,7 +1354,7 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 <dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister" title="Link to this definition">¶</a></dt>
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister" title="Link to this definition">¶</a></dt>
 <dd><p>A class used to represent a MongoDB Persister.</p>
 <p>Example usage:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">persister</span> <span class="o">=</span> <span class="n">MongoDBBasePersister</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">uri</span><span class="o">=</span><span class="s1">&#39;mongodb://user:pass@localhost:27017&#39;</span><span class="p">,</span>
@@ -1250,7 +1377,7 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 </dd>
 </dl>
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.__init__">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_pymongo.MongoDBBasePersister.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span>
 
 <dl>
@@ -1260,7 +1387,7 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 <dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.__init__" title="Link to this definition">¶</a></dt>
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.__init__" title="Link to this definition">¶</a></dt>
 <dd><p>Initializes the MongoDBBasePersister class.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1275,7 +1402,25 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.from_values">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_pymongo.MongoDBBasePersister.cleanup">
+<span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.cleanup" title="Link to this definition">¶</a></dt>
+<dd><p>Closes the connection to the database.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_pymongo.MongoDBBasePersister.from_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister" title="burr.integrations.persisters.b_pymongo.MongoDBBasePersister"><span class="pre">MongoDBBasePersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.from_config" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a new instance of the MongoDBBasePersister from a configuration dictionary.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_pymongo.MongoDBBasePersister.from_values">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_values</span></span><span class="sig-paren">(</span>
 
 <dl>
@@ -1286,37 +1431,55 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 <dd><em class="sig-param"><span class="n"><span class="pre">mongo_client_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister" title="burr.integrations.persisters.b_mongodb.MongoDBBasePersister"><span class="pre">MongoDBBasePersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.from_values" title="Link to this definition">¶</a></dt>
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister" title="burr.integrations.persisters.b_pymongo.MongoDBBasePersister"><span class="pre">MongoDBBasePersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.from_values" title="Link to this definition">¶</a></dt>
 <dd><p>Initializes the MongoDBBasePersister class.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.list_app_ids">
-<span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.list_app_ids" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_pymongo.MongoDBBasePersister.list_app_ids">
+<span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.list_app_ids" title="Link to this definition">¶</a></dt>
 <dd><p>List the app ids for a given partition key.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.load">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_pymongo.MongoDBBasePersister.load">
 <span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.load" title="Link to this definition">¶</a></dt>
-<dd><p>Load the state data for a given partition key, app id, and sequence id.</p>
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.load" title="Link to this definition">¶</a></dt>
+<dd><p>Loads the state data for a given partition key, app_id, and sequence_id.</p>
+<p>This method retrieves the most recent state data for the specified (partition_key, app_id) combination.
+If a sequence ID is provided, it will attempt to fetch the specific state at that sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>partition_key</strong> – The partition key. Defaults to <cite>None</cite>. <strong>Note:</strong> The partition key defaults to <cite>None</cite>. If a partition key was used during saving, it must be provided</p>
+</dd>
+</dl>
+<p>consistently during retrieval, or no results will be returned.
+:param app_id: Application UID to read from.
+:param sequence_id: (Optional) The sequence ID to retrieve a specific state. If not provided,</p>
+<blockquote>
+<div><p>the latest state is returned.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The state data if found, otherwise None.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="burr.integrations.persisters.b_mongodb.MongoDBBasePersister.save">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_pymongo.MongoDBBasePersister.save">
 <span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
@@ -1325,8 +1488,34 @@ so this is an attempt to fix that in a backwards compatible way.</p>
 <dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
 </dl>
 
-<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.save" title="Link to this definition">¶</a></dt>
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.save" title="Link to this definition">¶</a></dt>
 <dd><p>Save the state data to the MongoDB database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>partition_key</strong> – the partition key. Note this could be None, but it’s up to the persistor to whether</p>
+</dd>
+</dl>
+<p>that is a valid value it can handle. If a partition key was used during saving, it must be provided
+consistently during retrieval, or no results will be returned.
+:param app_id: Application UID to write with.
+:param sequence_id: Sequence ID of the last executed step.
+:param position: The action name that was implemented.
+:param state: The current state of the application.
+:param status: The status of this state, either “completed” or “failed”. If “failed”, the state is what it was</p>
+<blockquote>
+<div><p>before the action was applied.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_pymongo.MongoDBBasePersister.set_serde_kwargs">
+<span class="sig-name descname"><span class="pre">set_serde_kwargs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.set_serde_kwargs" title="Link to this definition">¶</a></dt>
+<dd><p>Sets the serde_kwargs for the persister.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1336,16 +1525,27 @@ although it uses different mechanisms to save state (as it tracks more than just
 </section>
 <section id="supported-async-implementations">
 <h2>Supported Async Implementations<a class="headerlink" href="#supported-async-implementations" title="Link to this heading">¶</a></h2>
-<p>Currently we support the following, although we highly recommend you contribute your own! We will be adding more shortly.</p>
-<dl class="py class" id="asyncpersistersref">
+<p id="asyncpersistersref">Currently we support the following, although we highly recommend you contribute your own! We will be adding more shortly.</p>
+<dl class="py class" id="asyncsqliteref">
 <dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.b_aiosqlite.</span></span><span class="sig-name descname"><span class="pre">AsyncSQLitePersister</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister" title="Link to this definition">¶</a></dt>
 <dd><p>Class for asynchronous SQLite persistence of state. This is a simple implementation.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The synchronous persister closes the connection on deletion of the class using the <code class="docutils literal notranslate"><span class="pre">__del__</span></code> method.
+In an async context that is not reliable (the event loop may already be closed by the time <code class="docutils literal notranslate"><span class="pre">__del__</span></code>
+gets invoked). Therefore, you are responsible for closing the connection yourself (i.e. manual cleanup).
+We suggest to use the persister either as a context manager through the <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">with</span></code> clause or
+using the method <code class="docutils literal notranslate"><span class="pre">.cleanup()</span></code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>SQLite is specifically single-threaded and <a class="reference external" href="https://aiosqlite.omnilib.dev/en/latest/index.html">aiosqlite</a>
 creates async support through multi-threading. This persister is mainly here for quick prototyping and testing;
 we suggest to consider a different database with native async support for production.</p>
 <p>Note the third-party library <a class="reference external" href="https://aiosqlite.omnilib.dev/en/latest/index.html">aiosqlite</a>,
 is maintained and considered stable considered stable: <a class="reference external" href="https://github.com/omnilib/aiosqlite/issues/309">https://github.com/omnilib/aiosqlite/issues/309</a>.</p>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.__init__" title="Link to this definition">¶</a></dt>
@@ -1364,9 +1564,38 @@ we provide a close() method.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.cleanup">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.cleanup" title="Link to this definition">¶</a></dt>
+<dd><p>Closes the connection to the database.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.close">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.close" title="Link to this definition">¶</a></dt>
+<dd><p>This is deprecated, please use .cleanup()</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.create_table_if_not_exists">
 <em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_table_if_not_exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.create_table_if_not_exists" title="Link to this definition">¶</a></dt>
 <dd><p>Helper function to create the table where things are stored if it doesn’t exist.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.from_config">
+<em class="property"><span class="pre">async</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister" title="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister"><span class="pre">AsyncSQLitePersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.from_config" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a new instance of the AsyncSQLitePersister from a configuration dictionary.</p>
+<p>The config key:value pair needed are:
+db_path: str,
+table_name: str,
+serde_kwargs: dict,
+connect_kwargs: dict,</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1485,6 +1714,361 @@ before the action was applied.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.set_serde_kwargs">
+<span class="sig-name descname"><span class="pre">set_serde_kwargs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.set_serde_kwargs" title="Link to this definition">¶</a></dt>
+<dd><p>Sets the serde_kwargs for the persister.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class" id="asyncpostgresref">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.b_asyncpg.</span></span><span class="sig-name descname"><span class="pre">AsyncPostgreSQLPersister</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister" title="Link to this definition">¶</a></dt>
+<dd><p>Class for async PostgreSQL persistence of state.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The synchronous persister closes the connection on deletion of the class using the <code class="docutils literal notranslate"><span class="pre">__del__</span></code> method.
+In an async context that is not reliable (the event loop may already be closed by the time <code class="docutils literal notranslate"><span class="pre">__del__</span></code>
+gets invoked). Therefore, you are responsible for closing the connection yourself (i.e. manual cleanup).
+We suggest to use the persister either as a context manager through the <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">with</span></code> clause or
+using the method <code class="docutils literal notranslate"><span class="pre">.cleanup()</span></code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The implementation relies on the popular asyncpg library: <a class="reference external" href="https://github.com/MagicStack/asyncpg">https://github.com/MagicStack/asyncpg</a></p>
+<p>MagicStack wrote a blog post: <a class="reference external" href="http://magic.io/blog/asyncpg-1m-rows-from-postgres-to-python/">http://magic.io/blog/asyncpg-1m-rows-from-postgres-to-python/</a>
+explaining why a new implementation, performance review and comparison to aiopg (async interface of psycopg2).</p>
+</div>
+<p>To try it out locally with docker – here’s a command – change the values as appropriate.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>local-psql<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># container name</span>
+<span class="w">           </span>-v<span class="w"> </span>local_psql_data:/SOME/FILE_PATH/<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># mounting a volume for data persistence</span>
+<span class="w">           </span>-p<span class="w"> </span><span class="m">54320</span>:5432<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># port mapping</span>
+<span class="w">           </span>-e<span class="w"> </span><span class="nv">POSTGRES_PASSWORD</span><span class="o">=</span>my_password<span class="w"> </span><span class="se">\ </span><span class="w"> </span><span class="c1"># superuser password</span>
+<span class="w">           </span>-d<span class="w"> </span>postgres<span class="w">  </span><span class="c1"># database name</span>
+</pre></div>
+</div>
+<p>Then you should be able to create the class like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">p</span> <span class="o">=</span> <span class="k">await</span> <span class="n">AsyncPostgreSQLPersister</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="s2">&quot;postgres&quot;</span><span class="p">,</span> <span class="s2">&quot;postgres&quot;</span><span class="p">,</span> <span class="s2">&quot;my_password&quot;</span><span class="p">,</span>
+                                   <span class="s2">&quot;localhost&quot;</span><span class="p">,</span> <span class="mi">54320</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;burr_state&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Constructor</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>connection</strong> – the connection to the PostgreSQL database.</p></li>
+<li><p><strong>table_name</strong> – the table name to store things under.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.cleanup">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.cleanup" title="Link to this definition">¶</a></dt>
+<dd><p>Closes the connection to the database.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.create_table">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.create_table" title="Link to this definition">¶</a></dt>
+<dd><p>Helper function to create the table where things are stored.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.from_config">
+<em class="property"><span class="pre">async</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister" title="burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister"><span class="pre">AsyncPostgreSQLPersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.from_config" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a new instance of the PostgreSQLPersister from a configuration dictionary.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.from_values">
+<em class="property"><span class="pre">async</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_values</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">db_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">table_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'burr_state'</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister" title="burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister"><span class="pre">AsyncPostgreSQLPersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.from_values" title="Link to this definition">¶</a></dt>
+<dd><p>Builds a new instance of the PostgreSQLPersister from the provided values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>db_name</strong> – the name of the PostgreSQL database.</p></li>
+<li><p><strong>user</strong> – the username to connect to the PostgreSQL database.</p></li>
+<li><p><strong>password</strong> – the password to connect to the PostgreSQL database.</p></li>
+<li><p><strong>host</strong> – the host of the PostgreSQL database.</p></li>
+<li><p><strong>port</strong> – the port of the PostgreSQL database.</p></li>
+<li><p><strong>table_name</strong> – the table name to store things under.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.initialize">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.initialize" title="Link to this definition">¶</a></dt>
+<dd><p>Creates the table</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.is_initialized">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_initialized</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.is_initialized" title="Link to this definition">¶</a></dt>
+<dd><p>This checks to see if the table has been created in the database or not.
+It defaults to using the initialized field, else queries the database to see if the table exists.
+It then sets the initialized field to True if the table exists.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.list_app_ids">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.list_app_ids" title="Link to this definition">¶</a></dt>
+<dd><p>Lists the app_ids for a given partition_key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.load">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.load" title="Link to this definition">¶</a></dt>
+<dd><p>Loads state for a given partition id.</p>
+<p>Depending on the parameters, this will return the last thing written, the last thing written for a given app_id,
+or a specific sequence_id for a given app_id.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong></p></li>
+<li><p><strong>app_id</strong></p></li>
+<li><p><strong>sequence_id</strong></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.save">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'completed'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'failed'</span></span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.save" title="Link to this definition">¶</a></dt>
+<dd><p>Saves the state for a given app_id, sequence_id, and position.</p>
+<p>This method connects to the SQLite database, converts the state to a JSON string, and inserts a new record
+into the table with the provided partition_key, app_id, sequence_id, position, and state. After the operation,
+it commits the changes and closes the connection to the database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong> – The partition key. This could be None, but it’s up to the persistor to whether
+that is a valid value it can handle.</p></li>
+<li><p><strong>app_id</strong> – The identifier for the app instance being recorded.</p></li>
+<li><p><strong>sequence_id</strong> – The state corresponding to a specific point in time.</p></li>
+<li><p><strong>position</strong> – The position in the sequence of states.</p></li>
+<li><p><strong>state</strong> – The state to be saved, an instance of the State class.</p></li>
+<li><p><strong>status</strong> – The status of this state, either “completed” or “failed”. If “failed” the state is what it was
+before the action was applied.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.set_serde_kwargs">
+<span class="sig-name descname"><span class="pre">set_serde_kwargs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.set_serde_kwargs" title="Link to this definition">¶</a></dt>
+<dd><p>Sets the serde_kwargs for the persister.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class" id="asyncredisref">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.AsyncRedisBasePersister">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.integrations.persisters.b_redis.</span></span><span class="sig-name descname"><span class="pre">AsyncRedisBasePersister</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister" title="Link to this definition">¶</a></dt>
+<dd><p>Main class for async Redis persister.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The synchronous persister closes the connection on deletion of the class using the <code class="docutils literal notranslate"><span class="pre">__del__</span></code> method.
+In an async context that is not reliable (the event loop may already be closed by the time <code class="docutils literal notranslate"><span class="pre">__del__</span></code>
+gets invoked). Therefore, you are responsible for closing the connection yourself (i.e. manual cleanup).
+We suggest to use the persister either as a context manager through the <code class="docutils literal notranslate"><span class="pre">async</span> <span class="pre">with</span></code> clause or
+using the method <code class="docutils literal notranslate"><span class="pre">.cleanup()</span></code>.</p>
+</div>
+<p>This class is responsible for async persisting state data to a Redis database.
+It inherits from the AsyncBaseStatePersister class.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.AsyncRedisBasePersister.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Initializes the AsyncRedisPersister class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>connection</strong> – the redis connection object.</p></li>
+<li><p><strong>serde_kwargs</strong> – serialization and deserialization keyword arguments to pass to state SERDE.</p></li>
+<li><p><strong>namespace</strong> – The name of the project to optionally use in the key prefix.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.AsyncRedisBasePersister.cleanup">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.cleanup" title="Link to this definition">¶</a></dt>
+<dd><p>Closes the connection to the database.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.AsyncRedisBasePersister.create_key">
+<span class="sig-name descname"><span class="pre">create_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">app_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partition_key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.create_key" title="Link to this definition">¶</a></dt>
+<dd><p>Create a key for the Redis database.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.AsyncRedisBasePersister.from_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister" title="burr.integrations.persisters.b_redis.AsyncRedisBasePersister"><span class="pre">AsyncRedisBasePersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.from_config" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a new instance of the RedisBasePersister from a configuration dictionary.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.AsyncRedisBasePersister.from_values">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_values</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">redis_client_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">namespace</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister" title="burr.integrations.persisters.b_redis.AsyncRedisBasePersister"><span class="pre">AsyncRedisBasePersister</span></a></span></span><a class="headerlink" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.from_values" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a new instance of the AsyncRedisBasePersister from passed in values.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.AsyncRedisBasePersister.list_app_ids">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">list_app_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.list_app_ids" title="Link to this definition">¶</a></dt>
+<dd><p>List the app ids for a given partition key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.AsyncRedisBasePersister.load">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">PersistedStateData</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.load" title="Link to this definition">¶</a></dt>
+<dd><p>Load the state data for a given partition key, app id, and sequence id.</p>
+<p>If the sequence id is not given, it will be looked up in the Redis database. If it is not found, None will be returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong></p></li>
+<li><p><strong>app_id</strong></p></li>
+<li><p><strong>sequence_id</strong></p></li>
+<li><p><strong>kwargs</strong></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Value or None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.AsyncRedisBasePersister.save">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'completed'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'failed'</span></span><span class="p"><span class="pre">]</span></span></span></em>,</dd>
+<dd><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.save" title="Link to this definition">¶</a></dt>
+<dd><p>Save the state data to the Redis database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>partition_key</strong></p></li>
+<li><p><strong>app_id</strong></p></li>
+<li><p><strong>sequence_id</strong></p></li>
+<li><p><strong>position</strong></p></li>
+<li><p><strong>state</strong></p></li>
+<li><p><strong>status</strong></p></li>
+<li><p><strong>kwargs</strong></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.integrations.persisters.b_redis.AsyncRedisBasePersister.set_serde_kwargs">
+<span class="sig-name descname"><span class="pre">set_serde_kwargs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">serde_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.set_serde_kwargs" title="Link to this definition">¶</a></dt>
+<dd><p>Sets the serde_kwargs for the persister.</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -1593,42 +2177,53 @@ before the action was applied.</p></li>
 <li><a class="reference internal" href="#supported-sync-implementations">Supported Sync Implementations</a><ul>
 <li><a class="reference internal" href="#burr.core.persistence.SQLitePersister"><code class="docutils literal notranslate"><span class="pre">SQLitePersister</span></code></a><ul>
 <li><a class="reference internal" href="#burr.core.persistence.SQLitePersister.__init__"><code class="docutils literal notranslate"><span class="pre">SQLitePersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.SQLitePersister.cleanup"><code class="docutils literal notranslate"><span class="pre">SQLitePersister.cleanup()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.SQLitePersister.create_table_if_not_exists"><code class="docutils literal notranslate"><span class="pre">SQLitePersister.create_table_if_not_exists()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.SQLitePersister.from_config"><code class="docutils literal notranslate"><span class="pre">SQLitePersister.from_config()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.SQLitePersister.from_values"><code class="docutils literal notranslate"><span class="pre">SQLitePersister.from_values()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.SQLitePersister.initialize"><code class="docutils literal notranslate"><span class="pre">SQLitePersister.initialize()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.SQLitePersister.is_initialized"><code class="docutils literal notranslate"><span class="pre">SQLitePersister.is_initialized()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.SQLitePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">SQLitePersister.list_app_ids()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.SQLitePersister.load"><code class="docutils literal notranslate"><span class="pre">SQLitePersister.load()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.persistence.SQLitePersister.save"><code class="docutils literal notranslate"><span class="pre">SQLitePersister.save()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.persistence.SQLitePersister.set_serde_kwargs"><code class="docutils literal notranslate"><span class="pre">SQLitePersister.set_serde_kwargs()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister</span></code></a><ul>
-<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.__init__"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.__init__()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.create_table"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.create_table()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.from_config"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.from_config()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.from_values"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.from_values()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.initialize"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.initialize()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.is_initialized"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.is_initialized()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.list_app_ids()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.load"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.load()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.save"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.save()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.postgresql.PostgreSQLPersister.set_serde_kwargs"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.set_serde_kwargs()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister</span></code></a><ul>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.__init__"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.cleanup"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.cleanup()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.create_table"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.create_table()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.from_config"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.from_config()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.from_values"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.from_values()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.initialize"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.initialize()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.is_initialized"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.is_initialized()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.list_app_ids()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.load"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.load()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.save"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.save()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_psycopg2.PostgreSQLPersister.set_serde_kwargs"><code class="docutils literal notranslate"><span class="pre">PostgreSQLPersister.set_serde_kwargs()</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister</span></code></a><ul>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.__init__"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.cleanup"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.cleanup()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.create_key"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.create_key()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.from_config"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.from_config()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.from_values"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.from_values()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.list_app_ids()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.load"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.load()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.save"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.save()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.RedisBasePersister.set_serde_kwargs"><code class="docutils literal notranslate"><span class="pre">RedisBasePersister.set_serde_kwargs()</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister</span></code></a><ul>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.__init__"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.__init__()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.from_values"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.from_values()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.list_app_ids()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.load"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.load()</span></code></a></li>
-<li><a class="reference internal" href="#burr.integrations.persisters.b_mongodb.MongoDBBasePersister.save"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.save()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister</span></code></a><ul>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.__init__"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.cleanup"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.cleanup()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.from_config"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.from_config()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.from_values"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.from_values()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.list_app_ids()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.load"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.load()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.save"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.save()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_pymongo.MongoDBBasePersister.set_serde_kwargs"><code class="docutils literal notranslate"><span class="pre">MongoDBBasePersister.set_serde_kwargs()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -1636,13 +2231,43 @@ before the action was applied.</p></li>
 <li><a class="reference internal" href="#supported-async-implementations">Supported Async Implementations</a><ul>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister</span></code></a><ul>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.__init__"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.cleanup"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.cleanup()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.close"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.close()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.create_table_if_not_exists"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.create_table_if_not_exists()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.from_config"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.from_config()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.from_values"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.from_values()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.initialize"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.initialize()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.is_initialized"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.is_initialized()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.list_app_ids()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.load"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.load()</span></code></a></li>
 <li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.save"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.save()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_aiosqlite.AsyncSQLitePersister.set_serde_kwargs"><code class="docutils literal notranslate"><span class="pre">AsyncSQLitePersister.set_serde_kwargs()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister"><code class="docutils literal notranslate"><span class="pre">AsyncPostgreSQLPersister</span></code></a><ul>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.__init__"><code class="docutils literal notranslate"><span class="pre">AsyncPostgreSQLPersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.cleanup"><code class="docutils literal notranslate"><span class="pre">AsyncPostgreSQLPersister.cleanup()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.create_table"><code class="docutils literal notranslate"><span class="pre">AsyncPostgreSQLPersister.create_table()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.from_config"><code class="docutils literal notranslate"><span class="pre">AsyncPostgreSQLPersister.from_config()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.from_values"><code class="docutils literal notranslate"><span class="pre">AsyncPostgreSQLPersister.from_values()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.initialize"><code class="docutils literal notranslate"><span class="pre">AsyncPostgreSQLPersister.initialize()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.is_initialized"><code class="docutils literal notranslate"><span class="pre">AsyncPostgreSQLPersister.is_initialized()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">AsyncPostgreSQLPersister.list_app_ids()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.load"><code class="docutils literal notranslate"><span class="pre">AsyncPostgreSQLPersister.load()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.save"><code class="docutils literal notranslate"><span class="pre">AsyncPostgreSQLPersister.save()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_asyncpg.AsyncPostgreSQLPersister.set_serde_kwargs"><code class="docutils literal notranslate"><span class="pre">AsyncPostgreSQLPersister.set_serde_kwargs()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister"><code class="docutils literal notranslate"><span class="pre">AsyncRedisBasePersister</span></code></a><ul>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.__init__"><code class="docutils literal notranslate"><span class="pre">AsyncRedisBasePersister.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.cleanup"><code class="docutils literal notranslate"><span class="pre">AsyncRedisBasePersister.cleanup()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.create_key"><code class="docutils literal notranslate"><span class="pre">AsyncRedisBasePersister.create_key()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.from_config"><code class="docutils literal notranslate"><span class="pre">AsyncRedisBasePersister.from_config()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.from_values"><code class="docutils literal notranslate"><span class="pre">AsyncRedisBasePersister.from_values()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.list_app_ids"><code class="docutils literal notranslate"><span class="pre">AsyncRedisBasePersister.list_app_ids()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.load"><code class="docutils literal notranslate"><span class="pre">AsyncRedisBasePersister.load()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.save"><code class="docutils literal notranslate"><span class="pre">AsyncRedisBasePersister.save()</span></code></a></li>
+<li><a class="reference internal" href="#burr.integrations.persisters.b_redis.AsyncRedisBasePersister.set_serde_kwargs"><code class="docutils literal notranslate"><span class="pre">AsyncRedisBasePersister.set_serde_kwargs()</span></code></a></li>
 </ul>
 </li>
 </ul>
