@@ -896,11 +896,12 @@ So if this starts at 0, the first one you will see will be 1.</p></li>
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">AsyncGenerator</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../actions/#burr.core.action.Action" title="burr.core.action.Action"><span class="pre">Action</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ApplicationStateType</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.application.Application.aiterate" title="Link to this definition">¶</a></dt>
 <dd><p>Returns a generator that calls step() in a row, enabling you to see the state
 of the system as it updates. This is the asynchronous version so it has no capability of t</p>
+<p>Note that tags must be specified by the form “&#64;tag:&lt;tag_name&gt;” to differentiate them from actions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>halt_before</strong> – The list of actions to halt before execution of. It will halt on the first one.</p></li>
-<li><p><strong>halt_after</strong> – The list of actions to halt after execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_before</strong> – The list of actions/tags to halt before execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_after</strong> – The list of actions/tags to halt after execution of. It will halt on the first one.</p></li>
 <li><p><strong>inputs</strong> – Inputs to the action – this is if this action requires an input that is passed in from the outside world.
 Note that this is only used for the first iteration – subsequent iterations will not use this.</p></li>
 </ul>
@@ -926,11 +927,12 @@ allowed to have a return value.</p>
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../actions/#burr.core.action.Action" title="burr.core.action.Action"><span class="pre">Action</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.application.Application.arun" title="Link to this definition">¶</a></dt>
 <dd><p>Runs your application through until completion, using async. Does
 not give access to the state along the way – if you want that, use iterate().</p>
+<p>Note that tags must be specified by the form “&#64;tag:&lt;tag_name&gt;” to differentiate them from actions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>halt_before</strong> – The list of actions to halt before execution of. It will halt on the first one.</p></li>
-<li><p><strong>halt_after</strong> – The list of actions to halt after execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_before</strong> – The list of actions/tags to halt before execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_after</strong> – The list of actions/tags to halt after execution of. It will halt on the first one.</p></li>
 <li><p><strong>inputs</strong> – Inputs to the action – this is if this action requires an input that is passed in from the outside world</p></li>
 </ul>
 </dd>
@@ -976,8 +978,8 @@ requires an input that is passed in from the outside world</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>halt_after</strong> – The list of actions to halt after execution of. It will halt on the first one.</p></li>
-<li><p><strong>halt_before</strong> – The list of actions to halt before execution of. It will halt on the first one. Note that
+<li><p><strong>halt_after</strong> – The list of actions/tags to halt after execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_before</strong> – The list of actions/tags to halt before execution of. It will halt on the first one. Note that
 if this is met, the streaming result container will be empty (and return None) for the result, having an empty generator.</p></li>
 <li><p><strong>inputs</strong> – Inputs to the action – this is if this action requires an input that is passed in from the outside world</p></li>
 </ul>
@@ -1001,7 +1003,7 @@ the generator will be empty, and the <code class="docutils literal notranslate">
 and <a class="reference internal" href="#burr.core.application.Application.run" title="burr.core.application.Application.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run</span></code></a>. In this case, <cite>halt_before</cite> will indicate a <em>non</em> streaming action,
 which will be empty. Thus <code class="docutils literal notranslate"><span class="pre">halt_after</span></code> takes precedence – if it is met, the streaming result container will contain the result of the
 halt_after condition.</p>
-<p>The <a class="reference internal" href="../actions/#burr.core.action.StreamingResultContainer" title="burr.core.action.StreamingResultContainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AsyncStreamingResultContainer</span></code></a> is meant as a convenience – specifically this allows for
+<p>The <a class="reference internal" href="../actions/#burr.core.action.AsyncStreamingResultContainer" title="burr.core.action.AsyncStreamingResultContainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AsyncStreamingResultContainer</span></code></a> is meant as a convenience – specifically this allows for
 hooks, callbacks, etc… so you can take the control flow and still have state updated afterwards. Hooks/state update will be called after an exception
 is thrown during streaming, or the stream is completed. Note that it is undefined behavior to attempt to execute another action while a stream is in progress.</p>
 <p>To see how this works, let’s take the following action (simplified as a single-node workflow) as an example:</p>
@@ -1133,13 +1135,14 @@ this is what you want.</p>
 <dd><p>Returns a generator that calls step() in a row, enabling you to see the state
 of the system as it updates. Note this returns a generator, and also the final result
 (for convenience).</p>
+<p>Note that tags must be specified by the form “&#64;tag:&lt;tag_name&gt;” to differentiate them from actions.</p>
 <p>Note the nuance with halt_before and halt_after. halt_before conditions will take precedence to halt_after. Furthermore,
 a single iteration will always be executed prior to testing for any halting conditions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>halt_before</strong> – The list of actions to halt before execution of. It will halt prior to the execution of the first one it sees.</p></li>
-<li><p><strong>halt_after</strong> – The list of actions to halt after execution of. It will halt after the execution of the first one it sees.</p></li>
+<li><p><strong>halt_before</strong> – The list of actions/tags to halt before execution of. It will halt prior to the execution of the first one it sees.</p></li>
+<li><p><strong>halt_after</strong> – The list of actions/tags to halt after execution of. It will halt after the execution of the first one it sees.</p></li>
 <li><p><strong>inputs</strong> – Inputs to the action – this is if this action requires an input that is passed in from the outside world.
 Note that this is only used for the first iteration – subsequent iterations will not use this.</p></li>
 </ul>
@@ -1199,11 +1202,12 @@ in your graph, but this will do the trick if you need it!</p>
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../actions/#burr.core.action.Action" title="burr.core.action.Action"><span class="pre">Action</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ApplicationStateType</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.application.Application.run" title="Link to this definition">¶</a></dt>
 <dd><p>Runs your application through until completion. Does
 not give access to the state along the way – if you want that, use iterate().</p>
+<p>Note that tags must be specified by the form “&#64;tag:&lt;tag_name&gt;” to differentiate them from actions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>halt_before</strong> – The list of actions to halt before execution of. It will halt on the first one.</p></li>
-<li><p><strong>halt_after</strong> – The list of actions to halt after execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_before</strong> – The list of actions/tags to halt before execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_after</strong> – The list of actions/tags to halt after execution of. It will halt on the first one.</p></li>
 <li><p><strong>inputs</strong> – Inputs to the action – this is if this action requires an input that is passed in from the outside world.
 Note that this is only used for the first iteration – subsequent iterations will not use this.</p></li>
 </ul>
@@ -1295,8 +1299,8 @@ results along the way), or run() (if you just want the final state/results).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>halt_after</strong> – The list of actions to halt after execution of. It will halt on the first one.</p></li>
-<li><p><strong>halt_before</strong> – The list of actions to halt before execution of. It will halt on the first one. Note that
+<li><p><strong>halt_after</strong> – The list of actions/tags to halt after execution of. It will halt on the first one.</p></li>
+<li><p><strong>halt_before</strong> – The list of actions/tags to halt before execution of. It will halt on the first one. Note that
 if this is met, the streaming result container will be empty (and return None) for the result, having an empty generator.</p></li>
 <li><p><strong>inputs</strong> – Inputs to the action – this is if this action requires an input that is passed in from the outside world</p></li>
 </ul>
@@ -1633,6 +1637,12 @@ or indirectly through the ApplicationBuilder.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="burr.core.graph.Graph.get_actions_by_tag">
+<span class="sig-name descname"><span class="pre">get_actions_by_tag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../actions/#burr.core.action.Action" title="burr.core.action.Action"><span class="pre">Action</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.graph.Graph.get_actions_by_tag" title="Link to this definition">¶</a></dt>
+<dd><p>Gets a list of actions given a tag. Note that, if no tags match the action a ValueError will be raised.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="burr.core.graph.Graph.get_next_node">
 <span class="sig-name descname"><span class="pre">get_next_node</span></span><span class="sig-paren">(</span>
 
@@ -1801,6 +1811,7 @@ for graphviz, instead pass <cite>format</cite> in <cite>engine_kwargs</cite> (e.
 </li>
 <li><a class="reference internal" href="#burr.core.graph.Graph"><code class="docutils literal notranslate"><span class="pre">Graph</span></code></a><ul>
 <li><a class="reference internal" href="#burr.core.graph.Graph.get_action"><code class="docutils literal notranslate"><span class="pre">Graph.get_action()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.graph.Graph.get_actions_by_tag"><code class="docutils literal notranslate"><span class="pre">Graph.get_actions_by_tag()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.graph.Graph.get_next_node"><code class="docutils literal notranslate"><span class="pre">Graph.get_next_node()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.graph.Graph.visualize"><code class="docutils literal notranslate"><span class="pre">Graph.visualize()</span></code></a></li>
 </ul>
