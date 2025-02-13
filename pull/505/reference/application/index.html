@@ -1003,7 +1003,7 @@ the generator will be empty, and the <code class="docutils literal notranslate">
 and <a class="reference internal" href="#burr.core.application.Application.run" title="burr.core.application.Application.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run</span></code></a>. In this case, <cite>halt_before</cite> will indicate a <em>non</em> streaming action,
 which will be empty. Thus <code class="docutils literal notranslate"><span class="pre">halt_after</span></code> takes precedence – if it is met, the streaming result container will contain the result of the
 halt_after condition.</p>
-<p>The <a class="reference internal" href="../actions/#burr.core.action.StreamingResultContainer" title="burr.core.action.StreamingResultContainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">StreamingResultContainer</span></code></a> is meant as a convenience – specifically this allows for
+<p>The <a class="reference internal" href="../actions/#burr.core.action.AsyncStreamingResultContainer" title="burr.core.action.AsyncStreamingResultContainer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AsyncStreamingResultContainer</span></code></a> is meant as a convenience – specifically this allows for
 hooks, callbacks, etc… so you can take the control flow and still have state updated afterwards. Hooks/state update will be called after an exception
 is thrown during streaming, or the stream is completed. Note that it is undefined behavior to attempt to execute another action while a stream is in progress.</p>
 <p>To see how this works, let’s take the following action (simplified as a single-node workflow) as an example:</p>
