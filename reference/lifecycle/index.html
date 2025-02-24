@@ -15,7 +15,7 @@
     <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Parallelism" href="../parallelism/" /><link rel="prev" title="Tracing Inside Actions" href="../visibility/" />
         <link rel="canonical" href="https://burr.dagworks.io/reference/lifecycle/" />
 
-    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <!-- Generated with Sphinx 8.2.1 and Furo 2024.08.06 -->
         <title>Lifecycle API - Burr</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
@@ -376,14 +376,14 @@
 and add instances to the application builder to customize your state machines’s execution.</p>
 <dl class="py class" id="hooksref">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PreRunStepHook">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PreRunStepHook</span></span><a class="headerlink" href="#burr.lifecycle.base.PreRunStepHook" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PreRunStepHook</span></span><a class="headerlink" href="#burr.lifecycle.base.PreRunStepHook" title="Link to this definition">¶</a></dt>
 <dd><p>Hook that runs before a step is executed</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PreRunStepHook.pre_run_step">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pre_run_step</span></span><span class="sig-paren">(</span>
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pre_run_step</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
@@ -412,14 +412,14 @@ and add instances to the application builder to customize your state machines’
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PreRunStepHookAsync">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PreRunStepHookAsync</span></span><a class="headerlink" href="#burr.lifecycle.base.PreRunStepHookAsync" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PreRunStepHookAsync</span></span><a class="headerlink" href="#burr.lifecycle.base.PreRunStepHookAsync" title="Link to this definition">¶</a></dt>
 <dd><p>Async hook that runs before a step is executed</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PreRunStepHookAsync.pre_run_step">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pre_run_step</span></span><span class="sig-paren">(</span>
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pre_run_step</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
@@ -448,14 +448,14 @@ and add instances to the application builder to customize your state machines’
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PostRunStepHook">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PostRunStepHook</span></span><a class="headerlink" href="#burr.lifecycle.base.PostRunStepHook" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PostRunStepHook</span></span><a class="headerlink" href="#burr.lifecycle.base.PostRunStepHook" title="Link to this definition">¶</a></dt>
 <dd><p>Hook that runs after a step is executed</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PostRunStepHook.post_run_step">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">post_run_step</span></span><span class="sig-paren">(</span>
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">post_run_step</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
@@ -486,14 +486,14 @@ and add instances to the application builder to customize your state machines’
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PostRunStepHookAsync">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PostRunStepHookAsync</span></span><a class="headerlink" href="#burr.lifecycle.base.PostRunStepHookAsync" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PostRunStepHookAsync</span></span><a class="headerlink" href="#burr.lifecycle.base.PostRunStepHookAsync" title="Link to this definition">¶</a></dt>
 <dd><p>Async hook that runs after a step is executed</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PostRunStepHookAsync.post_run_step">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">post_run_step</span></span><span class="sig-paren">(</span>
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">post_run_step</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>,</dd>
@@ -524,15 +524,15 @@ and add instances to the application builder to customize your state machines’
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PostApplicationCreateHook">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PostApplicationCreateHook</span></span><a class="headerlink" href="#burr.lifecycle.base.PostApplicationCreateHook" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PostApplicationCreateHook</span></span><a class="headerlink" href="#burr.lifecycle.base.PostApplicationCreateHook" title="Link to this definition">¶</a></dt>
 <dd><p>Synchronous hook that runs post instantiation of an <code class="docutils literal notranslate"><span class="pre">Application</span></code>
 object (after <code class="docutils literal notranslate"><span class="pre">.build()</span></code> is called on the <code class="docutils literal notranslate"><span class="pre">ApplicationBuilder</span></code> object.)</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PostApplicationCreateHook.post_application_create">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">post_application_create</span></span><span class="sig-paren">(</span>
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">post_application_create</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">partition_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a></span></em>,</dd>
@@ -564,45 +564,32 @@ as the last step.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PreStartSpanHook">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PreStartSpanHook</span></span><a class="headerlink" href="#burr.lifecycle.base.PreStartSpanHook" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PreStartSpanHook</span></span><a class="headerlink" href="#burr.lifecycle.base.PreStartSpanHook" title="Link to this definition">¶</a></dt>
 <dd><p>Hook that runs before a span is started in the tracing API.
 This can be either a context manager or a logger of sorts.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PreStartSpanHookAsync">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PreStartSpanHookAsync</span></span><a class="headerlink" href="#burr.lifecycle.base.PreStartSpanHookAsync" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PreStartSpanHookAsync</span></span><a class="headerlink" href="#burr.lifecycle.base.PreStartSpanHookAsync" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PostEndSpanHook">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PostEndSpanHook</span></span><a class="headerlink" href="#burr.lifecycle.base.PostEndSpanHook" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PostEndSpanHook</span></span><a class="headerlink" href="#burr.lifecycle.base.PostEndSpanHook" title="Link to this definition">¶</a></dt>
 <dd><p>Hook that runs after a span is ended in the tracing API.
 This can be either a context manager or a logger.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PostEndSpanHookAsync">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PostEndSpanHookAsync</span></span><a class="headerlink" href="#burr.lifecycle.base.PostEndSpanHookAsync" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PostEndSpanHookAsync</span></span><a class="headerlink" href="#burr.lifecycle.base.PostEndSpanHookAsync" title="Link to this definition">¶</a></dt>
 <dd><p>Hook that runs at the end of an async span</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.base.ExecuteMethod">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">ExecuteMethod</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">names=&lt;not</span> <span class="pre">given&gt;</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">*values</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">module=None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">qualname=None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">type=None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">start=1</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">boundary=None</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span><a class="headerlink" href="#burr.lifecycle.base.ExecuteMethod" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">ExecuteMethod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.lifecycle.base.ExecuteMethod" title="Link to this definition">¶</a></dt>
 <dd><p>A set of the application methods the user can call.
 These correspond to interface methods in application.py, and
 allow us to say <em>which</em> method is being called for the following hooks.</p>
@@ -610,32 +597,32 @@ allow us to say <em>which</em> method is being called for the following hooks.</
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PreApplicationExecuteCallHook">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PreApplicationExecuteCallHook</span></span><a class="headerlink" href="#burr.lifecycle.base.PreApplicationExecuteCallHook" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PreApplicationExecuteCallHook</span></span><a class="headerlink" href="#burr.lifecycle.base.PreApplicationExecuteCallHook" title="Link to this definition">¶</a></dt>
 <dd><p>Hook that runs before an application method (step/iterate/run/stream…) is called.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PreApplicationExecuteCallHookAsync">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PreApplicationExecuteCallHookAsync</span></span><a class="headerlink" href="#burr.lifecycle.base.PreApplicationExecuteCallHookAsync" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PreApplicationExecuteCallHookAsync</span></span><a class="headerlink" href="#burr.lifecycle.base.PreApplicationExecuteCallHookAsync" title="Link to this definition">¶</a></dt>
 <dd><p>Hook that runs before an async application method (step/iterate/run/stream…) is called.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PostApplicationExecuteCallHook">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PostApplicationExecuteCallHook</span></span><a class="headerlink" href="#burr.lifecycle.base.PostApplicationExecuteCallHook" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PostApplicationExecuteCallHook</span></span><a class="headerlink" href="#burr.lifecycle.base.PostApplicationExecuteCallHook" title="Link to this definition">¶</a></dt>
 <dd><p>Hook that runs after an application method (step/iterate/run/stream…) is called.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.base.PostApplicationExecuteCallHookAsync">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PostApplicationExecuteCallHookAsync</span></span><a class="headerlink" href="#burr.lifecycle.base.PostApplicationExecuteCallHookAsync" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.base.</span></span><span class="sig-name descname"><span class="pre">PostApplicationExecuteCallHookAsync</span></span><a class="headerlink" href="#burr.lifecycle.base.PostApplicationExecuteCallHookAsync" title="Link to this definition">¶</a></dt>
 <dd><p>Hook that runs after an async application method (step/iterate/run/stream…) is called.</p>
 </dd></dl>
 
 <p>These hooks are available for you to use:</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.default.StateAndResultsFullLogger">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.default.</span></span><span class="sig-name descname"><span class="pre">StateAndResultsFullLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">jsonl_path:</span> <span class="pre">str,</span> <span class="pre">mode:</span> <span class="pre">~typing.Literal['append',</span> <span class="pre">'w']</span> <span class="pre">=</span> <span class="pre">'append',</span> <span class="pre">json_dump:</span> <span class="pre">~typing.Callable[[dict],</span> <span class="pre">str]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">safe_json&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.lifecycle.default.StateAndResultsFullLogger" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.default.</span></span><span class="sig-name descname"><span class="pre">StateAndResultsFullLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">jsonl_path:</span> <span class="pre">str,</span> <span class="pre">mode:</span> <span class="pre">~typing.Literal['append',</span> <span class="pre">'w']</span> <span class="pre">=</span> <span class="pre">'append',</span> <span class="pre">json_dump:</span> <span class="pre">~typing.Callable[[dict],</span> <span class="pre">str]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">safe_json&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.lifecycle.default.StateAndResultsFullLogger" title="Link to this definition">¶</a></dt>
 <dd><p>Logs the state and results of the action in a jsonl file.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="burr.lifecycle.default.StateAndResultsFullLogger.__init__">
@@ -656,7 +643,7 @@ allow us to say <em>which</em> method is being called for the following hooks.</
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.lifecycle.default.SlowDownHook">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.default.</span></span><span class="sig-name descname"><span class="pre">SlowDownHook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pre_sleep_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_sleep_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.lifecycle.default.SlowDownHook" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.lifecycle.default.</span></span><span class="sig-name descname"><span class="pre">SlowDownHook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pre_sleep_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_sleep_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.lifecycle.default.SlowDownHook" title="Link to this definition">¶</a></dt>
 <dd><p>Slows down execution. You’ll only want to use this for debugging/visualizing.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="burr.lifecycle.default.SlowDownHook.__init__">

@@ -15,7 +15,7 @@
     <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Lifecycle API" href="../lifecycle/" /><link rel="prev" title="Tracking" href="../tracking/" />
         <link rel="canonical" href="https://burr.dagworks.io/reference/visibility/" />
 
-    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <!-- Generated with Sphinx 8.2.1 and Furo 2024.08.06 -->
         <title>Tracing Inside Actions - Burr</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
@@ -376,7 +376,7 @@
 they are all injected by the framework. This is purely for reference.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.visibility.tracing.TracerFactory">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.visibility.tracing.</span></span><span class="sig-name descname"><span class="pre">TracerFactory</span></span><span class="sig-paren">(</span>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.visibility.tracing.</span></span><span class="sig-name descname"><span class="pre">TracerFactory</span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">action:</span> <span class="pre">str</span></span></em>,</dd>
@@ -384,7 +384,7 @@ they are all injected by the framework. This is purely for reference.</p>
 <dd><em class="sig-param"><span class="n"><span class="pre">app_id:</span> <span class="pre">str</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">partition_key:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">lifecycle_adapters:</span> <span class="pre">~burr.lifecycle.internal.LifecycleAdapterSet</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">_context_var:</span> <span class="pre">~_contextvars.ContextVar[~burr.visibility.tracing.ActionSpan</span> <span class="pre">|</span> <span class="pre">None]</span> <span class="pre">=</span> <span class="pre">&lt;ContextVar</span> <span class="pre">name='execution_context'</span> <span class="pre">default=None&gt;</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">_context_var:</span> <span class="pre">~contextvars.ContextVar</span> <span class="pre">=</span> <span class="pre">&lt;ContextVar</span> <span class="pre">name='execution_context'</span> <span class="pre">default=None&gt;</span></span></em>,</dd>
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#burr.visibility.tracing.TracerFactory" title="Link to this definition">¶</a></dt>
@@ -407,7 +407,7 @@ parameter.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.visibility.tracing.ActionSpanTracer">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.visibility.tracing.</span></span><span class="sig-name descname"><span class="pre">ActionSpanTracer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">action:</span> <span class="pre">str,</span> <span class="pre">action_sequence_id:</span> <span class="pre">int,</span> <span class="pre">span_name:</span> <span class="pre">str,</span> <span class="pre">lifecycle_adapters:</span> <span class="pre">~burr.lifecycle.internal.LifecycleAdapterSet,</span> <span class="pre">app_id:</span> <span class="pre">str,</span> <span class="pre">partition_key:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None,</span> <span class="pre">span_dependencies:</span> <span class="pre">~typing.List[str],</span> <span class="pre">top_level_span_count:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0,</span> <span class="pre">context_var=&lt;ContextVar</span> <span class="pre">name='execution_context'</span> <span class="pre">default=None&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.visibility.tracing.ActionSpanTracer" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.visibility.tracing.</span></span><span class="sig-name descname"><span class="pre">ActionSpanTracer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">action:</span> <span class="pre">str,</span> <span class="pre">action_sequence_id:</span> <span class="pre">int,</span> <span class="pre">span_name:</span> <span class="pre">str,</span> <span class="pre">lifecycle_adapters:</span> <span class="pre">~burr.lifecycle.internal.LifecycleAdapterSet,</span> <span class="pre">app_id:</span> <span class="pre">str,</span> <span class="pre">partition_key:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None,</span> <span class="pre">span_dependencies:</span> <span class="pre">~typing.List[str],</span> <span class="pre">top_level_span_count:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0,</span> <span class="pre">context_var=&lt;ContextVar</span> <span class="pre">name='execution_context'</span> <span class="pre">default=None&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#burr.visibility.tracing.ActionSpanTracer" title="Link to this definition">¶</a></dt>
 <dd><p>Context manager for use within tracing actions. This has the role solely of delegating
 to hooks – it does not do anything except manage context and pass those to the hooks.</p>
 <p>Note that a new instance of this will be passed to every action that is traced. This allows
@@ -459,7 +459,7 @@ will be a no-op.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.visibility.tracing.ActionSpan">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.visibility.tracing.</span></span><span class="sig-name descname"><span class="pre">ActionSpan</span></span><span class="sig-paren">(</span>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.visibility.tracing.</span></span><span class="sig-name descname"><span class="pre">ActionSpan</span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">action</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
@@ -473,7 +473,7 @@ will be a no-op.</p>
 <span class="sig-paren">)</span><a class="headerlink" href="#burr.visibility.tracing.ActionSpan" title="Link to this definition">¶</a></dt>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="burr.visibility.tracing.ActionSpan.create_initial">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_initial</span></span><span class="sig-paren">(</span>
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_initial</span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">action</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
@@ -503,14 +503,14 @@ action span is none.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.visibility.tracing.trace">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.visibility.tracing.</span></span><span class="sig-name descname"><span class="pre">trace</span></span><span class="sig-paren">(</span>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.visibility.tracing.</span></span><span class="sig-name descname"><span class="pre">trace</span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">capture_inputs:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">capture_outputs:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">input_filterlist:</span> <span class="pre">~typing.List[str]</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">span_name:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">_context_var:</span> <span class="pre">~_contextvars.ContextVar[~burr.visibility.tracing.TracerFactory</span> <span class="pre">|</span> <span class="pre">None]</span> <span class="pre">=</span> <span class="pre">&lt;ContextVar</span> <span class="pre">name='tracer_context'</span> <span class="pre">default=None&gt;</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">_context_var:</span> <span class="pre">~contextvars.ContextVar</span> <span class="pre">=</span> <span class="pre">&lt;ContextVar</span> <span class="pre">name='tracer_context'</span> <span class="pre">default=None&gt;</span></span></em>,</dd>
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#burr.visibility.tracing.trace" title="Link to this definition">¶</a></dt>
@@ -523,7 +523,7 @@ action span is none.</p>
 <dd><em class="sig-param"><span class="n"><span class="pre">capture_outputs:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">input_filterlist:</span> <span class="pre">~typing.List[str]</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">span_name:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">_context_var:</span> <span class="pre">~_contextvars.ContextVar[~burr.visibility.tracing.TracerFactory</span> <span class="pre">|</span> <span class="pre">None]</span> <span class="pre">=</span> <span class="pre">&lt;ContextVar</span> <span class="pre">name='tracer_context'</span> <span class="pre">default=None&gt;</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="n"><span class="pre">_context_var:</span> <span class="pre">~contextvars.ContextVar</span> <span class="pre">=</span> <span class="pre">&lt;ContextVar</span> <span class="pre">name='tracer_context'</span> <span class="pre">default=None&gt;</span></span></em>,</dd>
 </dl>
 
 <span class="sig-paren">)</span><a class="headerlink" href="#burr.visibility.tracing.trace.__init__" title="Link to this definition">¶</a></dt>

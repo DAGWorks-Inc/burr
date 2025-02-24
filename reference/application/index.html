@@ -15,7 +15,7 @@
     <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Actions" href="../actions/" /><link rel="prev" title="API reference" href="../" />
         <link rel="canonical" href="https://burr.dagworks.io/reference/application/" />
 
-    <!-- Generated with Sphinx 8.1.3 and Furo 2024.08.06 -->
+    <!-- Generated with Sphinx 8.2.1 and Furo 2024.08.06 -->
         <title>Applications - Burr</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
@@ -376,7 +376,7 @@
 and not the <code class="docutils literal notranslate"><span class="pre">Application</span></code> class directly.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.core.application.ApplicationBuilder">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.application.</span></span><span class="sig-name descname"><span class="pre">ApplicationBuilder</span></span><a class="headerlink" href="#burr.core.application.ApplicationBuilder" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.application.</span></span><span class="sig-name descname"><span class="pre">ApplicationBuilder</span></span><a class="headerlink" href="#burr.core.application.ApplicationBuilder" title="Link to this definition">¶</a></dt>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="burr.core.application.ApplicationBuilder.abuild">
 <span class="sig-name descname"><span class="pre">abuild</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.core.application.Application" title="burr.core.application.Application"><span class="pre">Application</span></a><span class="p"><span class="pre">[</span></span><span class="pre">StateType</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.application.ApplicationBuilder.abuild" title="Link to this definition">¶</a></dt>
@@ -821,7 +821,7 @@ Note that one transition can be terminal – the system doesn’t have</p>
 
 <dl class="py class" id="applicationref">
 <dt class="sig sig-object py" id="burr.core.application.Application">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.application.</span></span><span class="sig-name descname"><span class="pre">Application</span></span><span class="sig-paren">(</span>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.application.</span></span><span class="sig-name descname"><span class="pre">Application</span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">graph</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#burr.core.graph.Graph" title="burr.core.graph.Graph"><span class="pre">Graph</span></a></span></em>,</dd>
@@ -887,7 +887,7 @@ So if this starts at 0, the first one you will see will be 1.</p></li>
 <span class="sig-name descname"><span class="pre">aiterate</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">halt_before</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">halt_after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
@@ -918,7 +918,7 @@ allowed to have a return value.</p>
 <span class="sig-name descname"><span class="pre">arun</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">halt_before</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">halt_after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
@@ -944,7 +944,7 @@ not give access to the state along the way – if you want that, use iterate().<
 
 <dl class="py method">
 <dt class="sig sig-object py" id="burr.core.application.Application.astep">
-<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">astep</span></span><span class="sig-paren">(</span>
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">astep</span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
@@ -1075,7 +1075,7 @@ was run.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="burr.core.application.Application.builder">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">builder</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#burr.core.application.ApplicationBuilder" title="burr.core.application.ApplicationBuilder"><span class="pre">ApplicationBuilder</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ApplicationStateType</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#burr.core.application.Application.builder" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">builder</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#burr.core.application.ApplicationBuilder" title="burr.core.application.ApplicationBuilder"><span class="pre">ApplicationBuilder</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ApplicationStateType</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#burr.core.application.Application.builder" title="Link to this definition">¶</a></dt>
 <dd><p>Returns the application builder that was used to build this application.
 Note that this asusmes the application was built using the builder. Otherwise,</p>
 <dl class="field-list simple">
@@ -1087,7 +1087,7 @@ Note that this asusmes the application was built using the builder. Otherwise,</
 
 <dl class="py property">
 <dt class="sig sig-object py" id="burr.core.application.Application.context">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">context</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#burr.core.application.ApplicationContext" title="burr.core.application.ApplicationContext"><span class="pre">ApplicationContext</span></a></em><a class="headerlink" href="#burr.core.application.Application.context" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">context</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#burr.core.application.ApplicationContext" title="burr.core.application.ApplicationContext"><span class="pre">ApplicationContext</span></a></em><a class="headerlink" href="#burr.core.application.Application.context" title="Link to this definition">¶</a></dt>
 <dd><p>Gives the application context.
 This has information you need for the tracker, sequence ID, application, etc…</p>
 <dl class="field-list simple">
@@ -1099,7 +1099,7 @@ This has information you need for the tracker, sequence ID, application, etc…<
 
 <dl class="py property">
 <dt class="sig sig-object py" id="burr.core.application.Application.graph">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">graph</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#burr.core.application.ApplicationGraph" title="burr.core.application.ApplicationGraph"><span class="pre">ApplicationGraph</span></a></em><a class="headerlink" href="#burr.core.application.Application.graph" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">graph</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#burr.core.application.ApplicationGraph" title="burr.core.application.ApplicationGraph"><span class="pre">ApplicationGraph</span></a></em><a class="headerlink" href="#burr.core.application.Application.graph" title="Link to this definition">¶</a></dt>
 <dd><p>Application graph object – if you want to inspect, visualize, etc..
 this is what you want.</p>
 <dl class="field-list simple">
@@ -1125,7 +1125,7 @@ this is what you want.</p>
 <span class="sig-name descname"><span class="pre">iterate</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">halt_before</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">halt_after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
@@ -1156,7 +1156,7 @@ Note that this is only used for the first iteration – subsequent iterations wi
 
 <dl class="py property">
 <dt class="sig sig-object py" id="burr.core.application.Application.parent_pointer">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parent_pointer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ParentPointer</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#burr.core.application.Application.parent_pointer" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parent_pointer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ParentPointer</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#burr.core.application.Application.parent_pointer" title="Link to this definition">¶</a></dt>
 <dd><p>Gives the parent pointer of an application (from where it was forked).
 This is None if it was not forked.</p>
 <p>Forking is the process of starting an application off of another.</p>
@@ -1169,7 +1169,7 @@ This is None if it was not forked.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="burr.core.application.Application.partition_key">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">partition_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#burr.core.application.Application.partition_key" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">partition_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#burr.core.application.Application.partition_key" title="Link to this definition">¶</a></dt>
 <dd><p>Partition key for the application. This is designed to add semantic meaning to
 the application, and be leveraged by persistence systems to select/find applications.</p>
 <p>Note this is optional – if it is not included, you will need to use a persister that
@@ -1193,7 +1193,7 @@ in your graph, but this will do the trick if you need it!</p>
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span>
 
 <dl>
-<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
+<dd><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">halt_before</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">halt_after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
 <dd><em class="sig-param"><span class="n"><span class="pre">inputs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>,</dd>
@@ -1220,7 +1220,7 @@ Note that this is only used for the first iteration – subsequent iterations wi
 
 <dl class="py property">
 <dt class="sig sig-object py" id="burr.core.application.Application.sequence_id">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sequence_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#burr.core.application.Application.sequence_id" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sequence_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#burr.core.application.Application.sequence_id" title="Link to this definition">¶</a></dt>
 <dd><p>gives the sequence ID of the current (next) action.
 This is incremented prior to every step. Any logging, etc… will use the current
 step’s sequence ID</p>
@@ -1233,7 +1233,7 @@ step’s sequence ID</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="burr.core.application.Application.spawning_parent_pointer">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">spawning_parent_pointer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ParentPointer</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#burr.core.application.Application.spawning_parent_pointer" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">spawning_parent_pointer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ParentPointer</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#burr.core.application.Application.spawning_parent_pointer" title="Link to this definition">¶</a></dt>
 <dd><p>Gives the parent pointer of an application (from where it was spawned).
 This is None if it was not spawned.</p>
 <p>Spawning is the process of launching an application from within
@@ -1247,7 +1247,7 @@ a step of another. This is used for recursive tracking.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="burr.core.application.Application.state">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">state</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ApplicationStateType</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#burr.core.application.Application.state" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">state</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../state/#burr.core.state.State" title="burr.core.state.State"><span class="pre">State</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ApplicationStateType</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#burr.core.application.Application.state" title="Link to this definition">¶</a></dt>
 <dd><p>Gives the state. Recall that state is purely immutable
 – anything you do with this state will not be persisted unless you
 subsequently call update_state.</p>
@@ -1393,7 +1393,7 @@ was run.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="burr.core.application.Application.uid">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uid</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#burr.core.application.Application.uid" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uid</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#burr.core.application.Application.uid" title="Link to this definition">¶</a></dt>
 <dd><p>Unique ID for the application. This must be unique across <em>all</em> applications in a search space.
 This is used by persistence/tracking to ensure that applications have meanings.</p>
 <p>Every application has this – if not assigned, it will be randomly generated.</p>
@@ -1473,7 +1473,7 @@ for graphviz, instead pass <cite>format</cite> in <cite>engine_kwargs</cite> (e.
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.core.application.ApplicationGraph">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.application.</span></span><span class="sig-name descname"><span class="pre">ApplicationGraph</span></span><span class="sig-paren">(</span>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.application.</span></span><span class="sig-name descname"><span class="pre">ApplicationGraph</span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../actions/#burr.core.action.Action" title="burr.core.action.Action"><span class="pre">Action</span></a><span class="p"><span class="pre">]</span></span></span></em>,</dd>
@@ -1492,7 +1492,7 @@ for graphviz, instead pass <cite>format</cite> in <cite>engine_kwargs</cite> (e.
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.core.application.ApplicationContext">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.application.</span></span><span class="sig-name descname"><span class="pre">ApplicationContext</span></span><span class="sig-paren">(</span>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.application.</span></span><span class="sig-name descname"><span class="pre">ApplicationContext</span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">app_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>,</dd>
@@ -1523,7 +1523,7 @@ action signature:</p>
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="burr.core.application.ApplicationContext.get">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.core.application.ApplicationContext" title="burr.core.application.ApplicationContext"><span class="pre">ApplicationContext</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.core.application.ApplicationContext.get" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.core.application.ApplicationContext" title="burr.core.application.ApplicationContext"><span class="pre">ApplicationContext</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#burr.core.application.ApplicationContext.get" title="Link to this definition">¶</a></dt>
 <dd><p>Provides the context-local application context.
 You can use this instead of declaring <cite>__context</cite> in an application.
 You really should only be using this if you’re wiring through multiple layers of abstraction
@@ -1546,7 +1546,7 @@ of situations.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">GraphBuilder</span></code> class is used to build a graph, and the <code class="docutils literal notranslate"><span class="pre">Graph</span></code> class can be passed to the application builder.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.core.graph.GraphBuilder">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.graph.</span></span><span class="sig-name descname"><span class="pre">GraphBuilder</span></span><a class="headerlink" href="#burr.core.graph.GraphBuilder" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.graph.</span></span><span class="sig-name descname"><span class="pre">GraphBuilder</span></span><a class="headerlink" href="#burr.core.graph.GraphBuilder" title="Link to this definition">¶</a></dt>
 <dd><p>GraphBuilder class. This allows you to construct a graph without considering application concerns.
 While you can (and at first, should) use the ApplicationBuidler (which has the same API), this is lower level
 and allows you to decouple concerns, reuse the same graph object, etc…</p>
@@ -1619,7 +1619,7 @@ Note that one transition can be terminal – the system doesn’t have</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="burr.core.graph.Graph">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.graph.</span></span><span class="sig-name descname"><span class="pre">Graph</span></span><span class="sig-paren">(</span>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">burr.core.graph.</span></span><span class="sig-name descname"><span class="pre">Graph</span></span><span class="sig-paren">(</span>
 
 <dl>
 <dd><em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../actions/#burr.core.action.Action" title="burr.core.action.Action"><span class="pre">Action</span></a><span class="p"><span class="pre">]</span></span></span></em>,</dd>
