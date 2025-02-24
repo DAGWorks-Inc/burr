@@ -735,7 +735,7 @@ const StepSubTableRow = (props: {
               </div>
             )}
           </TableCell>
-          {props.displayAnnotations && <TableCell className="" colSpan={2} />}
+          {<TableCell className="" colSpan={2} />}
         </>
       ) : (
         <TableCell colSpan={5}></TableCell>
