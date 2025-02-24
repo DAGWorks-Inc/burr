@@ -27,6 +27,14 @@ router = APIRouter()
 
 graph = chat_application.graph
 
+try:
+    from opentelemetry.instrumentation.openai import OpenAIInstrumentor
+
+    OpenAIInstrumentor().instrument()
+    opentelemetry_available = True
+except ImportError:
+    opentelemetry_available = False
+
 
 class ChatItem(pydantic.BaseModel):
     """Pydantic model for a chat item. This is used to render the chat history."""
@@ -50,7 +58,7 @@ def _get_application(project_id: str, app_id: str) -> Application:
             default_state={"chat_history": []},
             default_entrypoint="prompt",
         )
-        .with_tracker(tracker)
+        .with_tracker(tracker, use_otel_tracing=opentelemetry_available)
         .with_identifiers(app_id=app_id)
         .build()
     )

@@ -23,6 +23,15 @@ app = FastAPI()
 router = APIRouter()
 
 
+try:
+    from opentelemetry.instrumentation.openai import OpenAIInstrumentor
+
+    OpenAIInstrumentor().instrument()
+    opentelemetry_available = True
+except ImportError:
+    opentelemetry_available = False
+
+
 # we want to render this after every response
 class EmailAssistantState(pydantic.BaseModel):
     app_id: str
@@ -73,7 +82,10 @@ def _get_application(project_id: str, app_id: str) -> Application:
     builder = (
         ApplicationBuilder()
         .with_graph(graph)
-        .with_tracker(tracker := LocalTrackingClient(project=project_id))
+        .with_tracker(
+            tracker := LocalTrackingClient(project=project_id),
+            use_otel_tracing=opentelemetry_available,
+        )
         .with_identifiers(app_id=app_id)
         .initialize_from(
             tracker,
