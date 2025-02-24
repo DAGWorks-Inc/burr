@@ -154,11 +154,16 @@ tracking = [
 ]
 
 learn = [
-  "burr[tracking,streamlit,graphviz,hamilton, cli]"
+  "burr[tracking,streamlit,graphviz,hamilton,cli,inappexamples]"
 ]
 
 start = [
   "burr[learn]"
+]
+inappexamples  = [
+  "opentelemetry-api",
+  "opentelemetry-sdk",
+  'opentelemetry-instrumentation-openai',
 ]
 
 # All the bloatware from various LLM demos
@@ -169,9 +174,7 @@ examples = [
   "langchain",
   "langchain-community",
   "langchain-openai",
-  "opentelemetry-api",
-  "opentelemetry-sdk",
-  'opentelemetry-instrumentation-openai',
+  "burr[inappexamples]"
 ]
 
 # just install everything for developers
