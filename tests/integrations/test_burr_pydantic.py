@@ -153,27 +153,27 @@ def test_model_from_state():
 
 
 def _fn_without_state_arg(foo: OriginalModel) -> OriginalModel:
-    ...
+    return foo;
 
 
 def _fn_with_incorrect_state_arg(state: int) -> OriginalModel:
-    ...
+    return OriginalModel(foo, bar)
 
 
 def _fn_with_incorrect_return_type(state: OriginalModel) -> int:
-    ...
+    return 42
 
 
 def _fn_with_no_return_type(state: OriginalModel):
-    ...
+    pass
 
 
 def _fn_correct_same_itype_otype(state: OriginalModel, input_1: int) -> OriginalModel:
-    ...
+    return state
 
 
 def _fn_correct_diff_itype_otype(state: OriginalModel, input_1: int) -> NestedModel:
-    ...
+    return NestedModel(nested_field1=input_1)
 
 
 @pytest.mark.parametrize(
