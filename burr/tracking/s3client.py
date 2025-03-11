@@ -215,7 +215,7 @@ class S3TrackingClient(SyncTrackingClient):
 
         while self.running:
             try:
-                logger.info(f"Checking for new data to flush -- batch is of size: {len(batch)}")
+                logger.debug(f"Checking for new data to flush -- s3 batch is of size: {len(batch)}")
                 # Wait up to flush_interval for new data
                 item = self.log_queue.get(timeout=self.flush_interval)
                 # signal that we're done
@@ -229,14 +229,14 @@ class S3TrackingClient(SyncTrackingClient):
                     len(batch) >= self.max_batch_size
                     or (time.time() - last_flush_time) >= self.flush_interval
                 ):
-                    logger.info(f"Flushing batch with {len(batch)} events")
+                    logger.debug(f"Flushing s3 batch with {len(batch)} events")
                     self.log_events(batch)
                     batch = []
                     last_flush_time = time.time()
             except queue.Empty:
                 # Flush on timeout if there's any data
                 if batch:
-                    logger.info(f"Flushing batch on queue empty with {len(batch)} events")
+                    logger.debug(f"Flushing s3 batch on queue empty with {len(batch)} events")
                     self.log_events(batch)
                     batch = []
                     last_flush_time = time.time()
