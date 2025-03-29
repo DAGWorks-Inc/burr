@@ -2065,7 +2065,6 @@ class ApplicationBuilder(Generic[StateType]):
         self.loaded_from_fork: bool = False
         self.tracker = None
         self.graph_builder = None
-        self.prebuilt_graph = None
         self.typing_system = None
         self.parallel_executor_factory = None
         self.state_persister = None
@@ -2143,9 +2142,21 @@ class ApplicationBuilder(Generic[StateType]):
             self.state = State(kwargs)
         return self
 
+    def with_graphs(self, *graphs) -> "ApplicationBuilder[StateType]":
+        """Adds multiple prebuilt graphs -- this just calls :py:meth:`with_graph <burr.core.application.ApplicationBuilder.with_graph>`
+        in a loop! See caveats in :py:meth:`with_graph <burr.core.application.ApplicationBuilder.with_graph>`.
+
+        :param graphs: Graphs to add to the application
+        :return: The application builder for future chaining.
+        """
+        for graph in graphs:
+            self.with_graph(graph)
+        return self
+
     def with_graph(self, graph: Graph) -> "ApplicationBuilder[StateType]":
-        """Adds a prebuilt graph -- this is an alternative to using the with_actions and with_transitions methods.
-        While you will likely use with_actions and with_transitions, you may want this in a few cases:
+        """Adds a prebuilt graph -- this can work in addition to using with_actions and with_transitions methods.
+        This will add all nodes + edges from a prebuilt graph to the current graph. Note that if you add two
+        graphs (or a combination of graphs/nodes/edges), you will need to ensure that there are no node name conflicts.
 
         1. You want to reuse the same graph object for different applications
         2. You want the logic that constructs the graph to be separate from that which constructs the application
@@ -2154,13 +2165,8 @@ class ApplicationBuilder(Generic[StateType]):
         :param graph: Graph object built with the :py:class:`GraphBuilder <burr.core.graph.GraphBuilder>`
         :return: The application builder for future chaining.
         """
-        if self.graph_builder is not None:
-            raise ValueError(
-                BASE_ERROR_MESSAGE
-                + "You have already called `with_actions`, or `with_transitions` -- you currently "
-                "cannot use the with_graph method along with that. Use `with_graph` or the other methods, not both"
-            )
-        self.prebuilt_graph = graph
+        self._initialize_graph_builder()
+        self.graph_builder = self.graph_builder.with_graph(graph)
         return self
 
     def with_parallel_executor(self, executor_factory: lambda: Executor):
@@ -2188,15 +2194,6 @@ class ApplicationBuilder(Generic[StateType]):
             )
 
         self.parallel_executor_factory = executor_factory
-        return self
-
-    def _ensure_no_prebuilt_graph(self):
-        if self.prebuilt_graph is not None:
-            raise ValueError(
-                BASE_ERROR_MESSAGE + "You have already called `with_graph` -- you currently "
-                "cannot use the with_actions, or with_transitions method along with that. "
-                "Use `with_graph` or the other methods, not both."
-            )
         return self
 
     def _initialize_graph_builder(self):
@@ -2233,7 +2230,6 @@ class ApplicationBuilder(Generic[StateType]):
         :param action_dict: Actions to add, keyed by name
         :return: The application builder for future chaining.
         """
-        self._ensure_no_prebuilt_graph()
         self._initialize_graph_builder()
         self.graph_builder = self.graph_builder.with_actions(*action_list, **action_dict)
         return self
@@ -2256,7 +2252,6 @@ class ApplicationBuilder(Generic[StateType]):
         :param transitions: Transitions to add
         :return: The application builder for future chaining.
         """
-        self._ensure_no_prebuilt_graph()
         self._initialize_graph_builder()
         self.graph_builder = self.graph_builder.with_transitions(*transitions)
         return self
@@ -2583,15 +2578,13 @@ class ApplicationBuilder(Generic[StateType]):
         self.state = self.state.wipe(delete=[PRIOR_STEP])
 
     def _get_built_graph(self) -> Graph:
-        if self.graph_builder is None and self.prebuilt_graph is None:
+        if self.graph_builder is None:
             raise ValueError(
                 BASE_ERROR_MESSAGE
-                + "You must set the graph using with_graph, or use with_entrypoint, with_actions, and with_transitions"
-                " to build the graph."
+                + "No graph constructs exist. You must call some combination of with_graph, with_entrypoint, "
+                "with_actions, and with_transitions"
             )
-        if self.graph_builder is not None:
-            return self.graph_builder.build()
-        return self.prebuilt_graph
+        return self.graph_builder.build()
 
     def _build_common(self) -> Application:
         graph = self._get_built_graph()
