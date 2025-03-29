@@ -87,6 +87,11 @@ def test__validate_actions_empty():
         _validate_actions([])
 
 
+def test__validate_actions_duplicated():
+    with pytest.raises(ValueError, match="duplicated"):
+        _validate_actions([Result("test"), Result("test")])
+
+
 base_counter_action = PassedInAction(
     reads=["count"],
     writes=["count"],
@@ -108,6 +113,33 @@ def test_graph_builder_builds():
     )
     assert len(graph.actions) == 2
     assert len(graph.transitions) == 2
+
+
+def test_graph_builder_with_graph():
+    graph1 = (
+        GraphBuilder()
+        .with_actions(counter=base_counter_action)
+        .with_transitions(("counter", "counter", Condition.expr("count < 10")))
+        .build()
+    )
+    graph2 = (
+        GraphBuilder()
+        .with_actions(counter2=base_counter_action)
+        .with_transitions(("counter2", "counter2", Condition.expr("count < 20")))
+        .build()
+    )
+    graph = (
+        GraphBuilder()
+        .with_graph(graph1)
+        .with_graph(graph2)
+        .with_actions(result=Result("count"))
+        .with_transitions(
+            ("counter", "counter2"),
+            ("counter2", "result"),
+        )
+    )
+    assert len(graph.actions) == 3
+    assert len(graph.transitions) == 4
 
 
 def test_graph_builder_get_next_node():

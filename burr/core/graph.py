@@ -26,6 +26,16 @@ def _validate_actions(actions: Optional[List[Action]]):
     assert_set(actions, "_actions", "with_actions")
     if len(actions) == 0:
         raise ValueError("Must have at least one action in the application!")
+    seen_action_names = set()
+    for action in actions:
+        if action.name in seen_action_names:
+            raise ValueError(
+                f"Action: {action.name} is duplicated in the actions list. "
+                "actions have unique names. This could happen"
+                "if you add two actions with the same name or add a graph that"
+                "has actions with the same name as any that already exist."
+            )
+        seen_action_names.add(action.name)
 
 
 def _validate_transitions(
@@ -319,6 +329,25 @@ class GraphBuilder:
                 if not isinstance(to_, str):
                     raise ValueError(f"Transition target must be a string, not {to_}")
                 self.transitions.append((action, to_, condition))
+        return self
+
+    def with_graph(self, graph: Graph) -> "GraphBuilder":
+        """Adds an existing graph to the builder. Note that if you have any name clashes
+        this will error out. This would happen if you add actions with the same name as actions
+        that already exist.
+
+        :param graph: The graph to add
+        :return: The application builder for future chaining.
+        """
+        if self.actions is None:
+            self.actions = []
+        if self.transitions is None:
+            self.transitions = []
+        self.actions.extend(graph.actions)
+        self.transitions.extend(
+            (transition.from_.name, transition.to.name, transition.condition)
+            for transition in graph.transitions
+        )
         return self
 
     def build(self) -> Graph:
