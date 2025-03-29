@@ -1,7 +1,12 @@
-from pathlib import Path
+import os
 
-DB_PATH = Path("~/.burr_server/db.sqlite3").expanduser()
+BURR_SERVER_ROOT = os.environ.get("BURR_SERVER_ROOT", os.path.expanduser("~/.burr_server"))
+BURR_DB_FILENAME = os.environ.get("BURR_DB_FILENAME", "db.sqlite3")
 
+DB_PATH = os.path.join(
+    BURR_SERVER_ROOT,
+    BURR_DB_FILENAME,
+)
 TORTOISE_ORM = {
     "connections": {"default": f"sqlite:///{DB_PATH}"},
     "apps": {

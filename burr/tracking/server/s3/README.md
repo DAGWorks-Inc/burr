@@ -143,20 +143,22 @@ We will be addressing the limitations above. Particularly:
 
 Scratchpad/notes:
 
-To reset, do:
+To iterate, first set your environment variables:
+
 ```bash
-rm -rf ~/.burr_server &&
-mkdir ~/.burr_server &&
-rm -rf ./burr/tracking/server/s3/migrations &&
-aerich init -t burr.tracking.server.s3.settings.TORTOISE_ORM --location ./burr/tracking/server/s3/migrations  &&
-aerich init-db &&
-AWS_PROFILE=dagworks burr --no-open
+export BURR_SERVER_ROOT=... # the root of your burr server
+export BURR_DB_FILENAME=db.sqlite3 # default, use if you want another
+export AWS_PROFILE=... # or configure another way
 ```
 
-Explanation:
+Then to reset everything, run:
+```bash
+rm -rf "$BURR_SERVER_ROOT" # clear everything, including migrations
+mkdir "$BURR_SERVER_ROOT" # create the directory
+aerich init -t burr.tracking.server.s3.settings.TORTOISE_ORM --location "$BURR_SERVER_ROOT"/migrations # create the migrations directory if needed
+cd "$BURR_SERVER_ROOT" # change to the directory
+aerich init-db # initialize
+burr --no-open --backend s3 # should use all the other env variables you set
+```
 
-- `rm -rf ~/.burr_server` (will be turned to an env variable)
-- `mkdir ~/.burr_server` (ditto)
-- (from git root) `rm -rf ./burr/tracking/server/s3/migrations`
-- (from git root) `aerich init -t burr.tracking.server.s3.settings.TORTOISE_ORM  --location ./burr/tracking/server/s3/migrations`
-- (from git root) `aerich init-db`
+Note you obviously do not need to fully reset if you're not developing from scratch.
