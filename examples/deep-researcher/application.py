@@ -134,7 +134,7 @@ def reflect_on_summary(state: State):
     if not query:
         fallback_query = f"Tell me more about {state.get('research_topic')}"
         state.update(search_query=fallback_query)
-    return state.update(search_query=query)
+    return state.update(search_query=query or fallback_query)
 
 
 @action(reads=["running_summary", "sources_gathered"], writes=["running_summary"])
