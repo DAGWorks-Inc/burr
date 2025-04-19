@@ -558,8 +558,9 @@ This can only be called once.</p>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.core.application.ApplicationBuilder" title="burr.core.application.ApplicationBuilder"><span class="pre">ApplicationBuilder</span></a><span class="p"><span class="pre">[</span></span><span class="pre">StateType</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.application.ApplicationBuilder.with_graph" title="Link to this definition">¶</a></dt>
-<dd><p>Adds a prebuilt graph – this is an alternative to using the with_actions and with_transitions methods.
-While you will likely use with_actions and with_transitions, you may want this in a few cases:</p>
+<dd><p>Adds a prebuilt graph – this can work in addition to using with_actions and with_transitions methods.
+This will add all nodes + edges from a prebuilt graph to the current graph. Note that if you add two
+graphs (or a combination of graphs/nodes/edges), you will need to ensure that there are no node name conflicts.</p>
 <ol class="arabic simple">
 <li><p>You want to reuse the same graph object for different applications</p></li>
 <li><p>You want the logic that constructs the graph to be separate from that which constructs the application</p></li>
@@ -568,6 +569,27 @@ While you will likely use with_actions and with_transitions, you may want this i
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>graph</strong> – Graph object built with the <a class="reference internal" href="#burr.core.graph.GraphBuilder" title="burr.core.graph.GraphBuilder"><code class="xref py py-class docutils literal notranslate"><span class="pre">GraphBuilder</span></code></a></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The application builder for future chaining.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="burr.core.application.ApplicationBuilder.with_graphs">
+<span class="sig-name descname"><span class="pre">with_graphs</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">graphs</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.core.application.ApplicationBuilder" title="burr.core.application.ApplicationBuilder"><span class="pre">ApplicationBuilder</span></a><span class="p"><span class="pre">[</span></span><span class="pre">StateType</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.application.ApplicationBuilder.with_graphs" title="Link to this definition">¶</a></dt>
+<dd><p>Adds multiple prebuilt graphs – this just calls <a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_graph" title="burr.core.application.ApplicationBuilder.with_graph"><code class="xref py py-meth docutils literal notranslate"><span class="pre">with_graph</span></code></a>
+in a loop! See caveats in <a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_graph" title="burr.core.application.ApplicationBuilder.with_graph"><code class="xref py py-meth docutils literal notranslate"><span class="pre">with_graph</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>graphs</strong> – Graphs to add to the application</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The application builder for future chaining.</p>
@@ -1588,6 +1610,22 @@ it is a function-based-action), then you can use the <em>args</em> parameter. Th
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="burr.core.graph.GraphBuilder.with_graph">
+<span class="sig-name descname"><span class="pre">with_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">graph</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#burr.core.graph.Graph" title="burr.core.graph.Graph"><span class="pre">Graph</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#burr.core.graph.GraphBuilder" title="burr.core.graph.GraphBuilder"><span class="pre">GraphBuilder</span></a></span></span><a class="headerlink" href="#burr.core.graph.GraphBuilder.with_graph" title="Link to this definition">¶</a></dt>
+<dd><p>Adds an existing graph to the builder. Note that if you have any name clashes
+this will error out. This would happen if you add actions with the same name as actions
+that already exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>graph</strong> – The graph to add</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The application builder for future chaining.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="burr.core.graph.GraphBuilder.with_transitions">
 <span class="sig-name descname"><span class="pre">with_transitions</span></span><span class="sig-paren">(</span>
 
@@ -1758,6 +1796,7 @@ for graphviz, instead pass <cite>format</cite> in <cite>engine_kwargs</cite> (e.
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_actions"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_actions()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_entrypoint"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_entrypoint()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_graph"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_graph()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_graphs"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_graphs()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_hooks"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_hooks()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_identifiers"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_identifiers()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.application.ApplicationBuilder.with_parallel_executor"><code class="docutils literal notranslate"><span class="pre">ApplicationBuilder.with_parallel_executor()</span></code></a></li>
@@ -1806,6 +1845,7 @@ for graphviz, instead pass <cite>format</cite> in <cite>engine_kwargs</cite> (e.
 <li><a class="reference internal" href="#burr.core.graph.GraphBuilder"><code class="docutils literal notranslate"><span class="pre">GraphBuilder</span></code></a><ul>
 <li><a class="reference internal" href="#burr.core.graph.GraphBuilder.build"><code class="docutils literal notranslate"><span class="pre">GraphBuilder.build()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.graph.GraphBuilder.with_actions"><code class="docutils literal notranslate"><span class="pre">GraphBuilder.with_actions()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.graph.GraphBuilder.with_graph"><code class="docutils literal notranslate"><span class="pre">GraphBuilder.with_graph()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.graph.GraphBuilder.with_transitions"><code class="docutils literal notranslate"><span class="pre">GraphBuilder.with_transitions()</span></code></a></li>
 </ul>
 </li>
