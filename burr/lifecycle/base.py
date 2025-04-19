@@ -287,6 +287,8 @@ class ExecuteMethod(enum.Enum):
     arun = "arun"
     stream_result = "stream_result"
     astream_result = "astream_result"
+    stream_iterate = "stream_iterate"
+    astream_iterate = "astream_iterate"
 
 
 @lifecycle.base_hook("pre_run_execute_call")
