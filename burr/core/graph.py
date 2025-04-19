@@ -31,8 +31,8 @@ def _validate_actions(actions: Optional[List[Action]]):
         if action.name in seen_action_names:
             raise ValueError(
                 f"Action: {action.name} is duplicated in the actions list. "
-                "actions have unique names. This could happen"
-                "if you add two actions with the same name or add a graph that"
+                "actions have unique names. This could happen "
+                "if you add two actions with the same name or add a graph that "
                 "has actions with the same name as any that already exist."
             )
         seen_action_names.add(action.name)
