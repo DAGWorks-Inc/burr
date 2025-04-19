@@ -1843,6 +1843,85 @@ class Application(Generic[ApplicationStateType]):
         )
 
     @telemetry.capture_function_usage
+    @_call_execute_method_pre_post(ExecuteMethod.stream_iterate)
+    def stream_iterate(
+        self,
+        halt_after: Optional[Union[str, List[str]]] = None,
+        halt_before: Optional[Union[str, List[str]]] = None,
+        inputs: Optional[Dict[str, Any]] = None,
+    ) -> Generator[
+        Tuple[Action, StreamingResultContainer[ApplicationStateType, Union[dict, Any]]], None, None
+    ]:
+        """Produces an iterator that iterates through intermediate streams. You may want
+        to use this in something like deep research mode in which:
+
+        1. The user queries for a result
+        2. The application runs through a workflow
+        3. For each step of the workflow, the application
+            a. Streams out an intermediate result
+            b. Selects the next action/transition when the intermediate results is complete
+
+        Note that there are control-flow complexities involved here -- we need to ensure that the iterator
+        is properly pushed along and the prior streaming results containers are all finished before going to the next one.
+
+        :param halt_after: Action names/tags to halt before
+        :param halt_before: _description_, defaults to None
+        :param inputs: _description_, defaults to None
+        :return: _description_
+        :yield: _description_
+        """
+        self.validate_correct_async_use()
+        halt_before, halt_after, inputs = self._process_control_flow_params(
+            halt_before, halt_after, inputs
+        )
+        self._validate_halt_conditions(halt_before, halt_after)
+        while self.has_next_action():
+            next_action = self.get_next_action()
+            _, streaming_result = self.stream_result(
+                halt_after=[next_action.name], halt_before=None, inputs=inputs
+            )
+            yield next_action, streaming_result
+            # We need to ensure it's fully exhausted before going to the next action
+            streaming_result.get()
+            if self._should_halt_iterate(halt_before, halt_after, next_action):
+                break
+
+    @telemetry.capture_function_usage
+    @_call_execute_method_pre_post(ExecuteMethod.astream_iterate)
+    async def astream_iterate(
+        self,
+        halt_after: Optional[Union[str, List[str]]] = None,
+        halt_before: Optional[Union[str, List[str]]] = None,
+        inputs: Optional[Dict[str, Any]] = None,
+    ) -> AsyncGenerator[
+        Tuple[Action, AsyncStreamingResultContainer[ApplicationStateType, Union[dict, Any]]], None
+    ]:
+        """Async version of stream_iterate. Produces an async generator that iterates
+        through intermediate streams. See stream_iterate for more details.
+
+        :param halt_after: Action names/tags to halt after the action completes
+        :param halt_before: Action names/tags to halt after
+        :param inputs: Inputs to the first action run
+        :return: Async generator yielding tuples of (action, streaming_result_container)
+        :yield: Tuples of (action, streaming_result_container)
+        """
+        self.validate_correct_async_use()
+        halt_before, halt_after, inputs = self._process_control_flow_params(
+            halt_before, halt_after, inputs
+        )
+        self._validate_halt_conditions(halt_before, halt_after)
+        while self.has_next_action():
+            next_action = self.get_next_action()
+            _, streaming_result = await self.astream_result(  # Use astream_result
+                halt_after=[next_action.name], halt_before=None, inputs=inputs
+            )
+            yield next_action, streaming_result
+            # We need to ensure it's fully exhausted before going to the next action
+            await streaming_result.get()  # await the get call
+            if self._should_halt_iterate(halt_before, halt_after, next_action):
+                break
+
+    @telemetry.capture_function_usage
     def visualize(
         self,
         output_file_path: Optional[str] = None,

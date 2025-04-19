@@ -2045,6 +2045,114 @@ def test_stream_result_halt_after_run_through_streaming():
     assert len(stream_event_tracker.post_end_stream_calls) == 1
 
 
+@pytest.mark.parametrize("exhaust_intermediate_generators", [True, False])
+def test_stream_iterate(exhaust_intermediate_generators: bool):
+    """Tests that we can pass through streaming results in streaming iterate. Note that this tests two cases:
+    1. We exhaust the intermediate generators, and then call get() to get the final result
+    2. We don't exhaust the intermediate generators, and then call get() to get the final result
+    This ensures that the application effectively does it for us.
+    """
+    action_tracker = CallCaptureTracker()
+    stream_event_tracker = StreamEventCaptureTracker()
+    counter_action = base_streaming_single_step_counter.with_name("counter")
+    counter_action_2 = base_streaming_single_step_counter.with_name("counter_2")
+    app = Application(
+        state=State({"count": 0}),
+        entrypoint="counter",
+        adapter_set=LifecycleAdapterSet(action_tracker, stream_event_tracker),
+        partition_key="test",
+        uid="test-123",
+        graph=Graph(
+            actions=[counter_action, counter_action_2],
+            transitions=[
+                Transition(counter_action, counter_action_2, default),
+            ],
+        ),
+    )
+    for _, streaming_container in app.stream_iterate(halt_after=["counter_2"]):
+        if exhaust_intermediate_generators:
+            results = list(streaming_container)
+            assert len(results) == 10
+    result, state = streaming_container.get()
+    assert result["count"] == state["count"] == 2
+    assert state["tracker"] == [1, 2]
+    assert len(action_tracker.pre_called) == 2
+    assert len(action_tracker.post_called) == 2
+    assert set(dict(action_tracker.pre_called).keys()) == {"counter", "counter_2"}
+    assert set(dict(action_tracker.post_called).keys()) == {"counter", "counter_2"}
+    assert [item["sequence_id"] for _, item in action_tracker.pre_called] == [
+        0,
+        1,
+    ]  # ensure sequence ID is respected
+    assert [item["sequence_id"] for _, item in action_tracker.post_called] == [
+        0,
+        1,
+    ]  # ensure sequence ID is respected
+
+    assert len(stream_event_tracker.pre_start_stream_calls) == 2
+    assert len(stream_event_tracker.post_end_stream_calls) == 2
+    assert len(stream_event_tracker.post_stream_item_calls) == 20
+    assert len(stream_event_tracker.post_stream_item_calls) == 20
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("exhaust_intermediate_generators", [True, False])
+async def test_astream_iterate(exhaust_intermediate_generators: bool):
+    """Tests that we can pass through streaming results in astream_iterate. Note that this tests two cases:
+    1. We exhaust the intermediate generators, and then call get() to get the final result
+    2. We don't exhaust the intermediate generators, and then call get() to get the final result
+    This ensures that the application effectively does it for us.
+    """
+    action_tracker = CallCaptureTracker()
+    stream_event_tracker = StreamEventCaptureTracker()
+    counter_action = base_streaming_single_step_counter_async.with_name(
+        "counter"
+    )  # Use async action
+    counter_action_2 = base_streaming_single_step_counter_async.with_name(
+        "counter_2"
+    )  # Use async action
+    app = Application(
+        state=State({"count": 0}),
+        entrypoint="counter",
+        adapter_set=LifecycleAdapterSet(action_tracker, stream_event_tracker),
+        partition_key="test",
+        uid="test-123",
+        graph=Graph(
+            actions=[counter_action, counter_action_2],
+            transitions=[
+                Transition(counter_action, counter_action_2, default),
+            ],
+        ),
+    )
+    streaming_container = None  # Define outside the loop to access later
+    async for _, streaming_container in app.astream_iterate(halt_after=["counter_2"]):
+        if exhaust_intermediate_generators:
+            results = []
+            async for item in streaming_container:  # Use async for
+                results.append(item)
+            assert len(results) == 10
+    assert streaming_container is not None  # Ensure the loop ran
+    result, state = await streaming_container.get()  # Use await
+    assert result["count"] == state["count"] == 2
+    assert state["tracker"] == [1, 2]
+    assert len(action_tracker.pre_called) == 2
+    assert len(action_tracker.post_called) == 2
+    assert set(dict(action_tracker.pre_called).keys()) == {"counter", "counter_2"}
+    assert set(dict(action_tracker.post_called).keys()) == {"counter", "counter_2"}
+    assert [item["sequence_id"] for _, item in action_tracker.pre_called] == [
+        0,
+        1,
+    ]  # ensure sequence ID is respected
+    assert [item["sequence_id"] for _, item in action_tracker.post_called] == [
+        0,
+        1,
+    ]  # ensure sequence ID is respected
+
+    assert len(stream_event_tracker.pre_start_stream_calls) == 2
+    assert len(stream_event_tracker.post_end_stream_calls) == 2
+    assert len(stream_event_tracker.post_stream_item_calls) == 20
+
+
 async def test_astream_result_halt_after_run_through_streaming():
     action_tracker = CallCaptureTracker()
     stream_event_tracker = StreamEventCaptureTrackerAsync()
