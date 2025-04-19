@@ -1,7 +1,9 @@
 import openai
+from typing import Optional
+
 import json
 
-from burr.core import action, State, ApplicationBuilder, expr, when
+from burr.core import action, State, Application, ApplicationBuilder, expr, when
 from prompts import (
     query_writer_instructions, summarizer_instructions, reflection_instructions
 )
@@ -155,16 +157,25 @@ def finalize_summary(state: State):
     return state.update(running_summary=running_summary)
 
 
-if __name__ == "__main__":
+def application(
+    app_id: Optional[str] = None,
+    num_loops: Optional[int] = 2,
+    research_topic: Optional[str] = "getting a job in data science",
+    storage_dir: Optional[str] = "~/.burr"
+) -> Application:
     """
-    Entry point for the application. Initializes the research topic and runs the application.
-    """
-    research_topic = "getting a job in datascience"
-    project_name = "RESEARCH_ASSISTANT"
-    app_id = "4"
-    num_loops = 2
+    Creates and configures an application instance for conducting research.
 
-    app = (
+    Args:
+        app_id (Optional[str]): A unique identifier for the application instance. Defaults to None.
+        num_loops (Optional[int]): The number of research loops to perform. Defaults to 2.
+        research_topic (Optional[str]): The topic to research. Defaults to "getting a job in data science".
+        storage_dir (Optional[str]): The directory to store application data. Defaults to "~/.burr".
+
+    Returns:
+        Application: A configured application instance ready to run.
+    """
+    return (
         ApplicationBuilder()
         .with_actions(generate_query, web_research, summarize_sources, reflect_on_summary, finalize_summary)
         .with_transitions(
@@ -175,10 +186,26 @@ if __name__ == "__main__":
             ("reflect_on_summary", "web_research", expr(f'research_loop_count<{num_loops}'))
         )
         .with_state(research_loop_count=0, research_topic=research_topic, running_summary=None)
-        .with_tracker(project=project_name)
+        .with_tracker(project="research_assistant", params={"storage_dir": storage_dir})
         .with_identifiers(app_id=app_id)
         .with_entrypoint("generate_query")
         .build()
     )
-    *_, state = app.run(halt_after=["finalize_summary"])
+
+
+if __name__ == "__main__":
+    """
+    Entry point for the application.
+    """
+    research_topic = "getting a job in datascience"
+    app_id = "1"
+    num_loops = 2
+
+    app = application(
+        app_id=app_id,
+        num_loops=num_loops,
+        research_topic=research_topic
+    )
+    app.visualize(output_file_path="statemachine", include_conditions=True, view=False, format="png")
+    action, state, result = app.run(halt_after=["finalize_summary"])
     print(app.state["running_summary"])
