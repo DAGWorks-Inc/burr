@@ -10,6 +10,7 @@ from typing import (
     Callable,
     Dict,
     Generator,
+    Hashable,
     List,
     Literal,
     Optional,
@@ -21,7 +22,12 @@ from typing import (
 from burr.common import async_utils
 from burr.common.async_utils import SyncOrAsyncGenerator, SyncOrAsyncGeneratorOrItemOrList
 from burr.core import Action, ApplicationBuilder, ApplicationContext, Graph, State
-from burr.core.action import SingleStepAction
+from burr.core.action import (
+    AsyncStreamingResultContainer,
+    SingleStepAction,
+    StreamingAction,
+    StreamingResultContainer,
+)
 from burr.core.application import ApplicationIdentifiers
 from burr.core.graph import GraphBuilder
 from burr.core.persistence import BaseStateLoader, BaseStateSaver
@@ -153,6 +159,16 @@ class SubGraphTask:
             inputs={key: value for key, value in self.inputs.items() if not key.startswith("__")},
         )
         return state
+
+    def stream_run(
+        self, state: State, **run_kwargs
+    ) -> Generator[StreamingResultContainer, None, None]:
+        raise NotImplementedError
+
+    async def astream_run(
+        self, state: State, **run_kwargs
+    ) -> Generator[AsyncStreamingResultContainer, None, None]:
+        raise NotImplementedError
 
 
 def _stable_app_id_hash(app_id: str, child_key: str) -> str:
@@ -339,6 +355,78 @@ class TaskBasedParallelAction(SingleStepAction):
     @abc.abstractmethod
     def reads(self) -> list[str]:
         pass
+
+
+StreamedType = TypeVar("StreamedType")
+KeyType = TypeVar("KeyType", bound=Hashable)
+
+
+class MultiProducerSingleConsumerSharedQueue(abc.ABC):
+    """Abstract interface for a non-blocking shared queue.
+    This allows us to unify multiprocessing, multithreading, etc...
+
+    :param abc: _description_
+    """
+
+    @abc.abstractmethod
+    def put(self, item: StreamedType) -> None:
+        pass
+
+    @abc.abstractmethod
+    def get(self, block: bool = True) -> Optional[StreamedType]:
+        """Gets the latest from the queue. None if the queue is empty
+        and block is False.
+
+        :return: _description_
+        """
+        pass
+
+    @abc.abstractmethod
+    def is_done(self) -> bool:
+        """Whether or not the queue is done.
+
+        :return: _description_
+        """
+        pass
+
+
+# def sync_stream_merge(
+#     generators: Dict[KeyType, StreamedType]
+# ) -> Generator[Tuple[KeyType, StreamedType], None, None]:
+#     """Merges multiple streams in the order in which they appear (insomuch as the
+#     receiver, e.g. this function, can capably discern)
+
+#     TODO -- add optional error handling capabilities
+
+#     :param keyed_streams: Streams with keys
+#     :yield: A tuple of key, stream item for each stream
+#     """
+#     pass
+
+
+class TaskBasedStreamingAction(StreamingAction):
+    def __init__(self):
+        super().__init__()
+
+    @property
+    def writes(self) -> List[str]:
+        raise NotImplementedError
+
+    def update(self, result: Dict, state: State) -> State:
+        raise NotImplementedError
+
+    @property
+    def reads(self) -> List[str]:
+        raise NotImplementedError
+
+    def stream_run(self, state: State, **run_kwargs) -> Generator[Dict, None, None]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def tasks(
+        self, state: State, context: ApplicationContext, inputs: Dict[str, Any]
+    ) -> Generator[SubGraphTask, None, None]:
+        raise NotImplementedError
 
 
 def _cascade_adapter(
