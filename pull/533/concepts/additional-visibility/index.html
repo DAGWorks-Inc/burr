@@ -1,0 +1,747 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-20Z3J1CR22"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-20Z3J1CR22');
+    </script>
+    <link rel="index" title="Index" href="../../genindex/" /><link rel="search" title="Search" href="../../search/" /><link rel="next" title="Parallelism" href="../parallelism/" /><link rel="prev" title="Hooks" href="../hooks/" />
+        <link rel="canonical" href="https://burr.dagworks.io/concepts/additional-visibility/" />
+
+    <!-- Generated with Sphinx 8.2.3 and Furo 2024.08.06 -->
+        <title>Additional Visibility - Burr</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=354aac6f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=302659d7" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=739e8c58" />
+    <link rel="stylesheet" type="text/css" href="../../_static/testimonials.css?v=bd684830" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  --color-announcement-background: #ffba00;
+  --color-announcement-text: #091E42;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-announcement-background: #ffba00;
+  --color-announcement-text: #091E42;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  --color-announcement-background: #ffba00;
+  --color-announcement-text: #091E42;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../"><div class="brand">Burr</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../">
+  
+  
+  <span class="sidebar-brand-text">Burr</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../search/" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Burr</span></p>
+<ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../getting_started/">Get started</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Get started</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../getting_started/why-burr/">Why Burr?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting_started/install/">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting_started/simple-example/">Quickstart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting_started/up-next/">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../examples/">Cookbook</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of Cookbook</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/simple/">🧸 Toy examples</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of 🧸 Toy examples</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/simple/counter/">Counter</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/simple/cowsay/">Cowsay</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/simple/choose-your-own-adventure/">Choose your own adventure</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/chatbots/">📞 Chatbots</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of 📞 Chatbots</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/chatbots/basic-chatbot/">Basic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/chatbots/gpt-like-chatbot/">GPT-like multimodal chatbot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/chatbots/rag-chatbot-hamilton/">Conversational RAG with Burr and Hamilton</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/agents/">🤖 Agents</a><input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><div class="visually-hidden">Toggle navigation of 🤖 Agents</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/agents/divide-and-conquer/">Divide and Conquer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/agents/agent-patterns/">Agent patterns</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/deployment/">✈ Deployment</a><input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><div class="visually-hidden">Toggle navigation of ✈ Deployment</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/deployment/web-server/">Burr in a web server</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/deployment/infrastructure/">Provisioning Infrastructure/Deploying</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/deployment/monitoring/">Monitoring in Production</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/guardrails/">🚧 Guardrails / Tests</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of 🚧 Guardrails / Tests</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/guardrails/creating_tests/">Creating Test Cases</a></li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../examples/data-science/">🧪 Data science</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of 🧪 Data science</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/data-science/ml_training/">Hyperparameter tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../examples/data-science/simulation/">Simulations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../">Concepts</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><div class="visually-hidden">Toggle navigation of Concepts</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../overview/">Cheat Sheet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sdlc/">SDLC with LLMs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../actions/">Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state/">State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state-machine/">Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../transitions/">Transitions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tracking/">Tracking Burr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state-persistence/">State Persistence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../serde/">Serialization / Deserialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../streaming-actions/">Streaming Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../state-typing/">Typing State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../hooks/">Hooks</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Additional Visibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../parallelism/">Parallelism</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../recursion/">Recursive Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../sync-vs-async/">Sync vs Async Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../planned-capabilities/">Planned Capabilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../reference/">API reference</a><input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><div class="visually-hidden">Toggle navigation of API reference</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/application/">Applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/application/#graph-apis">Graph APIs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/actions/">Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/state/">State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/serde/">Serialization &amp; Deserialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/persister/">State Persistence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/conditions/">Conditions/Transitions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/tracking/">Tracking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/visibility/">Tracing Inside Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/lifecycle/">Lifecycle API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/parallelism/">Parallelism</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/typing/">Typing</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../reference/integrations/">Integrations</a><input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><div class="visually-hidden">Toggle navigation of Integrations</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/hamilton/">Hamilton</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/streamlit/">Streamlit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/opentelemetry/">OpenTelemetry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/traceloop/">Traceloop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/langchain/">Langchain</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/pydantic/">Pydantic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/haystack/">Haystack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../reference/integrations/ray/">Ray</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../reference/telemetry/">Usage analytics + data privacy</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../contributing/">Contributing</a><input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><div class="visually-hidden">Toggle navigation of Contributing</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing/setup/">Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing/iterating/">Developing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing/architecture/">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contributing/contributing/">Contributing</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Burr Cloud</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://forms.gle/w9u2QKcPrztApRedA">Waitist</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">RESOURCES</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://blog.dagworks.io/">Blog</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://discord.gg/6Zy2DwP4f3">Discord community server</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/dagworks-inc/burr">GitHub</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://twitter.com/dagworks">Twitter</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/dagworks-inc/burr/blob/main/docs/concepts/additional-visibility.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/dagworks-inc/burr/edit/main/docs/concepts/additional-visibility.rst" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="additional-visibility">
+<h1>Additional Visibility<a class="headerlink" href="#additional-visibility" title="Link to this heading">¶</a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Burr comes with the ability to see inside your actions. This is a very pluggable framework
+that comes with the default tracking client, but can also be hooked up to tools such as <a class="reference external" href="https://opentelemetry.io/">OpenTelemetry</a> (OTel)</p>
+</div>
+<section id="quickstart">
+<h2>Quickstart<a class="headerlink" href="#quickstart" title="Link to this heading">¶</a></h2>
+<p>Below is a quick start. For more in depth documentation see the next few sections.</p>
+<dl class="simple">
+<dt>If you want to:</dt><dd><ol class="loweralpha simple">
+<li><p>automatically instrument LLM API calls, and</p></li>
+<li><p>see them show up in the Burr UI,</p></li>
+</ol>
+</dd>
+</dl>
+<p>you can do the following:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Determine the LLM API you want to instrument (e.g. OpenAI, Anthropic, etc…). See <a class="reference external" href="https://github.com/traceloop/openllmetry/tree/main/packages">openllmetry repo</a> for available options.</p></li>
+<li><p>Use the local tracker and flip the <cite>use_otel_tracing</cite> flag to True in the <code class="docutils literal notranslate"><span class="pre">ApplicationBuilder</span></code>.</p></li>
+</ol>
+</div></blockquote>
+<p>Here’s an example to instrument OpenAI:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># install the appropriate openllmetry package</span>
+pip<span class="w"> </span>install<span class="w"> </span>opentelemetry-instrumentation-openai
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># add the right imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.instrumentation.openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIInstrumentor</span>
+<span class="n">OpenAIInstrumentor</span><span class="p">()</span><span class="o">.</span><span class="n">instrument</span><span class="p">()</span>  <span class="c1"># this instruments openai clients</span>
+
+<span class="c1"># create the local tracker</span>
+<span class="n">tracker</span> <span class="o">=</span> <span class="n">LocalTrackingClient</span><span class="p">(</span><span class="n">project</span><span class="o">=</span><span class="s2">&quot;your-project&quot;</span><span class="p">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">ApplicationBuilder</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">with_graph</span><span class="p">(</span><span class="n">base_graph</span><span class="p">)</span>
+    <span class="c1">#... whatever you do normally here</span>
+    <span class="o">.</span><span class="n">with_tracker</span><span class="p">(</span><span class="n">tracker</span><span class="p">,</span> <span class="n">use_otel_tracing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># set use_otel_tracing to True</span>
+    <span class="o">.</span><span class="n">build</span><span class="p">()</span>
+<span class="p">)</span>
+<span class="c1"># use your app as you normally would -- go to the Burr UI and see additional spans!</span>
+</pre></div>
+</div>
+</section>
+<section id="tracing">
+<h2>Tracing<a class="headerlink" href="#tracing" title="Link to this heading">¶</a></h2>
+<p>Burr comes with a tracing capability to see recursive spans inside an action. This is similar to
+the <a class="reference external" href="https://opentelemetry.io/">OpenTelemetry</a> sdk, although it is simplified significantly.</p>
+<p>To add the tracing capability, the action first has to declare a <code class="docutils literal notranslate"><span class="pre">__tracer</span></code> input. This is a
+an object that instantiates spans and tracks state.</p>
+<p>Then, using the <code class="docutils literal notranslate"><span class="pre">__tracer</span></code> as a callable, you can instantiate spans and track state.</p>
+<p>For the function-based API, this would look as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracerFactory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span>
+
+<span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;prompt&#39;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;response&#39;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__tracer</span><span class="p">:</span> <span class="n">TracerFactory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">__tracer</span><span class="p">(</span><span class="s1">&#39;create_prompt&#39;</span><span class="p">):</span>
+        <span class="n">modified_prompt</span> <span class="o">=</span> <span class="n">_modify_prompt</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">])</span>
+        <span class="k">with</span> <span class="n">__tracer</span><span class="p">(</span><span class="s1">&#39;check_prompt_safety&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">_is_unsafe</span><span class="p">(</span><span class="n">modified_prompt</span><span class="p">):</span>
+                <span class="n">modified_prompt</span> <span class="o">=</span> <span class="n">_fix</span><span class="p">(</span><span class="n">modified_prompt</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">__tracer</span><span class="p">(</span><span class="s1">&#39;call_llm&#39;</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;create_prompt&#39;</span><span class="p">]):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">_query</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="n">modified_prompt</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;response&#39;</span><span class="p">:</span> <span class="n">response</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>This would create the following traces:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">create_prompt</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">check_prompt_safety</span></code> as a child of <code class="docutils literal notranslate"><span class="pre">create_prompt</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">call_llm</span></code> as a causal dependent of <code class="docutils literal notranslate"><span class="pre">create_prompt</span></code></p></li>
+</ol>
+<p>Dependencies are used to express [dag](-style structures of spans within actions. This is useful for gaining visibility into the internal structure
+of an action, but is likely best used with integrations with micro-orchestration systems for implementating actions, such as Hamilton or Lanchain.
+This maps to the <a class="reference external" href="https://opentelemetry.io/docs/concepts/signals/traces/#span-links">span link</a> concept in OpenTelemetry.</p>
+<p>Note that, on the surface, this doesn’t actually <em>do</em> anything. It has to be paired with the appropriate hooks.
+These just function as callbacks (on enter/exit). The <a class="reference internal" href="../../reference/tracking/#burr.tracking.LocalTrackingClient" title="burr.tracking.LocalTrackingClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">LocalTrackingClient</span></code></a>, used by the
+<a class="reference internal" href="../tracking/#tracking"><span class="std std-ref">tracking</span></a> feature forms one of these hooks, but we will be adding more, including:</p>
+<ol class="arabic simple">
+<li><p>An OpenTelemetry client</p></li>
+<li><p>A DataDog client</p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The class-based API can leverage this by declaring <code class="docutils literal notranslate"><span class="pre">inputs</span></code> as <code class="docutils literal notranslate"><span class="pre">__tracer</span></code> and then using the <code class="docutils literal notranslate"><span class="pre">__tracer</span></code> inside the <code class="docutils literal notranslate"><span class="pre">run</span></code> method.</p>
+</div>
+</section>
+<section id="observations">
+<h2>Observations<a class="headerlink" href="#observations" title="Link to this heading">¶</a></h2>
+<p>You can make observations on the state by calling out to the <code class="xref py py-meth docutils literal notranslate"><span class="pre">log_attribute</span></code> or <code class="xref py py-meth docutils literal notranslate"><span class="pre">log_attributes</span></code> method on the <code class="docutils literal notranslate"><span class="pre">__tracer</span></code> context manager
+or the root tracer factory. Note: the <cite>trace()</cite> decorator explained below can substitute for the following approach in many cases.</p>
+<p>This allows you to log any arbitrary observations (think token count prompt, whatnot) that may not be part of state/results.</p>
+<p>For instance:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracerFactory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span>
+
+<span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;prompt&#39;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;response&#39;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__tracer</span><span class="p">:</span> <span class="n">TracerFactory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+    <span class="n">__tracer</span><span class="o">.</span><span class="n">log_attributes</span><span class="p">(</span><span class="n">prompt_length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">]),</span> <span class="n">prompt</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">])</span>
+
+    <span class="c1"># note: see `@trace()` below as an alternative to this approach.</span>
+    <span class="k">with</span> <span class="n">__tracer</span><span class="p">(</span><span class="s1">&#39;create_prompt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
+        <span class="n">modified_prompt</span> <span class="o">=</span> <span class="n">_modify_prompt</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">])</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">log_attributes</span><span class="p">(</span><span class="n">modified_prompt</span><span class="o">=</span><span class="n">modified_prompt</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">__tracer</span><span class="p">(</span><span class="s1">&#39;check_prompt_safety&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">t</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">is_unsafe</span><span class="o">:=</span><span class="n">_is_unsafe</span><span class="p">(</span><span class="n">modified_prompt</span><span class="p">):</span>
+                <span class="n">modified_prompt</span> <span class="o">=</span> <span class="n">_fix</span><span class="p">(</span><span class="n">modified_prompt</span><span class="p">)</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">log_attributes</span><span class="p">(</span><span class="n">fixed_prompt</span><span class="o">=</span><span class="n">modified_prompt</span><span class="p">,</span> <span class="n">is_unsafe</span><span class="o">=</span><span class="n">is_unsafe</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">__tracer</span><span class="p">(</span><span class="s1">&#39;call_llm&#39;</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;create_prompt&#39;</span><span class="p">]):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">_query</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="n">modified_prompt</span><span class="p">)</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">log_attributes</span><span class="p">(</span><span class="n">response</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">tokens</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">tokens</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;response&#39;</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">message</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>The above will log quite a few attributes, prompt length, response tokens, etc… The observation can be any serializable object.</p>
+<p>Note that we are currently building out the capability to wrap a class and “auto-log” standard attributes.</p>
+<p>You can read more in the <a class="reference internal" href="../../reference/visibility/#visibility"><span class="std std-ref">reference documentation</span></a>.</p>
+</section>
+<section id="tracing-functions">
+<h2>Tracing Functions<a class="headerlink" href="#tracing-functions" title="Link to this heading">¶</a></h2>
+<p>You can observe non-burr functions, which will show up as part of your traces. To do this, you simply need to decorate the
+function with the <a class="reference internal" href="../../reference/visibility/#burr.visibility.tracing.trace" title="burr.visibility.tracing.trace"><code class="xref py py-func docutils literal notranslate"><span class="pre">&#64;trace</span></code></a> decorator. This will automatically create a span
+for the function (within the approprite context), and log as attributes the parameters + return value.</p>
+<p>For instance:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">burr.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">trace</span>
+
+<span class="nd">@trace</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_modify_prompt</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="o">...</span>
+
+<span class="nd">@trace</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_fix</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="o">...</span>
+
+<span class="nd">@trace</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_query</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+    <span class="k">return</span> <span class="o">...</span>
+
+<span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;prompt&#39;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;response&#39;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+    <span class="n">modified_prompt</span> <span class="o">=</span> <span class="n">_modify_prompt</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">_is_unsafe</span><span class="p">(</span><span class="n">modified_prompt</span><span class="p">):</span>
+          <span class="n">modified_prompt</span> <span class="o">=</span> <span class="n">_fix</span><span class="p">(</span><span class="n">modified_prompt</span><span class="p">)</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">_query</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="n">modified_prompt</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;response&#39;</span><span class="p">:</span> <span class="n">response</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>This will create spans for the <code class="docutils literal notranslate"><span class="pre">_modify_prompt</span></code>, <code class="docutils literal notranslate"><span class="pre">_fix</span></code>, and <code class="docutils literal notranslate"><span class="pre">_query</span></code> functions, and log the parameters and return values. You can opt out of logging paramers or return values and adding a filter to the decorator to exclude certain parameters.
+To contrast what you can instrument manually, the <code class="docutils literal notranslate"><span class="pre">&#64;trace</span></code> decorator allows you to get more visibility and replace manual code such as the following (though you can happily combine the two approaches):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracerFactory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span>
+<span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;prompt&#39;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;response&#39;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__tracer</span><span class="p">:</span> <span class="n">TracerFactory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">__tracer</span><span class="p">(</span><span class="s1">&#39;create_prompt&#39;</span><span class="p">):</span>
+        <span class="n">modified_prompt</span> <span class="o">=</span> <span class="n">_modify_prompt</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">])</span>
+        <span class="k">with</span> <span class="n">__tracer</span><span class="p">(</span><span class="s1">&#39;check_prompt_safety&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">_is_unsafe</span><span class="p">(</span><span class="n">modified_prompt</span><span class="p">):</span>
+                <span class="n">modified_prompt</span> <span class="o">=</span> <span class="n">_fix</span><span class="p">(</span><span class="n">modified_prompt</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">__tracer</span><span class="p">(</span><span class="s1">&#39;call_llm&#39;</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;create_prompt&#39;</span><span class="p">]):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">_query</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="n">modified_prompt</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;response&#39;</span><span class="p">:</span> <span class="n">response</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>This will create spans for the <code class="docutils literal notranslate"><span class="pre">_modify_prompt</span></code>, <code class="docutils literal notranslate"><span class="pre">_fix</span></code>, and <code class="docutils literal notranslate"><span class="pre">_query</span></code> functions, and log the parameters and return values.
+You can opt out of logging paramers or return values and adding a filter to the decorator to exclude certain parameters.</p>
+</section>
+<section id="opentelref">
+<span id="id2"></span><h2>OpenTelemetry<a class="headerlink" href="#opentelref" title="Link to this heading">¶</a></h2>
+<p>While Burr does not support the entire <a class="reference external" href="https://opentelemetry.io/">OpenTelemetry</a>
+spec, it does have integrations that allows it to (a) log to OpenTelemetry and (b)
+capture OpenTelemetry events with tracking.</p>
+<p>These features are currently experimental, but we expect the API to remain largely stable.</p>
+<section id="capturing-opentelemetry-events">
+<h3>Capturing OpenTelemetry events<a class="headerlink" href="#capturing-opentelemetry-events" title="Link to this heading">¶</a></h3>
+<p>Burr can capture OpenTelemetry traces/spans that are logged from within a Burr step.
+These get tracked in the UI, which can display traces and attributes, as explained above.</p>
+<p>To do this, you just have to set the <code class="docutils literal notranslate"><span class="pre">use_otel_tracing</span></code> flag on <a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationBuilder.with_tracker" title="burr.core.application.ApplicationBuilder.with_tracker"><code class="xref py py-meth docutils literal notranslate"><span class="pre">with_tracker</span></code></a>
+function in the <code class="docutils literal notranslate"><span class="pre">ApplicationBuilder</span></code>. This will automatically capture all OpenTelemetry traces, mixing them with Burr traces. Take the following (contrived)
+example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracerFactory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">trace</span>
+<span class="n">otel_tracer</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">get_tracer</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="nd">@action</span><span class="p">(</span><span class="n">reads</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;prompt&#39;</span><span class="p">],</span> <span class="n">writes</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;response&#39;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">my_action</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">__tracer</span><span class="p">:</span> <span class="n">TracerFactory</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">__tracer</span><span class="p">:</span>
+        <span class="c1"># Burr logging</span>
+        <span class="n">__tracer</span><span class="o">.</span><span class="n">log_attributes</span><span class="p">(</span><span class="n">prompt_length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">]),</span> <span class="n">prompt</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">])</span>
+        <span class="c1"># OpenTelemetry Tracer</span>
+        <span class="k">with</span> <span class="n">otel_tracer</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span><span class="s1">&#39;create_prompt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">span</span><span class="p">:</span>
+            <span class="n">modified_prompt</span> <span class="o">=</span> <span class="n">_modify_prompt</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">])</span>
+            <span class="n">span</span><span class="o">.</span><span class="n">set_attributes</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">modified_prompt</span><span class="o">=</span><span class="n">modified_prompt</span><span class="p">))</span>
+        <span class="c1"># Back to Burr tracer</span>
+        <span class="k">with</span> <span class="n">__tracer</span><span class="p">(</span><span class="s1">&#39;call_llm&#39;</span><span class="p">,</span> <span class="n">dependencies</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;create_prompt&#39;</span><span class="p">]):</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">_query</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="n">modified_prompt</span><span class="p">)</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">log_attributes</span><span class="p">(</span><span class="n">response</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">tokens</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">tokens</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;response&#39;</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">message</span><span class="p">})</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">ApplicationBuilder</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">with_actions</span><span class="p">(</span><span class="n">my_action</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">with_state</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">with_transitions</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">with_tracker</span><span class="p">(</span><span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="n">project</span><span class="o">=</span><span class="s2">&quot;my_project&quot;</span><span class="p">,</span> <span class="n">use_otel_tracing</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">with_entrypoint</span><span class="p">(</span><span class="s2">&quot;prompt&quot;</span><span class="p">,</span> <span class="s2">&quot;my_action&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">build</span><span class="p">()</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>While this is contrived, it illustrates that you can mix/match Burr/OpenTelemetry. This is valuable
+when you have a Burr action that calls out to a function that is instrumented via OpenTelemetry (
+of which there are a host of integrations).</p>
+<p>Note that this currently does not support logging remote traces, but we plan to have a
+more complete integration in the future.</p>
+<p>If you do not enable <code class="docutils literal notranslate"><span class="pre">use_otel_tracing</span></code>, this will all be a no-op.</p>
+</section>
+<section id="logging-to-opentelemetry">
+<h3>Logging to OpenTelemetry<a class="headerlink" href="#logging-to-opentelemetry" title="Link to this heading">¶</a></h3>
+<p>Burr can also log to any OpenTelemetry provider, again enabling mixing/matching of spans. To do this,
+you simply need to pass an instance of the <a class="reference internal" href="../../reference/integrations/opentelemetry/#burr.integrations.opentelemetry.OpenTelemetryBridge" title="burr.integrations.opentelemetry.OpenTelemetryBridge"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpenTelemetryBridge</span></code></a> to the
+<a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationBuilder.with_hooks" title="burr.core.application.ApplicationBuilder.with_hooks"><code class="xref py py-meth docutils literal notranslate"><span class="pre">with_hooks</span></code></a> method of the <code class="docutils literal notranslate"><span class="pre">ApplicationBuilder</span></code>. This will automatically
+log all spans to the OpenTelemetry provider of choice (and you are responsible for initializes
+it as you see fit).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.integrations.opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenTelemetryBridge</span>
+
+<span class="n">otel_tracer</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">get_tracer</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">ApplicationBuilder</span><span class="p">()</span>
+    <span class="o">.</span><span class="n">with_actions</span><span class="p">(</span><span class="n">my_action</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">with_state</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">with_transitions</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">with_hooks</span><span class="p">(</span><span class="n">OpenTelemetryBridge</span><span class="p">(</span><span class="n">tracer</span><span class="o">=</span><span class="n">otel_tracer</span><span class="p">))</span>
+    <span class="o">.</span><span class="n">with_entrypoint</span><span class="p">(</span><span class="s2">&quot;prompt&quot;</span><span class="p">,</span> <span class="s2">&quot;my_action&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">build</span><span class="p">()</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>With this you can log to any OpenTelemetry provider.</p>
+</section>
+<section id="instrumenting-libraries">
+<h3>Instrumenting libraries<a class="headerlink" href="#instrumenting-libraries" title="Link to this heading">¶</a></h3>
+<p>One way to gain observability is to <strong>instrument</strong> a library with OpenTelemetry. This involves importing an object that will automatically patch the library in order to produce and report telemetry (learn more about <a class="reference external" href="https://opentelemetry.io/docs/zero-code/python/">autoinstrumentation</a>). The Python community has implemented <a class="reference external" href="https://opentelemetry-python-contrib.readthedocs.io/en/latest/">instrumentation for many popular libraries</a> (FastAPI, AWS Lambda, requests, etc.).</p>
+<p>This snippet enables automatically logging HTTP requests done via the <code class="docutils literal notranslate"><span class="pre">requests</span></code> library:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.instrumentation.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestsInstrumentor</span>
+<span class="n">RequestsInstrumentor</span><span class="p">()</span><span class="o">.</span><span class="n">instrument</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This works with both of the integrations above, and simple requires the
+<code class="docutils literal notranslate"><span class="pre">opentelemetry-instrumentation-YYY</span></code> package (where <code class="docutils literal notranslate"><span class="pre">YYY</span></code> is the library you want to instrument, openai in this case).</p>
+<section id="llm-specific-telemetry">
+<h4>LLM-specific Telemetry<a class="headerlink" href="#llm-specific-telemetry" title="Link to this heading">¶</a></h4>
+<p><a class="reference external" href="https://github.com/traceloop/openllmetry/">Openllmetry</a> is a project implementing autoinstrumentation for components of LLM stacks (LLM providers, vector databases, frameworks, etc.). This enables tracking prompts, token counts, temperature, vector search operations, etc.</p>
+<p>The following instruments the <code class="docutils literal notranslate"><span class="pre">openai</span></code> Python library</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.instrumentation.openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIInstrumentor</span>
+<span class="n">OpenAIInstrumentor</span><span class="p">()</span><span class="o">.</span><span class="n">instrument</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="burr-s-init-instruments">
+<h4>Burr’s <code class="docutils literal notranslate"><span class="pre">init_instruments()</span></code><a class="headerlink" href="#burr-s-init-instruments" title="Link to this heading">¶</a></h4>
+<p>The Burr integration for OpenTelemetry includes the convenience function <code class="docutils literal notranslate"><span class="pre">init_instruments()</span></code>. You can provide it the names of modules to instrument as strings and it will try to instrument them. This feature has good IDE autocompletion support. Another benefit is the ability to instrument multiple libraries at once.</p>
+<p>The following instruments the module <code class="docutils literal notranslate"><span class="pre">openai</span></code> (equivalent to the previous snippet) along with <code class="docutils literal notranslate"><span class="pre">lancedb</span></code> and <code class="docutils literal notranslate"><span class="pre">fastapi</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.integrations.opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_instruments</span>
+<span class="n">init_instruments</span><span class="p">(</span><span class="s2">&quot;openai&quot;</span><span class="p">,</span> <span class="s2">&quot;lancedb&quot;</span><span class="p">,</span> <span class="s2">&quot;fastapi&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Specifying the keyword argument <code class="docutils literal notranslate"><span class="pre">init_all=True</span></code> will try to instrument currently imported libraries with the instrumentation packages installed.</p>
+<p>You can get the logger to view in detail which library is instrumented.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">burr.integrations.opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_instruments</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;burr.integrations.opentelemetry&quot;</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">())</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+<span class="n">init_instruments</span><span class="p">(</span><span class="n">init_all</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../parallelism/">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Parallelism</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="../hooks/">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Hooks</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2024, Elijah ben Izzy, Stefan Krawczyk
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Additional Visibility</a><ul>
+<li><a class="reference internal" href="#quickstart">Quickstart</a></li>
+<li><a class="reference internal" href="#tracing">Tracing</a></li>
+<li><a class="reference internal" href="#observations">Observations</a></li>
+<li><a class="reference internal" href="#tracing-functions">Tracing Functions</a></li>
+<li><a class="reference internal" href="#opentelref">OpenTelemetry</a><ul>
+<li><a class="reference internal" href="#capturing-opentelemetry-events">Capturing OpenTelemetry events</a></li>
+<li><a class="reference internal" href="#logging-to-opentelemetry">Logging to OpenTelemetry</a></li>
+<li><a class="reference internal" href="#instrumenting-libraries">Instrumenting libraries</a><ul>
+<li><a class="reference internal" href="#llm-specific-telemetry">LLM-specific Telemetry</a></li>
+<li><a class="reference internal" href="#burr-s-init-instruments">Burr’s <code class="docutils literal notranslate"><span class="pre">init_instruments()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=187304be"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/scripts/furo.js?v=5fa4622c"></script>
+    </body>
+</html>
