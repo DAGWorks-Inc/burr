@@ -35,7 +35,7 @@ class TopicInput(pydantic.BaseModel):
     research_topic: str
 
 
-class SummaryOutput(pydantic.BaseModel):
+class ResearchSummary(pydantic.BaseModel):
     running_summary: str
 
 
@@ -64,7 +64,7 @@ def _get_application(project_id: str, app_id: str) -> Application:
 
 
 @router.post("/response/{project_id}/{app_id}")
-def research_response(project_id: str, app_id: str, topic: TopicInput) -> SummaryOutput:
+def research_response(project_id: str, app_id: str, topic: TopicInput) -> ResearchSummary:
     burr_app = _get_application(project_id, app_id)
     research_topic = topic.research_topic
     action, state, result = burr_app.run(halt_after=["finalize_summary"], inputs={"research_topic": research_topic})
@@ -72,7 +72,7 @@ def research_response(project_id: str, app_id: str, topic: TopicInput) -> Summar
     return {'running_summary': summary}
 
 
-@router.post("/create_new/{project_id}/{app_id}")
+@router.post("/create/{project_id}/{app_id}")
 def create_new_application(project_id: str, app_id: str) -> str:
     app = _get_application(project_id, app_id)
     return app.uid
