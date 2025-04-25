@@ -1,23 +1,27 @@
 import functools
-# import importlib
-from fastapi import APIRouter, FastAPI
+import importlib
+from fastapi import APIRouter
+# from fastapi import FastAPI
 import os
 from typing import Optional
 
 from burr.core import Application, ApplicationBuilder
 from burr.tracking import LocalTrackingClient
 
-# for local testing
-import application as deep_researcher_application
+# uncomment for local testing
+# import application as deep_researcher_application
 
-# deep_researcher_application = importlib.import_module(
-#    "burr.examples.deep-researcher.application"
-# )  # noqa: F401
+# We're doing dynamic import cause this lives within examples/ (and that module has dashes)
+# navigate to the examples directory to read more about this!
+deep_researcher_application = importlib.import_module(
+    "burr.examples.deep-researcher.application"
+)  # noqa: F401
 
 import pydantic
 
 
-app = FastAPI()
+# uncomment for local testing
+# app = FastAPI()
 router = APIRouter()
 
 try:
@@ -105,14 +109,17 @@ def validate_environment() -> Optional[str]:
     )
 
 
-@app.get("/")
-def root():
-    return {"message": "Deep Researcher API"}
+# uncomment for local testing
+# @app.get("/")
+# def root():
+#    return {"message": "Deep Researcher API"}
 
 
-app.include_router(router, prefix="/deep_researcher", tags=["deep-researcher-api"])
+# app.include_router(router, prefix="/deep_researcher", tags=["deep-researcher-api"])
 
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="localhost", port=7242)
+    pass
+    # uncomment for local testing
+    # import uvicorn
+    # uvicorn.run(app, host="localhost", port=7242)

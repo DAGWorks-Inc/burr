@@ -16,6 +16,8 @@ import type { IndexingJob } from '../models/IndexingJob';
 import type { Project } from '../models/Project';
 import type { PromptInput } from '../models/PromptInput';
 import type { QuestionAnswers } from '../models/QuestionAnswers';
+import type { ResearchSummary } from '../models/ResearchSummary';
+import type { TopicInput } from '../models/TopicInput';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -613,23 +615,67 @@ export class DefaultService {
     });
   }
   /**
-   * React App
-   * Quick trick to server the react app
-   * Thanks to https://github.com/hop-along-polly/fastapi-webapp-react for the example/demo
-   * @param restOfPath
-   * @returns any Successful Response
+   * Research Response
+   * @param projectId
+   * @param appId
+   * @param requestBody
+   * @returns ResearchSummary Successful Response
    * @throws ApiError
    */
-  public static reactAppRestOfPathGet(restOfPath: string): CancelablePromise<any> {
+  public static researchResponseApiV0DeepResearcherResponseProjectIdAppIdPost(
+    projectId: string,
+    appId: string,
+    requestBody: TopicInput
+  ): CancelablePromise<ResearchSummary> {
     return __request(OpenAPI, {
-      method: 'GET',
-      url: '/{rest_of_path}',
+      method: 'POST',
+      url: '/api/v0/deep_researcher/response/{project_id}/{app_id}',
       path: {
-        rest_of_path: restOfPath
+        project_id: projectId,
+        app_id: appId
+      },
+      body: requestBody,
+      mediaType: 'application/json',
+      errors: {
+        422: `Validation Error`
+      }
+    });
+  }
+  /**
+   * Create New Application
+   * @param projectId
+   * @param appId
+   * @returns string Successful Response
+   * @throws ApiError
+   */
+  public static createNewApplicationApiV0DeepResearcherCreateProjectIdAppIdPost(
+    projectId: string,
+    appId: string
+  ): CancelablePromise<string> {
+    return __request(OpenAPI, {
+      method: 'POST',
+      url: '/api/v0/deep_researcher/create/{project_id}/{app_id}',
+      path: {
+        project_id: projectId,
+        app_id: appId
       },
       errors: {
         422: `Validation Error`
       }
+    });
+  }
+  /**
+   * Validate Environment
+   * Validate the environment
+   * @returns any Successful Response
+   * @throws ApiError
+   */
+  public static validateEnvironmentApiV0DeepResearcherValidateProjectIdAppIdGet(): CancelablePromise<
+    string | null
+  > {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/v0/deep_researcher/validate/{project_id}/{app_id}'
     });
   }
 }

@@ -1,18 +1,19 @@
 import openai
 from typing import Optional
-
+import importlib
 import json
 
 from burr.core import action, State, Application, ApplicationBuilder, expr, when
-from prompts import (
-    query_writer_instructions,
-    summarizer_instructions,
-    reflection_instructions,
-)
-from utils import deduplicate_and_format_sources, tavily_search, format_sources
 from burr.core.graph import GraphBuilder
 from burr.tracking import LocalTrackingClient
 import functools
+
+prompts = importlib.import_module(
+    "burr.examples.deep-researcher.prompts"
+)
+utils = importlib.import_module(
+    "burr.examples.deep-researcher.utils"
+)
 
 
 @functools.lru_cache
@@ -58,7 +59,7 @@ def generate_query(state: State, research_topic: str) -> State:
     Returns:
         State: The updated state with the research topic and generated search query.
     """
-    system_prompt_formatted = query_writer_instructions.format(
+    system_prompt_formatted = prompts.query_writer_instructions.format(
         research_topic=research_topic
     )
     human_prompt = "Generate a query for web search:"
@@ -81,13 +82,13 @@ def web_research(state: State) -> State:
     Returns:
         State: The updated state with gathered sources, research loop count, and web research results.
     """
-    search_results = tavily_search(
+    search_results = utils.tavily_search(
         state["search_query"], include_raw_content=True, max_results=1
     )
-    search_str = deduplicate_and_format_sources(
+    search_str = utils.deduplicate_and_format_sources(
         search_results, max_tokens_per_source=1000, include_raw_content=True
     )
-    sources_gathered = [format_sources(search_results)]
+    sources_gathered = [utils.format_sources(search_results)]
     research_loop_count = state["research_loop_count"] + 1
     web_research_results = [search_str]
     return state.update(
@@ -126,7 +127,7 @@ def summarize_sources(state: State):
             f"<User Input> \n {research_topic} \n <User Input>\n\n"
             f"<Search Results> \n {most_recent_web_research} \n <Search Results>"
         )
-    running_summary = query_openai(summarizer_instructions, human_message_content)
+    running_summary = query_openai(prompts.summarizer_instructions, human_message_content)
 
     while "<think>" in running_summary and "</think>" in running_summary:
         start = running_summary.find("<think>")
@@ -146,7 +147,7 @@ def reflect_on_summary(state: State):
     Returns:
         State: The updated state with the follow-up search query.
     """
-    system_instructions = reflection_instructions.format(
+    system_instructions = prompts.reflection_instructions.format(
         research_topic=state.get("research_topic")
     )
     human_message_content = f"Identify a knowledge gap and generate a follow-up web search query based on our existing knowledge: {state.get('running_summary')}"

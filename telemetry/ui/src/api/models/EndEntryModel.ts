@@ -6,12 +6,11 @@
  * Pydantic model that represents an entry for the end of a step
  */
 export type EndEntryModel = {
-    type?: string;
-    end_time: string;
-    action: string;
-    result: (Record<string, any> | null);
-    exception: (string | null);
-    state: Record<string, any>;
-    sequence_id: number;
+  type?: string;
+  end_time: string;
+  action: string;
+  result: Record<string, any> | null;
+  exception: string | null;
+  state: Record<string, any>;
+  sequence_id: number;
 };
-
