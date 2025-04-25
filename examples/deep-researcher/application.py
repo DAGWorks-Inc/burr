@@ -38,7 +38,7 @@ def query_openai(system_instructions, human_message_content, stream=False):
     return content
 
 
-@action(reads=["research_topic"], writes=["search_query"])
+@action(reads=["research_topic"], writes=["search_query", "sources_gathered", "web_research_results"])
 def generate_query(state: State) -> State:
     """
     Generates a search query based on the research topic.
@@ -54,10 +54,10 @@ def generate_query(state: State) -> State:
     human_prompt = "Generate a query for web search:"
     my_query = query_openai(system_prompt_formatted, human_prompt)
     as_dict = json.loads(my_query)
-    return state.update(search_query=as_dict['query'])
+    return state.update(search_query=as_dict['query'], sources_gathered=[], web_research_results=[])
 
 
-@action(reads=["search_query", "research_loop_count"], writes=["sources_gathered", "research_loop_count", "web_research_results"])
+@action(reads=["search_query", "research_loop_count", "sources_gathered", "web_research_results"], writes=["sources_gathered", "research_loop_count", "web_research_results"])
 def web_research(state: State) -> State:
     """
     Performs web research based on the search query and updates the state.
@@ -74,8 +74,10 @@ def web_research(state: State) -> State:
     search_str = deduplicate_and_format_sources(
         search_results, max_tokens_per_source=1000, include_raw_content=True)
     sources_gathered = [format_sources(search_results)]
+    sources_gathered = state['sources_gathered'] + sources_gathered
+    web_research_results = state['web_research_results'] + [search_str]
     research_loop_count = state['research_loop_count'] + 1
-    web_research_results = [search_str]
+
     return state.update(sources_gathered=sources_gathered, research_loop_count=research_loop_count, web_research_results=web_research_results)
 
 
@@ -198,7 +200,7 @@ if __name__ == "__main__":
     Entry point for the application.
     """
     research_topic = "getting a job in datascience"
-    app_id = "1"
+    app_id = "10"
     num_loops = 2
 
     app = application(
