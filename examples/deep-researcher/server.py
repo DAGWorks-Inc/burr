@@ -82,7 +82,7 @@ def create_new_application(project_id: str, app_id: str) -> str:
     return app.uid
 
 
-@router.get("/validate/{project_id}/{app_id}")
+@router.get("/validate")
 def validate_environment() -> Optional[str]:
     """Validate the environment"""
     has_openai_api_key = "OPENAI_API_KEY" in os.environ

@@ -670,12 +670,12 @@ export class DefaultService {
    * @returns any Successful Response
    * @throws ApiError
    */
-  public static validateEnvironmentApiV0DeepResearcherValidateProjectIdAppIdGet(): CancelablePromise<
+  public static validateEnvironmentApiV0DeepResearcherValidateGet(): CancelablePromise<
     string | null
   > {
     return __request(OpenAPI, {
       method: 'GET',
-      url: '/api/v0/deep_researcher/validate/{project_id}/{app_id}'
+      url: '/api/v0/deep_researcher/validate'
     });
   }
 }
