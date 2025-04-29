@@ -210,7 +210,7 @@ class LocalTrackingClient(
                         child=PointerModel(
                             app_id=app_id,
                             sequence_id=None,
-                            partition_key=None,  # TODO -- get partition key
+                            partition_key=fork_parent_pointer_model.partition_key,  # TODO -- get partition key
                         ),
                         event_time=datetime.datetime.now(),
                         event_type="fork",
@@ -228,7 +228,7 @@ class LocalTrackingClient(
                         child=PointerModel(
                             app_id=app_id,
                             sequence_id=None,
-                            partition_key=None,  # TODO -- get partition key
+                            partition_key=spawn_parent_pointer_model.sequence_id,  # TODO -- get partition key
                         ),
                         event_time=datetime.datetime.now(),
                         event_type="spawn_start",
