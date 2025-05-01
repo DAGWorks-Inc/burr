@@ -35,10 +35,6 @@ except ImportError:
 # pydantic types
 
 
-class TopicInput(pydantic.BaseModel):
-    research_topic: str
-
-
 class ResearchSummary(pydantic.BaseModel):
     running_summary: str
 
@@ -68,11 +64,12 @@ def _get_application(project_id: str, app_id: str) -> Application:
 
 
 @router.post("/response/{project_id}/{app_id}")
-def research_response(project_id: str, app_id: str, topic: TopicInput) -> ResearchSummary:
+def research_response(project_id: str, app_id: str, topic: str) -> ResearchSummary:
     burr_app = _get_application(project_id, app_id)
-    research_topic = topic.research_topic
+    research_topic = topic
     action, state, result = burr_app.run(halt_after=["finalize_summary"], inputs={"research_topic": research_topic})
     summary = burr_app.state.get('running_summary')
+    # reset state machine?
     return {'running_summary': summary}
 
 

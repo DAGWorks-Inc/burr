@@ -40,7 +40,6 @@ export type { QuestionAnswers } from './models/QuestionAnswers';
 export type { ResearchSummary } from './models/ResearchSummary';
 export type { Span } from './models/Span';
 export type { Step } from './models/Step';
-export type { TopicInput } from './models/TopicInput';
 export type { TransitionModel } from './models/TransitionModel';
 export type { ValidationError } from './models/ValidationError';
 

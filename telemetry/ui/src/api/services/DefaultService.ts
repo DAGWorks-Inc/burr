@@ -17,7 +17,6 @@ import type { Project } from '../models/Project';
 import type { PromptInput } from '../models/PromptInput';
 import type { QuestionAnswers } from '../models/QuestionAnswers';
 import type { ResearchSummary } from '../models/ResearchSummary';
-import type { TopicInput } from '../models/TopicInput';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -618,14 +617,14 @@ export class DefaultService {
    * Research Response
    * @param projectId
    * @param appId
-   * @param requestBody
+   * @param topic
    * @returns ResearchSummary Successful Response
    * @throws ApiError
    */
   public static researchResponseApiV0DeepResearcherResponseProjectIdAppIdPost(
     projectId: string,
     appId: string,
-    requestBody: TopicInput
+    topic: string
   ): CancelablePromise<ResearchSummary> {
     return __request(OpenAPI, {
       method: 'POST',
@@ -634,8 +633,9 @@ export class DefaultService {
         project_id: projectId,
         app_id: appId
       },
-      body: requestBody,
-      mediaType: 'application/json',
+      query: {
+        topic: topic
+      },
       errors: {
         422: `Validation Error`
       }

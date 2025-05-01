@@ -48,7 +48,7 @@ def query_openai(system_instructions, human_message_content, stream=False):
     return content
 
 
-@action(reads=[], writes=["search_query", "research_topic"])
+@action(reads=[], writes=["search_query", "research_topic", "sources_gathered", "web_research_results", "research_loop_count", "running_summary"])
 def generate_query(state: State, research_topic: str) -> State:
     """
     Generates a search query based on the research topic.
@@ -65,11 +65,11 @@ def generate_query(state: State, research_topic: str) -> State:
     human_prompt = "Generate a query for web search:"
     my_query = query_openai(system_prompt_formatted, human_prompt)
     as_dict = json.loads(my_query)
-    return state.update(search_query=as_dict["query"], research_topic=research_topic)
+    return state.update(search_query=as_dict["query"], research_topic=research_topic, sources_gathered=[], web_research_results=[], research_loop_count=0, running_summary=None)
 
 
 @action(
-    reads=["search_query", "research_loop_count"],
+    reads=["search_query", "research_loop_count", "sources_gathered", "web_research_results"],
     writes=["sources_gathered", "research_loop_count", "web_research_results"],
 )
 def web_research(state: State) -> State:
@@ -89,8 +89,10 @@ def web_research(state: State) -> State:
         search_results, max_tokens_per_source=1000, include_raw_content=True
     )
     sources_gathered = [utils.format_sources(search_results)]
+    sources_gathered = state['sources_gathered'] + sources_gathered
+    web_research_results = state['web_research_results'] + [search_str]
     research_loop_count = state["research_loop_count"] + 1
-    web_research_results = [search_str]
+
     return state.update(
         sources_gathered=sources_gathered,
         research_loop_count=research_loop_count,
@@ -161,7 +163,7 @@ def reflect_on_summary(state: State):
     return state.update(search_query=query or fallback_query)
 
 
-@action(reads=["running_summary", "sources_gathered"], writes=["running_summary"])
+@action(reads=["running_summary", "sources_gathered"], writes=["running_summary", "research_loop_count"])
 def finalize_summary(state: State):
     """
     Finalizes the summary by combining the running summary and all gathered sources.
@@ -176,7 +178,8 @@ def finalize_summary(state: State):
     running_summary = (
         f"## Summary\n\n{state.get('running_summary')}\n\n ### Sources:\n{all_sources}"
     )
-    return state.update(running_summary=running_summary)
+    # reset research loop count
+    return state.update(running_summary=running_summary, research_loop_count=0)
 
 
 graph = (
@@ -198,6 +201,7 @@ graph = (
             "web_research",
             expr("research_loop_count<2"),
         ),
+        ("finalize_summary", "generate_query")
     )
 ).build()
 
@@ -226,10 +230,6 @@ def application(
         .initialize_from(
             tracker,
             resume_at_next_action=True,
-            default_state={
-                "research_loop_count": 0,
-                "running_summary": None,
-            },
             default_entrypoint="generate_query",
         )
     )
