@@ -6,9 +6,8 @@
  * Pydantic model that represents an entry for the end of a span
  */
 export type EndSpanModel = {
-    type?: string;
-    end_time: string;
-    action_sequence_id: number;
-    span_id: string;
+  type?: string;
+  end_time: string;
+  action_sequence_id: number;
+  span_id: string;
 };
-

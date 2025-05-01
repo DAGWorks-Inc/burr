@@ -195,7 +195,8 @@ export function Switch({
         // Color specific styles
         colors[color]
       )}
-      {...props}>
+      {...props}
+    >
       <span
         aria-hidden="true"
         className={clsx(
