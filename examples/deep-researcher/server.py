@@ -1,9 +1,11 @@
 import functools
 import importlib
-from fastapi import APIRouter
+
 # from fastapi import FastAPI
 import os
 from typing import Optional
+
+from fastapi import APIRouter
 
 from burr.core import Application, ApplicationBuilder
 from burr.tracking import LocalTrackingClient
@@ -18,7 +20,6 @@ deep_researcher_application = importlib.import_module(
 )  # noqa: F401
 
 import pydantic
-
 
 # uncomment for local testing
 # app = FastAPI()
@@ -67,10 +68,12 @@ def _get_application(project_id: str, app_id: str) -> Application:
 def research_response(project_id: str, app_id: str, topic: str) -> ResearchSummary:
     burr_app = _get_application(project_id, app_id)
     research_topic = topic
-    action, state, result = burr_app.run(halt_after=["finalize_summary"], inputs={"research_topic": research_topic})
-    summary = burr_app.state.get('running_summary')
+    action, state, result = burr_app.run(
+        halt_after=["finalize_summary"], inputs={"research_topic": research_topic}
+    )
+    summary = burr_app.state.get("running_summary")
     # reset state machine?
-    return {'running_summary': summary}
+    return {"running_summary": summary}
 
 
 @router.post("/create/{project_id}/{app_id}")
@@ -101,9 +104,7 @@ def validate_environment() -> Optional[str]:
         message = message + openai_api_message
     if not has_tavily_api_key:
         message = message + tavily_api_message
-    return (
-        message
-    )
+    return message
 
 
 # uncomment for local testing

@@ -1,19 +1,16 @@
-import openai
-from typing import Optional
+import functools
 import importlib
 import json
+from typing import Optional
 
-from burr.core import action, State, Application, ApplicationBuilder, expr, when
+import openai
+
+from burr.core import Application, ApplicationBuilder, State, action, expr, when
 from burr.core.graph import GraphBuilder
 from burr.tracking import LocalTrackingClient
-import functools
 
-prompts = importlib.import_module(
-    "burr.examples.deep-researcher.prompts"
-)
-utils = importlib.import_module(
-    "burr.examples.deep-researcher.utils"
-)
+prompts = importlib.import_module("burr.examples.deep-researcher.prompts")
+utils = importlib.import_module("burr.examples.deep-researcher.utils")
 
 
 @functools.lru_cache
@@ -41,14 +38,22 @@ def query_openai(system_instructions, human_message_content, stream=False):
     messages.append(system_message)
     messages.append(human_message)
 
-    response = client.chat.completions.create(
-        model="gpt-4o", messages=messages, stream=stream
-    )
+    response = client.chat.completions.create(model="gpt-4o", messages=messages, stream=stream)
     content = response.choices[0].message.content
     return content
 
 
-@action(reads=[], writes=["search_query", "research_topic", "sources_gathered", "web_research_results", "research_loop_count", "running_summary"])
+@action(
+    reads=[],
+    writes=[
+        "search_query",
+        "research_topic",
+        "sources_gathered",
+        "web_research_results",
+        "research_loop_count",
+        "running_summary",
+    ],
+)
 def generate_query(state: State, research_topic: str) -> State:
     """
     Generates a search query based on the research topic.
@@ -65,7 +70,14 @@ def generate_query(state: State, research_topic: str) -> State:
     human_prompt = "Generate a query for web search:"
     my_query = query_openai(system_prompt_formatted, human_prompt)
     as_dict = json.loads(my_query)
-    return state.update(search_query=as_dict["query"], research_topic=research_topic, sources_gathered=[], web_research_results=[], research_loop_count=0, running_summary=None)
+    return state.update(
+        search_query=as_dict["query"],
+        research_topic=research_topic,
+        sources_gathered=[],
+        web_research_results=[],
+        research_loop_count=0,
+        running_summary=None,
+    )
 
 
 @action(
@@ -89,8 +101,8 @@ def web_research(state: State) -> State:
         search_results, max_tokens_per_source=1000, include_raw_content=True
     )
     sources_gathered = [utils.format_sources(search_results)]
-    sources_gathered = state['sources_gathered'] + sources_gathered
-    web_research_results = state['web_research_results'] + [search_str]
+    sources_gathered = state["sources_gathered"] + sources_gathered
+    web_research_results = state["web_research_results"] + [search_str]
     research_loop_count = state["research_loop_count"] + 1
 
     return state.update(
@@ -163,7 +175,9 @@ def reflect_on_summary(state: State):
     return state.update(search_query=query or fallback_query)
 
 
-@action(reads=["running_summary", "sources_gathered"], writes=["running_summary", "research_loop_count"])
+@action(
+    reads=["running_summary", "sources_gathered"], writes=["running_summary", "research_loop_count"]
+)
 def finalize_summary(state: State):
     """
     Finalizes the summary by combining the running summary and all gathered sources.
@@ -201,7 +215,7 @@ graph = (
             "web_research",
             expr("research_loop_count<2"),
         ),
-        ("finalize_summary", "generate_query")
+        ("finalize_summary", "generate_query"),
     )
 ).build()
 
@@ -250,5 +264,7 @@ if __name__ == "__main__":
         view=False,
         format="png",
     )
-    action, state, result = app.run(halt_after=["finalize_summary"], inputs={"research_topic": research_topic})
+    action, state, result = app.run(
+        halt_after=["finalize_summary"], inputs={"research_topic": research_topic}
+    )
     print(app.state["running_summary"])

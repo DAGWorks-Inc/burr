@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The structure of the research assistant is taken from a [langchain and langgraph example](https://github.com/langchain-ai/local-deep-researcher). It is rewritten here in the Burr framework in `application.py`. 
+The structure of the research assistant is taken from a [langchain and langgraph example](https://github.com/langchain-ai/local-deep-researcher). It is rewritten here in the Burr framework in `application.py`.
 
 ![Deep Researcher](statemachine.png)
 
@@ -39,11 +39,10 @@ Then install Python modules
 pip install -r requirements.txt
 ```
 
-You will need accounts for [Tavily search](https://tavily.com/) and the [OpenAI API](https://platform.openai.com/docs/overview). Once you have those accounts, set the environment variables TAVILY_API_KEY and OPENAI_API_KEY and run the script. 
+You will need accounts for [Tavily search](https://tavily.com/) and the [OpenAI API](https://platform.openai.com/docs/overview). Once you have those accounts, set the environment variables TAVILY_API_KEY and OPENAI_API_KEY and run the script.
 
 ```sh
 export OPENAI_API_KEY="YOUR_OPENAI_KEY"
 export TAVILY_API_KEY="YOUR_TAVILY_API_KEY"
 python application.py
 ```
-
