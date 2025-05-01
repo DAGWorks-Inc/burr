@@ -15,6 +15,12 @@ utils = importlib.import_module("burr.examples.deep-researcher.utils")
 
 @functools.lru_cache
 def _get_openai_client():
+    """
+    Creates and caches an OpenAI client instance.
+
+    Returns:
+        openai.Client: A cached OpenAI client instance.
+    """
     openai_client = openai.Client()
     return openai_client
 
@@ -38,7 +44,9 @@ def query_openai(system_instructions, human_message_content, stream=False):
     messages.append(system_message)
     messages.append(human_message)
 
-    response = client.chat.completions.create(model="gpt-4o", messages=messages, stream=stream)
+    response = client.chat.completions.create(
+        model="gpt-4o", messages=messages, stream=stream
+    )
     content = response.choices[0].message.content
     return content
 
@@ -60,6 +68,7 @@ def generate_query(state: State, research_topic: str) -> State:
 
     Args:
         state (State): The current application state.
+        research_topic (str): The topic to research.
 
     Returns:
         State: The updated state with the research topic and generated search query.
@@ -81,7 +90,12 @@ def generate_query(state: State, research_topic: str) -> State:
 
 
 @action(
-    reads=["search_query", "research_loop_count", "sources_gathered", "web_research_results"],
+    reads=[
+        "search_query",
+        "research_loop_count",
+        "sources_gathered",
+        "web_research_results",
+    ],
     writes=["sources_gathered", "research_loop_count", "web_research_results"],
 )
 def web_research(state: State) -> State:
@@ -141,7 +155,9 @@ def summarize_sources(state: State):
             f"<User Input> \n {research_topic} \n <User Input>\n\n"
             f"<Search Results> \n {most_recent_web_research} \n <Search Results>"
         )
-    running_summary = query_openai(prompts.summarizer_instructions, human_message_content)
+    running_summary = query_openai(
+        prompts.summarizer_instructions, human_message_content
+    )
 
     while "<think>" in running_summary and "</think>" in running_summary:
         start = running_summary.find("<think>")
@@ -176,7 +192,8 @@ def reflect_on_summary(state: State):
 
 
 @action(
-    reads=["running_summary", "sources_gathered"], writes=["running_summary", "research_loop_count"]
+    reads=["running_summary", "sources_gathered"],
+    writes=["running_summary", "research_loop_count"],
 )
 def finalize_summary(state: State):
     """
@@ -230,7 +247,8 @@ def application(
 
     Args:
         app_id (Optional[str]): A unique identifier for the application instance. Defaults to None.
-        storage_dir (Optional[str]): The directory to store application data. Defaults to "~/.burr".
+        project (str): The project name for tracking. Defaults to "demo_deep_researcher".
+        username (Optional[str]): The username associated with the application instance.
 
     Returns:
         Application: A configured application instance ready to run.
@@ -252,7 +270,7 @@ def application(
 
 if __name__ == "__main__":
     """
-    Entry point for the application.
+    Entry point for the application. Initializes and runs the research application.
     """
     research_topic = "getting a job in datascience"
     app_id = "1"
