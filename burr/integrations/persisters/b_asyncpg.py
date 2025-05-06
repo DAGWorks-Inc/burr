@@ -25,6 +25,11 @@ class AsyncPostgreSQLPersister(persistence.AsyncBaseStatePersister, BaseCopyable
         We suggest to use the persister either as a context manager through the ``async with`` clause or
         using the method ``.cleanup()``.
 
+    .. warning::
+        If you intend to use parallelism features or need to share this persister across multiple tasks,
+        you should initialize it with a connection pool (set ``use_pool=True`` in ``from_values``).
+        Direct connections cannot be shared across different tasks and may cause errors in concurrent scenarios.
+
     .. note::
         The implementation relies on the popular asyncpg library: https://github.com/MagicStack/asyncpg
 
