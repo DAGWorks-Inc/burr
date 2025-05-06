@@ -19,7 +19,10 @@ from typing import (
 )
 
 from burr.common import async_utils
-from burr.common.async_utils import SyncOrAsyncGenerator, SyncOrAsyncGeneratorOrItemOrList
+from burr.common.async_utils import (
+    SyncOrAsyncGenerator,
+    SyncOrAsyncGeneratorOrItemOrList,
+)
 from burr.core import Action, ApplicationBuilder, ApplicationContext, Graph, State
 from burr.core.action import SingleStepAction
 from burr.core.application import ApplicationIdentifiers
@@ -55,19 +58,27 @@ class RunnableGraph:
         if isinstance(from_, RunnableGraph):
             return from_
         if isinstance(from_, Action):
-            assert (
-                from_.name is not None
-            ), "Action must have a name to be run, internal error, reach out to devs"
+            assert from_.name is not None, (
+                "Action must have a name to be run, internal error, reach out to devs"
+            )
         graph = GraphBuilder().with_actions(from_).build()
         (action,) = graph.actions
-        return RunnableGraph(graph=graph, entrypoint=action.name, halt_after=[action.name])
+        return RunnableGraph(
+            graph=graph, entrypoint=action.name, halt_after=[action.name]
+        )
 
 
 TrackerBehavior = Union[Literal["cascade"], None, TrackingClient]
-StatePersisterBehavior = Union[Literal["cascade"], BaseStateSaver, LifecycleAdapter, None]
-StateInitializerBehavior = Union[Literal["cascade"], BaseStateLoader, LifecycleAdapter, None]
+StatePersisterBehavior = Union[
+    Literal["cascade"], BaseStateSaver, LifecycleAdapter, None
+]
+StateInitializerBehavior = Union[
+    Literal["cascade"], BaseStateLoader, LifecycleAdapter, None
+]
 
-AdapterType = TypeVar("AdapterType", bound=Union[BaseStateSaver, BaseStateLoader, LifecycleAdapter])
+AdapterType = TypeVar(
+    "AdapterType", bound=Union[BaseStateSaver, BaseStateLoader, LifecycleAdapter]
+)
 
 
 @dataclasses.dataclass
@@ -86,7 +97,9 @@ class SubGraphTask:
     state_persister: Optional[BaseStateSaver] = None
     state_initializer: Optional[BaseStateLoader] = None
 
-    def _create_app_builder(self, parent_context: ApplicationIdentifiers) -> ApplicationBuilder:
+    def _create_app_builder(
+        self, parent_context: ApplicationIdentifiers
+    ) -> ApplicationBuilder:
         builder = (
             ApplicationBuilder()
             .with_graph(self.graph.graph)
@@ -102,7 +115,9 @@ class SubGraphTask:
             )
         )
         if self.tracker is not None:
-            builder = builder.with_tracker(self.tracker)  # TODO -- move this into the adapter
+            builder = builder.with_tracker(
+                self.tracker
+            )  # TODO -- move this into the adapter
 
         # In this case we want to persist the state for the app
         if self.state_persister is not None:
@@ -120,7 +135,9 @@ class SubGraphTask:
                 resume_at_next_action=True,
             )
         else:
-            builder = builder.with_entrypoint(self.graph.entrypoint).with_state(self.state)
+            builder = builder.with_entrypoint(self.graph.entrypoint).with_state(
+                self.state
+            )
 
         return builder
 
@@ -132,15 +149,19 @@ class SubGraphTask:
         app = self._create_app_builder(parent_context).build()
         action, result, state = app.run(
             halt_after=self.graph.halt_after,
-            inputs={key: value for key, value in self.inputs.items() if not key.startswith("__")},
+            inputs={
+                key: value
+                for key, value in self.inputs.items()
+                if not key.startswith("__")
+            },
         )
         return state
 
     async def arun(self, parent_context: ApplicationContext):
         # Here for backwards compatibility, not ideal
-        if (self.state_initializer is not None and not self.state_initializer.is_async()) or (
-            self.state_persister is not None and not self.state_persister.is_async()
-        ):
+        if (
+            self.state_initializer is not None and not self.state_initializer.is_async()
+        ) or (self.state_persister is not None and not self.state_persister.is_async()):
             logger.warning(
                 "You are using sync persisters for an async application which is not optimal. "
                 "Consider switching to an async persister implementation. We will make this an error soon."
@@ -150,7 +171,11 @@ class SubGraphTask:
             app = await self._create_app_builder(parent_context).abuild()
         action, result, state = await app.arun(
             halt_after=self.graph.halt_after,
-            inputs={key: value for key, value in self.inputs.items() if not key.startswith("__")},
+            inputs={
+                key: value
+                for key, value in self.inputs.items()
+                if not key.startswith("__")
+            },
         )
         return state
 
@@ -487,7 +512,9 @@ class MapActionsAndStates(TaskBasedParallelAction):
                 state_persister = state_initializer
             # In the case that they are not the same, we want to cascade the persister separately
             else:
-                state_persister = _cascade_adapter(self.state_persister(), context.state_persister)
+                state_persister = _cascade_adapter(
+                    self.state_persister(), context.state_persister
+                )
             return SubGraphTask(
                 graph=RunnableGraph.create(action),
                 inputs=inputs,
@@ -505,8 +532,12 @@ class MapActionsAndStates(TaskBasedParallelAction):
                     yield _create_task(key, action, substate)
 
         async def _atasks() -> AsyncGenerator[SubGraphTask, None]:
-            action_generator = async_utils.asyncify_generator(self.actions(state, context, inputs))
-            state_generator = async_utils.asyncify_generator(self.states(state, context, inputs))
+            action_generator = async_utils.asyncify_generator(
+                self.actions(state, context, inputs)
+            )
+            state_generator = async_utils.asyncify_generator(
+                self.states(state, context, inputs)
+            )
             actions = await async_utils.arealize(action_generator)
             states = await async_utils.arealize(state_generator)
             for i, action in enumerate(actions):
@@ -788,10 +819,13 @@ class PassThroughMapActionsAndStates(MapActionsAndStates):
             SubgraphType,
             List[SubgraphType],
             Callable[
-                [State, ApplicationContext, Dict[str, Any]], SyncOrAsyncGenerator[SubgraphType]
+                [State, ApplicationContext, Dict[str, Any]],
+                SyncOrAsyncGenerator[SubgraphType],
             ],
         ],
-        state: Callable[[State, ApplicationContext, Dict[str, Any]], SyncOrAsyncGenerator[State]],
+        state: Callable[
+            [State, ApplicationContext, Dict[str, Any]], SyncOrAsyncGenerator[State]
+        ],
         reducer: Callable[[State, SyncOrAsyncGenerator[State]], State],
         reads: List[str],
         writes: List[str],
@@ -865,7 +899,8 @@ def map_reduce_action(
         ],
     ],
     state: Callable[
-        [State, ApplicationContext, Dict[str, Any]], SyncOrAsyncGeneratorOrItemOrList[State]
+        [State, ApplicationContext, Dict[str, Any]],
+        SyncOrAsyncGeneratorOrItemOrList[State],
     ],
     reducer: Callable[[State, SyncOrAsyncGenerator[State]], State],
     reads: List[str],
@@ -874,5 +909,10 @@ def map_reduce_action(
 ):
     """Experimental API for creating a map-reduce action easily. We'll be improving this."""
     return PassThroughMapActionsAndStates(
-        action=action, state=state, reducer=reducer, reads=reads, writes=writes, inputs=inputs
+        action=action,
+        state=state,
+        reducer=reducer,
+        reads=reads,
+        writes=writes,
+        inputs=inputs,
     )
