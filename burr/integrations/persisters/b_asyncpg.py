@@ -155,7 +155,7 @@ class AsyncPostgreSQLPersister(persistence.AsyncBaseStatePersister, BaseCopyable
         """Creates a copy of this persister.
 
         If using a pool, returns a new persister that will acquire its own connection from the pool.
-        If using a direct connection, raises an error as connections cannot be shared.
+        If using a direct connection, just returns a new persister with the same connection (won't work for async parallelism)
         """
         if self.pool is not None:
             return AsyncPostgreSQLPersister(
