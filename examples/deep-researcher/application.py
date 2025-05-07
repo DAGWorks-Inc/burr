@@ -9,8 +9,15 @@ from burr.core import Application, ApplicationBuilder, State, action, expr, when
 from burr.core.graph import GraphBuilder
 from burr.tracking import LocalTrackingClient
 
-prompts = importlib.import_module("burr.examples.deep-researcher.prompts")
-utils = importlib.import_module("burr.examples.deep-researcher.utils")
+try:
+    prompts = importlib.import_module("burr.examples.deep-researcher.prompts")
+except ModuleNotFoundError:
+    import prompts
+
+try:
+    utils = importlib.import_module("burr.examples.deep-researcher.utils")
+except ModuleNotFoundError:
+    import utils
 
 
 @functools.lru_cache
@@ -262,6 +269,7 @@ def application(
         .initialize_from(
             tracker,
             resume_at_next_action=True,
+            default_state={"research_loop_count": 0, "running_summary": None},
             default_entrypoint="generate_query",
         )
     )
