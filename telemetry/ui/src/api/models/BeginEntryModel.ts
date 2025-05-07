@@ -6,10 +6,9 @@
  * Pydantic model that represents an entry for the beginning of a step
  */
 export type BeginEntryModel = {
-    type?: string;
-    start_time: string;
-    action: string;
-    inputs: Record<string, any>;
-    sequence_id: number;
+  type?: string;
+  start_time: string;
+  action: string;
+  inputs: Record<string, any>;
+  sequence_id: number;
 };
-

@@ -9,7 +9,6 @@ import type { EndSpanModel } from './EndSpanModel';
  * them to put them in order.
  */
 export type Span = {
-    begin_entry: BeginSpanModel;
-    end_entry: (EndSpanModel | null);
+  begin_entry: BeginSpanModel;
+  end_entry: EndSpanModel | null;
 };
-
