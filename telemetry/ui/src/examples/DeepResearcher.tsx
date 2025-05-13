@@ -91,7 +91,8 @@ export const DeepResearcher = (props: { projectId: string; appId: string | undef
           disabled={isResearcherWaiting || props.appId === undefined || displayValidationError}
           onClick={() => {
             sendTopic();
-          }}>
+          }}
+        >
           Send
         </Button>
       </div>
@@ -115,6 +116,7 @@ export const DeepResearcherWithTelemetry = () => {
           }
         />
       }
-      mode={'third'}></TwoColumnLayout>
+      mode={'third'}
+    ></TwoColumnLayout>
   );
 };
