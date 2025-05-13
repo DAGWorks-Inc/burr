@@ -42,6 +42,7 @@ try:
     email_assistant = importlib.import_module("burr.examples.email-assistant.server")
     chatbot = importlib.import_module("burr.examples.multi-modal-chatbot.server")
     streaming_chatbot = importlib.import_module("burr.examples.streaming-fastapi.server")
+    deep_researcher = importlib.import_module("burr.examples.deep-researcher.server")
 
 except ImportError as e:
     raise e
@@ -320,6 +321,7 @@ async def version() -> dict:
 app.include_router(chatbot.router, prefix="/api/v0/chatbot")
 app.include_router(email_assistant.router, prefix="/api/v0/email_assistant")
 app.include_router(streaming_chatbot.router, prefix="/api/v0/streaming_chatbot")
+app.include_router(deep_researcher.router, prefix="/api/v0/deep_researcher")
 
 if SERVE_STATIC:
     BASE_ASSET_DIRECTORY = str(files("burr").joinpath("tracking/server/build"))
