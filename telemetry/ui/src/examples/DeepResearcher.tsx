@@ -3,7 +3,7 @@ import { ApplicationSummary, DefaultService, ResearchSummary } from '../api';
 import { TwoColumnLayout } from '../components/common/layout';
 import { TelemetryWithSelector } from './Common';
 import { Button } from '../components/common/button';
-import { useMutation } from 'react-query';
+import { useMutation, useQuery } from 'react-query';
 import { Text } from '../components/common/text';
 import { Field, Label } from '../components/common/fieldset';
 
@@ -24,6 +24,10 @@ export const ResearchSummaryView = (props: { summary: string }) => {
 export const DeepResearcher = (props: { projectId: string; appId: string | undefined }) => {
   const [currentTopic, setCurrentTopic] = useState<string>('');
   const [displayedReport, setDisplayedReport] = useState(DEFAULT_RESEARCH_SUMMARY);
+  const { data: validationData, isLoading: isValidationLoading } = useQuery(
+    ['valid'],
+    DefaultService.validateEnvironmentApiV0DeepResearcherValidateGet
+  );
 
   const mutation = useMutation(
     (topic: string) => {
@@ -46,19 +50,25 @@ export const DeepResearcher = (props: { projectId: string; appId: string | undef
       setDisplayedReport(DEFAULT_RESEARCH_SUMMARY);
     }
   };
-  const isResearcherWaiting = mutation.isLoading;
+  const isResearcherWaiting = mutation.isLoading || isValidationLoading;
+  const displayValidationError = validationData !== null;
 
   return (
-    <div className="mr-4 bg-white  w-full flex flex-col h-full">
-      <h1 className="text-2xl font-bold px-4 text-gray-600">{'Learn Burr '}</h1>
-      <h2 className="text-lg font-normal px-4 text-gray-500 flex flex-row">
+    <div className="px-4 bg-white  w-full flex flex-col  h-full gap-5 overflow-y-scroll">
+      <h1 className="text-2xl font-bold text-gray-600">{'Learn Burr '}</h1>
+      <h2 className="text-lg font-normal text-gray-500 flex flex-row">
         The research assistant below is implemented using Burr. Watch the Burr UI (on the right)
         change as you chat...
       </h2>
-      <div className="w-full flex flex-col gap-2">
-        <Field>
-          <Label className="text-lg font-bold text-gray-600">Report</Label>
-        </Field>
+      <div className="flex flex-col">
+        {displayValidationError && (
+          <p className="text-lg font-normal text-dwred">{validationData}</p>
+        )}
+        {!displayValidationError && (
+          <Field>
+            <Label className="text-lg font-bold text-gray-600">Report</Label>
+          </Field>
+        )}
         <ResearchSummaryView summary={displayedReport.running_summary} />
       </div>
       <div className="flex items-center pt-4 gap-2">
@@ -73,16 +83,15 @@ export const DeepResearcher = (props: { projectId: string; appId: string | undef
               sendTopic();
             }
           }}
-          disabled={isResearcherWaiting || props.appId === undefined}
+          disabled={isResearcherWaiting || props.appId === undefined || displayValidationError}
         />
         <Button
           className="w-min cursor-pointer h-full"
           color="dark"
-          disabled={isResearcherWaiting || props.appId === undefined}
+          disabled={isResearcherWaiting || props.appId === undefined || displayValidationError}
           onClick={() => {
             sendTopic();
-          }}
-        >
+          }}>
           Send
         </Button>
       </div>
@@ -106,7 +115,6 @@ export const DeepResearcherWithTelemetry = () => {
           }
         />
       }
-      mode={'third'}
-    ></TwoColumnLayout>
+      mode={'third'}></TwoColumnLayout>
   );
 };

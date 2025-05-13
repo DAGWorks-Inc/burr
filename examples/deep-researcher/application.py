@@ -51,9 +51,7 @@ def query_openai(system_instructions, human_message_content, stream=False):
     messages.append(system_message)
     messages.append(human_message)
 
-    response = client.chat.completions.create(
-        model="gpt-4o", messages=messages, stream=stream
-    )
+    response = client.chat.completions.create(model="gpt-4o", messages=messages, stream=stream)
     content = response.choices[0].message.content
     return content
 
@@ -162,9 +160,7 @@ def summarize_sources(state: State):
             f"<User Input> \n {research_topic} \n <User Input>\n\n"
             f"<Search Results> \n {most_recent_web_research} \n <Search Results>"
         )
-    running_summary = query_openai(
-        prompts.summarizer_instructions, human_message_content
-    )
+    running_summary = query_openai(prompts.summarizer_instructions, human_message_content)
 
     while "<think>" in running_summary and "</think>" in running_summary:
         start = running_summary.find("<think>")
