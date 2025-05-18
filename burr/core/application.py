@@ -1905,7 +1905,6 @@ class Application(Generic[ApplicationStateType]):
         :return: Async generator yielding tuples of (action, streaming_result_container)
         :yield: Tuples of (action, streaming_result_container)
         """
-        self.validate_correct_async_use()
         halt_before, halt_after, inputs = self._process_control_flow_params(
             halt_before, halt_after, inputs
         )
