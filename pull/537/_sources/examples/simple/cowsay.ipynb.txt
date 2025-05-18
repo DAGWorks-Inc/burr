@@ -1,0 +1,281 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "23493882",
+   "metadata": {},
+   "source": [
+    "# Cowsay"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "id": "initial_id",
+   "metadata": {
+    "collapsed": true,
+    "jupyter": {
+     "outputs_hidden": true
+    },
+    "ExecuteTime": {
+     "end_time": "2024-12-13T21:01:40.623161Z",
+     "start_time": "2024-12-13T21:01:39.314706Z"
+    }
+   },
+   "source": [
+    "import random\n",
+    "import time\n",
+    "from typing import Tuple\n",
+    "\n",
+    "import cowsay\n",
+    "\n",
+    "from burr.core import Action, Application, ApplicationBuilder, State, default, expr\n",
+    "from burr.core.action import action\n",
+    "from burr.lifecycle import PostRunStepHook"
+   ],
+   "outputs": [],
+   "execution_count": 1
+  },
+  {
+   "cell_type": "code",
+   "id": "9f5b9bfc78851a59",
+   "metadata": {
+    "collapsed": false,
+    "jupyter": {
+     "outputs_hidden": false
+    },
+    "ExecuteTime": {
+     "end_time": "2024-12-13T21:01:40.637573Z",
+     "start_time": "2024-12-13T21:01:40.632290Z"
+    }
+   },
+   "source": [
+    "# create some hooks!\n",
+    "class PrintWhatTheCowSaid(PostRunStepHook):\n",
+    "    def post_run_step(self, *, state: \"State\", action: \"Action\", **future_kwargs):\n",
+    "        if action.name != \"cow_should_say\" and state[\"cow_said\"] is not None:\n",
+    "            print(state[\"cow_said\"])\n",
+    "\n",
+    "\n",
+    "class CowCantSpeakFast(PostRunStepHook):\n",
+    "    def __init__(self, sleep_time: float):\n",
+    "        super(PostRunStepHook, self).__init__()\n",
+    "        self.sleep_time = sleep_time\n",
+    "\n",
+    "    def post_run_step(self, *, state: \"State\", action: \"Action\", **future_kwargs):\n",
+    "        if action.name != \"cow_should_say\":  # no need to print if we're not saying anything\n",
+    "            time.sleep(self.sleep_time)"
+   ],
+   "outputs": [],
+   "execution_count": 2
+  },
+  {
+   "cell_type": "code",
+   "id": "5b29e9de2ca536b9",
+   "metadata": {
+    "collapsed": false,
+    "jupyter": {
+     "outputs_hidden": false
+    },
+    "ExecuteTime": {
+     "end_time": "2024-12-13T21:02:32.928090Z",
+     "start_time": "2024-12-13T21:02:32.923286Z"
+    }
+   },
+   "source": [
+    "# instantiate actions\n",
+    "@action(reads=[], writes=[\"cow_said\"])\n",
+    "def cow_said(state: State, say_what: list[str]) -> Tuple[dict, State]:\n",
+    "    said = random.choice(say_what) if say_what is not None else None\n",
+    "    result = {\"cow_said\": cowsay.get_output_string(\"cow\", said) if say_what is not None else None}\n",
+    "    return result, state.update(**result)\n",
+    "\n",
+    "\n",
+    "@action(reads=[], writes=[\"cow_should_speak\"])\n",
+    "def cow_should_speak(state: State) -> Tuple[dict, State]:\n",
+    "    result = {\"cow_should_speak\": random.randint(0, 3) == 0}\n",
+    "    return result, state.update(**result)\n"
+   ],
+   "outputs": [],
+   "execution_count": 7
+  },
+  {
+   "cell_type": "code",
+   "id": "271b868317fbbdf4",
+   "metadata": {
+    "collapsed": false,
+    "jupyter": {
+     "outputs_hidden": false
+    },
+    "ExecuteTime": {
+     "end_time": "2024-12-13T21:02:33.629009Z",
+     "start_time": "2024-12-13T21:02:33.613724Z"
+    }
+   },
+   "source": [
+    "# build application\n",
+    "hooks = [\n",
+    "    PrintWhatTheCowSaid(),\n",
+    "    CowCantSpeakFast(sleep_time=2.0),\n",
+    "]\n",
+    "        \n",
+    "app = (ApplicationBuilder()\n",
+    "    .with_state(cow_said=None)\n",
+    "    .with_actions(\n",
+    "        say_nothing=cow_said.bind(say_what=None),\n",
+    "        say_hello=cow_said.bind(\n",
+    "            say_what=[\"Hello world!\", \"What's up?\", \"Are you Aaron Burr, sir?\"]\n",
+    "        ),\n",
+    "        cow_should_speak=cow_should_speak,\n",
+    "    )\n",
+    "    .with_transitions(\n",
+    "        (\"cow_should_speak\", \"say_hello\", expr(\"cow_should_speak\")),\n",
+    "        (\"say_hello\", \"cow_should_speak\", default),\n",
+    "        (\"cow_should_speak\", \"say_nothing\", expr(\"not cow_should_speak\")),\n",
+    "        (\"say_nothing\", \"cow_should_speak\", default),\n",
+    "    )\n",
+    "    .with_entrypoint(\"cow_should_speak\")\n",
+    "    .with_hooks(*hooks)\n",
+    "    .build()\n",
+    ")"
+   ],
+   "outputs": [],
+   "execution_count": 8
+  },
+  {
+   "cell_type": "code",
+   "id": "794bc0abda9e48ad",
+   "metadata": {
+    "collapsed": false,
+    "jupyter": {
+     "outputs_hidden": false
+    },
+    "ExecuteTime": {
+     "end_time": "2024-12-13T21:02:34.796777Z",
+     "start_time": "2024-12-13T21:02:34.484247Z"
+    }
+   },
+   "source": [
+    "app.visualize(include_conditions=True)"
+   ],
+   "outputs": [
+    {
+     "data": {
+      "image/svg+xml": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<!-- Generated by graphviz version 12.0.0 (20240704.0754)\n -->\n<!-- Pages: 1 -->\n<svg width=\"200pt\" height=\"211pt\"\n viewBox=\"0.00 0.00 199.93 210.80\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n<g id=\"graph0\" class=\"graph\" transform=\"scale(1 1) rotate(0) translate(4 206.8)\">\n<polygon fill=\"white\" stroke=\"none\" points=\"-4,4 -4,-206.8 195.93,-206.8 195.93,4 -4,4\"/>\n<!-- say_nothing -->\n<g id=\"node1\" class=\"node\">\n<title>say_nothing</title>\n<path fill=\"#b4d8e4\" stroke=\"black\" d=\"M103.35,-202.8C103.35,-202.8 33,-202.8 33,-202.8 27,-202.8 21,-196.8 21,-190.8 21,-190.8 21,-178.2 21,-178.2 21,-172.2 27,-166.2 33,-166.2 33,-166.2 103.35,-166.2 103.35,-166.2 109.35,-166.2 115.35,-172.2 115.35,-178.2 115.35,-178.2 115.35,-190.8 115.35,-190.8 115.35,-196.8 109.35,-202.8 103.35,-202.8\"/>\n<text text-anchor=\"middle\" x=\"68.17\" y=\"-178.7\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\">say_nothing</text>\n</g>\n<!-- cow_should_speak -->\n<g id=\"node3\" class=\"node\">\n<title>cow_should_speak</title>\n<path fill=\"#b4d8e4\" stroke=\"black\" d=\"M124.35,-119.7C124.35,-119.7 12,-119.7 12,-119.7 6,-119.7 0,-113.7 0,-107.7 0,-107.7 0,-95.1 0,-95.1 0,-89.1 6,-83.1 12,-83.1 12,-83.1 124.35,-83.1 124.35,-83.1 130.35,-83.1 136.35,-89.1 136.35,-95.1 136.35,-95.1 136.35,-107.7 136.35,-107.7 136.35,-113.7 130.35,-119.7 124.35,-119.7\"/>\n<text text-anchor=\"middle\" x=\"68.17\" y=\"-95.6\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\">cow_should_speak</text>\n</g>\n<!-- say_nothing&#45;&gt;cow_should_speak -->\n<g id=\"edge4\" class=\"edge\">\n<title>say_nothing&#45;&gt;cow_should_speak</title>\n<path fill=\"none\" stroke=\"black\" d=\"M66.88,-165.74C66.59,-161.02 66.32,-155.92 66.17,-151.2 65.95,-143.87 65.95,-142.03 66.17,-134.7 66.21,-133.67 66.24,-132.62 66.29,-131.56\"/>\n<polygon fill=\"black\" stroke=\"black\" points=\"69.78,-131.84 66.8,-121.67 62.79,-131.48 69.78,-131.84\"/>\n</g>\n<!-- say_hello -->\n<g id=\"node2\" class=\"node\">\n<title>say_hello</title>\n<path fill=\"#b4d8e4\" stroke=\"black\" d=\"M95.47,-36.6C95.47,-36.6 40.88,-36.6 40.88,-36.6 34.88,-36.6 28.88,-30.6 28.88,-24.6 28.88,-24.6 28.88,-12 28.88,-12 28.88,-6 34.88,0 40.88,0 40.88,0 95.47,0 95.47,0 101.47,0 107.47,-6 107.47,-12 107.47,-12 107.47,-24.6 107.47,-24.6 107.47,-30.6 101.47,-36.6 95.47,-36.6\"/>\n<text text-anchor=\"middle\" x=\"68.17\" y=\"-12.5\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\">say_hello</text>\n</g>\n<!-- say_hello&#45;&gt;cow_should_speak -->\n<g id=\"edge2\" class=\"edge\">\n<title>say_hello&#45;&gt;cow_should_speak</title>\n<path fill=\"none\" stroke=\"black\" d=\"M100.96,-36.93C105.88,-41.07 110.28,-45.95 113.17,-51.6 116.52,-58.12 116.52,-61.58 113.17,-68.1 112,-70.39 110.57,-72.56 108.97,-74.6\"/>\n<polygon fill=\"black\" stroke=\"black\" points=\"106.52,-72.1 102.02,-81.69 111.52,-77 106.52,-72.1\"/>\n</g>\n<!-- cow_should_speak&#45;&gt;say_nothing -->\n<g id=\"edge3\" class=\"edge\">\n<title>cow_should_speak&#45;&gt;say_nothing</title>\n<path fill=\"none\" stroke=\"black\" stroke-dasharray=\"5,2\" d=\"M68.17,-119.96C68.17,-130.05 68.17,-142.98 68.17,-154.53\"/>\n<polygon fill=\"black\" stroke=\"black\" points=\"64.68,-154.39 68.18,-164.39 71.68,-154.39 64.68,-154.39\"/>\n<text text-anchor=\"middle\" x=\"130.05\" y=\"-137.9\" font-family=\"Times,serif\" font-size=\"14.00\">not cow_should_speak</text>\n</g>\n<!-- cow_should_speak&#45;&gt;say_hello -->\n<g id=\"edge1\" class=\"edge\">\n<title>cow_should_speak&#45;&gt;say_hello</title>\n<path fill=\"none\" stroke=\"black\" stroke-dasharray=\"5,2\" d=\"M25.76,-82.82C12.58,-74.62 3.19,-63.94 10.42,-51.6 12.84,-47.48 16,-43.84 19.6,-40.64\"/>\n<polygon fill=\"black\" stroke=\"black\" points=\"21.46,-43.61 27.42,-34.85 17.3,-37.99 21.46,-43.61\"/>\n<text text-anchor=\"middle\" x=\"62.55\" y=\"-54.8\" font-family=\"Times,serif\" font-size=\"14.00\">cow_should_speak</text>\n</g>\n</g>\n</svg>\n",
+      "text/plain": [
+       "<graphviz.graphs.Digraph at 0x128b199c0>"
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "execution_count": 9
+  },
+  {
+   "cell_type": "code",
+   "id": "2facfb753233cd7d",
+   "metadata": {
+    "collapsed": false,
+    "jupyter": {
+     "outputs_hidden": false
+    },
+    "ExecuteTime": {
+     "end_time": "2024-12-13T21:02:43.025443Z",
+     "start_time": "2024-12-13T21:02:35.007367Z"
+    }
+   },
+   "source": [
+    "# run things!\n",
+    "for i in range(0, 4):\n",
+    "    # step through 4 times\n",
+    "    a_obj, result, state = app.step()"
+   ],
+   "outputs": [],
+   "execution_count": 10
+  },
+  {
+   "cell_type": "code",
+   "id": "fed65721e7cc457a",
+   "metadata": {
+    "collapsed": false,
+    "jupyter": {
+     "outputs_hidden": false
+    },
+    "ExecuteTime": {
+     "end_time": "2024-12-13T21:02:51.055716Z",
+     "start_time": "2024-12-13T21:02:43.033412Z"
+    }
+   },
+   "source": [
+    "# Run some more\n",
+    "for i in range(0, 4):\n",
+    "    # step through 4 times\n",
+    "    a_obj, result, state = app.step()"
+   ],
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "  __________\n",
+      "| What's up? |\n",
+      "  ==========\n",
+      "          \\\n",
+      "           \\\n",
+      "             ^__^\n",
+      "             (oo)\\_______\n",
+      "             (__)\\       )\\/\\\n",
+      "                 ||----w |\n",
+      "                 ||     ||\n",
+      "  __________\n",
+      "| What's up? |\n",
+      "  ==========\n",
+      "          \\\n",
+      "           \\\n",
+      "             ^__^\n",
+      "             (oo)\\_______\n",
+      "             (__)\\       )\\/\\\n",
+      "                 ||----w |\n",
+      "                 ||     ||\n"
+     ]
+    }
+   ],
+   "execution_count": 11
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "19095ae96e98fd83",
+   "metadata": {
+    "collapsed": false,
+    "jupyter": {
+     "outputs_hidden": false
+    }
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.4"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
