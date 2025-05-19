@@ -1,16 +1,22 @@
-from burr.integrations import base
+import json
+import logging
+from typing import Literal, Optional, ClassVar
+from typing import Any
 from burr.common.types import BaseCopyable
+from burr.core import persistence, state
+from burr.integrations import base
+
 
 try:
     import asyncpg
 except ImportError as e:
     base.require_plugin(e, "asyncpg")
 
-import json
-import logging
-from typing import Literal, Optional, ClassVar
+try:
+    from typing import Self
+except ImportError:
+    Self = Any
 
-from burr.core import persistence, state
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +47,10 @@ class AsyncPostgreSQLPersister(persistence.AsyncBaseStatePersister, BaseCopyable
 
     .. code:: bash
 
-        docker run --name local-psql \\  # container name
-                   -v local_psql_data:/SOME/FILE_PATH/ \\  # mounting a volume for data persistence
-                   -p 54320:5432 \\  # port mapping
-                   -e POSTGRES_PASSWORD=my_password \\  # superuser password
+        docker run --name local-psql \\\\  # container name
+                   -v local_psql_data:/SOME/FILE_PATH/ \\\\  # mounting a volume for data persistence
+                   -p 54320:5432 \\\\  # port mapping
+                   -e POSTGRES_PASSWORD=my_password \\\\  # superuser password
                    -d postgres  # database name
 
     Then you should be able to create the class like this:
