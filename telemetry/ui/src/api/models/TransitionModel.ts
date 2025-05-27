@@ -6,9 +6,8 @@
  * Pydantic model that represents a transition for storing/visualization in the UI
  */
 export type TransitionModel = {
-    type?: string;
-    from_: string;
-    to: string;
-    condition: string;
+  type?: string;
+  from_: string;
+  to: string;
+  condition: string;
 };
-

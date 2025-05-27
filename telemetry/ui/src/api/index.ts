@@ -37,6 +37,7 @@ export type { PointerModel } from './models/PointerModel';
 export type { Project } from './models/Project';
 export type { PromptInput } from './models/PromptInput';
 export type { QuestionAnswers } from './models/QuestionAnswers';
+export type { ResearchSummary } from './models/ResearchSummary';
 export type { Span } from './models/Span';
 export type { Step } from './models/Step';
 export type { TransitionModel } from './models/TransitionModel';

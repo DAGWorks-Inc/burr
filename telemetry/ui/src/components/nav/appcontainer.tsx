@@ -108,6 +108,12 @@ export const AppContainer = (props: { children: React.ReactNode }) => {
                 href: '/demos/streaming-chatbot',
                 current: false,
                 linkType: 'internal'
+              },
+              {
+                name: 'deep-researcher',
+                href: '/demos/deep-researcher',
+                current: false,
+                linkType: 'internal'
               }
             ]
           }
