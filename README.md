@@ -236,3 +236,4 @@ Users who have contributed small docs fixes, design suggestions, and found bugs
 - [Luke Chadwick](https://github.com/vertis)
 - [Evans](https://github.com/sudoevans)
 - [Sasmitha Manathunga](https://github.com/mmz-001)
+- [Margaret Lange](https://github.com/margaretlange)
