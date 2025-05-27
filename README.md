@@ -228,6 +228,7 @@ Users who have contributed core functionality, integrations, or examples.
 - [Thierry Jean](https://github.com/zilto)
 - [Hamza Farhan](https://github.com/HamzaFarhan)
 - [Abdul Rafay](https://github.com/proftorch)
+- [Margaret Lange](https://github.com/margaretlange)
 
 ### Bug hunters/special mentions
 
@@ -236,4 +237,3 @@ Users who have contributed small docs fixes, design suggestions, and found bugs
 - [Luke Chadwick](https://github.com/vertis)
 - [Evans](https://github.com/sudoevans)
 - [Sasmitha Manathunga](https://github.com/mmz-001)
-- [Margaret Lange](https://github.com/margaretlange)
