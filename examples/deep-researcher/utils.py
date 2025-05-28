@@ -21,8 +21,17 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+import logging
 
-from tavily import TavilyClient
+logger = logging.getLogger(__name__)
+
+try:
+    from tavily import TavilyClient
+except ImportError:
+    logger.warning(
+        "Please install tavily with `pip install tavily-python` if you want the deep research example to function."
+    )
+    TavilyClient = None
 
 
 def deduplicate_and_format_sources(
