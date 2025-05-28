@@ -164,6 +164,7 @@ inappexamples  = [
   "opentelemetry-api",
   "opentelemetry-sdk",
   'opentelemetry-instrumentation-openai',
+  'tavily-python',
 ]
 
 # All the bloatware from various LLM demos
