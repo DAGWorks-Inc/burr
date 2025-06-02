@@ -4,7 +4,7 @@
 Contributing
 ============
 
-Please read the `code of conduct <https://github.com/dagworks-inc/burr/tree/main/CODE_OF_CONDUCT.md>`_
+Please read the `code of conduct <https://github.com/apache/burr?tab=coc-ov-file#readme>`_
 prior to contributing. Then follow these guidelines:
 
 #. Create a fork of the repository.
