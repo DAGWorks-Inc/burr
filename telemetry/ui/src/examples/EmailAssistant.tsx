@@ -4,9 +4,11 @@ import {
   ApplicationSummary,
   DefaultService,
   DraftInit,
-  EmailAssistantState,
+  // examples__fastapi__application__EmailAssistantState as EmailAssistantState,
+  AppResponse,
   Feedback,
-  QuestionAnswers
+  QuestionAnswers,
+  Email
 } from '../api';
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from 'react-query';
@@ -77,19 +79,20 @@ export const InitialDraftView = (props: {
 };
 
 export const SubmitAnswersView = (props: {
-  state: EmailAssistantState;
+  state: AppResponse;
   submitAnswers: (questions: QuestionAnswers) => void;
   questions: string[] | null;
   answers: string[] | null;
   isLoading: boolean;
 }) => {
-  const questions = props.state.questions || [];
+  const questions = props.state.state.questions?.question || [];
   const [answers, setAnswers] = useState<string[]>(props.answers || questions.map(() => ''));
   const editMode = props.isLoading || props.answers === null;
+  const { state } = props.state;
   return (
     <div className="w-full flex flex-col gap-2">
       <div className="flex flex-col gap-2">
-        {(props.state.questions || []).map((question, index) => {
+        {(state.questions?.question || []).map((question, index) => {
           return (
             <Field key={index}>
               <Label>{question}</Label>
@@ -121,9 +124,9 @@ export const SubmitAnswersView = (props: {
 };
 
 export const SubmitFeedbackView = (props: {
-  state: EmailAssistantState;
+  state: AppResponse;
   submitFeedback: (feedbacks: Feedback) => void;
-  drafts: string[] | null;
+  drafts: Email[] | null;
   feedbacks: string[] | null;
   isLoading: boolean;
 }) => {
@@ -141,7 +144,7 @@ export const SubmitFeedbackView = (props: {
             <>
               <Text>
                 <pre className="whitespace-pre-wrap text-xs" key={index}>
-                  {draft}
+                  {draft.subject + '\n' + draft.contents || ''}
                 </pre>
               </Text>
               <h3 className="text-sm font-semibold text-gray-600"></h3>
@@ -185,18 +188,21 @@ export const SubmitFeedbackView = (props: {
 
 export const EmailAssistant = (props: { projectId: string; appId: string | undefined }) => {
   // starts off as null
-  const [emailAssistantState, setEmailAssistantState] = useState<EmailAssistantState | null>(null);
+  const [appResponse, setAppResponse] = useState<AppResponse | null>(null);
   const { data: validationData, isLoading: isValidationLoading } = useQuery(
     ['valid', props.projectId, props.appId],
-    DefaultService.validateEnvironmentApiV0EmailAssistantValidateProjectIdAppIdGet
+    DefaultService.validateEnvironmentApiV0EmailAssistantTypedValidateProjectIdAppIdGet
   );
 
   useEffect(() => {
     if (props.appId !== undefined) {
       // TODO -- handle errors
-      DefaultService.getStateApiV0EmailAssistantStateProjectIdAppIdGet(props.projectId, props.appId)
+      DefaultService.getStateApiV0EmailAssistantTypedStateProjectIdAppIdGet(
+        props.projectId,
+        props.appId
+      )
         .then((data) => {
-          setEmailAssistantState(data); // we want to initialize the chat history
+          setAppResponse(data); // we want to initialize the chat history
         })
         .catch((e) => {
           // eslint-disable-next-line
@@ -209,7 +215,7 @@ export const EmailAssistant = (props: { projectId: string; appId: string | undef
     // TODO -- handle errors
     ['emailAssistant', props.projectId, props.appId],
     () =>
-      DefaultService.getStateApiV0EmailAssistantStateProjectIdAppIdGet(
+      DefaultService.getStateApiV0EmailAssistantTypedStateProjectIdAppIdGet(
         props.projectId,
         props.appId || '' // TODO -- find a cleaner way of doing a skip-token like thing here
         // This is skipped if the appId is undefined so this is just to make the type-checker happy
@@ -217,48 +223,48 @@ export const EmailAssistant = (props: { projectId: string; appId: string | undef
     {
       enabled: props.appId !== undefined,
       onSuccess: (data) => {
-        setEmailAssistantState(data); // when its succesful we want to set the displayed chat history
+        setAppResponse(data); // when its succesful we want to set the displayed chat history
       }
     }
   );
 
   const submitInitialMutation = useMutation(
     (draftData: DraftInit) =>
-      DefaultService.initializeDraftApiV0EmailAssistantCreateProjectIdAppIdPost(
+      DefaultService.initializeDraftApiV0EmailAssistantTypedCreateProjectIdAppIdPost(
         props.projectId,
         props.appId || 'create_new',
         draftData
       ),
     {
       onSuccess: (data) => {
-        setEmailAssistantState(data);
+        setAppResponse(data);
       }
     }
   );
 
   const submitAnswersMutation = useMutation(
     (answers: QuestionAnswers) =>
-      DefaultService.answerQuestionsApiV0EmailAssistantAnswerQuestionsProjectIdAppIdPost(
+      DefaultService.answerQuestionsApiV0EmailAssistantTypedAnswerQuestionsProjectIdAppIdPost(
         props.projectId,
         props.appId || '',
         answers
       ),
     {
       onSuccess: (data) => {
-        setEmailAssistantState(data);
+        setAppResponse(data);
       }
     }
   );
   const submitFeedbackMutation = useMutation(
     (feedbacks: Feedback) =>
-      DefaultService.provideFeedbackApiV0EmailAssistantProvideFeedbackProjectIdAppIdPost(
+      DefaultService.provideFeedbackApiV0EmailAssistantTypedProvideFeedbackProjectIdAppIdPost(
         props.projectId,
         props.appId || '',
         feedbacks
       ),
     {
       onSuccess: (data) => {
-        setEmailAssistantState(data);
+        setAppResponse(data);
       }
     }
   );
@@ -273,13 +279,12 @@ export const EmailAssistant = (props: { projectId: string; appId: string | undef
     return <Loading />;
   }
   const displayValidationError = validationData !== null;
-  const displayInstructions = emailAssistantState === null && !displayValidationError;
-  const displayInitialDraft = emailAssistantState !== null;
-  const displaySubmitAnswers =
-    displayInitialDraft && emailAssistantState.next_step !== 'process_input';
+  const displayInstructions = appResponse === null && !displayValidationError;
+  const displayInitialDraft = appResponse !== null;
+  const displaySubmitAnswers = displayInitialDraft && appResponse.next_step !== 'process_input';
   const displaySubmitFeedback =
-    displaySubmitAnswers && emailAssistantState.next_step !== 'clarify_instructions';
-  const displayFinalDraft = displaySubmitFeedback && emailAssistantState.next_step === null;
+    displaySubmitAnswers && appResponse.next_step !== 'clarify_instructions';
+  const displayFinalDraft = displaySubmitFeedback && appResponse.next_step === null;
   return (
     <div className="px-4 bg-white  w-full flex flex-col  h-full gap-5 overflow-y-scroll">
       <h1 className="text-2xl font-bold  text-gray-600">{'Learn Burr '}</h1>
@@ -303,30 +308,30 @@ export const EmailAssistant = (props: { projectId: string; appId: string | undef
             submitInitial={(initial) => {
               submitInitialMutation.mutate(initial);
             }}
-            responseInstructions={emailAssistantState?.response_instructions}
-            emailToRespond={emailAssistantState?.email_to_respond}
+            responseInstructions={appResponse.state?.response_instructions || null}
+            emailToRespond={appResponse.state?.email_to_respond || null}
           />
         )}
       </div>
       {displaySubmitAnswers && (
         <SubmitAnswersView
-          state={emailAssistantState}
+          state={appResponse}
           submitAnswers={(answers) => {
             submitAnswersMutation.mutate(answers);
           }}
-          questions={emailAssistantState.questions}
-          answers={emailAssistantState.answers}
+          questions={appResponse.state.questions?.question || null}
+          answers={appResponse.state.answers?.answers || null}
           isLoading={anyMutationLoading}
         />
       )}
       {displaySubmitFeedback && (
         <SubmitFeedbackView
-          state={emailAssistantState}
+          state={appResponse}
           submitFeedback={(feedbacks) => {
             submitFeedbackMutation.mutate(feedbacks);
           }}
-          drafts={emailAssistantState.drafts}
-          feedbacks={emailAssistantState.feedback_history}
+          drafts={appResponse.state.draft_history || null}
+          feedbacks={appResponse.state.feedback_history || null}
           isLoading={anyMutationLoading}
         />
       )}
@@ -335,7 +340,9 @@ export const EmailAssistant = (props: { projectId: string; appId: string | undef
           <h2 className="text-lg font-bold text-gray-600">Final Draft</h2>
           <Text>
             <pre className="whitespace-pre-wrap text-xs">
-              {emailAssistantState.drafts?.[emailAssistantState.drafts.length - 1]}
+              {appResponse.state.current_draft?.subject +
+                '\n' +
+                appResponse.state.current_draft?.contents || ''}
             </pre>
           </Text>
         </div>

@@ -135,10 +135,7 @@ class SyncTrackingClient(
         pass
 
 
-class LocalTrackingClient(
-    SyncTrackingClient,
-    BaseStateLoader,
-):
+class LocalTrackingClient(SyncTrackingClient, BaseStateLoader):
     """Tracker to track locally -- goes along with the Burr UI. Writes
     down the following:
     #. The whole application + debugging information (e.g. source code) to a file
