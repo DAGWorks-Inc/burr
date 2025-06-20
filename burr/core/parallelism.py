@@ -598,7 +598,7 @@ class MapActions(MapActionsAndStates, abc.ABC):
 
         class TestMultipleModels(MapActions):
 
-            def actions(self, state: State, inputs: Dict[str, Any], context: ApplicationContext) -> Generator[Action | Callable | RunnableGraph, None, None]:
+            def actions(self, state: State, context: ApplicationContext, inputs: Dict[str, Any]) -> Generator[Action | Callable | RunnableGraph, None, None]:
                 # Make sure to add a name to the action if you use bind() with a function,
                 # note that these can be different actions, functions, etc...
                 # in this case we're using `.bind()` to create multiple actions, but we can use some mix of
@@ -631,7 +631,7 @@ class MapActions(MapActionsAndStates, abc.ABC):
 
     @abc.abstractmethod
     def actions(
-        self, state: State, inputs: Dict[str, Any], context: ApplicationContext
+        self, state: State, context: ApplicationContext, inputs: Dict[str, Any]
     ) -> SyncOrAsyncGenerator[SubgraphType]:
         """Gives all actions to map over, given the state/inputs.
 
