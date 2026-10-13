@@ -30,9 +30,9 @@ state serialization interacts with this module.
 import abc
 import hashlib
 import os
-import tempfile
+import uuid
 from dataclasses import dataclass
-from typing import Optional
+from typing import Dict, Optional, Tuple
 
 from burr.core import serde
 
@@ -291,6 +291,8 @@ class LocalFileSystemArtifactStore(ArtifactStore):
         """
         self.root_dir = root_dir
         os.makedirs(root_dir, exist_ok=True)
+        # path -> (inode, mtime_ns, size, digest): re-verifying unchanged files skips re-reading
+        self._digests: Dict[str, Tuple[int, int, int, str]] = {}
 
     def _path_for_key(self, key: str) -> str:
         # Resolve symlinks (os.path.realpath) rather than just normalizing (os.path.abspath) --
@@ -311,8 +313,11 @@ class LocalFileSystemArtifactStore(ArtifactStore):
             return False
         directory = os.path.dirname(path)
         os.makedirs(directory, exist_ok=True)
-        # temp file + hard link: atomic, and (unlike a rename) fails if `path` already exists
-        fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".tmp-artifact-")
+        # temp file + hard link: atomic, and (unlike a rename) fails if `path` already exists.
+        # Created with 0o666 so the umask applies, as for a regular file.
+        tmp_path = os.path.join(directory, f".tmp-artifact-{uuid.uuid4().hex}")
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
+        fd = os.open(tmp_path, flags, 0o666)
         try:
             with os.fdopen(fd, "wb") as f:
                 f.write(data)
@@ -326,6 +331,7 @@ class LocalFileSystemArtifactStore(ArtifactStore):
                 # no hard-link support -- rename, and return None so put_artifact verifies
                 os.replace(tmp_path, path)
                 return None
+            self._remember_digest(path, hashlib.sha256(data).hexdigest())
             return True
         finally:
             try:
@@ -342,6 +348,26 @@ class LocalFileSystemArtifactStore(ArtifactStore):
 
     def exists(self, key: str) -> bool:
         return os.path.exists(self._path_for_key(key))
+
+    def digest(self, key: str) -> str:
+        path = self._path_for_key(key)
+        try:
+            stat = os.stat(path)
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                f"Artifact '{key}' not found in store at '{self.root_dir}'."
+            ) from e
+        cached = self._digests.get(path)
+        if cached is not None and cached[:3] == (stat.st_ino, stat.st_mtime_ns, stat.st_size):
+            return cached[3]
+        with open(path, "rb") as f:
+            digest = hashlib.sha256(f.read()).hexdigest()
+        self._digests[path] = (stat.st_ino, stat.st_mtime_ns, stat.st_size, digest)
+        return digest
+
+    def _remember_digest(self, path: str, digest: str) -> None:
+        stat = os.stat(path)
+        self._digests[path] = (stat.st_ino, stat.st_mtime_ns, stat.st_size, digest)
 
 
 _ARTIFACT_REF_SERDE_KEY = "ArtifactRef"

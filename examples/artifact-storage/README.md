@@ -29,21 +29,21 @@ payload lives in whatever backend makes sense for your deployment -- local disk 
 S3 (or another object store) in production.
 
 ## Prerequisites
-``
+```bash
 pip install -r requirements.txt
-``
+```
 
 ## Running the demo
-``
+```bash
 python application.py
-``
+```
 
 or
 
-``
+```bash
 pip install jupyter
 jupyter notebook
-``
+```
 
 and running the notebook.
 
@@ -75,10 +75,11 @@ including collision/atomicity semantics for the local backend.
    content with `put_artifact`, and returns only the small reference.
 2. The application persists state with a `SQLitePersister` -- so what's in the database is the
    reference, not the document.
-3. Resuming the application (`initialize_from`) deserializes that reference lazily: the resumed
-   state holds an `ArtifactRef`, and nothing is downloaded until you `read` it.
+3. The script stops after the first step and resumes (`initialize_from`). The deserializer
+   returns a lazy `Document` -- same interface as the live one -- so `count_words` works
+   unchanged, and the content is only downloaded when it first reads it.
 
-```
+```bash
 python serde_application.py
 ```
 

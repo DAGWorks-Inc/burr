@@ -373,11 +373,13 @@ class State(Mapping, Generic[StateType]):
         """chooses the correct serde function for the given key and calls it"""
         try:
             if k in FIELD_SERIALIZATION:
-                result = serde._ensure_not_awaitable(
+                result = serde.ensure_not_awaitable(
                     FIELD_SERIALIZATION[k][0](v, **kwargs), f"field serializer for '{k}'"
                 )
                 return cls._validate_field_serde_result(k, result)
-            return serde._serialize_sync(v, **kwargs)
+            return serde.ensure_not_awaitable(
+                serde.serialize(v, **kwargs), f"serializer registered for {type(v).__name__}"
+            )
         except Exception as e:
             raise ValueError(
                 f"Failed to serialize state field '{k}' (value of type {type(v).__name__}): {e}"
@@ -394,7 +396,7 @@ class State(Mapping, Generic[StateType]):
             """chooses the correct serde function for the given key and calls it"""
             try:
                 if k in FIELD_SERIALIZATION:
-                    return serde._ensure_not_awaitable(
+                    return serde.ensure_not_awaitable(
                         FIELD_SERIALIZATION[k][1](v, **extrakwargs), f"field deserializer for '{k}'"
                     )
                 return serde.deserialize(v, **extrakwargs)

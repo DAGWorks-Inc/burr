@@ -16,6 +16,8 @@
 # under the License.
 
 import hashlib
+import os
+import stat
 import subprocess
 import sys
 import textwrap
@@ -232,6 +234,51 @@ def test_put_falls_back_to_rename_without_hard_link_support(store, monkeypatch):
     assert store.put(b"data", key="k") is None  # unknown -- put_artifact verifies instead
     assert store.get("k") == b"data"
     assert store.put_artifact(b"data", key="k").key == "k"
+
+
+def test_put_creates_files_with_umask_default_permissions(store, tmp_path):
+    reference = tmp_path / "reference-file"
+    reference.write_bytes(b"")  # a regular file gets the umask-default mode
+    ref = store.put_artifact(b"readable by other processes")
+
+    mode = stat.S_IMODE(os.stat(tmp_path / ref.key).st_mode)
+    assert mode == stat.S_IMODE(os.stat(reference).st_mode)
+
+
+def test_repeated_put_artifact_does_not_reread_unchanged_files(store, monkeypatch):
+    """State is re-serialized every step, so re-putting an existing artifact must not re-read
+    and re-hash the whole stored file each time."""
+    import burr.core.artifacts as artifacts_module
+
+    ref = store.put_artifact(b"large payload" * 1000)
+
+    def no_reads(*args, **kwargs):
+        raise AssertionError("stored file was re-read")
+
+    monkeypatch.setattr(artifacts_module, "open", no_reads, raising=False)
+    assert store.put_artifact(b"large payload" * 1000) == ref
+
+
+def test_digest_cache_is_invalidated_when_file_changes(store, tmp_path):
+    ref = store.put_artifact(b"original")
+    (tmp_path / ref.key).write_bytes(b"modified out of band")
+
+    with pytest.raises(ValueError, match="does not match its key"):
+        store.put_artifact(b"original")
+
+
+def test_digest_cache_is_invalidated_when_file_is_replaced(store, tmp_path):
+    """A same-size replacement with the original mtime (e.g. `cp -p`) is caught via the inode."""
+    ref = store.put_artifact(b"original")
+    path = tmp_path / ref.key
+    original = os.stat(path)
+    replacement = tmp_path / "replacement"
+    replacement.write_bytes(b"tampered")  # same length as b"original"
+    os.utime(replacement, ns=(original.st_atime_ns, original.st_mtime_ns))
+    os.replace(replacement, path)
+
+    with pytest.raises(ValueError, match="does not match its key"):
+        store.put_artifact(b"original")
 
 
 def test_digest_defaults_to_hashing_stored_content(store):

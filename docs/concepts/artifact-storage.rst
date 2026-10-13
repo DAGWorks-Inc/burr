@@ -125,11 +125,14 @@ the application is resumed after a crash and re-runs that action, the new bytes 
 ``put_artifact`` raises. **Use the default, content-addressed keys for non-deterministic
 output**, and reserve explicit keys for content that is stable for a given key.
 
-Backends write *create-if-absent* -- an existing object is never overwritten -- so concurrent
+Backends write *create-if-absent* -- an existing object is not overwritten -- so concurrent
 writers can't clobber each other: the local backend publishes via a temp file and a hard link,
 and :ref:`S3 <s3-artifacts-integration>` uses conditional writes. Concurrent writers of
 *different* content under the same explicit key therefore still collide (one wins, the others
-get a ``ValueError``); coordinating such writers is up to the caller.
+get a ``ValueError``); coordinating such writers is up to the caller. Two caveats: on
+filesystems without hard links the local backend falls back to a rename, which can replace a
+concurrently-written file; and a crash mid-write can leave a ``.tmp-artifact-*`` file in the
+store directory, which is safe to delete.
 
 :py:class:`LocalFileSystemArtifactStore <burr.core.artifacts.LocalFileSystemArtifactStore>` writes
 are also atomic and reject keys that would resolve outside ``root_dir`` (including through
@@ -162,9 +165,10 @@ persister/tracker.
         .build()
     )
 
-Unlike ``with_state_persister``, ``with_object_store`` does not register a lifecycle hook --
-Burr never calls into the store itself. It's purely a way to configure and share the store, so
-you can swap implementations (local disk in dev, S3 in prod) in one place.
+Unlike ``with_state_persister``, ``with_object_store`` does not add a persister or tracker of its
+own -- the store is only used by your actions and by the serializers you register (see
+:ref:`artifact-serde`). It's a way to configure and share the store, so you can swap
+implementations (local disk in dev, S3 in prod) in one place.
 
 .. note::
 
@@ -302,29 +306,40 @@ persister or tracker. This works for both kinds of serde registration:
 .. code-block:: python
 
     from burr.core import serde, state
+    from burr.core.artifacts import ArtifactRef
     from burr.core.serde import SerializationContext
+
+    class PDF:
+        """Holds its bytes, or -- once loaded from persisted state -- a ref it reads them from lazily."""
+
+        def __init__(self, data: bytes = None, ref: ArtifactRef = None, store=None):
+            self._data, self.ref, self._store = data, ref, store
+
+        @property
+        def data(self) -> bytes:
+            if self._data is None:
+                if self._store is None:
+                    raise ValueError("PDF was loaded without an object store")
+                self._data = self.ref.read(self._store)
+            return self._data
 
     # type-based: every PDF in state is externalized
     @serde.serialize.register(PDF)
     def serialize_pdf(value: PDF, serialization_context: SerializationContext = None, **kwargs) -> dict:
-        ref = serialization_context.require_object_store().put_artifact(
-            value.to_bytes(), media_type="application/pdf"
+        # a lazily-loaded PDF already has a ref, so re-saving it doesn't download it
+        ref = value.ref or serialization_context.require_object_store().put_artifact(
+            value.data, media_type="application/pdf"
         )
         return {serde.KEY: "pdf", "ref": serde.serialize(ref)}
 
     @serde.deserializer.register("pdf")
-    def deserialize_pdf(value: dict, **kwargs) -> ArtifactRef:
-        return serde.deserialize(value["ref"])  # lazy: an ArtifactRef, no I/O
+    def deserialize_pdf(value: dict, serialization_context: SerializationContext = None, **kwargs) -> PDF:
+        # no store needed to load -- only to read the data later
+        store = serialization_context.object_store if serialization_context is not None else None
+        return PDF(ref=serde.deserialize(value["ref"]), store=store)
 
-    # field-based: only the `report` field is externalized
-    def serialize_report(value: str, serialization_context: SerializationContext = None, **kwargs) -> dict:
-        ref = serialization_context.require_object_store().put_artifact(value.encode())
-        return {"ref": serde.serialize(ref)}
-
-    def deserialize_report(value: dict, **kwargs) -> ArtifactRef:
-        return serde.deserialize(value["ref"])
-
-    state.register_field_serde("report", serialize_report, deserialize_report)
+    # field-based: only the `attachment` field is externalized, with the same functions
+    state.register_field_serde("attachment", serialize_pdf, deserialize_pdf)
 
 A runnable version of this (persisting with SQLite, then resuming) is in
 ``serde_application.py`` in the
@@ -332,16 +347,21 @@ A runnable version of this (persisting with SQLite, then resuming) is in
 
 A few things to know:
 
-* **What deserialization returns is up to your deserializer.** We recommend returning the
-  :py:class:`ArtifactRef <burr.core.artifacts.ArtifactRef>` (or your own lazy wrapper around it)
-  rather than the hydrated value: deserialization happens whenever state is loaded -- resuming,
-  forking, loading history -- and eagerly downloading every artifact there would undo the point of
-  externalizing it. The deserializer also receives ``serialization_context``, so a lazy wrapper
-  can keep a handle on the store.
+* **Return a lazy value with the same interface as the live one.** After resuming, actions read
+  whatever the deserializer returned, so it must behave like the original value -- returning a bare
+  :py:class:`ArtifactRef <burr.core.artifacts.ArtifactRef>` breaks any action that runs after a
+  resume. Hydrating eagerly would work but defeats the purpose, since state is deserialized
+  whenever it's loaded (resuming, forking, browsing history). A lazy wrapper that keeps the ref and
+  the store (from ``serialization_context``) and loads on first access, as above, does both --
+  and since it only needs the store once the data is read, state still loads where there's no
+  context (e.g. calling ``persister.load()`` yourself). With an
+  :py:class:`AsyncArtifactStore <burr.core.artifacts.AsyncArtifactStore>`, give the wrapper an
+  ``async def load()`` (using :py:meth:`ArtifactRef.aread <burr.core.artifacts.ArtifactRef.aread>`)
+  instead of a property, and have async actions ``await value.load()``.
 * **Serialization happens on every step.** State is re-serialized after each action, so the
-  serializer runs (hashing the value and checking the store) each time. Content-addressed keys
-  make the repeated writes no-ops, but if the value never changes and is large, writing it from
-  the action and keeping the ref in state (above) avoids the repeated work entirely.
+  serializer runs each time. Reusing the ref of an already-stored value (as ``serialize_pdf``
+  does) avoids re-uploading it; for a live value, content-addressed keys make the repeated write a
+  cheap no-op.
 * **Sync vs. async.** ``State.serialize``/``State.deserialize`` are synchronous; their async
   counterparts :py:meth:`State.aserialize <burr.core.state.State.aserialize>` /
   :py:meth:`State.adeserialize <burr.core.state.State.adeserialize>` await serializers registered

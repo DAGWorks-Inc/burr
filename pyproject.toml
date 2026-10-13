@@ -85,7 +85,8 @@ redis = [
 
 s3 = [
   "boto3",
-  "aiobotocore"
+  "aiobotocore",
+  "botocore>=1.35.2", # conditional writes (PutObject IfNoneMatch)
 ]
 
 release = [

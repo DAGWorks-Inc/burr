@@ -2591,11 +2591,11 @@ class ApplicationBuilder(Generic[StateType]):
         """Adds an object/blob store to the application, for storing large values (files,
         dataframes, images, etc...) outside of ``State`` -- see :py:mod:`burr.core.artifacts`.
 
-        Burr never reads from or writes to the store on its own. It is made available to actions
-        through :py:class:`ApplicationContext` (``__context.object_store``), and to serializers
-        through :py:class:`~burr.core.serde.SerializationContext` wherever this application
-        serializes state -- so it can be configured (and swapped, e.g. local disk in dev, S3 in
-        prod) in one place.
+        The store is used only by actions, through :py:class:`ApplicationContext`
+        (``__context.object_store``), and by registered serializers, through
+        :py:class:`~burr.core.serde.SerializationContext` wherever this application serializes
+        state -- so it can be configured (and swapped, e.g. local disk in dev, S3 in prod) in one
+        place.
 
         .. code-block:: python
 

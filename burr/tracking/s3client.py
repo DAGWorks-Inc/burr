@@ -166,7 +166,9 @@ class S3TrackingClient(SyncTrackingClient):
                 key=attribute_name,
                 action_sequence_id=action_sequence_id,
                 span_id=span.uid if span is not None else None,
-                value=serde.serialize(attribute, **self.serde_kwargs),
+                value=serde.serialize(
+                    attribute, **serde.with_serialization_context(self.serde_kwargs)
+                ),
                 tags=tags,
                 time_logged=system.now(),
             )

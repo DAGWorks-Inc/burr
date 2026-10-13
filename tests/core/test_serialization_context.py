@@ -36,40 +36,77 @@ from burr.tracking.client import LocalTrackingClient
 
 
 class Blob:
-    """Stands in for a large domain object (a PDF, a dataframe, ...) with type-based serde that
-    externalizes its bytes to the configured object store."""
+    """Stands in for a large domain object (a PDF, a dataframe, ...). Its serde externalizes the
+    bytes to the object store, and deserializes to a lazy Blob that loads them on first access."""
 
-    def __init__(self, data: bytes):
-        self.data = data
+    def __init__(self, data: bytes = None, ref: ArtifactRef = None, store=None):
+        self._data = data
+        self.ref = ref
+        self._store = store
+
+    @property
+    def data(self) -> bytes:
+        if self._data is None:
+            if self._store is None:
+                raise ValueError("Blob was loaded without an object store, so it can't be read.")
+            self._data = self.ref.read(self._store)
+        return self._data
+
+
+def _store_or_none(serialization_context: SerializationContext = None):
+    return serialization_context.object_store if serialization_context is not None else None
 
 
 @serde.serialize.register(Blob)
 def _serialize_blob(value: Blob, serialization_context: SerializationContext = None, **kwargs):
     if serialization_context is None:
         raise ValueError("Blob requires an object store -- no serialization context was given.")
-    ref = serialization_context.require_object_store().put_artifact(value.data)
+    # a lazily-loaded Blob already has a ref -- re-saving it must not download it
+    ref = value.ref or serialization_context.require_object_store().put_artifact(value.data)
     return {serde.KEY: "test_blob", "ref": serde.serialize(ref)}
 
 
 @serde.deserializer.register("test_blob")
-def _deserialize_blob(value: dict, **kwargs) -> ArtifactRef:
-    # lazy: hand back the reference -- loading never fetches the bytes.
-    return serde.deserialize(value["ref"])
+def _deserialize_blob(
+    value: dict, serialization_context: SerializationContext = None, **kwargs
+) -> Blob:
+    # no store needed to load -- only to read the data later
+    return Blob(ref=serde.deserialize(value["ref"]), store=_store_or_none(serialization_context))
 
 
 class AsyncBlob:
-    """Same as Blob, but its serializer is async (for use with an AsyncArtifactStore)."""
+    """Same as Blob, for an AsyncArtifactStore -- reading the data is `await blob.load()`."""
 
-    def __init__(self, data: bytes):
-        self.data = data
+    def __init__(self, data: bytes = None, ref: ArtifactRef = None, store=None):
+        self._data = data
+        self.ref = ref
+        self._store = store
+
+    async def load(self) -> bytes:
+        if self._data is None:
+            if self._store is None:
+                raise ValueError("AsyncBlob was loaded without an object store.")
+            self._data = await self.ref.aread(self._store)
+        return self._data
 
 
 @serde.serialize.register(AsyncBlob)
 async def _serialize_async_blob(
     value: AsyncBlob, serialization_context: SerializationContext = None, **kwargs
 ):
-    ref = await serialization_context.require_object_store().put_artifact(value.data)
-    return {serde.KEY: "test_blob", "ref": serde.serialize(ref)}
+    ref = value.ref or await serialization_context.require_object_store().put_artifact(
+        await value.load()
+    )
+    return {serde.KEY: "test_async_blob", "ref": serde.serialize(ref)}
+
+
+@serde.deserializer.register("test_async_blob")
+def _deserialize_async_blob(
+    value: dict, serialization_context: SerializationContext = None, **kwargs
+) -> AsyncBlob:
+    return AsyncBlob(
+        ref=serde.deserialize(value["ref"]), store=_store_or_none(serialization_context)
+    )
 
 
 class CountingStore(LocalFileSystemArtifactStore):
@@ -239,11 +276,27 @@ def test_type_and_field_serde_roundtrip_through_explicit_context(store, report_f
     # only small references end up in the serialized state
     assert len(json.dumps(serialized)) < 1_000
     restored = State.deserialize(serialized, serialization_context=ctx)
-    assert isinstance(restored["blob"], ArtifactRef)
+    assert isinstance(restored["blob"], Blob)
     assert isinstance(restored[REPORT_FIELD], ArtifactRef)
     assert store.gets == []  # deserializing never fetches the bytes
-    assert restored["blob"].read(store) == BLOB_BYTES
+    assert restored["blob"].data == BLOB_BYTES
     assert restored[REPORT_FIELD].read(store) == REPORT_TEXT.encode()
+
+
+def test_lazy_values_load_without_a_context_and_fail_only_when_read(store):
+    """Loading state outside a configured app (a user calling `persister.load()`, the CLI) must
+    still work -- the store is only needed once the data is actually read."""
+    serialized = State({"blob": Blob(BLOB_BYTES)}).serialize(
+        serialization_context=SerializationContext(object_store=store)
+    )
+
+    restored = State.deserialize(serialized)
+
+    assert restored["blob"].ref.size_bytes == len(BLOB_BYTES)
+    # re-saving doesn't need the data either
+    assert State.deserialize(restored.serialize(serialization_context=SerializationContext()))
+    with pytest.raises(ValueError, match="loaded without an object store"):
+        restored["blob"].data
 
 
 def test_sync_serialize_rejects_async_type_serializer_with_clear_error():
@@ -276,8 +329,8 @@ async def test_aserialize_and_adeserialize_await_async_serde(async_report_field_
     serialized = await state.aserialize(serialization_context=ctx)
     restored = await State.adeserialize(serialized, serialization_context=ctx)
 
-    assert await restored["blob"].aread(store) == b"blob bytes"
-    assert await restored["nested"]["items"][0].aread(store) == b"nested bytes"
+    assert await restored["blob"].load() == b"blob bytes"
+    assert await restored["nested"]["items"][0].load() == b"nested bytes"
     assert restored["nested"]["items"][1] == 1
     assert await restored[REPORT_FIELD].aread(store) == b"report"
     assert restored["plain"] == "value"
@@ -310,11 +363,69 @@ def test_persister_and_resume_use_application_object_store(tmp_path, store, repo
     # resuming loads references through the same store -- lazily
     store.gets.clear()
     resumed = _build_app(store, persister=persister, initialize=True)
-    assert isinstance(resumed.state["blob"], ArtifactRef)
+    assert isinstance(resumed.state["blob"], Blob)
     assert isinstance(resumed.state[REPORT_FIELD], ArtifactRef)
     assert store.gets == []
-    assert resumed.state["blob"].read(store) == BLOB_BYTES
+    assert resumed.state["blob"].data == BLOB_BYTES
     assert resumed.state[REPORT_FIELD].read(store) == REPORT_TEXT.encode()
+
+
+def test_resume_mid_graph_hands_actions_a_lazily_loaded_value(tmp_path, store):
+    """The deserialized value must be usable by later actions just like the live one -- resuming
+    before `consume` runs is exactly where returning a bare ArtifactRef would break."""
+    persister = SQLitePersister.from_values(db_path=str(tmp_path / "state.db"), table_name="t")
+    persister.initialize()
+    _build_app(store, persister=persister).step()  # only `produce` runs
+
+    store.gets.clear()
+    resumed = _build_app(store, persister=persister, initialize=True)
+    *_, final_state = resumed.run(halt_after=["result"])
+
+    assert final_state["blob_size"] == len(BLOB_BYTES)
+    # loaded once, by `consume` -- re-saving the lazy value afterwards doesn't download it again
+    assert len(store.gets) == 1
+
+
+def test_tracker_logs_attributes_through_application_object_store(tmp_path, store):
+    @action(reads=[], writes=[])
+    def log_blob(state: State, __tracer) -> State:
+        __tracer.log_attributes(blob=Blob(b"attribute bytes"))
+        return state
+
+    tracker = LocalTrackingClient(project="ctx_attrs", storage_dir=str(tmp_path / "tracking"))
+    app = (
+        ApplicationBuilder()
+        .with_actions(log_blob)
+        .with_transitions()
+        .with_entrypoint("log_blob")
+        .with_object_store(store)
+        .with_tracker(tracker)
+        .with_identifiers(app_id="attrs")
+        .build()
+    )
+    app.step()
+
+    log_path = os.path.join(tmp_path, "tracking", "ctx_attrs", "attrs", "log.jsonl")
+    attributes = [json.loads(line) for line in open(log_path) if '"attribute"' in line]
+    logged = attributes[-1]["value"]
+    assert serde.deserialize(logged["ref"]).read(store) == b"attribute bytes"
+
+
+def test_sync_serializer_using_async_store_fails_clearly():
+    """A plain `def` serializer calling an async store gets a coroutine back; that must not be
+    persisted as its string representation."""
+
+    class NeedsStore:
+        pass
+
+    @serde.serialize.register(NeedsStore)
+    def _serialize_needs_store(value, serialization_context=None, **kwargs):
+        ref = serialization_context.require_object_store().put_artifact(b"data")
+        return {serde.KEY: "needs_store", "ref": serde.serialize(ref)}
+
+    ctx = SerializationContext(object_store=InMemoryAsyncStore())
+    with pytest.raises(ValueError, match="Cannot serialize a coroutine"):
+        State({"value": NeedsStore()}).serialize(serialization_context=ctx)
 
 
 def test_tracker_serializes_state_through_application_object_store(
@@ -335,7 +446,7 @@ def test_tracker_serializes_state_through_application_object_store(
     # the tracker doubles as a state loader -- it deserializes through the store too
     with serde.serialization_context(SerializationContext(object_store=store)):
         loaded = tracker.load("pk", "app")
-    assert isinstance(loaded["state"]["blob"], ArtifactRef)
+    assert isinstance(loaded["state"]["blob"], Blob)
 
 
 def test_tracker_uses_context_for_streaming_actions(tmp_path, store):
@@ -478,8 +589,8 @@ async def test_async_persister_and_resume_use_async_object_store(
         await app.arun(halt_after=["result"])
 
         resumed = await build(persister, initialize=True)
-        assert isinstance(resumed.state["blob"], ArtifactRef)
-        assert await resumed.state["blob"].aread(store) == BLOB_BYTES
+        assert isinstance(resumed.state["blob"], AsyncBlob)
+        assert await resumed.state["blob"].load() == BLOB_BYTES
         assert await resumed.state[REPORT_FIELD].aread(store) == REPORT_TEXT.encode()
 
     raw = sqlite3.connect(db_path).execute("SELECT state FROM t").fetchall()

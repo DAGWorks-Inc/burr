@@ -83,8 +83,9 @@ Writes, digests & consistency
 * Writes are **conditional** (``PutObject`` with ``IfNoneMatch="*"``): an existing object is never
   overwritten, so concurrent writers to the same key can't silently clobber each other -- the
   loser's :py:meth:`put_artifact <burr.core.artifacts.ArtifactStore.put_artifact>` verifies what
-  won and raises if it differs. This requires S3, or an S3-compatible store, that supports
-  conditional writes; a store that ignores ``If-None-Match`` loses that race protection.
+  won and raises if it differs. This requires ``botocore>=1.35.2`` (pulled in by the ``s3``
+  extra) and S3, or an S3-compatible store, that supports conditional writes -- a store that
+  ignores ``If-None-Match`` silently loses this protection.
 * Each object's SHA-256 digest is recorded in its metadata (``x-amz-meta-burr-sha256``), so
   re-writing content that already exists (e.g. when the same value is serialized on every step)
   is verified with a ``HEAD`` request rather than a full download. Objects written by other tools

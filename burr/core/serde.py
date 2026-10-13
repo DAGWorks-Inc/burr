@@ -19,6 +19,7 @@ import contextlib
 import contextvars
 import dataclasses
 import inspect
+import types
 from functools import singledispatch
 from typing import TYPE_CHECKING, Any, Iterator, Optional, Union
 
@@ -114,8 +115,13 @@ def with_serialization_context(kwargs: dict) -> dict:
     return {**kwargs, SERIALIZATION_CONTEXT_KWARG: context}
 
 
-def _ensure_not_awaitable(result: Any, description: str) -> Any:
-    """Rejects async (de)serializer results in synchronous serialization."""
+def ensure_not_awaitable(result: Any, description: str) -> Any:
+    """Raises a clear error if a (de)serializer returned an awaitable in synchronous serialization.
+
+    :param result: The (de)serializer's return value.
+    :param description: What produced it, for the error message.
+    :return: ``result``, unchanged.
+    """
     if inspect.isawaitable(result):
         if inspect.iscoroutine(result):
             result.close()  # avoid a "coroutine was never awaited" warning
@@ -188,7 +194,7 @@ def deserialize(value: Any, **kwargs) -> Any:
     if isinstance(value, dict):
         class_to_instantiate = value.get(KEY, None)
         if class_to_instantiate is not None:
-            return _ensure_not_awaitable(
+            return ensure_not_awaitable(
                 deserializer.call(class_to_instantiate, value, **kwargs),
                 f"deserializer registered for '{class_to_instantiate}'",
             )
@@ -225,6 +231,16 @@ def serialize_primitive(value, **kwargs) -> Union[str, int, float, bool]:
     return value
 
 
+@serialize.register(types.CoroutineType)
+def serialize_coroutine(value: types.CoroutineType, **kwargs) -> Any:
+    value.close()  # avoid a "coroutine was never awaited" warning
+    raise ValueError(
+        "Cannot serialize a coroutine -- a serializer likely called an async API (e.g. "
+        "AsyncArtifactStore.put_artifact) without awaiting it. Use an `async def` serializer "
+        "(awaited by `State.aserialize`, as async persisters do), or a synchronous object store."
+    )
+
+
 @serialize.register(dict)
 def serialize_dict(value: dict, **kwargs) -> dict[str, Any]:
     return {k: _serialize_sync(v, **kwargs) for k, v in value.items()}
@@ -236,7 +252,7 @@ def serialize_list(value: list, **kwargs) -> list[Any]:
 
 
 def _serialize_sync(value: Any, **kwargs) -> Any:
-    return _ensure_not_awaitable(
+    return ensure_not_awaitable(
         serialize(value, **kwargs), f"serializer registered for {type(value).__name__}"
     )
 
