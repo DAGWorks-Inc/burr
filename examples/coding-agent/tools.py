@@ -1,4 +1,3 @@
-"""Tools the coding agent can call. Each takes typed args and returns a dict."""
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -16,16 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-import inspect
-import json
-import os
-from typing import Callable, Optional
-
-import openai
-import requests
-
-from burr.core import State, action, when
-from burr.core.application import ApplicationBuilder
+"""Tools the coding agent can call. Each takes typed args and returns a dict."""
 
 import os
 import subprocess
@@ -33,11 +23,15 @@ import subprocess
 # Everything is confined to this directory. See README on why this is not a sandbox.
 WORKSPACE = os.environ.get("CODING_AGENT_WORKSPACE", "./workspace")
 
+# The agent may run a command before it has written anything, so make sure the
+# directory exists rather than letting subprocess fail on a missing cwd.
+os.makedirs(WORKSPACE, exist_ok=True)
+
 
 def _resolve(path: str) -> str:
     """Resolve a path inside the workspace, refusing anything that escapes it."""
-    root = os.path.abspath(WORKSPACE)
-    full = os.path.abspath(os.path.join(root, path))
+    root = os.path.realpath(WORKSPACE)
+    full = os.path.realpath(os.path.join(root, path))
     if not full.startswith(root + os.sep) and full != root:
         raise ValueError(f"path escapes workspace: {path}")
     return full
@@ -77,8 +71,12 @@ def run_bash(command: str) -> dict:
     """Runs a shell command in the workspace and returns its output."""
     try:
         proc = subprocess.run(
-            command, shell=True, cwd=os.path.abspath(WORKSPACE),
-            capture_output=True, text=True, timeout=30,
+            command,
+            shell=True,
+            cwd=os.path.abspath(WORKSPACE),
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         return {
             "exit_code": proc.returncode,

@@ -1,4 +1,3 @@
-"""Tools the coding agent can call. Each takes typed args and returns a dict."""
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -16,15 +15,21 @@
 # specific language governing permissions and limitations
 # under the License.
 
+"""A minimal coding agent harness built on Burr.
+
+The agent loops: prompt -> LLM -> tool -> back to the prompt, until the model
+answers without requesting a tool or the step budget runs out.
+"""
+
 import inspect
 import json
 import os
 from typing import Callable, Optional
 
-from burr.core import State, action, expr, when
-from burr.core.application import ApplicationBuilder
-
 from tools import list_files, read_file, run_bash, write_file
+
+from burr.core import State, action, default, expr, when
+from burr.core.application import ApplicationBuilder
 
 TOOLS = {
     "list_files": list_files,
@@ -87,10 +92,15 @@ class OpenAIClient:
             model=self.model, messages=messages, tools=OPENAI_TOOLS
         )
         message = response.choices[0].message
-        calls = [
-            {"id": c.id, "name": c.function.name, "args": json.loads(c.function.arguments)}
-            for c in (message.tool_calls or [])
-        ]
+        calls = []
+        for c in message.tool_calls or []:
+            try:
+                args = json.loads(c.function.arguments)
+            except json.JSONDecodeError:
+                # Models occasionally emit malformed JSON. Pass it through as a
+                # bad argument so the tool step reports it back to the model.
+                args = {"__malformed_arguments__": c.function.arguments}
+            calls.append({"id": c.id, "name": c.function.name, "args": args})
         return {"content": message.content, "tool_calls": calls}
 
 
@@ -114,12 +124,17 @@ DEFAULT_SCRIPT = [
     {
         "content": None,
         "tool_calls": [
-            {"id": "c2", "name": "write_file",
-             "args": {"path": "hello.py", "contents": "print('hello from the agent')\n"}}
+            {
+                "id": "c2",
+                "name": "write_file",
+                "args": {"path": "hello.py", "contents": "print('hello from the agent')\n"},
+            }
         ],
     },
-    {"content": None, "tool_calls": [{"id": "c3", "name": "run_bash",
-                                      "args": {"command": "python hello.py"}}]},
+    {
+        "content": None,
+        "tool_calls": [{"id": "c3", "name": "run_bash", "args": {"command": "python hello.py"}}],
+    },
     {"content": "Created hello.py and confirmed it runs.", "tool_calls": []},
 ]
 
@@ -151,14 +166,25 @@ def human_input(state: State, task: str) -> State:
 
 @action(reads=["messages"], writes=["messages"])
 def create_prompt(state: State) -> State:
-    """Seam for shaping the prompt before each call -- add file trees, summaries, etc."""
+    """Seam for shaping the prompt before each call -- add file trees, summaries, etc.
+
+    This runs before every model call, not just the first, so anything added
+    here is applied on each turn of the loop.
+    """
     return state.update(messages=state["messages"])
 
 
 @action(
     reads=["messages", "steps"],
-    writes=["messages", "next_tool", "next_args", "last_tool_call_id",
-            "steps", "done", "final_answer"],
+    writes=[
+        "messages",
+        "next_tool",
+        "next_args",
+        "last_tool_call_id",
+        "steps",
+        "done",
+        "final_answer",
+    ],
 )
 def call_llm(state: State, client: Callable) -> State:
     """Asks the model what to do next: call a tool, or finish."""
@@ -185,12 +211,40 @@ def call_llm(state: State, client: Callable) -> State:
             {
                 "id": call["id"],
                 "type": "function",
-                "function": {"name": call["name"], "arguments": json.dumps(call["args"])},
+                "function": {
+                    "name": call["name"],
+                    "arguments": json.dumps(call["args"]),
+                },
             }
         ],
     }
+    messages = state["messages"] + [assistant_message]
+
+    # A model can ask for a tool that doesn't exist. Tell it so, rather than
+    # leaving the state machine with no matching transition.
+    if call["name"] not in TOOLS:
+        known = ", ".join(sorted(TOOLS))
+        messages = messages + [
+            {
+                "role": "tool",
+                "tool_call_id": call["id"],
+                "content": json.dumps(
+                    {"error": f"unknown tool {call['name']!r}. Available tools: {known}."}
+                ),
+            }
+        ]
+        return state.update(
+            messages=messages,
+            next_tool=None,
+            next_args={},
+            last_tool_call_id=call["id"],
+            steps=state["steps"] + 1,
+            done=False,
+            final_answer=None,
+        )
+
     return state.update(
-        messages=state["messages"] + [assistant_message],
+        messages=messages,
         next_tool=call["name"],
         next_args=call["args"],
         last_tool_call_id=call["id"],
@@ -202,8 +256,17 @@ def call_llm(state: State, client: Callable) -> State:
 
 @action(reads=["next_args", "last_tool_call_id", "messages"], writes=["messages"])
 def execute_tool(state: State, tool_function: Callable) -> State:
-    """Runs one tool and feeds its result back to the model."""
-    result = tool_function(**state["next_args"])
+    """Runs one tool and feeds its result back to the model.
+
+    Tool failures are returned to the model rather than raised, so a bad
+    argument name or a missing file is something the agent can recover from.
+    """
+    try:
+        result = tool_function(**state["next_args"])
+    except TypeError as e:
+        result = {"error": f"bad arguments for tool: {e}"}
+    except Exception as e:
+        result = {"error": f"{type(e).__name__}: {e}"}
     return state.update(
         messages=state["messages"]
         + [
@@ -244,13 +307,21 @@ def application(app_id: Optional[str] = None, max_steps: int = 15, client: Calla
         .with_transitions(
             ("human_input", "create_prompt"),
             ("create_prompt", "call_llm"),
+            # Exits come first: Burr takes the first condition that matches.
             ("call_llm", "respond", when(done=True)),
             ("call_llm", "respond", expr("steps>=max_steps")),
             ("call_llm", "read_file", when(next_tool="read_file")),
             ("call_llm", "write_file", when(next_tool="write_file")),
             ("call_llm", "list_files", when(next_tool="list_files")),
             ("call_llm", "run_bash", when(next_tool="run_bash")),
-            (["read_file", "write_file", "list_files", "run_bash"], "call_llm"),
+            # Unknown tool: the error is already in the messages, so loop back
+            # and let the model choose again.
+            ("call_llm", "create_prompt", when(next_tool=None)),
+            # Safety net -- the machine should never be left with nowhere to go.
+            ("call_llm", "respond", default),
+            # Tool results go back through create_prompt, so the seam runs
+            # before every model call rather than only the first.
+            (["read_file", "write_file", "list_files", "run_bash"], "create_prompt"),
             ("respond", "human_input"),
         )
         .with_state(max_steps=max_steps, steps=0, messages=[], done=False, final_answer=None)
@@ -263,7 +334,10 @@ def application(app_id: Optional[str] = None, max_steps: int = 15, client: Calla
 
 if __name__ == "__main__":
     app = application()
-    app.visualize(output_file_path="./statemachine.png")
+    try:
+        app.visualize(output_file_path="./statemachine.png")
+    except Exception as e:
+        print(f"Skipping state machine diagram ({type(e).__name__}: {e})")
     _, _, state = app.run(
         halt_after=["respond"],
         inputs={"task": "Create a hello.py that prints a greeting, then run it."},
