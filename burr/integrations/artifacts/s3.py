@@ -25,6 +25,9 @@ actions -- ``S3ArtifactStore`` performs blocking network I/O and should not be c
 actions, since it would block the event loop for the duration of each upload/download.
 """
 
+import asyncio
+import hashlib
+import time
 from typing import Any, Optional
 
 from burr.core.artifacts import ArtifactStore, AsyncArtifactStore
@@ -41,9 +44,35 @@ try:
 except ImportError as e:
     base.require_plugin(e, "s3")
 
+# object metadata holding the content's SHA-256, so digest() only needs a HEAD request
+_DIGEST_METADATA_KEY = "burr-sha256"
+# retries for 409 ConditionalRequestConflict (a concurrent conditional write was in flight)
+_CONDITIONAL_WRITE_ATTEMPTS = 3
+_CONDITIONAL_WRITE_BACKOFF_SECONDS = 0.1
+
+
+def _error_code(e: "botocore.exceptions.ClientError") -> Optional[str]:
+    return e.response.get("Error", {}).get("Code")
+
+
+def _put_object_kwargs(bucket: str, object_key: str, data: bytes) -> dict:
+    return dict(
+        Bucket=bucket,
+        Key=object_key,
+        Body=data,
+        # create-if-absent -- S3 returns 412 if the key already exists
+        IfNoneMatch="*",
+        Metadata={_DIGEST_METADATA_KEY: hashlib.sha256(data).hexdigest()},
+    )
+
 
 class S3ArtifactStore(ArtifactStore):
-    """Stores artifacts as objects in an S3 bucket, optionally under a key prefix."""
+    """Stores artifacts as objects in an S3 bucket, optionally under a key prefix.
+
+    Writes are conditional (``IfNoneMatch="*"``), so existing objects are never overwritten. The
+    store can be pickled (e.g. for :py:class:`~burr.integrations.ray.RayExecutor`) unless it was
+    given a pre-built ``client`` -- the client is rebuilt from ``client_kwargs``.
+    """
 
     @classmethod
     def from_config(cls, config: dict) -> "S3ArtifactStore":
@@ -64,38 +93,76 @@ class S3ArtifactStore(ArtifactStore):
         :param prefix: Optional key prefix (e.g. ``"my-app/artifacts"``) applied to every key.
         :param client_kwargs: Optional kwargs passed to ``boto3.client("s3", ...)``.
         """
-        client = boto3.client("s3", **(client_kwargs or {}))
-        return cls(bucket, prefix=prefix, client=client)
+        return cls(bucket, prefix=prefix, client_kwargs=client_kwargs)
 
-    def __init__(self, bucket: str, prefix: str = "", client: Optional[Any] = None):
+    def __init__(
+        self,
+        bucket: str,
+        prefix: str = "",
+        client: Optional[Any] = None,
+        client_kwargs: Optional[dict] = None,
+    ):
         """Constructor.
 
         :param bucket: Name of the S3 bucket to store artifacts in.
         :param prefix: Optional key prefix (e.g. ``"my-app/artifacts"``) applied to every key.
         :param client: An existing boto3 S3 client. If not provided, one is created with
-            default credentials/region resolution (``boto3.client("s3")``).
+            ``boto3.client("s3", **client_kwargs)``.
+        :param client_kwargs: Optional kwargs used to create the client when ``client`` is not
+            provided.
         """
+        if client is not None and client_kwargs is not None:
+            raise ValueError("Pass either `client` or `client_kwargs`, not both.")
         self.bucket = bucket
         self.prefix = prefix
-        self.client = client if client is not None else boto3.client("s3")
+        self._client_kwargs = None if client is not None else dict(client_kwargs or {})
+        self.client = client if client is not None else boto3.client("s3", **self._client_kwargs)
+
+    def __getstate__(self) -> dict:
+        if self._client_kwargs is None:
+            raise TypeError(
+                "Cannot pickle an S3ArtifactStore that was given a pre-built `client`, since its "
+                "credentials/configuration can't be reproduced. Construct it with "
+                "`S3ArtifactStore(bucket, client_kwargs={...})` (or `from_values(...)`) instead, "
+                "so the client can be recreated after unpickling (e.g. on a Ray worker)."
+            )
+        state = self.__dict__.copy()
+        del state["client"]
+        return state
+
+    def __setstate__(self, state: dict) -> None:
+        self.__dict__.update(state)
+        self.client = boto3.client("s3", **self._client_kwargs)
 
     def _object_key(self, key: str) -> str:
         if self.prefix:
             return f"{self.prefix.rstrip('/')}/{key}"
         return key
 
-    def put(self, data: bytes, key: str) -> None:
-        # content-addressed keys make writes idempotent -- skip re-uploading existing data.
-        if self.exists(key):
-            return
-        self.client.put_object(Bucket=self.bucket, Key=self._object_key(key), Body=data)
+    def put(self, data: bytes, key: str) -> bool:
+        kwargs = _put_object_kwargs(self.bucket, self._object_key(key), data)
+        for attempt in range(_CONDITIONAL_WRITE_ATTEMPTS):
+            try:
+                self.client.put_object(**kwargs)
+                return True
+            except botocore.exceptions.ClientError as e:
+                code = _error_code(e)
+                if code == "PreconditionFailed":
+                    return False  # already exists -- left untouched.
+                if (
+                    code == "ConditionalRequestConflict"
+                    and attempt < _CONDITIONAL_WRITE_ATTEMPTS - 1
+                ):
+                    time.sleep(_CONDITIONAL_WRITE_BACKOFF_SECONDS * (attempt + 1))
+                    continue
+                raise
+        raise AssertionError("unreachable")  # pragma: no cover
 
     def get(self, key: str) -> bytes:
         try:
             response = self.client.get_object(Bucket=self.bucket, Key=self._object_key(key))
         except botocore.exceptions.ClientError as e:
-            error_code = e.response.get("Error", {}).get("Code")
-            if error_code in ("NoSuchKey", "404"):
+            if _error_code(e) in ("NoSuchKey", "404"):
                 raise FileNotFoundError(
                     f"Artifact '{key}' not found in bucket '{self.bucket}' "
                     f"(prefix='{self.prefix}')."
@@ -108,10 +175,23 @@ class S3ArtifactStore(ArtifactStore):
             self.client.head_object(Bucket=self.bucket, Key=self._object_key(key))
             return True
         except botocore.exceptions.ClientError as e:
-            error_code = e.response.get("Error", {}).get("Code")
-            if error_code in ("404", "NoSuchKey"):
+            if _error_code(e) in ("404", "NoSuchKey"):
                 return False
             raise
+
+    def digest(self, key: str) -> str:
+        try:
+            response = self.client.head_object(Bucket=self.bucket, Key=self._object_key(key))
+        except botocore.exceptions.ClientError as e:
+            if _error_code(e) in ("404", "NoSuchKey"):
+                raise FileNotFoundError(
+                    f"Artifact '{key}' not found in bucket '{self.bucket}' "
+                    f"(prefix='{self.prefix}')."
+                ) from e
+            raise
+        recorded = response.get("Metadata", {}).get(_DIGEST_METADATA_KEY)
+        # objects not written by this store lack the metadata -- hash them instead
+        return recorded if recorded is not None else super().digest(key)
 
 
 class AsyncS3ArtifactStore(AsyncArtifactStore):
@@ -187,6 +267,13 @@ class AsyncS3ArtifactStore(AsyncArtifactStore):
     async def __aenter__(self) -> "AsyncS3ArtifactStore":
         return self
 
+    def __getstate__(self) -> dict:
+        raise TypeError(
+            "AsyncS3ArtifactStore holds an open aiobotocore client and cannot be pickled. "
+            "Executors that pickle tasks (e.g. RayExecutor) run sub-applications synchronously -- "
+            "use S3ArtifactStore for those."
+        )
+
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         await self.aclose()
 
@@ -195,18 +282,30 @@ class AsyncS3ArtifactStore(AsyncArtifactStore):
             return f"{self.prefix.rstrip('/')}/{key}"
         return key
 
-    async def put(self, data: bytes, key: str) -> None:
-        # content-addressed keys make writes idempotent -- skip re-uploading existing data.
-        if await self.exists(key):
-            return
-        await self.client.put_object(Bucket=self.bucket, Key=self._object_key(key), Body=data)
+    async def put(self, data: bytes, key: str) -> bool:
+        kwargs = _put_object_kwargs(self.bucket, self._object_key(key), data)
+        for attempt in range(_CONDITIONAL_WRITE_ATTEMPTS):
+            try:
+                await self.client.put_object(**kwargs)
+                return True
+            except botocore.exceptions.ClientError as e:
+                code = _error_code(e)
+                if code == "PreconditionFailed":
+                    return False  # already exists -- left untouched.
+                if (
+                    code == "ConditionalRequestConflict"
+                    and attempt < _CONDITIONAL_WRITE_ATTEMPTS - 1
+                ):
+                    await asyncio.sleep(_CONDITIONAL_WRITE_BACKOFF_SECONDS * (attempt + 1))
+                    continue
+                raise
+        raise AssertionError("unreachable")  # pragma: no cover
 
     async def get(self, key: str) -> bytes:
         try:
             response = await self.client.get_object(Bucket=self.bucket, Key=self._object_key(key))
         except botocore.exceptions.ClientError as e:
-            error_code = e.response.get("Error", {}).get("Code")
-            if error_code in ("NoSuchKey", "404"):
+            if _error_code(e) in ("NoSuchKey", "404"):
                 raise FileNotFoundError(
                     f"Artifact '{key}' not found in bucket '{self.bucket}' "
                     f"(prefix='{self.prefix}')."
@@ -215,12 +314,24 @@ class AsyncS3ArtifactStore(AsyncArtifactStore):
         async with response["Body"] as stream:
             return await stream.read()
 
+    async def digest(self, key: str) -> str:
+        try:
+            response = await self.client.head_object(Bucket=self.bucket, Key=self._object_key(key))
+        except botocore.exceptions.ClientError as e:
+            if _error_code(e) in ("404", "NoSuchKey"):
+                raise FileNotFoundError(
+                    f"Artifact '{key}' not found in bucket '{self.bucket}' "
+                    f"(prefix='{self.prefix}')."
+                ) from e
+            raise
+        recorded = response.get("Metadata", {}).get(_DIGEST_METADATA_KEY)
+        return recorded if recorded is not None else await super().digest(key)
+
     async def exists(self, key: str) -> bool:
         try:
             await self.client.head_object(Bucket=self.bucket, Key=self._object_key(key))
             return True
         except botocore.exceptions.ClientError as e:
-            error_code = e.response.get("Error", {}).get("Code")
-            if error_code in ("404", "NoSuchKey"):
+            if _error_code(e) in ("404", "NoSuchKey"):
                 return False
             raise

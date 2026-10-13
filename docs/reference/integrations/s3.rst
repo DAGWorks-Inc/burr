@@ -69,6 +69,27 @@ directly and pass it in:
     client = boto3.client("s3", region_name="us-east-1")
     object_store = S3ArtifactStore(bucket="my-bucket", prefix="burr-artifacts", client=client)
 
+Note that a store built around a client you passed in can't be pickled (its credentials and
+configuration can't be reproduced), which matters if you run sub-applications with
+:py:class:`RayExecutor <burr.integrations.ray.RayExecutor>` -- Ray pickles each task, including
+the application's object store. Prefer ``from_values(..., client_kwargs={...})`` (or
+``S3ArtifactStore(bucket, client_kwargs={...})``) in that case: the store then drops its client
+when pickled and rebuilds it from ``client_kwargs`` on the worker.
+
+------------------------------
+Writes, digests & consistency
+------------------------------
+
+* Writes are **conditional** (``PutObject`` with ``IfNoneMatch="*"``): an existing object is never
+  overwritten, so concurrent writers to the same key can't silently clobber each other -- the
+  loser's :py:meth:`put_artifact <burr.core.artifacts.ArtifactStore.put_artifact>` verifies what
+  won and raises if it differs. This requires S3, or an S3-compatible store, that supports
+  conditional writes; a store that ignores ``If-None-Match`` loses that race protection.
+* Each object's SHA-256 digest is recorded in its metadata (``x-amz-meta-burr-sha256``), so
+  re-writing content that already exists (e.g. when the same value is serialized on every step)
+  is verified with a ``HEAD`` request rather than a full download. Objects written by other tools
+  without that metadata are verified by downloading them.
+
 --------------------------
 Async (non-blocking) Usage
 --------------------------
@@ -111,12 +132,15 @@ instead.
 IAM Permissions
 ---------------
 
-At minimum, the runtime identity used by Burr needs permission to read/write/check objects in
-the target bucket (optionally scoped to the configured prefix):
+The runtime identity used by Burr needs:
 
-* ``s3:PutObject``
-* ``s3:GetObject``
-* ``s3:HeadObject``
+* ``s3:PutObject`` and ``s3:GetObject`` on the objects (e.g. ``arn:aws:s3:::my-bucket/burr-artifacts/*``).
+  ``HeadObject`` requests (existence/digest checks) are authorized by ``s3:GetObject`` -- there is
+  no separate ``s3:HeadObject`` action.
+* ``s3:ListBucket`` on the bucket itself (``arn:aws:s3:::my-bucket``, optionally restricted to the
+  prefix with an ``s3:prefix`` condition). Without it, S3 answers requests for a *missing* key with
+  ``403 Forbidden`` instead of ``404 Not Found``, so existence checks fail with an error instead of
+  returning ``False`` -- and new artifacts can't be written.
 
 ----------------
 API Reference

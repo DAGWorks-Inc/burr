@@ -169,6 +169,76 @@ def test_put_artifact_is_idempotent_for_identical_content(store):
     assert ref1.key == ref2.key
 
 
+def test_put_reports_whether_it_created_the_object(store):
+    assert store.put(b"first", key="k") is True
+    # an existing object is never overwritten
+    assert store.put(b"second", key="k") is False
+    assert store.get("k") == b"first"
+
+
+def test_put_artifact_default_key_with_corrupted_content_raises(store, tmp_path):
+    """A content-addressed key that already holds bytes not matching its digest must not be
+    treated as a dedup hit -- that would return a ref that fails verification."""
+    data = b"expected"
+    (tmp_path / hashlib.sha256(data).hexdigest()).write_bytes(b"wrong")
+
+    with pytest.raises(ValueError, match="does not match its key"):
+        store.put_artifact(data)
+
+
+def test_put_artifact_lost_race_with_different_content_raises(store, monkeypatch):
+    """Race: the key is absent when put_artifact checks, but a concurrent writer publishes
+    different bytes before our create-if-absent write. We must not return a ref for our bytes."""
+    real_exists = store.exists
+
+    def exists_then_lose_race(key):
+        result = real_exists(key)
+        if not result:
+            store.put(b"concurrent writer's bytes", key)
+        return result
+
+    monkeypatch.setattr(store, "exists", exists_then_lose_race)
+
+    with pytest.raises(ValueError, match="already exists with different content"):
+        store.put_artifact(b"our bytes", key="contended")
+    assert store.get("contended") == b"concurrent writer's bytes"
+
+
+def test_put_artifact_concurrent_writers_exactly_one_wins(store):
+    """Many threads writing different content under the same explicit key: exactly one succeeds,
+    every other gets a ValueError, and the stored bytes match the winner's ref."""
+    import concurrent.futures
+
+    def write(i):
+        try:
+            return store.put_artifact(f"writer-{i}".encode() * 1000, key="contended")
+        except ValueError:
+            return None
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+        results = list(executor.map(write, range(32)))
+
+    winners = [ref for ref in results if ref is not None]
+    assert len(winners) == 1
+    assert store.get_artifact(winners[0])  # verifies the digest matches what's stored
+
+
+def test_put_falls_back_to_rename_without_hard_link_support(store, monkeypatch):
+    def no_links(src, dst):
+        raise PermissionError("hard links not supported on this filesystem")
+
+    monkeypatch.setattr("os.link", no_links)
+
+    assert store.put(b"data", key="k") is None  # unknown -- put_artifact verifies instead
+    assert store.get("k") == b"data"
+    assert store.put_artifact(b"data", key="k").key == "k"
+
+
+def test_digest_defaults_to_hashing_stored_content(store):
+    store.put(b"hash me", key="k")
+    assert store.digest("k") == hashlib.sha256(b"hash me").hexdigest()
+
+
 def test_get_artifact_roundtrip(store):
     data = b"round trip me"
     ref = store.put_artifact(data)
@@ -297,6 +367,8 @@ class InMemoryAsyncArtifactStore(AsyncArtifactStore):
         self._data: dict = {}
 
     async def put(self, data: bytes, key: str) -> None:
+        # deliberately returns None ("unknown") and overwrites, like a minimal third-party
+        # backend -- put_artifact must still verify what's stored rather than trust the write.
         self._data[key] = data
 
     async def get(self, key: str) -> bytes:
@@ -362,6 +434,30 @@ async def test_async_get_artifact_verifies_digest_by_default(async_store):
 
     with pytest.raises(ValueError, match="Digest mismatch"):
         await async_store.get_artifact(ref)
+
+
+async def test_async_put_artifact_default_key_with_corrupted_content_raises(async_store):
+    data = b"expected"
+    async_store._data[hashlib.sha256(data).hexdigest()] = b"wrong"
+
+    with pytest.raises(ValueError, match="does not match its key"):
+        await async_store.put_artifact(data)
+
+
+async def test_async_put_artifact_verifies_when_backend_cannot_confirm_write(async_store):
+    """A backend whose put() returns None gets its stored content verified after the write."""
+    calls = []
+    real_digest = async_store.digest
+
+    async def tracking_digest(key):
+        calls.append(key)
+        return await real_digest(key)
+
+    async_store.digest = tracking_digest
+    ref = await async_store.put_artifact(b"payload", key="k")
+
+    assert calls == ["k"]
+    assert ref.key == "k"
 
 
 async def test_artifact_ref_aread_delegates_to_async_store(async_store):

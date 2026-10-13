@@ -456,7 +456,9 @@ class LocalTrackingClient(
         pre_run_entry = BeginEntryModel(
             start_time=datetime.datetime.now(),
             action=action.name,
-            inputs=serde.serialize(_filtered_inputs, **self.serde_kwargs),
+            inputs=serde.serialize(
+                _filtered_inputs, **serde.with_serialization_context(self.serde_kwargs)
+            ),
             sequence_id=sequence_id,
         )
         self._append_write_line(pre_run_entry)
@@ -473,7 +475,7 @@ class LocalTrackingClient(
         post_run_entry = EndEntryModel(
             end_time=datetime.datetime.now(),
             action=action.name,
-            result=serde.serialize(result, **self.serde_kwargs),
+            result=serde.serialize(result, **serde.with_serialization_context(self.serde_kwargs)),
             sequence_id=sequence_id,
             exception=_format_exception(exception),
             state=state.serialize(**self.serde_kwargs),

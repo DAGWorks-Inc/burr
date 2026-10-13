@@ -46,8 +46,18 @@ you explicitly call :py:meth:`ArtifactRef.read <burr.core.artifacts.ArtifactRef.
 async counterpart, :py:meth:`ArtifactRef.aread <burr.core.artifacts.ArtifactRef.aread>`, for an
 ``AsyncArtifactStore``) when you actually need them.
 
-This is an opt-in, explicit mechanism. Burr never reads from or writes to an artifact store on
-its own -- your actions are always the ones calling ``put_artifact``/``get_artifact``.
+This is an opt-in mechanism, with two ways to use it:
+
+1. **Explicitly, from actions** -- an action writes the blob and keeps the ref in state (below).
+2. **Through serialization** -- a type-based or field-based serializer externalizes the value
+   while state is being persisted/tracked, so actions can keep the live value in state (see
+   :ref:`artifact-serde`).
+
+Either way, Burr never decides on its own what to store -- your actions or your registered
+serializers are always the ones calling ``put_artifact``/``get_artifact``.
+
+A complete, runnable example (using the local filesystem, so it needs no cloud credentials) is
+available at `examples/artifact-storage <https://github.com/apache/burr/tree/main/examples/artifact-storage>`_.
 
 Why not just put the bytes in State?
 -------------------------------------
@@ -105,17 +115,26 @@ the store and compares it to ``ref.digest`` by default, raising a ``ValueError``
 match -- this catches corrupted or overwritten data early rather than silently returning bad
 bytes.
 
-If you pass an explicit ``key`` (rather than relying on content-addressing), reusing that key is
-only safe if the content is the same: if the key already exists with *different* content,
-``put_artifact`` raises a ``ValueError`` instead of silently overwriting or returning a ref that
-doesn't match what's actually stored. Stick to content-addressed (default) keys unless you have a
-specific reason to name your own -- e.g. a stable "latest" pointer you intend to update
-out-of-band.
+``put_artifact`` never returns a ref that doesn't describe what's actually stored. If the key
+already holds content -- because you've written it before, or because a concurrent writer got
+there first -- its digest is checked: identical content is a no-op, anything else raises a
+``ValueError``. That has a consequence worth designing for when you pass an explicit ``key``
+(rather than relying on content-addressing): reusing it requires identical bytes. If an action
+writes non-deterministic output (e.g. an LLM response) under a fixed key and is then retried, or
+the application is resumed after a crash and re-runs that action, the new bytes differ and
+``put_artifact`` raises. **Use the default, content-addressed keys for non-deterministic
+output**, and reserve explicit keys for content that is stable for a given key.
+
+Backends write *create-if-absent* -- an existing object is never overwritten -- so concurrent
+writers can't clobber each other: the local backend publishes via a temp file and a hard link,
+and :ref:`S3 <s3-artifacts-integration>` uses conditional writes. Concurrent writers of
+*different* content under the same explicit key therefore still collide (one wins, the others
+get a ``ValueError``); coordinating such writers is up to the caller.
 
 :py:class:`LocalFileSystemArtifactStore <burr.core.artifacts.LocalFileSystemArtifactStore>` writes
-are atomic (via a temp file + rename) and reject keys that would resolve outside ``root_dir``
-(including through symlinks), so concurrent writers/readers never observe partial files and
-artifacts can't be written outside the configured store directory.
+are also atomic and reject keys that would resolve outside ``root_dir`` (including through
+symlinks), so readers never observe partial files and artifacts can't be written outside the
+configured store directory.
 
 Making a store available to actions
 ------------------------------------
@@ -236,8 +255,9 @@ methods -- ``put``, ``get``, and ``exists``:
     from burr.core.artifacts import ArtifactStore
 
     class MyCustomArtifactStore(ArtifactStore):
-        def put(self, data: bytes, key: str) -> None:
-            ...  # write data under key -- must be idempotent
+        def put(self, data: bytes, key: str) -> Optional[bool]:
+            ...  # write data under key unless it already exists -- never overwrite.
+            # return True if this call created it, False if it already existed
 
         def get(self, key: str) -> bytes:
             ...  # raise FileNotFoundError if key does not exist
@@ -247,17 +267,102 @@ methods -- ``put``, ``get``, and ``exists``:
 
 ``put_artifact`` and ``get_artifact`` (digest computation/verification, content-addressed keys)
 are provided for free by the base class, so you don't need to reimplement them for a new backend.
+If ``put`` can't tell whether it created the object (returning ``None``), ``put_artifact`` verifies
+the stored content after the write instead. Override ``digest(key)`` if your backend can report a
+stored object's SHA-256 more cheaply than downloading it (the S3 store reads it from object
+metadata).
 
 If your backend's I/O is itself async (e.g. a cloud SDK with a native async client), subclass
 :py:class:`AsyncArtifactStore <burr.core.artifacts.AsyncArtifactStore>` instead and implement
 ``async def put/get/exists`` -- it provides the same ``put_artifact``/``get_artifact`` helpers,
 just awaited.
 
+If you use :py:class:`RayExecutor <burr.integrations.ray.RayExecutor>` (or any executor that
+pickles tasks) for parallel sub-applications, the store is pickled along with them -- make sure
+it can be (e.g. drop/rebuild network clients in ``__getstate__``/``__setstate__``).
+
+.. _artifact-serde:
+
+Externalizing values through serialization
+-------------------------------------------
+
+Writing artifacts from actions means the action has to know which values are large. Often it's
+more natural to keep the live value (a ``PDF``, a dataframe, a long report) in state and decide
+*how it is persisted* in one place -- Burr's :doc:`serde` layer. For that, the application's
+object store is made available to serializers.
+
+Whenever an application configured with ``with_object_store(...)`` serializes or deserializes
+state -- in its state persister, its tracker, while loading state via
+:py:meth:`initialize_from <burr.core.application.ApplicationBuilder.initialize_from>`, and in
+sub-applications (including ones run on Ray workers) -- every serializer and deserializer receives
+a :py:class:`SerializationContext <burr.core.serde.SerializationContext>` as the
+``serialization_context`` keyword argument. Burr propagates it; you don't configure it per
+persister or tracker. This works for both kinds of serde registration:
+
+.. code-block:: python
+
+    from burr.core import serde, state
+    from burr.core.serde import SerializationContext
+
+    # type-based: every PDF in state is externalized
+    @serde.serialize.register(PDF)
+    def serialize_pdf(value: PDF, serialization_context: SerializationContext = None, **kwargs) -> dict:
+        ref = serialization_context.require_object_store().put_artifact(
+            value.to_bytes(), media_type="application/pdf"
+        )
+        return {serde.KEY: "pdf", "ref": serde.serialize(ref)}
+
+    @serde.deserializer.register("pdf")
+    def deserialize_pdf(value: dict, **kwargs) -> ArtifactRef:
+        return serde.deserialize(value["ref"])  # lazy: an ArtifactRef, no I/O
+
+    # field-based: only the `report` field is externalized
+    def serialize_report(value: str, serialization_context: SerializationContext = None, **kwargs) -> dict:
+        ref = serialization_context.require_object_store().put_artifact(value.encode())
+        return {"ref": serde.serialize(ref)}
+
+    def deserialize_report(value: dict, **kwargs) -> ArtifactRef:
+        return serde.deserialize(value["ref"])
+
+    state.register_field_serde("report", serialize_report, deserialize_report)
+
+A runnable version of this (persisting with SQLite, then resuming) is in
+``serde_application.py`` in the
+`artifact-storage example <https://github.com/apache/burr/tree/main/examples/artifact-storage>`_.
+
+A few things to know:
+
+* **What deserialization returns is up to your deserializer.** We recommend returning the
+  :py:class:`ArtifactRef <burr.core.artifacts.ArtifactRef>` (or your own lazy wrapper around it)
+  rather than the hydrated value: deserialization happens whenever state is loaded -- resuming,
+  forking, loading history -- and eagerly downloading every artifact there would undo the point of
+  externalizing it. The deserializer also receives ``serialization_context``, so a lazy wrapper
+  can keep a handle on the store.
+* **Serialization happens on every step.** State is re-serialized after each action, so the
+  serializer runs (hashing the value and checking the store) each time. Content-addressed keys
+  make the repeated writes no-ops, but if the value never changes and is large, writing it from
+  the action and keeping the ref in state (above) avoids the repeated work entirely.
+* **Sync vs. async.** ``State.serialize``/``State.deserialize`` are synchronous; their async
+  counterparts :py:meth:`State.aserialize <burr.core.state.State.aserialize>` /
+  :py:meth:`State.adeserialize <burr.core.state.State.adeserialize>` await serializers registered
+  as ``async def`` -- which is what you need for an
+  :py:class:`AsyncArtifactStore <burr.core.artifacts.AsyncArtifactStore>`. Burr's async persisters
+  (``AsyncSQLitePersister``, ``AsyncPostgreSQLPersister``, ``AsyncRedisBasePersister``) use them.
+  Synchronous callers -- sync persisters, and the trackers (``LocalTrackingClient``,
+  ``S3TrackingClient``) -- raise a clear error if they reach an async serializer, so with an async
+  store, track externalized fields through an async persister only, or give them a synchronous
+  serializer.
+* **Outside of an application** (e.g. calling ``persister.load(...)`` yourself), pass the context
+  explicitly -- ``state.serialize(serialization_context=SerializationContext(object_store=store))``
+  -- or set it for a block with ``with serde.serialization_context(...):``. Serializers that need a
+  store should call ``serialization_context.require_object_store()``, which raises a clear error
+  when none is configured.
+
 Interaction with serialization
 --------------------------------
 
-``ArtifactRef`` is a plain, frozen dataclass registered with :doc:`serde` out of the box, so it
-serializes/deserializes as part of normal :py:class:`State <burr.core.state.State>` (de)serialization
-with no extra setup required. Deserializing a ref only recreates the small dataclass -- it never
-fetches the underlying bytes on its own, so browsing history, forking, or replaying an
-application never triggers unexpected I/O against your artifact store.
+``ArtifactRef`` itself is a plain, frozen dataclass registered with :doc:`serde` out of the box, so
+it serializes/deserializes as part of normal :py:class:`State <burr.core.state.State>`
+(de)serialization with no extra setup required. Deserializing a ref only recreates the small
+dataclass -- it never fetches the underlying bytes on its own, so browsing history, forking, or
+replaying an application never triggers unexpected I/O against your artifact store.

@@ -26,6 +26,7 @@ a live AWS account or network access.
 
 import hashlib
 import io
+import pickle
 from unittest.mock import AsyncMock, MagicMock
 
 import boto3
@@ -61,35 +62,65 @@ def store(s3_client):
     return S3ArtifactStore(bucket="my-bucket", prefix="artifacts", client=client)
 
 
-def test_put_uploads_when_key_does_not_exist(store, s3_client):
+def _put_params(key: str, data: bytes) -> dict:
+    return {
+        "Bucket": "my-bucket",
+        "Key": key,
+        "Body": data,
+        "IfNoneMatch": "*",
+        "Metadata": {"burr-sha256": hashlib.sha256(data).hexdigest()},
+    }
+
+
+def test_put_uploads_conditionally_with_digest_metadata(store, s3_client):
     _client, stubber = s3_client
     data = b"hello from s3"
 
-    stubber.add_client_error("head_object", service_error_code="404")
-    stubber.add_response(
-        "put_object",
-        {},
-        expected_params={"Bucket": "my-bucket", "Key": "artifacts/my-key", "Body": data},
-    )
+    stubber.add_response("put_object", {}, expected_params=_put_params("artifacts/my-key", data))
 
-    store.put(data, key="my-key")
-
+    assert store.put(data, key="my-key") is True
     stubber.assert_no_pending_responses()
 
 
-def test_put_skips_upload_when_key_already_exists(store, s3_client):
+def test_put_returns_false_when_key_already_exists(store, s3_client):
+    """S3 rejects the conditional write with 412 -- the existing object is left untouched."""
+    _client, stubber = s3_client
+    stubber.add_client_error(
+        "put_object", service_error_code="PreconditionFailed", http_status_code=412
+    )
+
+    assert store.put(b"hello from s3", key="my-key") is False
+    stubber.assert_no_pending_responses()
+
+
+def test_put_retries_on_conditional_request_conflict(store, s3_client, monkeypatch):
+    """409 ConditionalRequestConflict means a concurrent conditional write was in flight -- retry."""
+    import burr.integrations.artifacts.s3 as s3_module
+
+    monkeypatch.setattr(s3_module, "_CONDITIONAL_WRITE_BACKOFF_SECONDS", 0)
     _client, stubber = s3_client
     data = b"hello from s3"
-
-    stubber.add_response(
-        "head_object",
-        {},
-        expected_params={"Bucket": "my-bucket", "Key": "artifacts/my-key"},
+    stubber.add_client_error(
+        "put_object", service_error_code="ConditionalRequestConflict", http_status_code=409
     )
-    # no put_object stubbed -- if the store tried to upload, Stubber would raise.
+    stubber.add_response("put_object", {}, expected_params=_put_params("artifacts/my-key", data))
 
-    store.put(data, key="my-key")
+    assert store.put(data, key="my-key") is True
+    stubber.assert_no_pending_responses()
 
+
+def test_put_raises_after_repeated_conditional_request_conflicts(store, s3_client, monkeypatch):
+    import burr.integrations.artifacts.s3 as s3_module
+
+    monkeypatch.setattr(s3_module, "_CONDITIONAL_WRITE_BACKOFF_SECONDS", 0)
+    _client, stubber = s3_client
+    for _ in range(s3_module._CONDITIONAL_WRITE_ATTEMPTS):
+        stubber.add_client_error(
+            "put_object", service_error_code="ConditionalRequestConflict", http_status_code=409
+        )
+
+    with pytest.raises(botocore.exceptions.ClientError):
+        store.put(b"data", key="my-key")
     stubber.assert_no_pending_responses()
 
 
@@ -137,15 +168,40 @@ def test_no_prefix_uses_bare_key(s3_client):
     client, stubber = s3_client
     store = S3ArtifactStore(bucket="my-bucket", client=client)
 
-    stubber.add_client_error("head_object", service_error_code="404")
-    stubber.add_response(
-        "put_object",
-        {},
-        expected_params={"Bucket": "my-bucket", "Key": "my-key", "Body": b"data"},
-    )
+    stubber.add_response("put_object", {}, expected_params=_put_params("my-key", b"data"))
 
     store.put(b"data", key="my-key")
     stubber.assert_no_pending_responses()
+
+
+def test_digest_reads_recorded_metadata_without_downloading(store, s3_client):
+    _client, stubber = s3_client
+    stubber.add_response(
+        "head_object",
+        {"Metadata": {"burr-sha256": "abc123"}},
+        expected_params={"Bucket": "my-bucket", "Key": "artifacts/my-key"},
+    )
+    # no get_object stubbed -- digest() must not download the object when metadata is present.
+
+    assert store.digest("my-key") == "abc123"
+    stubber.assert_no_pending_responses()
+
+
+def test_digest_falls_back_to_hashing_objects_without_metadata(store, s3_client):
+    _client, stubber = s3_client
+    data = b"written by something else"
+    stubber.add_response("head_object", {})
+    stubber.add_response("get_object", {"Body": _streaming_body(data)})
+
+    assert store.digest("my-key") == hashlib.sha256(data).hexdigest()
+
+
+def test_digest_missing_key_raises_file_not_found(store, s3_client):
+    _client, stubber = s3_client
+    stubber.add_client_error("head_object", service_error_code="404")
+
+    with pytest.raises(FileNotFoundError):
+        store.digest("missing-key")
 
 
 def test_put_artifact_and_get_artifact_end_to_end(store, s3_client):
@@ -156,11 +212,7 @@ def test_put_artifact_and_get_artifact_end_to_end(store, s3_client):
 
     # put_artifact() -> content-addressed key == digest
     stubber.add_client_error("head_object", service_error_code="404")
-    stubber.add_response(
-        "put_object",
-        {},
-        expected_params={"Bucket": "my-bucket", "Key": f"artifacts/{digest}", "Body": data},
-    )
+    stubber.add_response("put_object", {}, expected_params=_put_params(f"artifacts/{digest}", data))
 
     ref = store.put_artifact(data, media_type="text/plain")
     assert isinstance(ref, ArtifactRef)
@@ -180,21 +232,16 @@ def test_put_artifact_and_get_artifact_end_to_end(store, s3_client):
 
 def test_put_artifact_explicit_key_identical_content_is_noop(store, s3_client):
     """Same collision-safety guarantee as the local backend: re-`put_artifact`-ing identical
-    content under an explicit key that already exists must not re-upload."""
+    content under an explicit key that already exists must not re-upload, and is verified via
+    the recorded digest (a HEAD) rather than a download."""
     _client, stubber = s3_client
     data = b"same content"
 
+    stubber.add_response("head_object", {})  # exists()
     stubber.add_response(
-        "head_object",
-        {},
-        expected_params={"Bucket": "my-bucket", "Key": "artifacts/stable-key"},
-    )
-    stubber.add_response(
-        "get_object",
-        {"Body": _streaming_body(data)},
-        expected_params={"Bucket": "my-bucket", "Key": "artifacts/stable-key"},
-    )
-    # no put_object stubbed -- if the store tried to re-upload, Stubber would raise.
+        "head_object", {"Metadata": {"burr-sha256": hashlib.sha256(data).hexdigest()}}
+    )  # digest()
+    # no put_object/get_object stubbed -- if the store tried to re-upload/download, Stubber raises.
 
     ref = store.put_artifact(data, key="stable-key")
 
@@ -207,25 +254,90 @@ def test_put_artifact_explicit_key_conflicting_content_raises(store, s3_client):
     or skipped -- put_artifact must surface a clear conflict instead of returning a ref that
     doesn't describe what's actually stored."""
     _client, stubber = s3_client
-    existing_data = b"first"
-    new_data = b"second"
-
+    stubber.add_response("head_object", {})
     stubber.add_response(
-        "head_object",
-        {},
-        expected_params={"Bucket": "my-bucket", "Key": "artifacts/mutable"},
-    )
-    stubber.add_response(
-        "get_object",
-        {"Body": _streaming_body(existing_data)},
-        expected_params={"Bucket": "my-bucket", "Key": "artifacts/mutable"},
+        "head_object", {"Metadata": {"burr-sha256": hashlib.sha256(b"first").hexdigest()}}
     )
     # no put_object stubbed -- the conflicting write must be rejected before any upload attempt.
 
     with pytest.raises(ValueError, match="already exists with different content"):
-        store.put_artifact(new_data, key="mutable")
+        store.put_artifact(b"second", key="mutable")
 
     stubber.assert_no_pending_responses()
+
+
+def test_put_artifact_concurrent_writer_with_different_content_raises(store, s3_client):
+    """Race: the key is absent at the exists() check, but a concurrent writer creates it before
+    our conditional write lands (412). We must verify what won rather than return our ref."""
+    _client, stubber = s3_client
+    stubber.add_client_error("head_object", service_error_code="404")
+    stubber.add_client_error(
+        "put_object", service_error_code="PreconditionFailed", http_status_code=412
+    )
+    stubber.add_response(
+        "head_object", {"Metadata": {"burr-sha256": hashlib.sha256(b"theirs").hexdigest()}}
+    )
+
+    with pytest.raises(ValueError, match="already exists with different content"):
+        store.put_artifact(b"ours", key="contended")
+    stubber.assert_no_pending_responses()
+
+
+def test_put_artifact_concurrent_writer_with_identical_content_succeeds(store, s3_client):
+    _client, stubber = s3_client
+    data = b"same bytes from two writers"
+    digest = hashlib.sha256(data).hexdigest()
+    stubber.add_client_error("head_object", service_error_code="404")
+    stubber.add_client_error(
+        "put_object", service_error_code="PreconditionFailed", http_status_code=412
+    )
+    stubber.add_response("head_object", {"Metadata": {"burr-sha256": digest}})
+
+    assert store.put_artifact(data).key == digest
+    stubber.assert_no_pending_responses()
+
+
+def test_put_artifact_default_key_with_corrupted_content_raises(store, s3_client):
+    """A content-addressed key whose stored content doesn't match its digest must not be
+    treated as a dedup hit."""
+    _client, stubber = s3_client
+    data = b"expected"
+    stubber.add_response("head_object", {})
+    stubber.add_response(
+        "head_object", {"Metadata": {"burr-sha256": hashlib.sha256(b"wrong").hexdigest()}}
+    )
+
+    with pytest.raises(ValueError, match="does not match its key"):
+        store.put_artifact(data)
+
+
+def test_store_pickles_and_rebuilds_its_client():
+    """Stores shipped to other processes (e.g. Ray workers) must drop the unpicklable boto3
+    client and rebuild it from the same settings."""
+    client_kwargs = {
+        "region_name": "us-east-1",
+        "aws_access_key_id": "test",
+        "aws_secret_access_key": "test",
+    }
+    store = S3ArtifactStore.from_values(bucket="my-bucket", prefix="p", client_kwargs=client_kwargs)
+
+    restored = pickle.loads(pickle.dumps(store))
+
+    assert restored.bucket == "my-bucket"
+    assert restored.prefix == "p"
+    assert restored.client is not store.client
+    assert restored.client.meta.region_name == "us-east-1"
+
+
+def test_store_with_injected_client_refuses_to_pickle(store):
+    with pytest.raises(TypeError, match="pre-built `client`"):
+        pickle.dumps(store)
+
+
+def test_store_rejects_both_client_and_client_kwargs(s3_client):
+    client, _stubber = s3_client
+    with pytest.raises(ValueError, match="either `client` or `client_kwargs`"):
+        S3ArtifactStore(bucket="my-bucket", client=client, client_kwargs={})
 
 
 # --- AsyncS3ArtifactStore tests below ---
@@ -259,25 +371,35 @@ def test_async_store_requires_already_open_client():
         AsyncS3ArtifactStore(bucket="my-bucket")
 
 
-async def test_async_put_uploads_when_key_does_not_exist(async_store, async_client):
+async def test_async_put_uploads_conditionally_with_digest_metadata(async_store, async_client):
     data = b"hello from async s3"
-    async_client.head_object = AsyncMock(side_effect=_client_error("404"))
     async_client.put_object = AsyncMock(return_value={})
 
-    await async_store.put(data, key="my-key")
+    assert await async_store.put(data, key="my-key") is True
 
-    async_client.put_object.assert_awaited_once_with(
-        Bucket="my-bucket", Key="artifacts/my-key", Body=data
+    async_client.put_object.assert_awaited_once_with(**_put_params("artifacts/my-key", data))
+
+
+async def test_async_put_returns_false_when_key_already_exists(async_store, async_client):
+    async_client.put_object = AsyncMock(
+        side_effect=_client_error("PreconditionFailed", operation="PutObject")
     )
 
+    assert await async_store.put(b"hello from async s3", key="my-key") is False
 
-async def test_async_put_skips_upload_when_key_already_exists(async_store, async_client):
-    async_client.head_object = AsyncMock(return_value={})
-    async_client.put_object = AsyncMock()
 
-    await async_store.put(b"hello from async s3", key="my-key")
+async def test_async_put_retries_on_conditional_request_conflict(
+    async_store, async_client, monkeypatch
+):
+    import burr.integrations.artifacts.s3 as s3_module
 
-    async_client.put_object.assert_not_awaited()
+    monkeypatch.setattr(s3_module, "_CONDITIONAL_WRITE_BACKOFF_SECONDS", 0)
+    async_client.put_object = AsyncMock(
+        side_effect=[_client_error("ConditionalRequestConflict", operation="PutObject"), {}]
+    )
+
+    assert await async_store.put(b"data", key="my-key") is True
+    assert async_client.put_object.await_count == 2
 
 
 async def test_async_get_returns_object_bytes(async_store, async_client):
@@ -322,20 +444,37 @@ async def test_async_put_artifact_and_get_artifact_end_to_end(async_store, async
     assert ref.key == digest
     assert ref.digest == digest
     assert ref.size_bytes == len(data)
-    async_client.put_object.assert_awaited_once_with(
-        Bucket="my-bucket", Key=f"artifacts/{digest}", Body=data
-    )
+    async_client.put_object.assert_awaited_once_with(**_put_params(f"artifacts/{digest}", data))
 
     async_client.get_object = AsyncMock(return_value={"Body": _async_streaming_body(data)})
     assert await async_store.get_artifact(ref) == data
+
+
+async def test_async_digest_reads_recorded_metadata_without_downloading(async_store, async_client):
+    async_client.head_object = AsyncMock(return_value={"Metadata": {"burr-sha256": "abc123"}})
+    async_client.get_object = AsyncMock()
+
+    assert await async_store.digest("my-key") == "abc123"
+    async_client.get_object.assert_not_awaited()
+
+
+async def test_async_digest_falls_back_to_hashing_objects_without_metadata(
+    async_store, async_client
+):
+    data = b"written by something else"
+    async_client.head_object = AsyncMock(return_value={})
+    async_client.get_object = AsyncMock(return_value={"Body": _async_streaming_body(data)})
+
+    assert await async_store.digest("my-key") == hashlib.sha256(data).hexdigest()
 
 
 async def test_async_put_artifact_explicit_key_identical_content_is_noop(async_store, async_client):
     """Same collision-safety guarantee as the sync backend: re-`put_artifact`-ing identical
     content under an explicit key that already exists must not re-upload."""
     data = b"same content"
-    async_client.head_object = AsyncMock(return_value={})
-    async_client.get_object = AsyncMock(return_value={"Body": _async_streaming_body(data)})
+    async_client.head_object = AsyncMock(
+        return_value={"Metadata": {"burr-sha256": hashlib.sha256(data).hexdigest()}}
+    )
     async_client.put_object = AsyncMock()
 
     ref = await async_store.put_artifact(data, key="stable-key")
@@ -350,16 +489,37 @@ async def test_async_put_artifact_explicit_key_conflicting_content_raises(
     """An explicit key that already holds *different* content must not be silently overwritten
     or skipped -- put_artifact must surface a clear conflict instead of returning a ref that
     doesn't describe what's actually stored."""
-    existing_data = b"first"
-    new_data = b"second"
-    async_client.head_object = AsyncMock(return_value={})
-    async_client.get_object = AsyncMock(return_value={"Body": _async_streaming_body(existing_data)})
+    async_client.head_object = AsyncMock(
+        return_value={"Metadata": {"burr-sha256": hashlib.sha256(b"first").hexdigest()}}
+    )
     async_client.put_object = AsyncMock()
 
     with pytest.raises(ValueError, match="already exists with different content"):
-        await async_store.put_artifact(new_data, key="mutable")
+        await async_store.put_artifact(b"second", key="mutable")
 
     async_client.put_object.assert_not_awaited()
+
+
+async def test_async_put_artifact_concurrent_writer_with_different_content_raises(
+    async_store, async_client
+):
+    async_client.head_object = AsyncMock(
+        side_effect=[
+            _client_error("404"),  # exists()
+            {"Metadata": {"burr-sha256": hashlib.sha256(b"theirs").hexdigest()}},  # digest()
+        ]
+    )
+    async_client.put_object = AsyncMock(
+        side_effect=_client_error("PreconditionFailed", operation="PutObject")
+    )
+
+    with pytest.raises(ValueError, match="already exists with different content"):
+        await async_store.put_artifact(b"ours", key="contended")
+
+
+def test_async_store_refuses_to_pickle(async_store):
+    with pytest.raises(TypeError, match="cannot be pickled"):
+        pickle.dumps(async_store)
 
 
 async def test_async_store_acreate_opens_client_via_session_and_aclose_closes_it(monkeypatch):

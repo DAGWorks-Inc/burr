@@ -87,12 +87,13 @@ class ArtifactStore(abc.ABC):
     """
 
     @abc.abstractmethod
-    def put(self, data: bytes, key: str) -> None:
-        """Stores ``data`` under ``key``. Should be idempotent -- writing the same key twice
-        with the same content should not error.
+    def put(self, data: bytes, key: str) -> Optional[bool]:
+        """Stores ``data`` under ``key`` unless it already exists -- never overwrites.
 
         :param data: The raw bytes to store.
         :param key: The key/path to store the data under.
+        :return: ``True`` if this call created the object, ``False`` if it already existed, or
+            ``None`` if unknown (:py:meth:`put_artifact` then verifies the stored content).
         """
 
     @abc.abstractmethod
@@ -107,6 +108,15 @@ class ArtifactStore(abc.ABC):
     def exists(self, key: str) -> bool:
         """Returns whether ``key`` is present in the store."""
 
+    def digest(self, key: str) -> str:
+        """Returns the SHA-256 hex digest of the content stored under ``key``. Override this if
+        the backend can report it without downloading the content.
+
+        :param key: The key/path to check.
+        :raises FileNotFoundError: If no data is stored under ``key``.
+        """
+        return hashlib.sha256(self.get(key)).hexdigest()
+
     def is_async(self) -> bool:
         """Whether this store's I/O methods are async. Always False here -- see
         :py:class:`AsyncArtifactStore` for the async contract. Mirrors
@@ -120,35 +130,23 @@ class ArtifactStore(abc.ABC):
         fully-formed :py:class:`ArtifactRef`. This is the recommended way to write artifacts --
         it ensures every backend computes/verifies digests the same way.
 
-        With the default content-addressed ``key`` (the hex digest), writing identical content
-        twice is always a safe no-op -- the key can only match if the bytes match.
-
-        With an explicit ``key``, a write is only skipped if the *existing* content stored under
-        that key has the same digest as ``data``. If the key already exists with *different*
-        content, this raises -- it never silently returns a ref that doesn't describe what's
-        actually stored.
+        If the resolved key already holds content (including from a concurrent writer), it must
+        match ``data`` -- identical content is a no-op, different content raises. So reusing an
+        explicit ``key`` requires identical bytes; prefer the default key for non-deterministic
+        output (e.g. an LLM response) that may be retried.
 
         :param data: The raw bytes to store.
         :param media_type: Optional MIME type to record on the returned ref.
         :param key: Optional explicit key to store under. If not provided, a content-addressed
-            key (the hex digest) is used -- so writing identical content twice is a no-op.
-        :raises ValueError: If ``key`` is explicitly provided and already exists with content
-            that does not match the digest of ``data``.
+            key (the hex digest) is used.
+        :raises ValueError: If the resolved key already holds content whose digest does not match
+            ``data``'s.
         :return: An :py:class:`ArtifactRef` describing the stored artifact.
         """
         digest = hashlib.sha256(data).hexdigest()
         resolved_key = key if key is not None else digest
-        if key is not None and self.exists(resolved_key):
-            existing_digest = hashlib.sha256(self.get(resolved_key)).hexdigest()
-            if existing_digest != digest:
-                raise ValueError(
-                    f"Key '{resolved_key}' already exists with different content (existing "
-                    f"digest {existing_digest}, new digest {digest}). Use a different explicit "
-                    f"key, or omit `key` to use content-addressed storage."
-                )
-            # Identical content is already stored under this key -- nothing to do.
-        else:
-            self.put(data, resolved_key)
+        if self.exists(resolved_key) or self.put(data, resolved_key) is not True:
+            _verify_stored_digest(resolved_key, self.digest(resolved_key), digest, key)
         return ArtifactRef(
             key=resolved_key, size_bytes=len(data), digest=digest, media_type=media_type
         )
@@ -162,14 +160,36 @@ class ArtifactStore(abc.ABC):
         """
         data = self.get(ref.key)
         if verify:
-            actual_digest = hashlib.sha256(data).hexdigest()
-            if actual_digest != ref.digest:
-                raise ValueError(
-                    f"Digest mismatch for artifact '{ref.key}': "
-                    f"expected {ref.digest}, got {actual_digest}. The stored content may have "
-                    f"been overwritten or corrupted."
-                )
+            _verify_fetched_digest(ref, data)
         return data
+
+
+def _verify_stored_digest(
+    resolved_key: str, existing_digest: str, digest: str, explicit_key: Optional[str]
+) -> None:
+    if existing_digest == digest:
+        return  # identical content is already stored under this key -- nothing to do.
+    if explicit_key is not None:
+        raise ValueError(
+            f"Key '{resolved_key}' already exists with different content (existing "
+            f"digest {existing_digest}, new digest {digest}). Use a different explicit "
+            f"key, or omit `key` to use content-addressed storage."
+        )
+    raise ValueError(
+        f"Content stored under content-addressed key '{resolved_key}' has digest "
+        f"{existing_digest}, which does not match its key. The store may have been corrupted or "
+        f"modified out-of-band -- remove the object and retry."
+    )
+
+
+def _verify_fetched_digest(ref: ArtifactRef, data: bytes) -> None:
+    actual_digest = hashlib.sha256(data).hexdigest()
+    if actual_digest != ref.digest:
+        raise ValueError(
+            f"Digest mismatch for artifact '{ref.key}': "
+            f"expected {ref.digest}, got {actual_digest}. The stored content may have "
+            f"been overwritten or corrupted."
+        )
 
 
 class AsyncArtifactStore(abc.ABC):
@@ -187,12 +207,14 @@ class AsyncArtifactStore(abc.ABC):
     """
 
     @abc.abstractmethod
-    async def put(self, data: bytes, key: str) -> None:
-        """Stores ``data`` under ``key``. Should be idempotent -- writing the same key twice
-        with the same content should not error.
+    async def put(self, data: bytes, key: str) -> Optional[bool]:
+        """Stores ``data`` under ``key`` unless it already exists -- see
+        :py:meth:`ArtifactStore.put`.
 
         :param data: The raw bytes to store.
         :param key: The key/path to store the data under.
+        :return: ``True`` if this call created the object, ``False`` if it already existed, or
+            ``None`` if unknown.
         """
 
     @abc.abstractmethod
@@ -207,6 +229,15 @@ class AsyncArtifactStore(abc.ABC):
     async def exists(self, key: str) -> bool:
         """Returns whether ``key`` is present in the store."""
 
+    async def digest(self, key: str) -> str:
+        """Returns the SHA-256 hex digest of the content stored under ``key`` -- see
+        :py:meth:`ArtifactStore.digest`.
+
+        :param key: The key/path to check.
+        :raises FileNotFoundError: If no data is stored under ``key``.
+        """
+        return hashlib.sha256(await self.get(key)).hexdigest()
+
     def is_async(self) -> bool:
         """Whether this store's I/O methods are async. Always True here -- see
         :py:class:`ArtifactStore` for the synchronous contract."""
@@ -216,30 +247,20 @@ class AsyncArtifactStore(abc.ABC):
         self, data: bytes, media_type: Optional[str] = None, key: Optional[str] = None
     ) -> ArtifactRef:
         """Asynchronous counterpart to :py:meth:`ArtifactStore.put_artifact` -- same digest
-        computation and explicit-key collision semantics (see there for details), just awaited
-        instead of blocking.
+        computation and collision semantics, just awaited.
 
         :param data: The raw bytes to store.
         :param media_type: Optional MIME type to record on the returned ref.
         :param key: Optional explicit key to store under. If not provided, a content-addressed
-            key (the hex digest) is used -- so writing identical content twice is a no-op.
-        :raises ValueError: If ``key`` is explicitly provided and already exists with content
-            that does not match the digest of ``data``.
+            key (the hex digest) is used.
+        :raises ValueError: If the resolved key already holds content whose digest does not match
+            ``data``'s.
         :return: An :py:class:`ArtifactRef` describing the stored artifact.
         """
         digest = hashlib.sha256(data).hexdigest()
         resolved_key = key if key is not None else digest
-        if key is not None and await self.exists(resolved_key):
-            existing_digest = hashlib.sha256(await self.get(resolved_key)).hexdigest()
-            if existing_digest != digest:
-                raise ValueError(
-                    f"Key '{resolved_key}' already exists with different content (existing "
-                    f"digest {existing_digest}, new digest {digest}). Use a different explicit "
-                    f"key, or omit `key` to use content-addressed storage."
-                )
-            # Identical content is already stored under this key -- nothing to do.
-        else:
-            await self.put(data, resolved_key)
+        if await self.exists(resolved_key) or await self.put(data, resolved_key) is not True:
+            _verify_stored_digest(resolved_key, await self.digest(resolved_key), digest, key)
         return ArtifactRef(
             key=resolved_key, size_bytes=len(data), digest=digest, media_type=media_type
         )
@@ -253,13 +274,7 @@ class AsyncArtifactStore(abc.ABC):
         """
         data = await self.get(ref.key)
         if verify:
-            actual_digest = hashlib.sha256(data).hexdigest()
-            if actual_digest != ref.digest:
-                raise ValueError(
-                    f"Digest mismatch for artifact '{ref.key}': "
-                    f"expected {ref.digest}, got {actual_digest}. The stored content may have "
-                    f"been overwritten or corrupted."
-                )
+            _verify_fetched_digest(ref, data)
         return data
 
 
@@ -290,29 +305,33 @@ class LocalFileSystemArtifactStore(ArtifactStore):
             )
         return path
 
-    def put(self, data: bytes, key: str) -> None:
+    def put(self, data: bytes, key: str) -> Optional[bool]:
         path = self._path_for_key(key)
         if os.path.exists(path):
-            # content-addressed keys make writes idempotent -- skip re-writing existing data.
-            return
+            return False
         directory = os.path.dirname(path)
         os.makedirs(directory, exist_ok=True)
-        # Write to a temp file in the same directory and atomically rename it into place, so
-        # concurrent readers/crashes never observe a partial/truncated file at `path` -- either
-        # `path` doesn't exist yet, or it's fully written.
+        # temp file + hard link: atomic, and (unlike a rename) fails if `path` already exists
         fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".tmp-artifact-")
         try:
             with os.fdopen(fd, "wb") as f:
                 f.write(data)
                 f.flush()
                 os.fsync(f.fileno())
-            os.replace(tmp_path, path)
-        except BaseException:
+            try:
+                os.link(tmp_path, path)
+            except FileExistsError:
+                return False
+            except OSError:
+                # no hard-link support -- rename, and return None so put_artifact verifies
+                os.replace(tmp_path, path)
+                return None
+            return True
+        finally:
             try:
                 os.remove(tmp_path)
             except OSError:
                 pass
-            raise
 
     def get(self, key: str) -> bytes:
         path = self._path_for_key(key)

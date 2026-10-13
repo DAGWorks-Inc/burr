@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import contextvars
 import dataclasses
 import functools
@@ -31,6 +32,7 @@ from typing import (
     Any,
     AsyncGenerator,
     Callable,
+    ContextManager,
     Dict,
     Generator,
     Generic,
@@ -46,7 +48,7 @@ from typing import (
 
 from burr import system, visibility
 from burr.common import types as burr_types
-from burr.core import persistence, validation
+from burr.core import persistence, serde, validation
 from burr.core.action import (
     DEFAULT_SCHEMA,
     Action,
@@ -836,6 +838,19 @@ def _create_default_executor() -> Executor:
     return ThreadPoolExecutor()
 
 
+def _serialization_context_factory(
+    object_store: Optional[Union[ArtifactStore, AsyncArtifactStore]],
+) -> Callable[[], ContextManager]:
+    """Returns a factory for a context manager that makes ``object_store`` available to
+    serializers."""
+    context = (
+        serde.SerializationContext(object_store=object_store) if object_store is not None else None
+    )
+    return lambda: (
+        serde.serialization_context(context) if context is not None else contextlib.nullcontext()
+    )
+
+
 class Application(Generic[ApplicationStateType]):
     def __init__(
         self,
@@ -880,6 +895,11 @@ class Application(Generic[ApplicationStateType]):
         )
         self._state = state
         adapter_set = adapter_set if adapter_set is not None else LifecycleAdapterSet()
+        if object_store is not None:
+            # persisters/trackers serialize state inside hooks -- this hands them the object store
+            adapter_set = adapter_set.with_hook_context(
+                _serialization_context_factory(object_store)
+            )
         self._adapter_set = adapter_set.with_new_adapters(TracerFactoryContextHook(adapter_set))
         # TODO -- consider adding global inputs + global input factories to the builder
         self._tracker = tracker
@@ -2571,11 +2591,11 @@ class ApplicationBuilder(Generic[StateType]):
         """Adds an object/blob store to the application, for storing large values (files,
         dataframes, images, etc...) outside of ``State`` -- see :py:mod:`burr.core.artifacts`.
 
-        Unlike :py:meth:`with_state_persister`, this does not add a lifecycle hook -- Burr never
-        reads from or writes to the store on its own. It is purely made available to actions
-        through :py:class:`ApplicationContext` (``__context.object_store``) so they don't each
-        need to construct/import their own store, and so it can be swapped (e.g. local disk in
-        dev, S3 in prod) in one place.
+        Burr never reads from or writes to the store on its own. It is made available to actions
+        through :py:class:`ApplicationContext` (``__context.object_store``), and to serializers
+        through :py:class:`~burr.core.serde.SerializationContext` wherever this application
+        serializes state -- so it can be configured (and swapped, e.g. local disk in dev, S3 in
+        prod) in one place.
 
         .. code-block:: python
 
@@ -2595,9 +2615,10 @@ class ApplicationBuilder(Generic[StateType]):
             )
 
         An :py:class:`AsyncArtifactStore` (e.g. an ``aiobotocore``-backed S3 store) may be passed
-        too, for use from async actions without blocking the event loop -- build the application
-        with :py:meth:`abuild` in that case, since :py:meth:`build` rejects an async store (it
-        can't be awaited from a sync action).
+        too, for use from async actions without blocking the event loop. It can be attached via
+        either :py:meth:`build` or :py:meth:`abuild`, but the application must then be run with
+        the async execution methods (:py:meth:`~Application.arun`, :py:meth:`~Application.astep`,
+        ...) -- synchronous ones reject it.
 
         :param object_store: The artifact store to make available to actions.
         :return: The application builder for future chaining.
@@ -2771,7 +2792,8 @@ class ApplicationBuilder(Generic[StateType]):
         _partition_key, _app_id, _sequence_id = self._identify_state_to_load()
 
         # load state from persister
-        load_result = self.state_initializer.load(_partition_key, _app_id, _sequence_id)
+        with _serialization_context_factory(self.object_store)():
+            load_result = self.state_initializer.load(_partition_key, _app_id, _sequence_id)
         self._init_state_from_persister(load_result, _partition_key, _app_id, _sequence_id)
 
     async def _load_from_async_persister(self):
@@ -2793,7 +2815,8 @@ class ApplicationBuilder(Generic[StateType]):
         _partition_key, _app_id, _sequence_id = self._identify_state_to_load()
 
         # load state from persister
-        load_result = await self.state_initializer.load(_partition_key, _app_id, _sequence_id)
+        with _serialization_context_factory(self.object_store)():
+            load_result = await self.state_initializer.load(_partition_key, _app_id, _sequence_id)
         self._init_state_from_persister(load_result, _partition_key, _app_id, _sequence_id)
 
     def reset_to_entrypoint(self):
