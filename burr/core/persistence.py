@@ -622,7 +622,7 @@ class InMemoryPersister(BaseStatePersister):
         if app_id is None:
             return None
 
-        if not (states := self._storage[partition_key][app_id]):
+        if not (states := self._storage.get(partition_key, {}).get(app_id)):
             return None
 
         if sequence_id is None:
@@ -675,7 +675,7 @@ class AsyncInMemoryPersister(AsyncBaseStatePersister):
         if app_id is None:
             return None
 
-        if not (states := self._storage[partition_key][app_id]):
+        if not (states := self._storage.get(partition_key, {}).get(app_id)):
             return None
 
         if sequence_id is None:
