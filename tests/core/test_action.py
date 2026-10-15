@@ -436,6 +436,21 @@ def test_safe_expr_all_allowed_builtins():
         assert _eval_value(Condition.safe_expr(expr_str), state) == expected, expr_str
 
 
+def test_safe_expr_state_key_shadows_builtin():
+    state = State({"count": 3, "max": 5, "sum": 0, "any": False})
+    for expr_str, reads in [
+        ("count < max", ["count", "max"]),
+        ("sum == 0", ["sum"]),
+        ("any", ["any"]),
+    ]:
+        cond = Condition.safe_expr(expr_str)
+        assert cond.run(state) == Condition.expr(expr_str).run(state), expr_str
+        assert sorted(cond.reads) == reads, expr_str
+    call = Condition.safe_expr("max(count, sum) == 3")
+    assert call.run(state) == {Condition.KEY: True}
+    assert sorted(call.reads) == ["count", "sum"]
+
+
 def test_safe_expr_reads_collected_correctly():
     cond = Condition.safe_expr("foo == 'bar' and len(baz) == 3")
     assert sorted(cond.reads) == ["baz", "foo"]
