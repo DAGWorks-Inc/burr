@@ -119,7 +119,8 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
         psycopg2 refuses to re-enter it from a caller's own ``with connection`` block.
         """
         try:
-            yield self.connection.cursor()
+            with self.connection.cursor() as cursor:
+                yield cursor
         except BaseException:
             try:
                 self.connection.rollback()
@@ -131,25 +132,25 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
 
     def create_table(self, table_name: str):
         """Helper function to create the table where things are stored."""
-        cursor = self.connection.cursor()
-        cursor.execute(
-            f"""
-            CREATE TABLE IF NOT EXISTS {table_name} (
-                partition_key TEXT DEFAULT '{self.PARTITION_KEY_DEFAULT}',
-                app_id TEXT NOT NULL,
-                sequence_id INTEGER NOT NULL,
-                position TEXT NOT NULL,
-                status TEXT NOT NULL,
-                state JSONB NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (partition_key, app_id, sequence_id, position)
-            )"""
-        )
-        cursor.execute(
-            f"""
-            CREATE INDEX IF NOT EXISTS {table_name}_created_at_index ON {table_name} (created_at);
-        """
-        )
+        with self.connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {table_name} (
+                    partition_key TEXT DEFAULT '{self.PARTITION_KEY_DEFAULT}',
+                    app_id TEXT NOT NULL,
+                    sequence_id INTEGER NOT NULL,
+                    position TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    state JSONB NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (partition_key, app_id, sequence_id, position)
+                )"""
+            )
+            cursor.execute(
+                f"""
+                CREATE INDEX IF NOT EXISTS {table_name}_created_at_index ON {table_name} (created_at);
+            """
+            )
         self.connection.commit()
 
     def initialize(self):
@@ -172,8 +173,10 @@ class PostgreSQLPersister(persistence.BaseStatePersister):
             self._initialized = cursor.fetchone()[0]
         return self._initialized
 
-    def list_app_ids(self, partition_key: str, **kwargs) -> list[str]:
+    def list_app_ids(self, partition_key: Optional[str], **kwargs) -> list[str]:
         """Lists the app_ids for a given partition_key, each once, most recently saved first."""
+        if partition_key is None:
+            partition_key = self.PARTITION_KEY_DEFAULT
         with self._transaction() as cursor:
             cursor.execute(
                 f"SELECT app_id FROM {self.table_name} "

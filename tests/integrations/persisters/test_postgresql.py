@@ -59,6 +59,35 @@ def test_save_and_load_with_default_partition_key(postgresql_persister):
     assert data["state"].get_all() == {"a": 1}
 
 
+def test_list_app_ids_with_default_partition_key(postgresql_persister):
+    """list_app_ids(None) finds apps saved without a partition key, like load does."""
+    postgresql_persister.save(None, "no_pk_list_app", 1, "pos", state.State({}), "completed")
+    assert "no_pk_list_app" in postgresql_persister.list_app_ids(None)
+
+
+def test_calls_close_their_cursors(postgresql_persister):
+    """Each call closes the cursor it opens instead of leaving it to the garbage collector."""
+    real = postgresql_persister.connection
+    opened = []
+
+    class RecordingConnection:
+        def cursor(self):
+            cursor = real.cursor()
+            opened.append(cursor)
+            return cursor
+
+        def __getattr__(self, name):
+            return getattr(real, name)
+
+    recording = PostgreSQLPersister(RecordingConnection(), table_name="testtable")
+    recording.is_initialized()
+    recording.save("txn-cursor", "app", 1, "pos", state.State({"a": 1}), "completed")
+    recording.load("txn-cursor", "app")
+    recording.list_app_ids("txn-cursor")
+    assert len(opened) == 4
+    assert all(cursor.closed for cursor in opened)
+
+
 def test_list_app_ids(postgresql_persister):
     postgresql_persister.save("pk", "app_id1", 1, "pos1", state.State({"a": 1}), "completed")
     postgresql_persister.save("pk", "app_id2", 2, "pos2", state.State({"b": 2}), "completed")
@@ -134,6 +163,12 @@ def test_interrupted_call_rolls_back(postgresql_persister):
     class InterruptingCursor:
         def __init__(self):
             self.cursor = real.cursor()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc_info):
+            self.cursor.close()
 
         def execute(self, *args, **kwargs):
             self.cursor.execute(*args, **kwargs)
@@ -277,6 +312,14 @@ async def test_async_save_and_load_with_default_partition_key(asyncpostgresql_pe
     )
     data = await asyncpostgresql_persister.load(None, "no_pk_app")
     assert data["state"].get_all() == {"a": 1}
+
+
+async def test_async_list_app_ids_with_default_partition_key(asyncpostgresql_persister):
+    """list_app_ids(None) finds apps saved without a partition key, like load does."""
+    await asyncpostgresql_persister.save(
+        None, "no_pk_list_app", 1, "pos", state.State({}), "completed"
+    )
+    assert "no_pk_list_app" in await asyncpostgresql_persister.list_app_ids(None)
 
 
 async def test_async_list_app_ids(asyncpostgresql_persister):
