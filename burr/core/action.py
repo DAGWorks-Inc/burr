@@ -923,10 +923,9 @@ class _SafeExprInterpreter:
         return self._register(set(elems), size)
 
     def _eval_Dict(self, node: ast.Dict):
-        items = [
-            ((self.eval(k) if k is not None else None), self.eval(v))
-            for k, v in zip(node.keys, node.values)
-        ]
+        # The validator rejects dictionary unpacking (a None key) at construction,
+        # so no unpacking reaches evaluation: every key here is a real expression.
+        items = [(self.eval(k), self.eval(v)) for k, v in zip(node.keys, node.values)]
         size = sum(1 + self._logical_size(k) + self._logical_size(v) for k, v in items)
         self._check_size(size)
         return self._register(dict(items), size)
@@ -1135,6 +1134,10 @@ class Condition(Function):
         including: lambdas, conditional expressions (``a if b else c``),
         comprehensions and generator expressions, the walrus operator,
         ``await``, ``yield``, imports, and any ``Call`` not on the builtin allowlist.
+
+        Bare names resolve against state first and fall back to the allowlisted
+        builtins; a call target always binds the allowlisted builtin even if state
+        has a key of that name, which is intentionally different from ``expr()``.
 
         Resource use is bounded as well, so a single expression cannot allocate
         without limit. The expression string may be at most 10,000 characters and
