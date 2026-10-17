@@ -96,6 +96,38 @@ def test_sqlite_persister_list_app_ids_is_unique_and_newest_first():
     assert persister.list_app_ids("pk") == ["a-app", "z-app"]
 
 
+@pytest.mark.parametrize("partition_key", [None, "partition_key"])
+@pytest.mark.parametrize("has_saved_app", [False, True])
+def test_memory_persistence_missing_load_preserves_app_ids(partition_key, has_saved_app):
+    persistence = InMemoryPersister()
+    if has_saved_app:
+        for sequence_id in (1, 2):
+            persistence.save(
+                partition_key,
+                "saved",
+                sequence_id,
+                "position",
+                State({"step": sequence_id}),
+                "status",
+            )
+    expected_app_ids = ["saved"] if has_saved_app else []
+
+    assert persistence.load(partition_key, None) is None
+    for sequence_id in (None, 99):
+        assert persistence.load(partition_key, "missing", sequence_id) is None
+        assert persistence.list_app_ids(partition_key) == expected_app_ids
+
+    if has_saved_app:
+        assert persistence.load(partition_key, "saved", 99) is None
+        assert persistence.load(partition_key, "saved")["state"] == State({"step": 2})
+        assert persistence.load(partition_key, "saved", 1)["state"] == State({"step": 1})
+        assert persistence.list_app_ids(partition_key) == expected_app_ids
+
+    persistence.save(partition_key, "missing", 1, "position", State({"step": 3}), "status")
+    assert set(persistence.list_app_ids(partition_key)) == set(expected_app_ids + ["missing"])
+    assert persistence.load(partition_key, "missing")["state"] == State({"step": 3})
+
+
 def test_persistence_is_initialized_false(initializing_persistence):
     assert not initializing_persistence.is_initialized()
 
@@ -296,6 +328,45 @@ async def test_async_persistence_lists_app_ids(async_persistence):
     )
     app_ids = await async_persistence.list_app_ids("partition_key")
     assert set(app_ids) == set(["app_id1", "app_id2"])
+
+
+@pytest.mark.parametrize("partition_key", [None, "partition_key"])
+@pytest.mark.parametrize("has_saved_app", [False, True])
+async def test_async_persistence_missing_load_preserves_app_ids(
+    async_persistence, partition_key, has_saved_app
+):
+    if has_saved_app:
+        for sequence_id in (1, 2):
+            await async_persistence.save(
+                partition_key,
+                "saved",
+                sequence_id,
+                "position",
+                State({"step": sequence_id}),
+                "status",
+            )
+    expected_app_ids = ["saved"] if has_saved_app else []
+
+    assert await async_persistence.load(partition_key, None) is None
+    for sequence_id in (None, 99):
+        assert await async_persistence.load(partition_key, "missing", sequence_id) is None
+        assert await async_persistence.list_app_ids(partition_key) == expected_app_ids
+
+    if has_saved_app:
+        assert await async_persistence.load(partition_key, "saved", 99) is None
+        assert (await async_persistence.load(partition_key, "saved"))["state"] == State({"step": 2})
+        assert (await async_persistence.load(partition_key, "saved", 1))["state"] == State(
+            {"step": 1}
+        )
+        assert await async_persistence.list_app_ids(partition_key) == expected_app_ids
+
+    await async_persistence.save(
+        partition_key, "missing", 1, "position", State({"step": 3}), "status"
+    )
+    assert set(await async_persistence.list_app_ids(partition_key)) == set(
+        expected_app_ids + ["missing"]
+    )
+    assert (await async_persistence.load(partition_key, "missing"))["state"] == State({"step": 3})
 
 
 @pytest.mark.parametrize(
