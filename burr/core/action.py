@@ -566,11 +566,11 @@ class _SafeExprInterpreter:
         return node.value
 
     def _eval_Name(self, node: ast.Name):
-        # Builtins on the allowlist resolve to the builtin; otherwise look up state.
-        if node.id in _SAFE_EXPR_BUILTINS:
-            return _SAFE_EXPR_BUILTINS[node.id]
+        # State wins over an allowlisted builtin of the same name, as in expr().
         if node.id in self._names:
             return self._names[node.id]
+        if node.id in _SAFE_EXPR_BUILTINS:
+            return _SAFE_EXPR_BUILTINS[node.id]
         raise NameError(f"safe_expr: name '{node.id}' is not defined")
 
     def _eval_Attribute(self, node: ast.Attribute):
@@ -832,16 +832,18 @@ class Condition(Function):
         # disallowed node exists we raise here, before constructing the Condition.
         _SafeExprValidator().visit(tree)
 
-        # Collect Name references for keys, mirroring expr().
-        all_builtins = builtins.__dict__
-
+        # Collect Name references for keys. A called name always resolves to an
+        # allowlisted builtin; any other name is read from state first.
         class _NameCollector(ast.NodeVisitor):
             def __init__(self):
                 self.names = set()
 
+            def visit_Call(self, node):
+                for arg in node.args:
+                    self.visit(arg)
+
             def visit_Name(self, node):
-                if node.id not in all_builtins:
-                    self.names.add(node.id)
+                self.names.add(node.id)
 
         collector = _NameCollector()
         collector.visit(tree)
