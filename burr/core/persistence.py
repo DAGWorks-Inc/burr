@@ -337,14 +337,17 @@ class SQLitePersister(BaseStatePersister, BaseCopyable):
         :param db_path: the path the DB will be stored.
         :param table_name: the table name to store things under.
         :param serde_kwargs: kwargs for state serialization/deserialization.
-        :param connect_kwargs: kwargs to pass to the aiosqlite.connect method.
-        :return: async sqlite persister instance with an open connection. You are responsible
+        :param connect_kwargs: kwargs to pass to sqlite3.connect, retained when copying or
+            unpickling the persister.
+        :return: sqlite persister instance with an open connection. You are responsible
             for closing the connection yourself.
         """
         connection = sqlite3.connect(
             db_path, **connect_kwargs if connect_kwargs is not None else {}
         )
-        return cls(db_path, table_name, serde_kwargs, connection=connection)
+        return cls(
+            db_path, table_name, serde_kwargs, connect_kwargs=connect_kwargs, connection=connection
+        )
 
     def copy(self) -> "Self":
         return SQLitePersister(
@@ -446,6 +449,7 @@ class SQLitePersister(BaseStatePersister, BaseCopyable):
         return self._initialized
 
     def list_app_ids(self, partition_key: Optional[str], **kwargs) -> list[str]:
+        """Lists the app_ids for a given partition_key, each once, most recently saved first."""
         partition_key = (
             partition_key if partition_key is not None else SQLitePersister.PARTITION_KEY_DEFAULT
         )
@@ -453,9 +457,10 @@ class SQLitePersister(BaseStatePersister, BaseCopyable):
         cursor = self.connection.cursor()
         try:
             cursor.execute(
-                f"SELECT DISTINCT app_id FROM {self.table_name} "
+                f"SELECT app_id FROM {self.table_name} "
                 f"WHERE partition_key = ? "
-                f"ORDER BY created_at DESC",
+                f"GROUP BY app_id "
+                f"ORDER BY MAX(created_at) DESC",
                 (partition_key,),
             )
         except sqlite3.OperationalError as e:

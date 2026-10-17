@@ -22,6 +22,7 @@ import sys
 import tarfile
 from argparse import Namespace
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -74,7 +75,7 @@ def test_build_sdist_uses_artifact_specific_license(monkeypatch, tmp_path):
         return subprocess.CompletedProcess(command, 0)
 
     monkeypatch.setattr(release, "_check_git_working_tree", fake_check_git_working_tree)
-    monkeypatch.setattr(release, "_source_date_epoch", lambda version, output_dir: None)
+    monkeypatch.setattr(release, "_git_source_date_epoch", lambda: 987654321)
     monkeypatch.setattr(release, "_run_command", fake_run_command)
 
     artifact = Path(release._build_sdist_from_git("0.42.0", str(output_dir)))
@@ -84,6 +85,51 @@ def test_build_sdist_uses_artifact_specific_license(monkeypatch, tmp_path):
         license_text = archive.extractfile("apache_burr-0.42.0/LICENSE").read().decode()
         assert license_text == project_files["LICENSE-sdist"]
         assert all(not name.endswith("/LICENSE-sdist") for name in archive.getnames())
+
+
+def test_git_source_date_epoch_ignores_ambient_epoch_and_anchors_repo(monkeypatch, capsys):
+    monkeypatch.setenv("SOURCE_DATE_EPOCH", "123456789")
+    calls = []
+
+    def fake_run_command(command, **kwargs):
+        calls.append((command, kwargs))
+        return SimpleNamespace(stdout="987654321\n")
+
+    monkeypatch.setattr(release, "_run_command", fake_run_command)
+
+    assert release._git_source_date_epoch() == 987654321
+    assert calls[0][0] == [
+        "git",
+        "-C",
+        str(release.PROJECT_ROOT),
+        "-c",
+        "log.showSignature=false",
+        "show",
+        "-s",
+        "--format=%ct",
+        "HEAD",
+    ]
+    assert "Ignoring ambient SOURCE_DATE_EPOCH=123456789" in capsys.readouterr().out
+
+
+def test_wheel_source_date_epoch_uses_explicit_rebuild_epoch(monkeypatch):
+    monkeypatch.setenv("SOURCE_DATE_EPOCH", "123456789")
+
+    assert release._wheel_source_date_epoch() == 123456789
+
+
+def test_wheel_source_date_epoch_treats_blank_as_unset(monkeypatch):
+    monkeypatch.setenv("SOURCE_DATE_EPOCH", "  ")
+    monkeypatch.setattr(release, "_git_source_date_epoch", lambda: 987654321)
+
+    assert release._wheel_source_date_epoch() == 987654321
+
+
+def test_environment_source_date_epoch_rejects_non_integer(monkeypatch):
+    monkeypatch.setenv("SOURCE_DATE_EPOCH", "not-an-epoch")
+
+    with pytest.raises(SystemExit):
+        release._environment_source_date_epoch()
 
 
 def _write_artifact_set(directory: Path, version: str, wheel_name: str = None) -> None:

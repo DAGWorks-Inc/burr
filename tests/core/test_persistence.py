@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import pickle
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
 
 from burr.core import State
@@ -74,6 +77,25 @@ def test_persistence_lists_app_ids(persistence):
     assert set(app_ids) == set(["app_id1", "app_id2"])
 
 
+def test_sqlite_persister_list_app_ids_is_unique_and_newest_first():
+    """Each app appears once, ordered by its most recent save."""
+    persister = SQLLitePersister(db_path=":memory:", table_name="test_table")
+    persister.initialize()
+    saves = [
+        ("a-app", 0, "2026-01-01 00:00:01"),
+        ("z-app", 0, "2026-01-01 00:00:02"),
+        ("a-app", 1, "2026-01-01 00:00:03"),
+    ]
+    for app_id, sequence_id, created_at in saves:
+        persister.save("pk", app_id, sequence_id, "position", State({}), "completed")
+        persister.connection.execute(
+            "UPDATE test_table SET created_at = ? WHERE app_id = ? AND sequence_id = ?",
+            (created_at, app_id, sequence_id),
+        )
+    persister.connection.commit()
+    assert persister.list_app_ids("pk") == ["a-app", "z-app"]
+
+
 def test_persistence_is_initialized_false(initializing_persistence):
     assert not initializing_persistence.is_initialized()
 
@@ -92,6 +114,31 @@ def test_sqlite_persistence_is_initialized_true_new_connection(tmp_path):
     assert p2.is_initialized()
     p.cleanup()
     p2.cleanup()
+
+
+@pytest.mark.parametrize("factory", ["from_values", "from_config"])
+@pytest.mark.parametrize("recreate", ["copy", "pickle"])
+def test_sqlite_factory_preserves_connection_options(tmp_path, factory, recreate):
+    config = {
+        "db_path": str(tmp_path / "state.db"),
+        "table_name": "checkpoints",
+        "connect_kwargs": {"timeout": 0.123, "check_same_thread": False},
+    }
+    persister = (
+        SQLLitePersister.from_values(**config)
+        if factory == "from_values"
+        else SQLLitePersister.from_config(config)
+    )
+    with persister:
+        persister.initialize()
+        persister.save("tenant", "agent", 1, "checkpoint", State({"count": 1}), "completed")
+        restored = persister.copy() if recreate == "copy" else pickle.loads(pickle.dumps(persister))
+        with restored:
+            assert restored.connection is not persister.connection
+            assert restored.connection.execute("PRAGMA busy_timeout").fetchone()[0] == 123
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                loaded = executor.submit(restored.load, "tenant", "agent").result(timeout=5)
+            assert loaded["state"] == State({"count": 1})
 
 
 def test_sqlite_persister_load_without_initialize_raises_runtime_error():
