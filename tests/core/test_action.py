@@ -16,6 +16,7 @@
 # under the License.
 
 import asyncio
+import time
 from typing import AsyncGenerator, Generator, Optional, Tuple, cast
 
 import pytest
@@ -575,26 +576,46 @@ def test_safe_expr_pow_small_works():
 
 
 def test_safe_expr_pow_literal_out_of_range_rejected_at_call_time():
-    with pytest.raises(ValueError, match="exponent out of range"):
+    # int ** int is bounded on the estimated result width, bit_length(base) * exp.
+    with pytest.raises(ValueError, match="wider than 4096 bits"):
         Condition.safe_expr("10 ** 10 ** 10")
+    with pytest.raises(ValueError, match="wider than 4096 bits"):
+        Condition.safe_expr("9 ** 9 ** 9")
+    with pytest.raises(ValueError, match="wider than 4096 bits"):
+        Condition.safe_expr("2 ** 4097")
+    with pytest.raises(ValueError, match="wider than 4096 bits"):
+        Condition.safe_expr("18446744073709551616 ** 64")  # 65 bits * 64 > 4096
     with pytest.raises(ValueError, match="exponent out of range"):
-        Condition.safe_expr("2 ** 65")
-    with pytest.raises(ValueError, match=r"base of \*\* out of range"):
-        Condition.safe_expr("18446744073709551616 ** 2")  # 2 ** 64 is 65 bits wide
+        Condition.safe_expr("2 ** -4097")
     # A literal subexpression nested under a state-dependent one is still caught here.
-    with pytest.raises(ValueError, match="exponent out of range"):
+    with pytest.raises(ValueError, match="wider than 4096 bits"):
         Condition.safe_expr("x > 10 ** 10 ** 10")
+
+
+def test_safe_expr_pow_wide_but_bounded_results_allowed():
+    # The width estimate lets through anything that fits in 4096 bits, however
+    # large the exponent; a fixed +/-64 exponent rule would have rejected these.
+    assert Condition.safe_expr("2 ** 100 > 0").run(State({})) == {Condition.KEY: True}
+    assert _eval_value(Condition.safe_expr("2 ** 100"), {}) == 2**100
+    assert _eval_value(Condition.safe_expr("10 ** 100"), {}) == 10**100
+    assert _eval_value(Condition.safe_expr("(10 ** 12) ** 2"), {}) == 10**24
+    assert (
+        _eval_value(Condition.safe_expr("2 ** 2048"), {}) == 2**2048
+    )  # estimate exactly at the cap
+    assert _eval_value(Condition.safe_expr("(-3) ** 7"), {}) == (-3) ** 7
+    assert _eval_value(Condition.safe_expr("2 ** -100"), {}) == 2**-100
 
 
 def test_safe_expr_pow_state_out_of_range_rejected_at_run_time():
     cond = Condition.safe_expr("x ** y")
     assert cond.run(State({"x": 2, "y": 10})) == {Condition.KEY: True}
-    with pytest.raises(ValueError, match="exponent out of range"):
+    assert cond.run(State({"x": 2**64, "y": 2})) == {Condition.KEY: True}
+    with pytest.raises(ValueError, match="wider than 4096 bits"):
         cond.run(State({"x": 10, "y": 10**10}))
+    with pytest.raises(ValueError, match="wider than 4096 bits"):
+        cond.run(State({"x": 2**64, "y": 64}))
     with pytest.raises(ValueError, match="exponent out of range"):
-        cond.run(State({"x": 2, "y": -65}))
-    with pytest.raises(ValueError, match=r"base of \*\* out of range"):
-        cond.run(State({"x": 2**64, "y": 2}))
+        cond.run(State({"x": 2, "y": -4097}))
     with pytest.raises(ValueError, match="int or float operands"):
         cond.run(State({"x": "a", "y": 2}))
 
@@ -618,8 +639,10 @@ def test_safe_expr_sequence_repeat_small_works():
 def test_safe_expr_sequence_repeat_out_of_range_rejected():
     with pytest.raises(ValueError, match="repeat count"):
         Condition.safe_expr('"a" * 10000000000')
+    # A container display is not evaluated at safe_expr() time, so the same bound
+    # on a list literal is applied when the condition runs.
     with pytest.raises(ValueError, match="repeat count"):
-        Condition.safe_expr("10000000000 * [0]")
+        Condition.safe_expr("10000000000 * [0]").run(State({}))
     # Each step within the repeat-count bound is still capped on the resulting length.
     with pytest.raises(ValueError, match="longer than"):
         Condition.safe_expr('("a" * 10000) * 10000')
@@ -697,6 +720,153 @@ def test_safe_expr_literal_bounds_check_defers_other_errors():
     cond = Condition.safe_expr("1 / 0")
     with pytest.raises(ZeroDivisionError):
         cond.run(State({}))
+    # Same for a type error between literals of accepted types.
+    cond = Condition.safe_expr('"a" - 1')
+    with pytest.raises(TypeError):
+        cond.run(State({}))
+
+
+def test_safe_expr_literal_bounds_check_reports_exhaustion_as_too_large(monkeypatch):
+    from burr.core.action import _SafeExprInterpreter  # type: ignore
+
+    def exhausted(self, node):
+        raise MemoryError()
+
+    monkeypatch.setattr(_SafeExprInterpreter, "eval", exhausted)
+    with pytest.raises(ValueError, match="too large"):
+        Condition.safe_expr("1 + 1")
+
+
+def test_safe_expr_literal_precheck_does_not_build_containers():
+    import tracemalloc
+
+    # Container displays are left to run(): building the condition must not
+    # allocate the million-element list the literal subexpression describes.
+    tracemalloc.start()
+    try:
+        start = time.perf_counter()
+        cond = Condition.safe_expr("[1] * 10 ** 6 * 10 ** 6")
+        elapsed = time.perf_counter() - start
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert peak < 1_000_000  # the list alone would be ~8 MB
+    assert elapsed < 1.0
+    start = time.perf_counter()
+    with pytest.raises(ValueError, match="safe_expr"):
+        cond.run(State({}))
+    assert time.perf_counter() - start < 1.0
+
+
+def test_safe_expr_nested_repeat_logical_size_bounded():
+    # Each step is within the top-level length cap (1000 * 1000), but the result
+    # has 10 ** 12 elements once the shared inner lists are counted every time they
+    # are reached -- which is what == would visit. Rejected, and without building it.
+    cond = Condition.safe_expr("[[[[0] * 1000] * 1000] * 1000] * 1000 == x")
+    start = time.perf_counter()
+    with pytest.raises(ValueError, match="longer than"):
+        cond.run(State({"x": []}))
+    assert time.perf_counter() - start < 1.0
+    # Moderate nesting is fine, including the walk that == performs.
+    cond = Condition.safe_expr("[[0] * 100] * 100 == [[0] * 100] * 100")
+    assert cond.run(State({})) == {Condition.KEY: True}
+    assert _eval_value(Condition.safe_expr("[[0] * 100] * 100"), {}) == [[0] * 100] * 100
+
+
+def test_safe_expr_logical_size_bounded_for_concat_and_displays():
+    # Concatenation sums the logical sizes (500 * 1001 each) ...
+    cond = Condition.safe_expr("[[0] * 1000] * 500 + [[0] * 1000] * 500")
+    with pytest.raises(ValueError, match="longer than"):
+        cond.run(State({}))
+    # ... and a display counts each element's logical size, not just its slot.
+    cond = Condition.safe_expr("([[0] * 1000] * 600, [[0] * 1000] * 600)")
+    with pytest.raises(ValueError, match="longer than"):
+        cond.run(State({}))
+    cond = Condition.safe_expr("{'a': [[0] * 1000] * 600, 'b': [[0] * 1000] * 600}")
+    with pytest.raises(ValueError, match="longer than"):
+        cond.run(State({}))
+    assert _eval_value(Condition.safe_expr("[[0] * 10] * 10 + [[1] * 10] * 10"), {}) == (
+        [[0] * 10] * 10 + [[1] * 10] * 10
+    )
+
+
+def test_safe_expr_state_values_measured_before_walks():
+    # A state value is measured (once, with a bounded walk) before an operation
+    # that would walk it, and its size is multiplied into anything built from it.
+    nested = [[0] * 1000] * 1000  # logical size 1,001,000
+    cond = Condition.safe_expr("x == y")
+    with pytest.raises(ValueError, match="more than 1000000 elements"):
+        cond.run(State({"x": nested, "y": [[0] * 1000] * 1000}))
+    with pytest.raises(ValueError, match="more than 1000000 elements"):
+        Condition.safe_expr("[] in x").run(State({"x": nested}))
+    with pytest.raises(ValueError, match="more than 1000000 elements"):
+        Condition.safe_expr("str(x)").run(State({"x": nested}))
+    with pytest.raises(ValueError, match="longer than"):
+        Condition.safe_expr("[x] * 1000").run(State({"x": [[0] * 100] * 100}))
+    # Operations that do not walk the value are unaffected ...
+    assert Condition.safe_expr("len(x) == 1000").run(State({"x": nested})) == {Condition.KEY: True}
+    assert Condition.safe_expr("bool(x)").run(State({"x": nested})) == {Condition.KEY: True}
+    assert Condition.safe_expr("x is x").run(State({"x": nested})) == {Condition.KEY: True}
+    # ... and neither is equality against something of a different length, which
+    # Python decides without looking inside.
+    assert Condition.safe_expr("x == []").run(State({"x": nested})) == {Condition.KEY: False}
+    assert Condition.safe_expr("x != []").run(State({"x": nested})) == {Condition.KEY: True}
+    # Within the cap, state values are walked as before.
+    small = [[0] * 100] * 100
+    assert cond.run(State({"x": small, "y": [[0] * 100] * 100})) == {Condition.KEY: True}
+    assert _eval_value(Condition.safe_expr("sum(x)"), {"x": list(range(10))}) == 45
+
+
+def test_safe_expr_unsupported_operand_types_rejected():
+    import array
+    import collections
+    import decimal
+
+    cond = Condition.safe_expr("s * 3")
+    with pytest.raises(ValueError, match=r"unsupported operand type deque for \*"):
+        cond.run(State({"s": collections.deque([0])}))
+    with pytest.raises(ValueError, match=r"unsupported operand type array for \*"):
+        cond.run(State({"s": array.array("i", [0])}))
+    with pytest.raises(ValueError, match=r"unsupported operand type bytearray for \*"):
+        cond.run(State({"s": bytearray(b"a")}))
+    with pytest.raises(ValueError, match=r"unsupported operand type Decimal for \*\*"):
+        Condition.safe_expr("n ** 2").run(State({"n": decimal.Decimal(3)}))
+    with pytest.raises(ValueError, match=r"unsupported operand type Decimal for \+"):
+        Condition.safe_expr("n + 1").run(State({"n": decimal.Decimal(3)}))
+    with pytest.raises(ValueError, match="unsupported operand type set for -"):
+        Condition.safe_expr("{1, 2} - {1}").run(State({}))
+    with pytest.raises(ValueError, match="unsupported operand type NoneType for %"):
+        Condition.safe_expr("n % 2").run(State({"n": None}))
+    # Division and comparison are not restricted, and accepted types that do not
+    # combine still get Python's own TypeError.
+    assert _eval_value(Condition.safe_expr("n / 2"), {"n": decimal.Decimal(3)}) == decimal.Decimal(
+        "1.5"
+    )
+    assert Condition.safe_expr("n > 2").run(State({"n": decimal.Decimal(3)})) == {
+        Condition.KEY: True
+    }
+    with pytest.raises(TypeError):
+        Condition.safe_expr("s + 1").run(State({"s": "a"}))
+    # bool is an int.
+    assert _eval_value(Condition.safe_expr("s * flag"), {"s": "ab", "flag": True}) == "ab"
+
+
+def test_safe_expr_numpy_integer_operands_coerced_and_bounded():
+    np = pytest.importorskip("numpy")
+    cond = Condition.safe_expr("s * n")
+    assert _eval_value(cond, {"s": "ab", "n": np.int64(2)}) == "abab"
+    assert _eval_value(cond, {"s": [0], "n": np.int32(3)}) == [0, 0, 0]
+    with pytest.raises(ValueError, match="repeat count"):
+        cond.run(State({"s": [0], "n": np.int64(10**9)}))
+    with pytest.raises(ValueError, match="longer than"):
+        cond.run(State({"s": [0] * 1000, "n": np.int64(10_000)}))
+    assert _eval_value(Condition.safe_expr("n ** 2"), {"n": np.int64(3)}) == 9
+    with pytest.raises(ValueError, match="wider than 4096 bits"):
+        Condition.safe_expr("n ** m").run(State({"n": np.int64(10), "m": np.int64(10**6)}))
+    assert _eval_value(Condition.safe_expr("x + 1.5"), {"x": np.float64(1.0)}) == 2.5
+    # Arrays have __index__ but are not integer scalars: rejected, not multiplied.
+    with pytest.raises(ValueError, match=r"unsupported operand type ndarray for \*"):
+        Condition.safe_expr("a * 2").run(State({"a": np.array([1, 2])}))
 
 
 def _eval_value(cond: Condition, state: dict):

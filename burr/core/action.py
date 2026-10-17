@@ -20,6 +20,8 @@ import ast
 import builtins
 import copy
 import inspect
+import itertools
+import operator
 import sys
 import textwrap
 import types
@@ -435,18 +437,41 @@ _SAFE_CMPOPS = (
 # handful of operators can still produce values whose size is not bounded by
 # the size of the expression (``10 ** 10 ** 10``, ``"a" * 10000000000``). We
 # keep those operators and bound them instead. Each bound is enforced at run
-# time by the interpreter; the ones that involve only literals are also
-# enforced up front at ``safe_expr()`` call time.
+# time by the interpreter; the ones that involve only numeric / string literals
+# are also enforced up front at ``safe_expr()`` call time.
+#
+# Sequence bounds are on *logical* size -- the number of elements a full walk
+# of the value visits, counting shared substructure every time it is reached --
+# not just the top-level length. ``[[0] * 1000] * 1000`` has ``len`` 1000 and
+# holds one shared inner list, but ``==``, ``in`` and ``str()`` all visit a
+# million elements, so that is what it counts as.
 _SAFE_EXPR_MAX_SOURCE_CHARS = 10_000  # length of the expression string, checked before parsing
 _SAFE_EXPR_MAX_NODES = 500  # total AST nodes in one expression
 _SAFE_EXPR_MAX_INT_BITS = 4096  # width of any int produced by arithmetic (or written as a literal)
-_SAFE_EXPR_MAX_POW_EXPONENT = 64  # |exponent| for int ** int
-_SAFE_EXPR_MAX_POW_BASE_BITS = 64  # width of the base for int ** int (64 bits * 64 = 4096 bits)
 _SAFE_EXPR_MAX_SEQ_REPEAT = 10_000  # n in ``sequence * n``
-_SAFE_EXPR_MAX_SEQ_LEN = 1_000_000  # length of a sequence produced by ``*`` or ``+``
+_SAFE_EXPR_MAX_SEQ_LEN = 1_000_000  # logical size of a sequence built by *, + or a display
 
-# Sequence types whose ``*`` / ``+`` allocate proportionally to their operands.
-_SAFE_EXPR_SEQUENCE_TYPES = (str, bytes, bytearray, list, tuple)
+# Operand types accepted by ``+``, ``-``, ``*``, ``%`` and ``**`` (the operators
+# whose result can grow). Integers are anything with ``__index__``, coerced to
+# plain ``int``; floats are ``float`` and its subclasses; sequences are exactly
+# these four. Any other type is rejected at run time (see ``_coerce_arith_operand``).
+_SAFE_EXPR_ARITH_SEQUENCE_TYPES = (str, bytes, list, tuple)
+
+# Binary operators whose operands go through ``_coerce_arith_operand``, with the
+# symbol used in the error message.
+_SAFE_EXPR_CHECKED_BINOP_SYMBOLS = {
+    ast.Add: "+",
+    ast.Sub: "-",
+    ast.Mult: "*",
+    ast.Mod: "%",
+    ast.Pow: "**",
+}
+
+# Container types the interpreter measures. Flat ones have logical size ``len``;
+# nested ones count every level.
+_SAFE_EXPR_FLAT_TYPES = (str, bytes, bytearray)
+_SAFE_EXPR_NESTED_TYPES = (list, tuple, set, frozenset, dict)
+_SAFE_EXPR_CONTAINER_TYPES = _SAFE_EXPR_FLAT_TYPES + _SAFE_EXPR_NESTED_TYPES
 
 
 class _SafeExprValidator(ast.NodeVisitor):
@@ -560,16 +585,128 @@ class _SafeExprValidator(ast.NodeVisitor):
         self._reject(node, f"node type {type(node).__name__}")
 
 
+def _coerce_arith_operand(value: typing.Any, symbol: str) -> typing.Any:
+    """Returns ``value`` as an operand the arithmetic bounds can measure, or raises.
+
+    Integer-like values -- anything with ``__index__``: ``int``, ``bool``, NumPy
+    integers -- become plain ``int``, so a repeat count or exponent is bounded the
+    same way whatever type it arrived in. ``float`` (and subclasses) and ``str`` /
+    ``bytes`` / ``list`` / ``tuple`` pass through. Everything else is rejected:
+    ``Decimal``, ``Fraction``, ``complex``, ``deque``, ``array.array``, NumPy
+    arrays, dates and arbitrary objects all define their own ``+ - * % **`` whose
+    cost the interpreter cannot bound. Mismatched operands of accepted types
+    (``"a" + 1``) still get Python's own ``TypeError``.
+    """
+    if type(value) is int or isinstance(value, (float, *_SAFE_EXPR_ARITH_SEQUENCE_TYPES)):
+        return value
+    if hasattr(value, "__index__"):
+        try:
+            return operator.index(value)
+        except TypeError:
+            # Has __index__ but is not an integer scalar (a NumPy array, say).
+            pass
+    raise ValueError(f"safe_expr: unsupported operand type {type(value).__name__} for {symbol}")
+
+
+def _estimate_logical_size(obj: typing.Any) -> int:
+    """Logical size of a container the interpreter did not build (a state value,
+    a slice, a ``str()`` result): one per element at every level, plus the
+    length of every string. Shared substructure is counted each time it is
+    reached, because that is how often ``==`` or ``str()`` would visit it.
+
+    Iterative, so deep data cannot hit the recursion limit, and bounded: it
+    raises as soon as the running total passes ``_SAFE_EXPR_MAX_SEQ_LEN``, so a
+    very large (or self-referential) value costs at most that many steps.
+    """
+    total = 0
+    stack = [obj]
+    while stack:
+        cur = stack.pop()
+        if not isinstance(cur, _SAFE_EXPR_CONTAINER_TYPES):
+            continue
+        total += len(cur)
+        if total > _SAFE_EXPR_MAX_SEQ_LEN:
+            raise ValueError(f"safe_expr: value has more than {_SAFE_EXPR_MAX_SEQ_LEN} elements")
+        if isinstance(cur, _SAFE_EXPR_FLAT_TYPES):
+            continue  # characters are leaves
+        children = itertools.chain(cur.keys(), cur.values()) if isinstance(cur, dict) else cur
+        stack.extend(c for c in children if isinstance(c, _SAFE_EXPR_CONTAINER_TYPES))
+    return total
+
+
 class _SafeExprInterpreter:
     """Direct AST interpreter for the safe_expr grammar.
 
     Only handles nodes already approved by :class:`_SafeExprValidator`. We
     raise ``ValueError`` defensively if an unknown node sneaks in -- but in
     practice the validator should have caught it first.
+
+    Besides producing values, the interpreter keeps a side table of the
+    *logical size* of every nested container it builds (``*``, ``+`` and
+    container displays): for a repeat ``size(seq) * n``, for a concatenation
+    the sum, for a display one per element plus each element's own size. That
+    is what ``==``, ``in`` and ``str()`` actually cost, whereas ``len()`` only
+    sees the top level. Containers the interpreter did not build (state values,
+    slices, ``str()`` results) are measured on demand with a bounded walk. No
+    container may be built, or walked, above ``_SAFE_EXPR_MAX_SEQ_LEN``.
     """
 
     def __init__(self, names: typing.Mapping[str, typing.Any]):
         self._names = names
+        # id(obj) -> (obj, logical_size). The object is held next to its size so
+        # its id cannot be recycled by a different object while the entry exists.
+        self._sizes: typing.Dict[int, typing.Tuple[typing.Any, int]] = {}
+
+    # -- logical size bookkeeping --------------------------------------------
+
+    def _logical_size(self, obj: typing.Any) -> int:
+        """Logical size of ``obj``: 0 for a non-container, ``len`` for a string
+        or bytes, and for a nested container one per element at every level
+        (plus string lengths), counting shared substructure every time it is
+        reached. Containers this interpreter built are looked up in the side
+        table; anything else is measured with a bounded walk, once per
+        interpreter (that is, once per ``run()``).
+        """
+        if isinstance(obj, _SAFE_EXPR_FLAT_TYPES):
+            return len(obj)
+        if not isinstance(obj, _SAFE_EXPR_NESTED_TYPES):
+            return 0
+        entry = self._sizes.get(id(obj))
+        if entry is not None and entry[0] is obj:
+            return entry[1]
+        size = _estimate_logical_size(obj)
+        self._sizes[id(obj)] = (obj, size)
+        return size
+
+    def _register(self, obj: typing.Any, size: int) -> typing.Any:
+        """Records the logical size of a container this interpreter just built."""
+        if isinstance(obj, _SAFE_EXPR_NESTED_TYPES):
+            self._sizes[id(obj)] = (obj, max(size, 0))
+        return obj
+
+    @staticmethod
+    def _check_size(size: int) -> None:
+        if size > _SAFE_EXPR_MAX_SEQ_LEN:
+            raise ValueError(f"safe_expr: sequence result longer than {_SAFE_EXPR_MAX_SEQ_LEN}")
+
+    def _check_walkable(self, *values: typing.Any) -> None:
+        """Called before an operation that walks its operands (``==``, ``in``,
+        ``str()``, ``sum()`` ...): a container over the logical-size cap is
+        rejected rather than walked. Containers the interpreter built are
+        already within the cap, so this only ever trips on values from state.
+        """
+        for value in values:
+            self._check_size(self._logical_size(value))
+
+    @staticmethod
+    def _same_length_containers(left: typing.Any, right: typing.Any) -> bool:
+        return (
+            isinstance(left, _SAFE_EXPR_CONTAINER_TYPES)
+            and isinstance(right, _SAFE_EXPR_CONTAINER_TYPES)
+            and len(left) == len(right)
+        )
+
+    # -- evaluation ------------------------------------------------------------
 
     def eval(self, node: ast.AST) -> typing.Any:  # noqa: A003 - matches ast naming
         if isinstance(node, ast.Expression):
@@ -613,6 +750,14 @@ class _SafeExprInterpreter:
         left = self.eval(node.left)
         for op, right_node in zip(node.ops, node.comparators):
             right = self.eval(right_node)
+            # Every comparison except identity may walk its operands, so both must
+            # be within the logical-size cap first. Equality is exempt when the
+            # lengths differ: Python answers that without looking inside.
+            if isinstance(op, (ast.Eq, ast.NotEq)):
+                if self._same_length_containers(left, right):
+                    self._check_walkable(left, right)
+            elif not isinstance(op, (ast.Is, ast.IsNot)):
+                self._check_walkable(left, right)
             if isinstance(op, ast.Eq):
                 ok = left == right
             elif isinstance(op, ast.NotEq):
@@ -672,6 +817,12 @@ class _SafeExprInterpreter:
         left = self.eval(node.left)
         right = self.eval(node.right)
         op = node.op
+        symbol = _SAFE_EXPR_CHECKED_BINOP_SYMBOLS.get(type(op))
+        if symbol is not None:
+            # These operators can grow their result, so only operand types whose
+            # cost the bounds below know how to measure are accepted.
+            left = _coerce_arith_operand(left, symbol)
+            right = _coerce_arith_operand(right, symbol)
         if isinstance(op, ast.Add):
             result = self._add(left, right)
         elif isinstance(op, ast.Sub):
@@ -683,7 +834,7 @@ class _SafeExprInterpreter:
         elif isinstance(op, ast.FloorDiv):
             result = left // right
         elif isinstance(op, ast.Mod):
-            if isinstance(left, (str, bytes, bytearray)):
+            if isinstance(left, (str, bytes)):
                 # ``"%0999999999d" % x`` allocates according to the format string, so
                 # printf-style formatting is not offered; use str() / comparisons instead.
                 raise ValueError("safe_expr: % formatting of strings is not supported")
@@ -698,22 +849,24 @@ class _SafeExprInterpreter:
             raise ValueError(f"safe_expr: integer result wider than {_SAFE_EXPR_MAX_INT_BITS} bits")
         return result
 
-    @staticmethod
-    def _add(left, right):
-        if isinstance(left, _SAFE_EXPR_SEQUENCE_TYPES) and isinstance(
-            right, _SAFE_EXPR_SEQUENCE_TYPES
+    def _add(self, left, right):
+        if isinstance(left, _SAFE_EXPR_ARITH_SEQUENCE_TYPES) and isinstance(
+            right, _SAFE_EXPR_ARITH_SEQUENCE_TYPES
         ):
             if len(left) + len(right) > _SAFE_EXPR_MAX_SEQ_LEN:
                 raise ValueError(f"safe_expr: sequence result longer than {_SAFE_EXPR_MAX_SEQ_LEN}")
+            size = self._logical_size(left) + self._logical_size(right)
+            self._check_size(size)
+            return self._register(left + right, size)
         return left + right
 
-    @staticmethod
-    def _mult(left, right):
-        # ``sequence * n`` (either order) allocates len(sequence) * n; bound both the
-        # repeat count and the resulting length. Plain numeric products fall through.
-        if isinstance(left, _SAFE_EXPR_SEQUENCE_TYPES) and isinstance(right, int):
+    def _mult(self, left, right):
+        # ``sequence * n`` (either order) allocates len(sequence) * n; bound the
+        # repeat count, the resulting length and the resulting logical size. Plain
+        # numeric products fall through.
+        if isinstance(left, _SAFE_EXPR_ARITH_SEQUENCE_TYPES) and isinstance(right, int):
             seq, n = left, right
-        elif isinstance(right, _SAFE_EXPR_SEQUENCE_TYPES) and isinstance(left, int):
+        elif isinstance(right, _SAFE_EXPR_ARITH_SEQUENCE_TYPES) and isinstance(left, int):
             seq, n = right, left
         else:
             return left * right
@@ -723,7 +876,11 @@ class _SafeExprInterpreter:
             )
         if len(seq) * n > _SAFE_EXPR_MAX_SEQ_LEN:
             raise ValueError(f"safe_expr: sequence result longer than {_SAFE_EXPR_MAX_SEQ_LEN}")
-        return seq * n
+        # The shallow check above misses shared nesting: ``[[0] * 1000] * 1000`` is
+        # 1000 * 1000 at each step but a million elements to anything that walks it.
+        size = self._logical_size(seq) * n
+        self._check_size(size)
+        return self._register(seq * n, size)
 
     @staticmethod
     def _pow(left, right):
@@ -732,32 +889,62 @@ class _SafeExprInterpreter:
         if isinstance(left, int) and isinstance(right, int):
             # int ** int is the only path whose result grows without limit; floats
             # either stay within float range or raise OverflowError immediately.
-            if abs(right) > _SAFE_EXPR_MAX_POW_EXPONENT:
+            # ``base ** exp`` has about ``bit_length(base) * exp`` bits, so that
+            # estimate is held to the same cap as the result itself (``2 ** 100``
+            # passes, ``9 ** 9 ** 9`` does not). A negative exponent yields a
+            # float, so only its magnitude is bounded.
+            if right >= 0:
+                if max(1, abs(left).bit_length()) * right > _SAFE_EXPR_MAX_INT_BITS:
+                    raise ValueError(
+                        f"safe_expr: ** result would be wider than {_SAFE_EXPR_MAX_INT_BITS} bits"
+                    )
+            elif -right > _SAFE_EXPR_MAX_INT_BITS:
                 raise ValueError("safe_expr: exponent out of range")
-            if left.bit_length() > _SAFE_EXPR_MAX_POW_BASE_BITS:
-                raise ValueError("safe_expr: base of ** out of range")
         return left**right
 
+    # Container displays are bounded on logical size too: ``[x, x]`` costs twice
+    # whatever ``x`` costs to walk. A display has at most _SAFE_EXPR_MAX_NODES
+    # elements, so evaluating them into a list before the check is cheap.
+
     def _eval_Tuple(self, node: ast.Tuple):
-        return tuple(self.eval(e) for e in node.elts)
+        elems = [self.eval(e) for e in node.elts]
+        size = self._display_size(elems)
+        return self._register(tuple(elems), size)
 
     def _eval_List(self, node: ast.List):
-        return [self.eval(e) for e in node.elts]
+        elems = [self.eval(e) for e in node.elts]
+        size = self._display_size(elems)
+        return self._register(elems, size)
 
     def _eval_Set(self, node: ast.Set):
-        return {self.eval(e) for e in node.elts}
+        elems = [self.eval(e) for e in node.elts]
+        size = self._display_size(elems)
+        return self._register(set(elems), size)
 
     def _eval_Dict(self, node: ast.Dict):
-        return {
-            (self.eval(k) if k is not None else None): self.eval(v)
+        items = [
+            ((self.eval(k) if k is not None else None), self.eval(v))
             for k, v in zip(node.keys, node.values)
-        }
+        ]
+        size = sum(1 + self._logical_size(k) + self._logical_size(v) for k, v in items)
+        self._check_size(size)
+        return self._register(dict(items), size)
+
+    def _display_size(self, elems: typing.List[typing.Any]) -> int:
+        size = sum(1 + self._logical_size(e) for e in elems)
+        self._check_size(size)
+        return size
 
     def _eval_Call(self, node: ast.Call):
         # Validator guarantees node.func is a Name in _SAFE_EXPR_BUILTINS,
         # no keywords, no starred args.
-        func = _SAFE_EXPR_BUILTINS[node.func.id]  # type: ignore[attr-defined]
+        name = node.func.id  # type: ignore[attr-defined]
+        func = _SAFE_EXPR_BUILTINS[name]
         args = [self.eval(a) for a in node.args]
+        if name not in ("len", "bool"):
+            # Every other builtin walks its argument (str, sum, min, max, all, any,
+            # int, float); len and bool read only the top level.
+            self._check_walkable(*args)
         return func(*args)
 
 
@@ -774,19 +961,12 @@ def _check_safe_expr_size(tree: ast.AST) -> None:
             raise ValueError(f"safe_expr: expression has more than {_SAFE_EXPR_MAX_NODES} nodes")
 
 
-# Node types that make up a literal-only subtree: no names, no state, no calls.
-_SAFE_EXPR_LITERAL_NODES = (
-    ast.Constant,
-    ast.BinOp,
-    ast.UnaryOp,
-    ast.Tuple,
-    ast.List,
-    ast.Set,
-    ast.Dict,
-    ast.operator,
-    ast.unaryop,
-    ast.expr_context,
-)
+# Node types that make up a literal-only arithmetic subtree: numeric / string
+# constants under operators. Container displays and names are deliberately
+# absent -- building a display is real work, and names depend on state -- so a
+# subtree containing either is left entirely to run time.
+_SAFE_EXPR_LITERAL_NODES = (ast.Constant, ast.BinOp, ast.UnaryOp, ast.operator, ast.unaryop)
+_SAFE_EXPR_LITERAL_CONSTANT_TYPES = (int, float, str)  # bool is an int; None is left to run time
 
 
 def _check_safe_expr_literal_arithmetic(tree: ast.AST) -> None:
@@ -796,22 +976,32 @@ def _check_safe_expr_literal_arithmetic(tree: ast.AST) -> None:
 
     A literal-only subtree has the same value regardless of state, so a bound
     it trips here is one it would trip on every run. Only the interpreter's
-    ``ValueError`` bounds are surfaced; anything else (e.g. ``ZeroDivisionError``
-    from ``1 / 0``) is left to run time, as before.
+    ``ValueError`` bounds are surfaced; arithmetic and type errors (``1 / 0``,
+    ``"a" - 1``) are left to run time, as before, and running out of memory or
+    stack while evaluating is reported as the expression being too large.
     """
     interpreter = _SafeExprInterpreter({})
 
     def is_literal_only(node: ast.AST) -> bool:
-        return all(isinstance(n, _SAFE_EXPR_LITERAL_NODES) for n in ast.walk(node))
+        for n in ast.walk(node):
+            if not isinstance(n, _SAFE_EXPR_LITERAL_NODES):
+                return False
+            if isinstance(n, ast.Constant) and not isinstance(
+                n.value, _SAFE_EXPR_LITERAL_CONSTANT_TYPES
+            ):
+                return False
+        return True
 
     def visit(node: ast.AST) -> None:
         if isinstance(node, ast.BinOp) and is_literal_only(node):
             try:
                 interpreter.eval(node)
             except ValueError:
-                raise
-            except Exception:
+                raise  # a bound was exceeded: that is what this check is for
+            except (ArithmeticError, TypeError):
                 pass
+            except (MemoryError, RecursionError):
+                raise ValueError("safe_expr: expression is too large") from None
             return
         for child in ast.iter_child_nodes(node):
             visit(child)
@@ -948,15 +1138,32 @@ class Condition(Function):
         Resource use is bounded as well, so a single expression cannot allocate
         without limit. The expression string may be at most 10,000 characters and
         may have at most 500 AST nodes; an expression nested too deeply for the
-        parser is rejected the same way. ``**`` accepts
-        only ``int`` / ``float`` operands; for ``int ** int`` the exponent must be
-        within +/-64 and the base must fit in 64 bits. ``sequence * n`` requires
-        ``n <= 10_000``, and ``*`` / ``+`` on sequences may not produce more than
-        1,000,000 elements. ``%`` is not applied to strings (no printf-style
-        formatting). No arithmetic step (and no integer literal) may produce an
-        ``int`` wider than 4096 bits. Bounds that depend only on literals are
-        checked at ``safe_expr()`` call time; the rest raise ``ValueError`` from
-        ``run()``.
+        parser is rejected the same way.
+
+        ``+``, ``-``, ``*``, ``%`` and ``**`` accept only ``int`` (anything with
+        ``__index__``, so NumPy integers work and are bounded like plain ints),
+        ``float``, ``str``, ``bytes``, ``list`` and ``tuple`` operands. Other
+        types read from state -- ``Decimal``, ``Fraction``, ``complex``,
+        ``deque``, ``array.array``, NumPy arrays, dates and custom objects --
+        raise ``ValueError`` when the condition runs, because the interpreter
+        cannot bound arithmetic it does not know how to measure; ``/``, ``//``
+        and the comparison operators are not restricted this way. ``**`` further
+        requires numeric operands: for ``int ** int`` with a non-negative
+        exponent the estimated result width ``bit_length(base) * exponent`` must
+        be at most 4096 bits (``2 ** 100`` and ``10 ** 100`` are fine,
+        ``9 ** 9 ** 9`` is not), and a negative exponent may be at most 4096 in
+        magnitude. ``sequence * n`` requires ``n <= 10_000``, and no sequence
+        built by ``*``, ``+`` or a container display may exceed 1,000,000
+        elements, counted *logically* -- as the number of elements a full walk of
+        the value would visit, so ``[[0] * 1000] * 1000`` counts as a million and
+        nesting repeats does not get around the cap. The same cap applies to any
+        container about to be walked by ``==`` / ``!=`` (when the lengths match),
+        ``<``, ``<=``, ``>``, ``>=``, ``in``, ``not in`` or a builtin other than
+        ``len`` / ``bool``, including containers read from state. ``%`` is not
+        applied to strings (no printf-style formatting). No arithmetic step (and
+        no integer literal) may produce an ``int`` wider than 4096 bits. Bounds
+        that depend only on numeric and string literals are checked at
+        ``safe_expr()`` call time; the rest raise ``ValueError`` from ``run()``.
 
         :param expr: Expression to evaluate
         :return: A condition that evaluates the given expression
