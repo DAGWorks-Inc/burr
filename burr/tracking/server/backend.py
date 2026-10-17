@@ -19,6 +19,7 @@ import abc
 import collections
 import importlib
 import json
+import logging
 import os.path
 import sys
 from datetime import datetime
@@ -44,6 +45,8 @@ from burr.tracking.server.schema import (
 )
 
 T = TypeVar("T")
+
+logger = logging.getLogger(__name__)
 
 # The following is a backend for the server.
 # Note this is not a fixed API yet, and thus not documented (in Burr's documentation)
@@ -512,9 +515,19 @@ class LocalBackend(BackendBase, AnnotationsBackendMixin):
             if entry.startswith("."):
                 # skip hidden files/directories
                 continue
-            full_path = os.path.join(project_filepath, entry)
-            metadata_path = os.path.join(full_path, "metadata.json")
-            log_path = os.path.join(full_path, "log.jsonl")
+            try:
+                full_path = _safe_join(project_filepath, entry)
+                metadata_path = _safe_join(full_path, "metadata.json")
+                log_path = _safe_join(full_path, "log.jsonl")
+            except fastapi.HTTPException:
+                # An entry (or one of its files) that resolves outside the storage directory
+                # is left out of the listing rather than failing the whole page.
+                logger.warning(
+                    "Skipping %r in project %r: it does not resolve inside the storage directory",
+                    entry,
+                    project_id,
+                )
+                continue
             if os.path.isdir(full_path):
                 metadata = await self._load_metadata(metadata_path)
                 app_partition_key = metadata.partition_key
@@ -552,10 +565,12 @@ class LocalBackend(BackendBase, AnnotationsBackendMixin):
             raise fastapi.HTTPException(
                 status_code=404, detail=f"App: {app_id} from project: {project_id} not found"
             )
-        log_file = os.path.join(app_filepath, "log.jsonl")
-        graph_file = os.path.join(app_filepath, "graph.json")
-        metadata_file = os.path.join(app_filepath, "metadata.json")
-        children_file = os.path.join(app_filepath, "children.jsonl")
+        # The fixed filenames go through the same containment check as the identifiers, so a
+        # link under the app directory that points elsewhere is refused before it is opened.
+        log_file = _safe_join(app_filepath, "log.jsonl")
+        graph_file = _safe_join(app_filepath, "graph.json")
+        metadata_file = _safe_join(app_filepath, "metadata.json")
+        children_file = _safe_join(app_filepath, "children.jsonl")
         metadata = await self._load_metadata(metadata_file)
         if not os.path.exists(graph_file):
             raise fastapi.HTTPException(

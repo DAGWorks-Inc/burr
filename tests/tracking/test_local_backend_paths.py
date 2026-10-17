@@ -18,15 +18,17 @@
 """Identifier validation and path containment for the local tracking backend.
 
 Project and app identifiers arrive as URL path parameters and are used as path
-components under the storage directory. These tests check that only plain
-identifiers are accepted, that every resolved path stays inside the storage
-directory, and that the server reports rejected identifiers as HTTP 400.
+components under the storage directory. These tests check that an identifier has to
+be a single path segment, that every resolved path (including the fixed filenames
+inside an app directory) stays inside the storage directory, and that the server
+reports rejected identifiers and paths as HTTP 400.
 """
 
 import importlib
 import os
 import uuid
 from pathlib import Path
+from urllib.parse import quote
 
 import pytest
 from fastapi import HTTPException
@@ -82,6 +84,13 @@ class TestValidateIdentifier:
         if not system.IS_WINDOWS:
             assert _validate_identifier("demo:chatbot", "project_id") == "demo:chatbot"
 
+    @pytest.mark.parametrize(
+        "value", ["user@example.com", "chat session 1", "héllo-wörld", "日本語", "a*b$c(d)"]
+    )
+    def test_accepts_any_single_path_segment(self, value):
+        # ids like these already exist on disk for some projects; they are ordinary filenames
+        assert _validate_identifier(value, "app_id") == value
+
     def test_invalid_identifiers(self):
         with pytest.raises(HTTPException) as exc:
             _validate_identifier("../etc/passwd")
@@ -95,8 +104,11 @@ class TestValidateIdentifier:
             _validate_identifier("hello\\world")
         assert exc.value.status_code == 400
 
-    @pytest.mark.parametrize("value", ["", ".", "..", " ", "a b", "/etc/passwd", "C:\\Windows"])
-    def test_rejects_empty_dot_and_absolute_identifiers(self, value):
+    @pytest.mark.parametrize(
+        "value",
+        ["", ".", "..", "/etc/passwd", "C:\\Windows", "nul\x00byte", "tab\tbed", "trailing\n"],
+    )
+    def test_rejects_empty_dot_absolute_and_control_identifiers(self, value):
         with pytest.raises(HTTPException) as exc:
             _validate_identifier(value, "project_id")
         assert exc.value.status_code == 400
@@ -242,7 +254,9 @@ class TestServerEndpoints:
         assert client.get(f"/api/v0/{PARENT}/app-1/__none__/apps").status_code == 400
         assert client.get(f"/api/v0/proj/{PARENT}/__none__/apps").status_code == 400
 
-    @pytest.mark.parametrize("project_id", ["..%5C..%5Cetc", "my%20project", "a" * 256])
+    @pytest.mark.parametrize(
+        "project_id", ["..%5C..%5Cetc", "my%0Aproject", "my%00project", "a" * 256]
+    )
     def test_rejects_other_malformed_identifiers(self, server, project_id):
         client, _ = server
         assert client.get(f"/api/v0/{project_id}/__none__/apps").status_code == 400
@@ -301,6 +315,58 @@ class TestServerEndpoints:
             response = client.get("/api/v0/demo:chatbot/__none__/apps")
             assert response.status_code == 200
             assert response.json()["applications"] == []
+
+    @pytest.mark.parametrize("app_id", ["user@example.com", "chat session 1", "héllo-wörld"])
+    def test_accepts_ids_that_are_any_single_path_segment(self, server, app_id):
+        client, storage = server
+        _make_app(storage, "proj", app_id)
+
+        response = client.get("/api/v0/proj/__none__/apps")
+        assert response.status_code == 200
+        assert [a["app_id"] for a in response.json()["applications"]] == [app_id]
+
+        response = client.get(f"/api/v0/proj/{quote(app_id)}/__none__/apps")
+        assert response.status_code == 200
+        assert response.json()["application"]["entrypoint"] == "counter"
+
+    @pytest.mark.parametrize(
+        "filename", ["graph.json", "log.jsonl", "metadata.json", "children.jsonl"]
+    )
+    def test_app_file_linked_outside_storage_is_rejected(self, server, tmp_path, filename):
+        client, storage = server
+        app_dir = _make_app(storage, "proj", "app-1")
+        outside = tmp_path / "outside.txt"
+        outside.write_text("not for the server")
+        target = app_dir / filename
+        if target.exists():
+            target.unlink()
+        target.symlink_to(outside)
+
+        response = client.get("/api/v0/proj/app-1/__none__/apps")
+        assert response.status_code == 400
+        assert "not for the server" not in response.text
+        assert str(storage) not in response.json()["detail"]
+
+    def test_app_files_inside_storage_are_served(self, server):
+        client, storage = server
+        app_dir = _make_app(storage, "proj", "app-1")
+        (app_dir / "children.jsonl").write_text("")
+        response = client.get("/api/v0/proj/app-1/__none__/apps")
+        assert response.status_code == 200
+        assert response.json()["application"]["entrypoint"] == "counter"
+
+    def test_listing_skips_app_whose_files_link_outside_storage(self, server, tmp_path):
+        client, storage = server
+        _make_app(storage, "proj", "good-app")
+        bad_dir = _make_app(storage, "proj", "bad-app")
+        outside = tmp_path / "outside.json"
+        outside.write_text("{}")
+        (bad_dir / "metadata.json").unlink()
+        (bad_dir / "metadata.json").symlink_to(outside)
+
+        response = client.get("/api/v0/proj/__none__/apps")
+        assert response.status_code == 200
+        assert [a["app_id"] for a in response.json()["applications"]] == ["good-app"]
 
     def test_valid_but_missing_app_is_not_found(self, server):
         client, storage = server
