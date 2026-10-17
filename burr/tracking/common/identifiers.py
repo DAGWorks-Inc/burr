@@ -25,42 +25,58 @@ from typing import Optional
 
 from burr import system
 
-# Letters, digits, underscore, hyphen, colon and dot. This covers uuid4 (hex and
-# hyphens) as well as the session/conversation style ids applications tend to pass
-# through as app ids.
-_ALLOWED_CHARACTERS = r"A-Za-z0-9_\-:."
-IDENTIFIER_PATTERN = re.compile(f"^[{_ALLOWED_CHARACTERS}]+$")
+# Any character except the path separators ("/" and "\") and the control characters
+# (NUL through unit separator, and DEL). Checked with ``fullmatch`` so the whole value
+# has to satisfy it; a trailing newline is a control character and is refused like any
+# other.
+IDENTIFIER_PATTERN = re.compile(r"[^/\\\x00-\x1f\x7f]+")
 MAX_IDENTIFIER_LENGTH = 255
 
 
-def validate_identifier(value: str, what: str, *, on_windows: Optional[bool] = None) -> str:
-    """Checks that ``value`` can be used as a single path component under the storage directory.
+class InvalidIdentifier(ValueError):
+    """An identifier cannot be used as a path segment under the storage directory, or a
+    joined path would not stay inside it.
 
-    The rule: a non-empty string of at most 255 characters drawn from letters, digits, ``_``,
-    ``-``, ``:`` and ``.``, and not the special directory names ``.`` or ``..``. On Windows
-    ``:`` is also refused, as it is a drive/stream separator there.
+    Subclasses :class:`ValueError` so existing ``except ValueError`` handlers keep working;
+    callers that want to report the problem specifically (for instance as an HTTP 400) can
+    catch this class instead.
+    """
+
+
+def validate_identifier(value: str, what: str, *, on_windows: Optional[bool] = None) -> str:
+    """Checks that ``value`` can be used as any single path segment under the storage directory.
+
+    The rule: a non-empty string of at most 255 characters that is not the special directory
+    name ``.`` or ``..`` and contains no ``/``, ``\\``, NUL or other control character. On
+    Windows ``:`` is also refused, as it is a drive/stream separator there. Everything else --
+    spaces, ``@``, dots, unicode letters -- is an ordinary filename character and is accepted,
+    so ids such as ``user@example.com`` or ``chat session 1`` keep working.
 
     :param value: the identifier to check
     :param what: short label for the error message, e.g. ``"app_id"`` or ``"project"``
     :param on_windows: platform override, defaults to the current platform; exposed for tests
     :return: ``value`` unchanged, so the call can be used inline
-    :raises ValueError: if the identifier does not meet the rule
+    :raises InvalidIdentifier: if the identifier does not meet the rule
     """
     if on_windows is None:
         on_windows = system.IS_WINDOWS
     if not isinstance(value, str):
-        raise ValueError(f"{what} must be a string, got {type(value).__name__}: {value!r}")
+        raise InvalidIdentifier(f"{what} must be a string, got {type(value).__name__}: {value!r}")
     if not value:
-        raise ValueError(f"{what} must not be empty")
+        raise InvalidIdentifier(f"{what} must not be empty")
     if len(value) > MAX_IDENTIFIER_LENGTH:
-        raise ValueError(
+        raise InvalidIdentifier(
             f"{what} must be at most {MAX_IDENTIFIER_LENGTH} characters, got {len(value)}"
         )
     if value in (".", ".."):
-        raise ValueError(f"{what} must not be '.' or '..', got {value!r}")
-    if not IDENTIFIER_PATTERN.match(value) or (on_windows and ":" in value):
-        allowed = "letters, digits, '_', '-', '.'" + ("" if on_windows else " and ':'")
-        raise ValueError(f"{what} may only contain {allowed}, got {value!r}")
+        raise InvalidIdentifier(f"{what} must not be '.' or '..', got {value!r}")
+    if IDENTIFIER_PATTERN.fullmatch(value) is None:
+        raise InvalidIdentifier(
+            f"{what} must be a single path segment: it may not contain '/', '\\' or control "
+            f"characters, got {value!r}"
+        )
+    if on_windows and ":" in value:
+        raise InvalidIdentifier(f"{what} may not contain ':' on Windows, got {value!r}")
     return value
 
 
@@ -74,7 +90,7 @@ def join_within(base: str, *parts: str) -> str:
     :param base: the directory the result must stay inside
     :param parts: path components to join onto ``base``
     :return: ``os.path.join(base, *parts)``
-    :raises ValueError: if the joined path would land outside ``base``
+    :raises InvalidIdentifier: if the joined path would land outside ``base``
     """
     joined = os.path.join(base, *parts)
     base_resolved = os.path.realpath(base)
@@ -88,5 +104,5 @@ def join_within(base: str, *parts: str) -> str:
         # commonpath refuses to compare paths on different drives (Windows); treat as outside
         inside = False
     if not inside:
-        raise ValueError(f"Path {joined!r} is not inside the storage directory {base!r}")
+        raise InvalidIdentifier(f"Path {joined!r} is not inside the storage directory {base!r}")
     return joined

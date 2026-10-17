@@ -30,7 +30,7 @@ from burr.core import Action, Application, ApplicationBuilder, Result, State, ac
 from burr.core.persistence import BaseStatePersister, PersistedStateData
 from burr.tracking import LocalTrackingClient
 from burr.tracking.client import _allowed_project_name
-from burr.tracking.common.identifiers import join_within, validate_identifier
+from burr.tracking.common.identifiers import InvalidIdentifier, join_within, validate_identifier
 from burr.tracking.common.models import (
     ApplicationMetadataModel,
     ApplicationModel,
@@ -168,9 +168,14 @@ def test_application_tracks_end_to_end_broken(tmpdir: str):
         ("Hello-World_123", False, True),
         ("Hello:World_123", False, True),
         ("Hello:World_123", True, False),
-        ("Invalid:Chars*", False, False),
-        ("Just$ymbols", True, False),
+        ("Chars*", False, True),
+        ("Just$ymbols", True, True),
         ("Normal_Text", True, True),
+        ("user@example.com", False, True),
+        ("chat session 1", True, True),
+        ("nested/name", False, False),
+        ("..", False, False),
+        ("trailing\n", False, False),
     ],
 )
 def test__allowed_project_name(input_string, on_windows, expected_result):
@@ -678,6 +683,14 @@ def test_local_tracking_client_copy():
         "my-app_1",
         "session:abc.123",
         "a" * 255,
+        # anything that is a single path segment is fine, including ids existing projects
+        # already have on disk
+        "user@example.com",
+        "chat session 1",
+        "héllo-wörld",
+        "日本語",
+        "hello..world",
+        "a*b$c(d)",
     ],
 )
 def test_validate_identifier_accepts_reasonable_ids(identifier):
@@ -694,13 +707,32 @@ def test_validate_identifier_accepts_reasonable_ids(identifier):
         "nested/app",
         "/absolute",
         "back\\slash",
-        "with space",
         "a" * 256,
+        # control characters, including a trailing newline, are not path-segment material
+        "nul\x00byte",
+        "tab\tbed",
+        "trailing\n",
+        "\n",
+        "del\x7fete",
     ],
 )
 def test_validate_identifier_rejects_ids_unfit_for_a_path_component(identifier):
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidIdentifier):
         validate_identifier(identifier, "app_id")
+
+
+def test_validate_identifier_rejects_non_strings():
+    with pytest.raises(InvalidIdentifier):
+        validate_identifier(None, "app_id")  # type: ignore[arg-type]
+    with pytest.raises(InvalidIdentifier):
+        validate_identifier(42, "app_id")  # type: ignore[arg-type]
+
+
+def test_invalid_identifier_is_a_value_error():
+    """Existing ``except ValueError`` handlers keep catching identifier problems."""
+    assert issubclass(InvalidIdentifier, ValueError)
+    with pytest.raises(ValueError):
+        validate_identifier("..", "app_id")
 
 
 def test_validate_identifier_refuses_colon_on_windows():
@@ -714,7 +746,7 @@ def test_join_within_keeps_paths_inside_base(tmp_path):
     assert join_within(base, "child") == os.path.join(base, "child")
     assert join_within(base, "child", "log.jsonl") == os.path.join(base, "child", "log.jsonl")
     for parts in [("..",), ("../sibling",), ("/absolute",), (".",), ("child", "..", "..")]:
-        with pytest.raises(ValueError):
+        with pytest.raises(InvalidIdentifier):
             join_within(base, *parts)
 
 
@@ -729,7 +761,7 @@ def _entries_under(root: str) -> set:
 
 @pytest.mark.parametrize(
     "app_id",
-    ["..", "../../escaped", "nested/app", "/absolute/path", "", "with space"],
+    ["..", "../../escaped", "nested/app", "/absolute/path", "", "trailing\n"],
 )
 def test_builder_rejects_app_id_that_leaves_storage_dir(tmpdir, app_id):
     """The error surfaces from .build(), and nothing is written -- inside or outside the storage dir."""
@@ -742,7 +774,7 @@ def test_builder_rejects_app_id_that_leaves_storage_dir(tmpdir, app_id):
 def test_builder_accepts_uuid_and_simple_app_ids(tmpdir):
     log_dir = str(tmpdir)
     project_name = "test_builder_accepts_ids"
-    for app_id in [str(uuid.uuid4()), "my-app_1", "v1.2.3"]:
+    for app_id in [str(uuid.uuid4()), "my-app_1", "v1.2.3", "user@example.com", "chat session 1"]:
         app = sample_application(project_name, log_dir, app_id)
         app.run(halt_after=["result"])
         log_path = os.path.join(log_dir, project_name, app_id, LocalTrackingClient.LOG_FILENAME)
@@ -792,7 +824,7 @@ def test_readers_reject_app_id_that_leaves_storage_dir(tmpdir):
         LocalTrackingClient.load_state(project_name, "../escaped", storage_dir=str(tmpdir))
 
 
-@pytest.mark.parametrize("project", ["..", "../other", "a/b", "", "with space"])
+@pytest.mark.parametrize("project", ["..", "../other", "a/b", "", "back\\slash", "trailing\n"])
 def test_project_name_follows_the_same_rule(tmpdir, project):
     with pytest.raises(ValueError):
         LocalTrackingClient(project=project, storage_dir=str(tmpdir))
