@@ -489,7 +489,7 @@ an object that instantiates spans and tracks state.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">call_llm</span></code> as a causal dependent of <code class="docutils literal notranslate"><span class="pre">create_prompt</span></code></p></li>
 </ol>
 <p>Dependencies are used to express [dag](-style structures of spans within actions. This is useful for gaining visibility into the internal structure
-of an action, but is likely best used with integrations with micro-orchestration systems for implementating actions, such as Hamilton or Lanchain.
+of an action, but is likely best used with integrations with micro-orchestration systems for implementing actions, such as Hamilton or Lanchain.
 This maps to the <a class="reference external" href="https://opentelemetry.io/docs/concepts/signals/traces/#span-links">span link</a> concept in OpenTelemetry.</p>
 <p>Note that, on the surface, this doesn’t actually <em>do</em> anything. It has to be paired with the appropriate hooks.
 These just function as callbacks (on enter/exit). The <a class="reference internal" href="../../reference/tracking/#burr.tracking.LocalTrackingClient" title="burr.tracking.LocalTrackingClient"><code class="xref py py-class docutils literal notranslate"><span class="pre">LocalTrackingClient</span></code></a>, used by the
@@ -538,7 +538,7 @@ or the root tracer factory. Note: the <cite>trace()</cite> decorator explained b
 <h2>Tracing Functions<a class="headerlink" href="#tracing-functions" title="Link to this heading">¶</a></h2>
 <p>You can observe non-burr functions, which will show up as part of your traces. To do this, you simply need to decorate the
 function with the <a class="reference internal" href="../../reference/visibility/#burr.visibility.tracing.trace" title="burr.visibility.tracing.trace"><code class="xref py py-func docutils literal notranslate"><span class="pre">&#64;trace</span></code></a> decorator. This will automatically create a span
-for the function (within the approprite context), and log as attributes the parameters + return value.</p>
+for the function (within the appropriate context), and log as attributes the parameters + return value.</p>
 <p>For instance:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">burr.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">trace</span>
@@ -564,7 +564,7 @@ for the function (within the approprite context), and log as attributes the para
     <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">'response'</span><span class="p">:</span> <span class="n">response</span><span class="p">})</span>
 </pre></div>
 </div>
-<p>This will create spans for the <code class="docutils literal notranslate"><span class="pre">_modify_prompt</span></code>, <code class="docutils literal notranslate"><span class="pre">_fix</span></code>, and <code class="docutils literal notranslate"><span class="pre">_query</span></code> functions, and log the parameters and return values. You can opt out of logging paramers or return values and adding a filter to the decorator to exclude certain parameters.
+<p>This will create spans for the <code class="docutils literal notranslate"><span class="pre">_modify_prompt</span></code>, <code class="docutils literal notranslate"><span class="pre">_fix</span></code>, and <code class="docutils literal notranslate"><span class="pre">_query</span></code> functions, and log the parameters and return values. You can opt out of logging parameters or return values and adding a filter to the decorator to exclude certain parameters.
 To contrast what you can instrument manually, the <code class="docutils literal notranslate"><span class="pre">&#64;trace</span></code> decorator allows you to get more visibility and replace manual code such as the following (though you can happily combine the two approaches):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">burr.visibility</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracerFactory</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">burr.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">action</span>
@@ -581,7 +581,7 @@ To contrast what you can instrument manually, the <code class="docutils literal 
 </pre></div>
 </div>
 <p>This will create spans for the <code class="docutils literal notranslate"><span class="pre">_modify_prompt</span></code>, <code class="docutils literal notranslate"><span class="pre">_fix</span></code>, and <code class="docutils literal notranslate"><span class="pre">_query</span></code> functions, and log the parameters and return values.
-You can opt out of logging paramers or return values and adding a filter to the decorator to exclude certain parameters.</p>
+You can opt out of logging parameters or return values and adding a filter to the decorator to exclude certain parameters.</p>
 </section>
 <section id="opentelref">
 <span id="id2"></span><h2>OpenTelemetry<a class="headerlink" href="#opentelref" title="Link to this heading">¶</a></h2>

@@ -865,7 +865,7 @@ instance, although we will likely be adding a new interface.</p>
 <h3>Persistence/Tracking<a class="headerlink" href="#persistence-tracking" title="Link to this heading">¶</a></h3>
 <p>By default, the trackers/persisters will be passed from the parent application to the child application. The application IDs
 will be created as a a stable hash of the parent ID + the index of the child ID, requiring the order to be constant to ensure that the same application ID is used for the same task every time.</p>
-<p>Note that we will be adding hte ability to create a unique key, per application, but that is not implemented yet.</p>
+<p>Note that we will be adding the ability to create a unique key, per application, but that is not implemented yet.</p>
 <p>It will also utilize the same persister to load from the prior state, if that is used on the application level (see <a class="reference internal" href="../state-persistence/#id1"><span class="std std-ref">state persistence</span></a>).</p>
 <p>This enables the following:</p>
 <ol class="arabic simple">
@@ -878,7 +878,7 @@ will be created as a a stable hash of the parent ID + the index of the child ID,
 <li><p>State saving/persistence (given by the <a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationBuilder.with_state_persister" title="burr.core.application.ApplicationBuilder.with_state_persister"><code class="xref py py-meth docutils literal notranslate"><span class="pre">burr.core.application.ApplicationBuilder.with_state_persister()</span></code></a> function in <a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationBuilder" title="burr.core.application.ApplicationBuilder"><code class="xref py py-class docutils literal notranslate"><span class="pre">burr.core.application.ApplicationBuilder</span></code></a>)</p></li>
 <li><p>State loading (given by the <a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationBuilder.initialize_from" title="burr.core.application.ApplicationBuilder.initialize_from"><code class="xref py py-meth docutils literal notranslate"><span class="pre">burr.core.application.ApplicationBuilder.initialize_from()</span></code></a> function in <a class="reference internal" href="../../reference/application/#burr.core.application.ApplicationBuilder" title="burr.core.application.ApplicationBuilder"><code class="xref py py-class docutils literal notranslate"><span class="pre">burr.core.application.ApplicationBuilder</span></code></a>)</p></li>
 </ol>
-<p>These will then be passed ot the corresponding sub-application tasks. If any of these objects implement a <cite>.copy()</cite> method, that will be called. Otherwise the same instance will be created. Not the tracker/persister/loader must be serializable
+<p>These will then be passed to the corresponding sub-application tasks. If any of these objects implement a <cite>.copy()</cite> method, that will be called. Otherwise the same instance will be created. Not the tracker/persister/loader must be serializable
 to work in non-multithreaded executors, and thread-safe to work in multithreaded instances.</p>
 <p>In mst cases, (2) and (3) above will be the same, however there all valid use-cases where you might want to use different persisters/loaders for the sub-application.
 Thus, the default will be to pass the same instance for (2) and (3), <em>if</em> they both exist and are specified.</p>
