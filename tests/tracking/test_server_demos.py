@@ -20,14 +20,21 @@
 The demo routers (counter, chatbot, ...) each build a local tracking client on ``~/.burr``,
 so they are mounted only when ``BURR_SERVER_DEMOS`` asks for them: a plain ``burr`` server
 exposes just the UI routes, and the ``burr-demo`` entry point turns the demos on.
+
+Whether a demo router is mounted is checked over HTTP rather than by inspecting
+``app.routes``, whose entries for included routers differ between FastAPI versions.
 """
 
 import importlib
 
 import pytest
-from click.testing import CliRunner
+from fastapi.testclient import TestClient
 
-COUNTER_STATE_ROUTE = "/api/v0/counter/state/{project_id}/{app_id}"
+# A POST-only demo route. A GET on it is 404 when the router is not mounted and 405 (method
+# not allowed) when it is, so the check never reaches the handler or touches the demo's
+# storage directory.
+COUNTER_CREATE = "/api/v0/counter/create/proj/app"
+MOUNTED, NOT_MOUNTED = 405, 404
 
 
 @pytest.fixture
@@ -38,15 +45,14 @@ def run(monkeypatch):
     return importlib.import_module("burr.tracking.server.run")
 
 
-def _paths(app) -> set:
-    return {route.path for route in app.routes}
+def _demo_status(app) -> int:
+    return TestClient(app).get(COUNTER_CREATE).status_code
 
 
 @pytest.mark.parametrize("value", ["1", "true", "TRUE", "yes", " Yes "])
 def test_demos_mounted_when_env_is_truthy(run, monkeypatch, value):
     monkeypatch.setenv("BURR_SERVER_DEMOS", value)
-    app = run.create_burr_ui_app(serve_static=False)
-    assert COUNTER_STATE_ROUTE in _paths(app)
+    assert _demo_status(run.create_burr_ui_app(serve_static=False)) == MOUNTED
 
 
 @pytest.mark.parametrize("value", [None, "", "0", "false", "no", "off"])
@@ -56,33 +62,35 @@ def test_demos_not_mounted_otherwise(run, monkeypatch, value):
     else:
         monkeypatch.setenv("BURR_SERVER_DEMOS", value)
     app = run.create_burr_ui_app(serve_static=False)
-    assert not any(path.startswith("/api/v0/counter") for path in _paths(app))
-    assert "/api/v0/projects" in _paths(app)  # the UI's own routes are unaffected
+    assert _demo_status(app) == NOT_MOUNTED
+    # the UI's own routes are unaffected
+    assert TestClient(app).get("/api/v0/projects").status_code == 200
 
 
 def test_explicit_argument_overrides_env(run, monkeypatch):
     monkeypatch.delenv("BURR_SERVER_DEMOS", raising=False)
-    assert COUNTER_STATE_ROUTE in _paths(
-        run.create_burr_ui_app(serve_static=False, mount_demos=True)
-    )
+    assert _demo_status(run.create_burr_ui_app(serve_static=False, mount_demos=True)) == MOUNTED
     monkeypatch.setenv("BURR_SERVER_DEMOS", "true")
-    assert COUNTER_STATE_ROUTE not in _paths(
-        run.create_burr_ui_app(serve_static=False, mount_demos=False)
-    )
+    app = run.create_burr_ui_app(serve_static=False, mount_demos=False)
+    assert _demo_status(app) == NOT_MOUNTED
 
 
-def test_demo_route_is_404_without_env_and_present_with_it(run, monkeypatch):
-    from fastapi.testclient import TestClient
-
+def test_demo_route_is_absent_without_env_and_listed_with_it(run, monkeypatch):
     monkeypatch.delenv("BURR_SERVER_DEMOS", raising=False)
     client = TestClient(run.create_burr_ui_app(serve_static=False))
-    assert client.get("/api/v0/counter/state/proj/app").status_code == 404
-    assert client.get("/api/v0/projects").status_code == 200
+    assert client.get(COUNTER_CREATE).status_code == NOT_MOUNTED
+    assert (
+        "/api/v0/counter/create/{project_id}/{app_id}"
+        not in client.get("/openapi.json").json()["paths"]
+    )
 
     monkeypatch.setenv("BURR_SERVER_DEMOS", "true")
     client = TestClient(run.create_burr_ui_app(serve_static=False))
-    # presence is checked through the schema so the demo's own storage is never touched
-    assert COUNTER_STATE_ROUTE in client.get("/openapi.json").json()["paths"]
+    assert client.get(COUNTER_CREATE).status_code == MOUNTED
+    assert (
+        "/api/v0/counter/create/{project_id}/{app_id}"
+        in client.get("/openapi.json").json()["paths"]
+    )
 
 
 def test_mount_burr_ui_passes_the_flag_through(run, monkeypatch):
@@ -90,17 +98,23 @@ def test_mount_burr_ui_passes_the_flag_through(run, monkeypatch):
 
     monkeypatch.delenv("BURR_SERVER_DEMOS", raising=False)
     parent = FastAPI()
-    ui_app = run.mount_burr_ui(parent, serve_static=False)
-    assert COUNTER_STATE_ROUTE not in _paths(ui_app)
-    ui_app = run.mount_burr_ui(parent, path="/with-demos", serve_static=False, mount_demos=True)
-    assert COUNTER_STATE_ROUTE in _paths(ui_app)
+    run.mount_burr_ui(parent, path="/plain", serve_static=False)
+    run.mount_burr_ui(parent, path="/with-demos", serve_static=False, mount_demos=True)
+    client = TestClient(parent)
+    assert client.get("/plain" + COUNTER_CREATE).status_code == NOT_MOUNTED
+    assert client.get("/with-demos" + COUNTER_CREATE).status_code == MOUNTED
 
 
 class TestCli:
     """``burr`` leaves the demos off; ``burr-demo`` turns them on through the environment."""
 
-    def test_run_server_sets_the_flag_only_on_request(self, monkeypatch):
-        cli_main = importlib.import_module("burr.cli.__main__")
+    @pytest.fixture
+    def cli_main(self):
+        # the CLI module needs the `cli` extra, which not every test environment installs
+        pytest.importorskip("loguru", reason="the cli extra is not installed")
+        return importlib.import_module("burr.cli.__main__")
+
+    def test_run_server_sets_the_flag_only_on_request(self, cli_main, monkeypatch):
         captured = {}
 
         def fake_command(command, capture_output, addl_env=None):
@@ -114,8 +128,9 @@ class TestCli:
         cli_main._run_server(7241, False, True, True, demos=True)
         assert captured["BURR_SERVER_DEMOS"] == "true"
 
-    def test_commands_are_wired_to_the_flag(self, monkeypatch):
-        cli_main = importlib.import_module("burr.cli.__main__")
+    def test_commands_are_wired_to_the_flag(self, cli_main, monkeypatch):
+        from click.testing import CliRunner
+
         calls = []
         monkeypatch.setattr(cli_main, "_run_server", lambda *args, **kwargs: calls.append(kwargs))
 
@@ -127,8 +142,9 @@ class TestCli:
         assert result.exit_code == 0, result.output
         assert calls[-1]["demos"] is True
 
-    def test_help_mentions_the_flag(self):
-        cli_main = importlib.import_module("burr.cli.__main__")
+    def test_help_mentions_the_flag(self, cli_main):
+        from click.testing import CliRunner
+
         for command in ["run-server", "demo-server"]:
             result = CliRunner().invoke(cli_main.cli, [command, "--help"])
             assert result.exit_code == 0, result.output
