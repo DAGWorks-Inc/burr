@@ -185,3 +185,23 @@ def test_deserialize_pandas_df_rejects_symlink_escaping_base(tmp_path):
     with pytest.raises(ValueError) as exc_info:
         state.State.deserialize(_persisted("link.parquet"), pandas_kwargs={"path": base})
     assert "resolves outside the configured directory" in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "df_1,df_2",
+    [
+        (pd.DataFrame({"a": [1, 2]}), pd.DataFrame({"a": [9, 9]})),
+        (pd.DataFrame({"a": [[1, 2], [3]]}), pd.DataFrame({"a": [[9], [9, 9]]})),
+    ],
+    ids=["scalar_cells", "list_cells"],
+)
+def test_serde_of_same_shape_dataframes_keeps_each_dataframe(tmp_path, df_1, df_2):
+    pandas_kwargs = {"path": tmp_path}
+    serialized_1 = state.State({"df": df_1}).serialize(pandas_kwargs=pandas_kwargs)
+    serialized_2 = state.State({"df": df_2}).serialize(pandas_kwargs=pandas_kwargs)
+    assert serialized_1["df"]["path"] != serialized_2["df"]["path"]
+
+    deserialized_1 = state.State.deserialize(serialized_1, pandas_kwargs=pandas_kwargs)
+    deserialized_2 = state.State.deserialize(serialized_2, pandas_kwargs=pandas_kwargs)
+    pd.testing.assert_frame_equal(deserialized_1["df"], df_1)
+    pd.testing.assert_frame_equal(deserialized_2["df"], df_2)
