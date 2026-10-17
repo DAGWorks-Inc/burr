@@ -1503,40 +1503,44 @@ class Application(Generic[ApplicationStateType]):
         self.validate_correct_async_use()
         call_execute_method_wrapper = _call_execute_method_pre_post(ExecuteMethod.stream_result)
         call_execute_method_wrapper.call_pre(self)
-        halt_before, halt_after, inputs = self._process_control_flow_params(
-            halt_before, halt_after, inputs
-        )
-        self._validate_halt_conditions(halt_before, halt_after)
-        next_action = self.get_next_action()
-        if next_action is None:
-            raise ValueError(
-                f"Cannot stream result -- no next action found! Prior action was: {self._state[PRIOR_STEP]}"
+        try:
+            halt_before, halt_after, inputs = self._process_control_flow_params(
+                halt_before, halt_after, inputs
             )
-        if next_action.name not in halt_after:
-            # fast forward until we get to the action
-            # run already handles incrementing sequence IDs, nothing to worry about here
-            next_action, results, state = self.run(
-                halt_before=halt_after + halt_before, inputs=inputs
-            )
-            # In this case, we are ready to halt and return an empty generator
-            # The results will be None, and the state will be the final state
-            # For context, this is specifically for the case in which you want to have
-            # multiple terminal points with a unified API, where some are streaming, and some are not.
-            if next_action.name in halt_before and next_action.name not in halt_after:
-                call_execute_method_wrapper.call_post(self, None)
-                return next_action, StreamingResultContainer.pass_through(
-                    results=results, final_state=state
+            self._validate_halt_conditions(halt_before, halt_after)
+            next_action = self.get_next_action()
+            if next_action is None:
+                raise ValueError(
+                    f"Cannot stream result -- no next action found! Prior action was: {self._state[PRIOR_STEP]}"
                 )
-        self._increment_sequence_id()
-        self._adapter_set.call_all_lifecycle_hooks_sync(
-            "pre_run_step",
-            action=next_action,
-            state=self._state,
-            inputs=inputs,
-            sequence_id=self.sequence_id,
-            app_id=self._uid,
-            partition_key=self._partition_key,
-        )
+            if next_action.name not in halt_after:
+                # fast forward until we get to the action
+                # run already handles incrementing sequence IDs, nothing to worry about here
+                next_action, results, state = self.run(
+                    halt_before=halt_after + halt_before, inputs=inputs
+                )
+                # In this case, we are ready to halt and return an empty generator
+                # The results will be None, and the state will be the final state
+                # For context, this is specifically for the case in which you want to have
+                # multiple terminal points with a unified API, where some are streaming, and some are not.
+                if next_action.name in halt_before and next_action.name not in halt_after:
+                    call_execute_method_wrapper.call_post(self, None)
+                    return next_action, StreamingResultContainer.pass_through(
+                        results=results, final_state=state
+                    )
+            self._increment_sequence_id()
+            self._adapter_set.call_all_lifecycle_hooks_sync(
+                "pre_run_step",
+                action=next_action,
+                state=self._state,
+                inputs=inputs,
+                sequence_id=self.sequence_id,
+                app_id=self._uid,
+                partition_key=self._partition_key,
+            )
+        except Exception as e:
+            call_execute_method_wrapper.call_post(self, e)
+            raise
 
         # we need to track if there's any exceptions that occur during this
         try:
@@ -1756,40 +1760,44 @@ class Application(Generic[ApplicationStateType]):
         """
         call_execute_method_wrapper = _call_execute_method_pre_post(ExecuteMethod.stream_result)
         await call_execute_method_wrapper.acall_pre(self)
-        halt_before, halt_after, inputs = self._process_control_flow_params(
-            halt_before, halt_after, inputs
-        )
-        self._validate_halt_conditions(halt_before, halt_after)
-        next_action = self.get_next_action()
-        if next_action is None:
-            raise ValueError(
-                f"Cannot stream result -- no next action found! Prior action was: {self._state[PRIOR_STEP]}"
+        try:
+            halt_before, halt_after, inputs = self._process_control_flow_params(
+                halt_before, halt_after, inputs
             )
-        if next_action.name not in halt_after:
-            # fast forward until we get to the action
-            # run already handles incrementing sequence IDs, nothing to worry about here
-            next_action, results, state = await self.arun(
-                halt_before=halt_after + halt_before, inputs=inputs
-            )
-            # In this case, we are ready to halt and return an empty generator
-            # The results will be None, and the state will be the final state
-            # For context, this is specifically for the case in which you want to have
-            # multiple terminal points with a unified API, where some are streaming, and some are not.
-            if next_action.name in halt_before and next_action.name not in halt_after:
-                await call_execute_method_wrapper.acall_post(self, None)
-                return next_action, AsyncStreamingResultContainer.pass_through(
-                    results=results, final_state=state
+            self._validate_halt_conditions(halt_before, halt_after)
+            next_action = self.get_next_action()
+            if next_action is None:
+                raise ValueError(
+                    f"Cannot stream result -- no next action found! Prior action was: {self._state[PRIOR_STEP]}"
                 )
-        self._increment_sequence_id()
-        await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
-            "pre_run_step",
-            action=next_action,
-            state=self._state,
-            inputs=inputs,
-            sequence_id=self.sequence_id,
-            app_id=self._uid,
-            partition_key=self._partition_key,
-        )
+            if next_action.name not in halt_after:
+                # fast forward until we get to the action
+                # run already handles incrementing sequence IDs, nothing to worry about here
+                next_action, results, state = await self.arun(
+                    halt_before=halt_after + halt_before, inputs=inputs
+                )
+                # In this case, we are ready to halt and return an empty generator
+                # The results will be None, and the state will be the final state
+                # For context, this is specifically for the case in which you want to have
+                # multiple terminal points with a unified API, where some are streaming, and some are not.
+                if next_action.name in halt_before and next_action.name not in halt_after:
+                    await call_execute_method_wrapper.acall_post(self, None)
+                    return next_action, AsyncStreamingResultContainer.pass_through(
+                        results=results, final_state=state
+                    )
+            self._increment_sequence_id()
+            await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
+                "pre_run_step",
+                action=next_action,
+                state=self._state,
+                inputs=inputs,
+                sequence_id=self.sequence_id,
+                app_id=self._uid,
+                partition_key=self._partition_key,
+            )
+        except Exception as e:
+            await call_execute_method_wrapper.acall_post(self, e)
+            raise
         try:
 
             def process_result(
