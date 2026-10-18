@@ -150,9 +150,7 @@ DEFAULT_SCRIPT = [
     },
     {
         "content": None,
-        "tool_calls": [
-            {"id": "c3", "name": "run_bash", "args": {"command": "python hello.py"}}
-        ],
+        "tool_calls": [{"id": "c3", "name": "run_bash", "args": {"command": "python hello.py"}}],
     },
     {"content": "Created hello.py and confirmed it runs.", "tool_calls": []},
 ]
@@ -208,8 +206,7 @@ def call_llm(state: State, client: Callable) -> State:
 
     if not calls:
         return state.update(
-            messages=state["messages"]
-            + [{"role": "assistant", "content": result["content"]}],
+            messages=state["messages"] + [{"role": "assistant", "content": result["content"]}],
             next_tool=None,
             next_args={},
             last_tool_call_id=None,
@@ -305,9 +302,7 @@ def respond(state: State) -> State:
     )
 
 
-def application(
-    app_id: Optional[str] = None, max_steps: int = 15, client: Callable = None
-):
+def application(app_id: Optional[str] = None, max_steps: int = 15, client: Callable = None):
     """Builds the coding agent application."""
     client = client or get_client()
     return (
@@ -345,9 +340,7 @@ def application(
             (["read_file", "write_file", "list_files", "run_bash"], "create_prompt"),
             ("respond", "human_input"),
         )
-        .with_state(
-            max_steps=max_steps, steps=0, messages=[], done=False, final_answer=None
-        )
+        .with_state(max_steps=max_steps, steps=0, messages=[], done=False, final_answer=None)
         .with_identifiers(app_id=app_id)
         .with_entrypoint("human_input")
         .with_tracker(project="demo_coding_agent")

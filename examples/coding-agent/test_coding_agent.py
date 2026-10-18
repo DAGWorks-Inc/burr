@@ -187,9 +187,7 @@ def test_reads_are_confined_to_the_workspace(tmp_path, monkeypatch, path):
 
     result = tool_result(state)
     assert "error" in result
-    assert (
-        "outside" in result["error"].lower() or "workspace" in result["error"].lower()
-    )
+    assert "outside" in result["error"].lower() or "workspace" in result["error"].lower()
 
 
 def test_writes_are_confined_to_the_workspace(tmp_path, monkeypatch):
@@ -230,9 +228,7 @@ def test_tool_results_are_fed_back_to_the_model(tmp_path, monkeypatch):
             if self.index == 1:
                 return {
                     "content": None,
-                    "tool_calls": [
-                        {"id": "c1", "name": "read_file", "args": {"path": "data.txt"}}
-                    ],
+                    "tool_calls": [{"id": "c1", "name": "read_file", "args": {"path": "data.txt"}}],
                 }
             return {"content": "Read it.", "tool_calls": []}
 
@@ -269,9 +265,7 @@ def _fake_openai(tool_calls):
     class _Completions:
         @staticmethod
         def create(**_kwargs):
-            message = type(
-                "Message", (), {"content": None, "tool_calls": tool_calls}
-            )()
+            message = type("Message", (), {"content": None, "tool_calls": tool_calls})()
             choice = type("Choice", (), {"message": message})()
             return type("Response", (), {"choices": [choice]})()
 
@@ -288,9 +282,7 @@ def _fake_openai(tool_calls):
         ('{"path": "a.txt"}', None),
     ],
 )
-def test_openai_client_survives_unparseable_arguments(
-    monkeypatch, arguments, expected
-):
+def test_openai_client_survives_unparseable_arguments(monkeypatch, arguments, expected):
     """Bad tool arguments become an error result instead of killing the run."""
     monkeypatch.setitem(
         sys.modules,
