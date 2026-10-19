@@ -452,6 +452,12 @@ a collision with other kwargs that might be passed in.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="burr.core.serde.deserialize_escaped_dict">
+<span class="sig-prename descclassname"><span class="pre">burr.core.serde.</span></span><span class="sig-name descname"><span class="pre">deserialize_escaped_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#burr.core.serde.deserialize_escaped_dict" title="Link to this definition">¶</a></dt>
+<dd><p>Deserializes an ordinary dictionary that carries the serde marker key.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="burr.core.serde.serialize">
 <span class="sig-prename descclassname"><span class="pre">burr.core.serde.</span></span><span class="sig-name descname"><span class="pre">serialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#burr.core.serde.serialize" title="Link to this definition">¶</a></dt>
 <dt class="sig sig-object py">
@@ -732,6 +738,7 @@ Submodules are matched by prefix, so <code class="docutils literal notranslate">
 <li><a class="reference internal" href="#">Serialization &amp; Deserialization</a><ul>
 <li><a class="reference internal" href="#burr.core.serde.StringDispatch"><code class="docutils literal notranslate"><span class="pre">StringDispatch</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.serde.deserialize"><code class="docutils literal notranslate"><span class="pre">deserialize()</span></code></a></li>
+<li><a class="reference internal" href="#burr.core.serde.deserialize_escaped_dict"><code class="docutils literal notranslate"><span class="pre">deserialize_escaped_dict()</span></code></a></li>
 <li><a class="reference internal" href="#burr.core.serde.serialize"><code class="docutils literal notranslate"><span class="pre">serialize()</span></code></a></li>
 <li><a class="reference internal" href="#out-of-the-box-implementations">Out of the box Implementations</a><ul>
 <li><a class="reference internal" href="#module-burr.integrations.serde.langchain">LangChain Objects</a><ul>
