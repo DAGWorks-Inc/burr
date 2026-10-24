@@ -161,6 +161,14 @@ def _remap_dunder_parameters(
     return inputs
 
 
+def _remap_injected_inputs(method: Callable, inputs: Dict[str, Any]) -> Dict[str, Any]:
+    """Remaps the framework-injected ``__context``/``__tracer`` inputs to the name-mangled
+    parameter names a class-based action's method may use. See ``_remap_dunder_parameters``."""
+    if "__context" in inputs or "__tracer" in inputs:
+        return _remap_dunder_parameters(method, inputs, ["__context", "__tracer"])
+    return inputs
+
+
 def _run_function(function: Function, state: State, inputs: Dict[str, Any], name: str) -> dict:
     """Runs a function, returning the result of running the function.
     Note this restricts the keys in the state to only those that the
@@ -179,9 +187,7 @@ def _run_function(function: Function, state: State, inputs: Dict[str, Any], name
         )
     state_to_use = state.subset(*function.reads)
     function.validate_inputs(inputs)
-    if "__context" in inputs or "__tracer" in inputs:
-        # potentially need to remap the __context & __tracer variables
-        inputs = _remap_dunder_parameters(function.run, inputs, ["__context", "__tracer"])
+    inputs = _remap_injected_inputs(function.run, inputs)
     result = function.run(state_to_use, **inputs)
     _validate_result(result, name)
     return result
@@ -194,6 +200,7 @@ async def _arun_function(
     Async version of the above."""
     state_to_use = state.subset(*function.reads)
     function.validate_inputs(inputs)
+    inputs = _remap_injected_inputs(function.run, inputs)
     result = await function.run(state_to_use, **inputs)
     _validate_result(result, name)
     return result
@@ -314,6 +321,7 @@ def _run_single_step_action(
     """
     # TODO -- guard all reads/writes with a subset of the state
     action.validate_inputs(inputs)
+    # TODO: __context/__tracer are not remapped here (see _remap_injected_inputs).
     result, new_state = _adjust_single_step_output(
         action.run_and_update(state, **inputs), action.name, action.schema
     )
@@ -337,6 +345,7 @@ def _run_single_step_streaming_action(
     action.validate_inputs(inputs)
     stream_initialize_time = system.now()
     first_stream_start_time = None
+    # TODO: __context/__tracer are not remapped here (see _remap_injected_inputs).
     generator = action.stream_run_and_update(state, **inputs)
     result = None
     state_update = None
@@ -405,6 +414,7 @@ async def _arun_single_step_streaming_action(
     action.validate_inputs(inputs)
     stream_initialize_time = system.now()
     first_stream_start_time = None
+    # TODO: __context/__tracer are not remapped here (see _remap_injected_inputs).
     generator = action.stream_run_and_update(state, **inputs)
     result = None
     state_update = None
@@ -480,7 +490,7 @@ def _run_multi_step_streaming_action(
     """
     action.validate_inputs(inputs)
     stream_initialize_time = system.now()
-    generator = action.stream_run(state, **inputs)
+    generator = action.stream_run(state, **_remap_injected_inputs(action.stream_run, inputs))
     result = None
     first_stream_start_time = None
     count = 0
@@ -538,7 +548,7 @@ async def _arun_multi_step_streaming_action(
     """Runs a multi-step streaming action in async. See the synchronous version for more details."""
     action.validate_inputs(inputs)
     stream_initialize_time = system.now()
-    generator = action.stream_run(state, **inputs)
+    generator = action.stream_run(state, **_remap_injected_inputs(action.stream_run, inputs))
     result = None
     first_stream_start_time = None
     count = 0
@@ -590,6 +600,7 @@ async def _arun_single_step_action(
     """Runs a single step action in async. See the synchronous version for more details."""
     state_to_use = state
     action.validate_inputs(inputs)
+    # TODO: __context/__tracer are not remapped here (see _remap_injected_inputs).
     result, new_state = _adjust_single_step_output(
         await action.run_and_update(state_to_use, **inputs), action.name, action.schema
     )
@@ -1530,40 +1541,44 @@ class Application(Generic[ApplicationStateType]):
         self.validate_correct_async_use()
         call_execute_method_wrapper = _call_execute_method_pre_post(ExecuteMethod.stream_result)
         call_execute_method_wrapper.call_pre(self)
-        halt_before, halt_after, inputs = self._process_control_flow_params(
-            halt_before, halt_after, inputs
-        )
-        self._validate_halt_conditions(halt_before, halt_after)
-        next_action = self.get_next_action()
-        if next_action is None:
-            raise ValueError(
-                f"Cannot stream result -- no next action found! Prior action was: {self._state[PRIOR_STEP]}"
+        try:
+            halt_before, halt_after, inputs = self._process_control_flow_params(
+                halt_before, halt_after, inputs
             )
-        if next_action.name not in halt_after:
-            # fast forward until we get to the action
-            # run already handles incrementing sequence IDs, nothing to worry about here
-            next_action, results, state = self.run(
-                halt_before=halt_after + halt_before, inputs=inputs
-            )
-            # In this case, we are ready to halt and return an empty generator
-            # The results will be None, and the state will be the final state
-            # For context, this is specifically for the case in which you want to have
-            # multiple terminal points with a unified API, where some are streaming, and some are not.
-            if next_action.name in halt_before and next_action.name not in halt_after:
-                call_execute_method_wrapper.call_post(self, None)
-                return next_action, StreamingResultContainer.pass_through(
-                    results=results, final_state=state
+            self._validate_halt_conditions(halt_before, halt_after)
+            next_action = self.get_next_action()
+            if next_action is None:
+                raise ValueError(
+                    f"Cannot stream result -- no next action found! Prior action was: {self._state[PRIOR_STEP]}"
                 )
-        self._increment_sequence_id()
-        self._adapter_set.call_all_lifecycle_hooks_sync(
-            "pre_run_step",
-            action=next_action,
-            state=self._state,
-            inputs=inputs,
-            sequence_id=self.sequence_id,
-            app_id=self._uid,
-            partition_key=self._partition_key,
-        )
+            if next_action.name not in halt_after:
+                # fast forward until we get to the action
+                # run already handles incrementing sequence IDs, nothing to worry about here
+                next_action, results, state = self.run(
+                    halt_before=halt_after + halt_before, inputs=inputs
+                )
+                # In this case, we are ready to halt and return an empty generator
+                # The results will be None, and the state will be the final state
+                # For context, this is specifically for the case in which you want to have
+                # multiple terminal points with a unified API, where some are streaming, and some are not.
+                if next_action.name in halt_before and next_action.name not in halt_after:
+                    call_execute_method_wrapper.call_post(self, None)
+                    return next_action, StreamingResultContainer.pass_through(
+                        results=results, final_state=state
+                    )
+            self._increment_sequence_id()
+            self._adapter_set.call_all_lifecycle_hooks_sync(
+                "pre_run_step",
+                action=next_action,
+                state=self._state,
+                inputs=inputs,
+                sequence_id=self.sequence_id,
+                app_id=self._uid,
+                partition_key=self._partition_key,
+            )
+        except Exception as e:
+            call_execute_method_wrapper.call_post(self, e)
+            raise
 
         # we need to track if there's any exceptions that occur during this
         try:
@@ -1783,40 +1798,44 @@ class Application(Generic[ApplicationStateType]):
         """
         call_execute_method_wrapper = _call_execute_method_pre_post(ExecuteMethod.stream_result)
         await call_execute_method_wrapper.acall_pre(self)
-        halt_before, halt_after, inputs = self._process_control_flow_params(
-            halt_before, halt_after, inputs
-        )
-        self._validate_halt_conditions(halt_before, halt_after)
-        next_action = self.get_next_action()
-        if next_action is None:
-            raise ValueError(
-                f"Cannot stream result -- no next action found! Prior action was: {self._state[PRIOR_STEP]}"
+        try:
+            halt_before, halt_after, inputs = self._process_control_flow_params(
+                halt_before, halt_after, inputs
             )
-        if next_action.name not in halt_after:
-            # fast forward until we get to the action
-            # run already handles incrementing sequence IDs, nothing to worry about here
-            next_action, results, state = await self.arun(
-                halt_before=halt_after + halt_before, inputs=inputs
-            )
-            # In this case, we are ready to halt and return an empty generator
-            # The results will be None, and the state will be the final state
-            # For context, this is specifically for the case in which you want to have
-            # multiple terminal points with a unified API, where some are streaming, and some are not.
-            if next_action.name in halt_before and next_action.name not in halt_after:
-                await call_execute_method_wrapper.acall_post(self, None)
-                return next_action, AsyncStreamingResultContainer.pass_through(
-                    results=results, final_state=state
+            self._validate_halt_conditions(halt_before, halt_after)
+            next_action = self.get_next_action()
+            if next_action is None:
+                raise ValueError(
+                    f"Cannot stream result -- no next action found! Prior action was: {self._state[PRIOR_STEP]}"
                 )
-        self._increment_sequence_id()
-        await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
-            "pre_run_step",
-            action=next_action,
-            state=self._state,
-            inputs=inputs,
-            sequence_id=self.sequence_id,
-            app_id=self._uid,
-            partition_key=self._partition_key,
-        )
+            if next_action.name not in halt_after:
+                # fast forward until we get to the action
+                # run already handles incrementing sequence IDs, nothing to worry about here
+                next_action, results, state = await self.arun(
+                    halt_before=halt_after + halt_before, inputs=inputs
+                )
+                # In this case, we are ready to halt and return an empty generator
+                # The results will be None, and the state will be the final state
+                # For context, this is specifically for the case in which you want to have
+                # multiple terminal points with a unified API, where some are streaming, and some are not.
+                if next_action.name in halt_before and next_action.name not in halt_after:
+                    await call_execute_method_wrapper.acall_post(self, None)
+                    return next_action, AsyncStreamingResultContainer.pass_through(
+                        results=results, final_state=state
+                    )
+            self._increment_sequence_id()
+            await self._adapter_set.call_all_lifecycle_hooks_sync_and_async(
+                "pre_run_step",
+                action=next_action,
+                state=self._state,
+                inputs=inputs,
+                sequence_id=self.sequence_id,
+                app_id=self._uid,
+                partition_key=self._partition_key,
+            )
+        except Exception as e:
+            await call_execute_method_wrapper.acall_post(self, e)
+            raise
         try:
 
             def process_result(

@@ -27,6 +27,13 @@ if TYPE_CHECKING:
     from burr.core.artifacts import ArtifactStore, AsyncArtifactStore
 
 KEY = "__burr_serde__"
+# Marker used to wrap an ordinary dictionary that itself contains KEY. Without
+# it, such a dictionary is indistinguishable from a serde envelope and
+# `deserialize` fails -- or dispatches to an unrelated deserializer -- when the
+# value is read back.
+ESCAPED_DICT = "burr.dict"
+# Key an escaped dictionary stores its contents under.
+PAYLOAD_KEY = "value"
 
 SERIALIZATION_CONTEXT_KWARG = "serialization_context"
 
@@ -243,7 +250,16 @@ def serialize_coroutine(value: types.CoroutineType, **kwargs) -> Any:
 
 @serialize.register(dict)
 def serialize_dict(value: dict, **kwargs) -> dict[str, Any]:
-    return {k: _serialize_sync(v, **kwargs) for k, v in value.items()}
+    serialized = {k: _serialize_sync(v, **kwargs) for k, v in value.items()}
+    if KEY in value:
+        return {KEY: ESCAPED_DICT, PAYLOAD_KEY: serialized}
+    return serialized
+
+
+@deserializer.register(ESCAPED_DICT)
+def deserialize_escaped_dict(value: dict, **kwargs) -> dict[str, Any]:
+    """Deserializes an ordinary dictionary that carries the serde marker key."""
+    return {k: deserialize(v, **kwargs) for k, v in value[PAYLOAD_KEY].items()}
 
 
 @serialize.register(list)
@@ -266,7 +282,10 @@ async def aserialize(value: Any, **kwargs) -> Any:
     :return: A JSON-serializable representation of the value.
     """
     if isinstance(value, dict) and serialize.dispatch(type(value)) is serialize_dict:
-        return {k: await aserialize(v, **kwargs) for k, v in value.items()}
+        serialized = {k: await aserialize(v, **kwargs) for k, v in value.items()}
+        if KEY in value:
+            return {KEY: ESCAPED_DICT, PAYLOAD_KEY: serialized}
+        return serialized
     if isinstance(value, list) and serialize.dispatch(type(value)) is serialize_list:
         return [await aserialize(v, **kwargs) for v in value]
     result = serialize(value, **kwargs)
@@ -285,6 +304,8 @@ async def adeserialize(value: Any, **kwargs) -> Any:
     """
     if isinstance(value, dict):
         class_to_instantiate = value.get(KEY, None)
+        if class_to_instantiate == ESCAPED_DICT:
+            return {k: await adeserialize(v, **kwargs) for k, v in value[PAYLOAD_KEY].items()}
         if class_to_instantiate is not None:
             result = deserializer.call(class_to_instantiate, value, **kwargs)
             if inspect.isawaitable(result):

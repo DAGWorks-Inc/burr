@@ -337,9 +337,22 @@ async def test_aserialize_and_adeserialize_await_async_serde(async_report_field_
 
 
 async def test_aserialize_matches_serialize_for_sync_serde():
-    state = State({"a": 1, "b": [1, {"c": "d"}], "e": None})
+    state = State({"a": 1, "b": [1, {"c": "d"}], "e": None, "f": {serde.KEY: "user data"}})
     assert await state.aserialize() == state.serialize()
     assert (await State.adeserialize(state.serialize())).get_all() == state.get_all()
+
+
+async def test_async_serde_round_trips_dicts_carrying_the_serde_marker_key():
+    store = InMemoryAsyncStore()
+    ctx = SerializationContext(object_store=store)
+    state = State({"meta": {serde.KEY: "user data", "blob": AsyncBlob(b"nested")}})
+
+    restored = await State.adeserialize(
+        await state.aserialize(serialization_context=ctx), serialization_context=ctx
+    )
+
+    assert restored["meta"][serde.KEY] == "user data"
+    assert await restored["meta"]["blob"].load() == b"nested"
 
 
 # --- application-level propagation ---
